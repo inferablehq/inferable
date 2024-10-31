@@ -1,0 +1,41 @@
+name: Create Archives of Bootstrap Projects
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create-archives:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find and archive bootstrap projects
+        run: |
+          # Create archives directory if it doesn't exist
+          mkdir -p archives
+
+          # Find all directories starting with bootstrap- and create zip archives
+          for dir in bootstrap-*/; do
+            if [ -d "$dir" ]; then
+              project_name=${dir%/}  # Remove trailing slash
+              zip -r "archives/${project_name}.zip" "$dir"
+            fi
+          done
+
+      - name: Commit archives
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add archives/
+          git commit -m "Update bootstrap project archives" || echo "No changes to commit"
+          git push origin HEAD:${{ github.head_ref }}
+
+
