@@ -1,0 +1,52 @@
+# .NET Core / ASP.NET Core
+bin/
+obj/
+*.log
+*.user
+*.lock.json
+*.db
+*.sqlite
+
+# Visual Studio
+.vscode/
+.vs/
+.vscode/*
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+.idea/*
+
+# Packages
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Logs
+*.log
+*.tlog
+
+# Build results
+*.dll
+*.exe
+*.so
+*.dylib
+*.log
+*.plist
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Application insights
+ApplicationInsights.config
+
+# Environment files
+.env
+
+# Local libraries
+
