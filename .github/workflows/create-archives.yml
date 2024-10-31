@@ -12,11 +12,14 @@ concurrency:
 jobs:
   create-archives:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Archive bootstrap-node
         run: |
@@ -37,5 +40,6 @@ jobs:
           message: '[skip ci] Update bootstrap project archives'
           default_author: github_actions
           push: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
 
