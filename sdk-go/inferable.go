@@ -187,7 +187,7 @@ func (i *Inferable) RegisterService(serviceName string) (*service, error) {
 
 func (i *Inferable) getRun(runID string) (*runResult, error) {
 	if i.clusterID == "" {
-		return nil, fmt.Errorf("Cluster ID must be provided to manage runs")
+		return nil, fmt.Errorf("cluster ID must be provided to manage runs")
 	}
 
 	// Prepare headers

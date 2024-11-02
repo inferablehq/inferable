@@ -69,31 +69,31 @@ type FunctionReference struct {
 //
 // Example:
 //
-//  // Create a new Inferable instance with an API secret
-//  client := inferable.New(InferableOptions{
-//      ApiSecret: "API_SECRET",
-//  })
+//	// Create a new Inferable instance with an API secret
+//	client := inferable.New(InferableOptions{
+//	    ApiSecret: "API_SECRET",
+//	})
 //
-//  // Define and register the service
-//  service := client.Service("MyService")
+//	// Define and register the service
+//	service := client.Service("MyService")
 //
-//  sayHello, err := service.RegisterFunc(Function{
-//    Func:        func(input EchoInput) string {
-//      didCallSayHello = true
-//      return "Hello " + input.Input
-//    },
-//    Name:        "SayHello",
-//    Description: "A simple greeting function",
-//  })
+//	sayHello, err := service.RegisterFunc(Function{
+//	  Func:        func(input EchoInput) string {
+//	    didCallSayHello = true
+//	    return "Hello " + input.Input
+//	  },
+//	  Name:        "SayHello",
+//	  Description: "A simple greeting function",
+//	})
 //
-//  // Start the service
-//  service.Start()
+//	// Start the service
+//	service.Start()
 //
-//  // Stop the service on shutdown
-//  defer service.Stop()
+//	// Stop the service on shutdown
+//	defer service.Stop()
 func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 	if s.isPolling() {
-		return nil, fmt.Errorf("functions must be registered before starting the service.")
+		return nil, fmt.Errorf("functions must be registered before starting the service")
 	}
 
 	if _, exists := s.Functions[fn.Name]; exists {
@@ -120,8 +120,12 @@ func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 
 	// Extract the relevant part of the schema
 	defs, ok := schema.Definitions[argType.Name()]
+
+	// If the definition is not found, use the whole schema.
+	// This tends to happen for inline structs.
+	// For example: func(input struct { A int `json:"a"` }) int
 	if !ok {
-		return nil, fmt.Errorf("failed to find schema definition for %s", argType.Name())
+		defs = schema
 	}
 
 	defsString, err := json.Marshal(defs)

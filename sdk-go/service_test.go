@@ -52,6 +52,44 @@ func TestRegisterFunc(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestRegisterFuncWithInlineStruct(t *testing.T) {
+	_, _, _, apiEndpoint := util.GetTestVars()
+
+	i, _ := New(InferableOptions{
+		APIEndpoint: apiEndpoint,
+		APISecret:   "test-secret",
+	})
+	service, _ := i.RegisterService("TestService1")
+
+	testFunc := func(input struct {
+		A int `json:"a"`
+		B int `json:"b"`
+	}) int {
+		return input.A + input.B
+	}
+	_, err := service.RegisterFunc(Function{
+		Func:        testFunc,
+		Name:        "TestFunc",
+		Description: "Test function",
+	})
+	require.NoError(t, err)
+
+	// Try to register the same function again
+	_, err = service.RegisterFunc(Function{
+		Func: testFunc,
+		Name: "TestFunc",
+	})
+	assert.Error(t, err)
+
+	// Try to register a function with invalid input
+	invalidFunc := func(a, b int) int { return a + b }
+	_, err = service.RegisterFunc(Function{
+		Func: invalidFunc,
+		Name: "InvalidFunc",
+	})
+	assert.Error(t, err)
+}
+
 func TestRegistrationAndConfig(t *testing.T) {
 	machineSecret, _, _, apiEndpoint := util.GetTestVars()
 
