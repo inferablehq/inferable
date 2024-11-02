@@ -1,8 +1,9 @@
 package util
 
 import (
-	"github.com/joho/godotenv"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func GetTestVars() (string, string, string, string) {
@@ -17,7 +18,7 @@ func GetTestVars() (string, string, string, string) {
 	apiEndpoint := os.Getenv("INFERABLE_TEST_API_ENDPOINT")
 
 	if apiEndpoint == "" {
-    panic("INFERABLE_TEST_API_ENDPOINT is not available")
+		panic("INFERABLE_TEST_API_ENDPOINT is not available")
 	}
 	if machineSecret == "" {
 		panic("INFERABLE_TEST_API_SECRET is not available")

@@ -73,9 +73,9 @@ func (c *Client) FetchData(options FetchDataOptions) (string, http.Header, error
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-    if resp == nil {
-      return "", nil, fmt.Errorf("error making request: %v", err), -1
-    }
+		if resp == nil {
+			return "", nil, fmt.Errorf("error making request: %v", err), -1
+		}
 		return "", nil, fmt.Errorf("error making request: %v", err), resp.StatusCode
 	}
 	defer resp.Body.Close()
