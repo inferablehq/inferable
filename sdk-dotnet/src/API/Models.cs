@@ -161,7 +161,7 @@ namespace Inferable.API
     public bool? ReasoningTraces { get; set; }
 
     [JsonPropertyName("callSummarization")]
-    public bool? CallSummarization { get; set; } = true;
+    public bool? CallSummarization { get; set; }
   }
 
   public struct OnStatusChange
