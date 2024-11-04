@@ -24,7 +24,7 @@ jobs:
       sdk_go: ${{ steps.filter.outputs.sdk_go }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Filter changed files
@@ -50,7 +50,7 @@ jobs:
         working-directory: sdk-node
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -73,7 +73,7 @@ jobs:
         working-directory: sdk-node
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
@@ -100,7 +100,7 @@ jobs:
         working-directory: sdk-dotnet
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -121,7 +121,7 @@ jobs:
         working-directory: sdk-dotnet
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -146,7 +146,7 @@ jobs:
         working-directory: sdk-go
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -174,7 +174,7 @@ jobs:
         working-directory: sdk-go
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
