@@ -501,6 +501,6 @@ export class Inferable {
       this.clusterId = registerResult.clusterId;
     }
 
-    return this.clusterId!;
+    return this.clusterId;
   }
 }
