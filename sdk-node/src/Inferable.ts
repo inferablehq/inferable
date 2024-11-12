@@ -110,10 +110,7 @@ export class Inferable {
    * const client = new Inferable();
    * ```
    */
-  constructor(options?: {
-    apiSecret?: string;
-    endpoint?: string;
-  }) {
+  constructor(options?: { apiSecret?: string; endpoint?: string }) {
     if (options?.apiSecret && process.env.INFERABLE_API_SECRET) {
       log(
         "API Secret was provided as an option and environment variable. Constructor argument will be used.",
@@ -217,7 +214,6 @@ export class Inferable {
    * ```
    */
   public async run(input: RunInput) {
-
     let resultSchema: JsonSchemaInput | undefined;
 
     if (!!input.resultSchema && isZodType(input.resultSchema)) {
@@ -494,6 +490,10 @@ export class Inferable {
     this.functionRegistry[registration.name] = registration;
   }
 
+  public get api() {
+    return this.client;
+  }
+
   private async getClusterId() {
     if (!this.clusterId) {
       // Call register machine without any services to test API key and get clusterId
@@ -501,6 +501,6 @@ export class Inferable {
       this.clusterId = registerResult.clusterId;
     }
 
-    return this.clusterId!
+    return this.clusterId!;
   }
 }

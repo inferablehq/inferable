@@ -289,4 +289,33 @@ describe("Inferable SDK End to End Test", () => {
       await client.default.stop();
     }
   });
+
+  describe("api", () => {
+    it("should be able to call the api directly", async () => {
+      const client = inferableInstance();
+
+      expect(
+        await client.api.createStructuredOutput({
+          params: {
+            clusterId: TEST_CLUSTER_ID,
+          },
+          body: {
+            prompt: "What is the capital of France?",
+            modelId: "claude-3-5-sonnet",
+            resultSchema: {
+              type: "object",
+              properties: {
+                capital: { type: "string" },
+              },
+            },
+          },
+        }),
+      ).toEqual({
+        success: true,
+        result: {
+          capital: "Paris",
+        },
+      });
+    });
+  });
 });

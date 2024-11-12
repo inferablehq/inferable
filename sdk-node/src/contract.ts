@@ -1424,6 +1424,32 @@ export const definition = {
       artifactId: z.string(),
     }),
   },
+  createStructuredOutput: {
+    method: "POST",
+    path: "/clusters/:clusterId/structured-output",
+    headers: z.object({ authorization: z.string() }),
+    body: z.object({
+      prompt: z.string(),
+      resultSchema: anyObject
+        .optional()
+        .describe(
+          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema",
+        ),
+      modelId: z.enum(["claude-3-5-sonnet", "claude-3-haiku"]),
+      temperature: z
+        .number()
+        .optional()
+        .describe("The temperature to use for the model")
+        .default(0.5),
+    }),
+    responses: {
+      200: z.unknown(),
+      401: z.undefined(),
+    },
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+  },
 } as const;
 
 export const contract = c.router(definition);
