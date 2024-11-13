@@ -491,7 +491,22 @@ export class Inferable {
   }
 
   public get api() {
-    return this.client;
+    return {
+      createStructuredOutput: async <T>(
+        input: Parameters<typeof this.client.createStructuredOutput>[0]["body"],
+      ) =>
+        this.client
+          .createStructuredOutput({
+            params: {
+              clusterId: await this.getClusterId(),
+            },
+            body: input,
+          })
+          .then((r) => r.body) as Promise<{
+          success: boolean;
+          data?: T;
+        }>,
+    };
   }
 
   private async getClusterId() {
