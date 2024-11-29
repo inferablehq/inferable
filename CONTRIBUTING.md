@@ -47,6 +47,7 @@ We maintain different code style guidelines for each programming language in the
 - Reference any relevant issues or PRs in the message
 
 Example:
+
 ```
 Fix: Resolve memory leak in function pre-processor (#123)
 ```
@@ -73,14 +74,13 @@ Fix: Resolve memory leak in function pre-processor (#123)
 - Use Pull Requests for code contributions
 - Be respectful and constructive in all communications
 - Tag relevant maintainers when needed
-- Seek help in the [Discord](https://go.inferable.ai/discord)
 
 ## Questions?
 
 If you have questions about contributing, feel free to:
+
 - Open an issue with your question
 - Ask in the relevant Pull Request
-- Contact the maintainers via [Discord](https://go.inferable.ai/discord)
 
 ## License
 

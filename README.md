@@ -4,80 +4,52 @@
 
 <div align="center">
 
-[![Website](https://img.shields.io/badge/website-inferable.ai-blue)](https://inferable.ai) [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/) [![Discord](https://img.shields.io/badge/community-Discord-blue)](https://go.inferable.ai/discord) [![Slack](https://img.shields.io/badge/enterprise-Slack-blue)](https://go.inferable.ai/slack)
+[![Website](https://img.shields.io/badge/website-inferable.ai-blue)](https://inferable.ai) [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/)
 
 ![NPM Version](https://img.shields.io/npm/v/inferable?color=32CD32) ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/inferablehq/inferable?filename=sdk-go%2Fgo.mod&color=32CD32) ![NuGet Version](https://img.shields.io/nuget/v/inferable?color=32CD32)
 
 </div>
 
-# Introduction
+# The Problem
 
-Inferable is a developer platform that makes it easy to build and deploy reliable, secure LLM-based applications.
+Building reliable AI agents at scale is hard.
 
-## Key Features
+- 💽 **State management**: Unless we run everything in one process and in-memory, we need to manage distributed state.
 
-🚀 **[2-Minute Setup](https://docs.inferable.ai/pages/quick-start)**: Get started in minutes with our [managed platform](https://app.inferable.ai) - wrap your existing functions, REST APIs and GraphQL endpoints as tools.
+- ⛔️ **Fault tolerance**: Distributed tools mean we need to manage network failures, and coordinate between agents and tools running on different machines.
 
-🤖 **[Managed Agent Runtime](https://docs.inferable.ai/pages/runs)**: Managed [ReAct](https://www.promptingguide.ai/techniques/react)-like agent runtime powered by your own functions.
+- 🧑‍💻 **Human in the loop**: We don't want AI to be completely autonomous. We want to build abstractions that help humans intervene.
 
-⚡️ **[Durable Tool Calling](https://docs.inferable.ai/pages/functions)**: Our durable execution engine helps you agents recover from tool-calling failures, load balance across your compute, and caches results for fast re-runs.
+- 🔄 **Point-in-time consistency**: Even if we've got all of this working, distributed systems are inherently unreliable. And so are the agents running on them.
 
-🛡️ **[Zero Network Config](https://docs.inferable.ai/pages/no-incoming-connections)**: No inbound connections or networking config required - your compute runs securely behind your firewall, and polls Inferable for instructions.
+# The Solution
 
-💻 **[Your Infrastructure](https://docs.inferable.ai/pages/on-premise)**: All functions run on your Infrastructure - Keep sensitive data and compute on-premise while leveraging our agent runtime. Inferable can't see or access any runtime information or environment variables.
+- 🤖 **[Managed Agent Runtime](https://docs.inferable.ai/pages/runs)**: Managed [ReAct](https://www.promptingguide.ai/techniques/react)-like agent runtime powered by your own functions.
 
-🔌 **Multiple Language Support**: Native SDKs for TypeScript, Go, .NET and more coming soon - integrate with your existing codebase in minutes.
+- ⚡️ **[Durable Tool Calling](https://docs.inferable.ai/pages/functions)**: Durable execution engine helps agents recover from tool-calling failures, load balance across your compute, and caches results for fast re-runs.
+
+- 🛡️ **[Zero Network Config](https://docs.inferable.ai/pages/no-incoming-connections)**: No inbound connections or networking config required. Everything works via long-polling pub-sub.
+
+- 🔌 **Multiple Language Support**: Native SDKs for TypeScript, Go, .NET and more coming soon - integrate with your existing codebase in minutes.
+
+- ✨ **Fully open-source and self-hostable**: Inferable is 100% open-source, MIT licensed, and self-hostable. We also offer a managed service with high availability and a generous free tier.
 
 ## Get Started
 
-### Inferable Cloud
+Check out our [quick start guide](https://docs.inferable.ai/pages/quick-start) for a step-by-step guide on how to get started.
 
-Managed deployment of Inferable built for high availability and security. Inferable Cloud includes a [generous free teir](https://inferable.ai/pricing) and requires no credit card to get started.
+## Self hosting
 
-[Inferable Cloud](https://app.inferable.ai).
+Inferable is 100% open-source and self-hostable:
 
-### Open-source
+- [Self hosting guide](https://docs.inferable.ai/pages/self-hosting)
 
-Inferable is 100% open-source and self-hostable.
+## Language support
 
-[Self hosting guide](https://docs.inferable.ai/pages/self-hosting)
-
-## SDKs
-
-- [Node.js / TypeScript SDK](./sdk-node/README.md)
-- [Go SDK](./sdk-go/README.md)
-- [.NET SDK](./sdk-dotnet/README.md)
-- [React SDK](./sdk-react/README.md)
-
-Each SDK directory contains its own README with specific installation instructions, quick start guide, and usage examples.
-
-### Quick Start
-
-For language-specific quick start guides, please refer to the README in each SDK's directory:
-
-- [Node.js / TypeScript Quick Start](./sdk-node/README.md#quick-start)
-- [Go Quick Start](./sdk-go/README.md#quick-start)
-- [.NET Quick Start](./sdk-dotnet/README.md#quick-start)
-- [React Quick Start](./sdk-react/README.md#quick-start)
-
-### SDK Feature Comparison
-
-### Core Features
-
-| Feature                                                         | Node.js | Go  | .NET | React |
-| --------------------------------------------------------------- | :-----: | :-: | :--: | :---: |
-| Register [Functions](https://docs.inferable.ai/pages/functions) |   ✅    | ✅  |  ✅  |  ❌   |
-| Create [Runs](https://docs.inferable.ai/pages/runs)             |   ✅    | ✅  |  ✅  |  ✅   |
-
-### Advanced Features
-
-| Feature                                                                                                | Node.js | Go  | .NET |
-| ------------------------------------------------------------------------------------------------------ | :-----: | :-: | :--: |
-| [Cached](https://docs.inferable.ai/pages/functions#config-cache) results                               |   ✅    | ❌  |  ❌  |
-| Call [Timeouts](https://docs.inferable.ai/pages/functions#config-timeoutseconds)                       |   ✅    | ❌  |  ❌  |
-| Call [Retries](https://docs.inferable.ai/pages/functions#config-retrycountonstall)                     |   ✅    | ❌  |  ❌  |
-| Call [Approval](https://docs.inferable.ai/pages/functions#approvalrequest) (Human in the loop)        |   ✅    | ❌  |  ❌  |
-| [Auth / Run Context](https://docs.inferable.ai/pages/runs#context)                                     |   ✅    | ❌  |  ❌  |
+- [Node.js / TypeScript](./sdk-node/README.md) ([Quick start](./sdk-node/README.md#quick-start))
+- [Go](./sdk-go/README.md) ([Quick start](./sdk-go/README.md#quick-start))
+- [.NET](./sdk-dotnet/README.md) ([Quick start](./sdk-dotnet/README.md#quick-start))
+- [React](./sdk-react/README.md) ([Quick start](./sdk-react/README.md#quick-start))
 
 ## Documentation
 
