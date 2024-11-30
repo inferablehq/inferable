@@ -12,6 +12,10 @@ const CLUSTER_ID = __ENV.INFERABLE_TEST_CLUSTER_ID
 const BASE_URL = 'https://api.inferable.ai';
 
 export default function () {
+  if (!API_SECRET || !CLUSTER_ID) {
+    throw new Error('Missing required environment variables');
+  }
+
   // Create a new run
   const postRunResponse = http.post(`${BASE_URL}/clusters/${CLUSTER_ID}/runs`, JSON.stringify({
     initialPrompt: 'Get the special word from from the `searchHaystack` function',

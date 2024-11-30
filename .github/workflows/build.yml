@@ -431,6 +431,47 @@ jobs:
         with:
           path: ./load-tests/script.js
 
+  build-load-test-machine-image:
+    runs-on: ubuntu-latest
+    needs: check_changes
+    permissions:
+      id-token: write
+    if: ${{ needs.check_changes.outputs.load_tests == 'true' && github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build App Docker Image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: inferable-load-test-machine
+        run: |
+          cd load-tests
+          VERSION=${{ github.sha }}
+          SHORT_VERSION=$(echo ${{ github.sha }} | cut -c 1-6)
+          docker buildx build \
+          --file Dockerfile.machine \
+          --push \
+          --cache-to mode=min,image-manifest=true,oci-mediatypes=true,type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:cache \
+          --cache-from type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:cache \
+          --build-arg="VERSION=$VERSION" \
+          --build-arg="SHORT_VERSION=$SHORT_VERSION" \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./
+
   build-app-image:
     runs-on: ubuntu-latest
     needs: check_changes
