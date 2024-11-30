@@ -1,0 +1,19 @@
+{
+  "name": "@inferable/load-test",
+  "version": "1.0.0",
+  "description": "Load tests for the Inferable Control Plane",
+  "main": "script.js",
+  "license": "MIT",
+  "scripts": {
+    "test:start": "k6 run script.js",
+    "machine:start": "tsx machine.ts"
+  },
+  "homepage": "https://github.com/inferablehq/inferable#readme",
+  "dependencies": {
+    "inferable": "^0.30.55"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2"
+  }
+}

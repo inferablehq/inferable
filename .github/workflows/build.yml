@@ -28,6 +28,7 @@ jobs:
       app: ${{ steps.filter.outputs.app }}
       # Deploy steps (Docker build / CFN) if either control-plane or app changed
       deploy: ${{ steps.filter.outputs.deploy }}
+      load_tests: ${{ steps.filter.outputs.load_tests }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,6 +53,8 @@ jobs:
               - 'control-plane/**'
             app:
               - 'app/**'
+            load_tests:
+              - 'load-tests/**'
             deploy:
               - 'control-plane/**'
               - 'app/**'
@@ -406,6 +409,27 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm test
+
+  validate-load-tests:
+    needs: [check_changes]
+    runs-on: ubuntu-latest
+    if: ${{ needs.check_changes.outputs.load_tests == 'true' }}
+    defaults:
+      run:
+        working-directory: load-tests
+    env:
+      INFERABLE_TEST_CLUSTER_ID: ${{ secrets.INFERABLE_TEST_CLUSTER_ID }}
+      INFERABLE_TEST_API_SECRET: ${{ secrets.INFERABLE_TEST_API_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci
+        # Run machine:start backgrounded
+      - run: npm run machine:start &
+      - uses: grafana/setup-k6-action@v1
+      - uses: grafana/run-k6-action@v1
+        with:
+          path: ./load-tests/script.js
 
   build-app-image:
     runs-on: ubuntu-latest
