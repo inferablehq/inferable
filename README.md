@@ -28,15 +28,15 @@ Building reliable AI agents at scale is hard.
 
 - 🛡️ **[Zero Network Config](https://docs.inferable.ai/pages/no-incoming-connections)**: No inbound connections or networking config required. Everything works via long-polling pub-sub.
 
-- 🔌 **Multiple Language Support**: Native SDKs for TypeScript, Go, .NET and more coming soon - integrate with your existing codebase in minutes.
+- 🔌 **[Multiple Language Support](#language-support)**: Native SDKs for TypeScript, Go, .NET and more coming soon - integrate with your existing codebase in minutes.
 
-- ✨ **Fully open-source and self-hostable**: Inferable is 100% open-source, MIT licensed, and self-hostable. We also offer a managed service with high availability and a generous free tier.
+- ✨ **[Fully open-source and self-hostable](https://docs.inferable.ai/pages/self-hosting)**: Inferable is 100% open-source, MIT licensed, and self-hostable. We also offer a managed service with high availability and a generous free tier.
 
 ![Deployment](./assets/deployment.png)
 
 ## Get Started
 
-Check out our [quick start guide](https://docs.inferable.ai/pages/quick-start) for a step-by-step guide on how to get started.
+Check out our [quick start guide](https://docs.inferable.ai/pages/quick-start) for a step-by-step guide on how to get started with creating your first automation.
 
 ## Self hosting
 
@@ -54,6 +54,29 @@ Inferable is 100% open-source and self-hostable:
 ## Documentation
 
 For comprehensive documentation on using Inferable AI, please visit our [official documentation](https://docs.inferable.ai/).
+
+## Open Source
+
+This repository contains the Inferable control-plane, as well as SDKs for various languages.
+
+**Core services:**
+
+- `/control-plane` - The core Inferable control plane service
+- `/app` - Web console/dashboard application
+- `/cli` - Command-line interface tool
+
+**SDKs:**
+
+- `/sdk-node` - Node.js/TypeScript SDK
+- `/sdk-go` - Go SDK
+- `/sdk-dotnet` - .NET SDK
+- `/sdk-react` - React SDK
+
+**Bootstrap templates:**
+
+- `/bootstrap-node` - Node.js bootstrap application template
+- `/bootstrap-go` - Go bootstrap application template
+- `/bootstrap-dotnet` - .NET bootstrap application template
 
 ## Contributing
 
