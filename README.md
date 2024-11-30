@@ -8,43 +8,76 @@
 
 </div>
 
-# The Problem
+# About Inferable
 
-Building reliable AI agents at scale is hard.
+Inferable is an open source platform that helps you build reliable LLM-powered agentic automations at scale.
 
-- 💽 **State management**: Unless we run everything in one process and in-memory, we need to manage distributed state.
+## Key Features
 
-- ⛔️ **Fault tolerance**: Distributed tools mean we need to manage network failures, and coordinate between agents and tools running on different machines.
-
-- 🧑‍💻 **Human in the loop**: We don't want AI to be completely autonomous. We want to build abstractions that help humans intervene.
-
-- 🔄 **Point-in-time consistency**: Even if we've got all of this working, distributed systems are inherently unreliable. And so are the agents running on them.
-
-# The Solution
-
-- 🤖 **[Managed Agent Runtime](https://docs.inferable.ai/pages/runs)**: Managed [ReAct](https://www.promptingguide.ai/techniques/react)-like agent runtime powered by your own functions.
-
-- ⚡️ **[Durable Tool Calling](https://docs.inferable.ai/pages/functions)**: Durable execution engine helps agents recover from tool-calling failures, load balance across your compute, and caches results for fast re-runs.
-
-- 🛡️ **[Zero Network Config](https://docs.inferable.ai/pages/no-incoming-connections)**: No inbound connections or networking config required. Everything works via long-polling pub-sub.
-
-- 🔌 **[Multiple Language Support](#language-support)**: Native SDKs for TypeScript, Go, .NET and more coming soon - integrate with your existing codebase in minutes.
-
-- ✨ **[Fully open-source and self-hostable](https://docs.inferable.ai/pages/self-hosting)**: Inferable is 100% open-source, MIT licensed, and self-hostable. We also offer a managed service with high availability and a generous free tier.
+- Managed Agent Runtime - ReAct-like agent runtime powered by your own functions
+- Durable Tool Calling - Recover from failures, load balance across compute, cache results
+- Zero Network Config - No inbound connections or networking required
+- Multiple Language Support - Native SDKs for TypeScript, Go, .NET and more
+- Fully Open Source - MIT licensed and self-hostable
 
 ![Deployment](./assets/deployment.png)
 
-## Get Started
+## Powered by your code
+
+Automations are powered by your greenfield or brownfield code. Agent capabilities are defined by your own functions.
+
+**1. Define one or more functions that can be called by an automation**
+
+```typescript
+async function readWebPage({ url }: { url: string }) {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.goto(url);
+  return await page.content();
+}
+```
+
+**2. Register the function with Inferable**
+
+```typescript
+inferable.default.register({
+  name: "readWebPage",
+  func: readWebPage,
+  input: z.object({
+    url: z.string(),
+  }),
+});
+```
+
+**3. Create a run that uses the function**
+
+```typescript
+inferable.run({
+  initialPrompt: `
+    Produce me a list of all the open source projects
+    at https://news.ycombinator.com/show, with their
+    github url, programming language and fork count.
+  `,
+  resultSchema: z.array(
+    z.object({
+      url: z.string().regex(/^https:\/\/github\.com\/.*$/),
+      language: z.string(),
+      forkCount: z.number(),
+    })
+  ),
+  // attachedFunctions: ["readWebPage"], // Optional, defaults to all registered functions
+});
+```
+
+## Getting Started
 
 Check out our [quick start guide](https://docs.inferable.ai/pages/quick-start) for a step-by-step guide on how to get started with creating your first automation.
 
-## Self hosting
+## Self Hosting
 
-Inferable is 100% open-source and self-hostable:
+Inferable is 100% open-source and self-hostable. See our [self hosting guide](https://docs.inferable.ai/pages/self-hosting) for more details.
 
-- [Self hosting guide](https://docs.inferable.ai/pages/self-hosting)
-
-## Language support
+## Language Support
 
 - [Node.js / TypeScript](./sdk-node/README.md) ([Quick start](./sdk-node/README.md#quick-start))
 - [Go](./sdk-go/README.md) ([Quick start](./sdk-go/README.md#quick-start))
