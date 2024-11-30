@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://a.inferable.ai/logo-hex.png" width="200" style="border-radius: 10px" />
-</p>
+![Inferable Hero](./assets/hero.png)
 
 <div align="center">
 
@@ -33,6 +31,8 @@ Building reliable AI agents at scale is hard.
 - 🔌 **Multiple Language Support**: Native SDKs for TypeScript, Go, .NET and more coming soon - integrate with your existing codebase in minutes.
 
 - ✨ **Fully open-source and self-hostable**: Inferable is 100% open-source, MIT licensed, and self-hostable. We also offer a managed service with high availability and a generous free tier.
+
+![Deployment](./assets/deployment.png)
 
 ## Get Started
 
