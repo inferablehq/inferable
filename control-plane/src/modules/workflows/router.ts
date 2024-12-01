@@ -161,7 +161,6 @@ export const runsRouter = initServer().router(
         runOptions.initialPrompt = `${runOptions.initialPrompt}\n\n<DATA>\n${JSON.stringify(runOptions.input, null, 2)}\n</DATA>`;
       }
 
-
       if (!runOptions.initialPrompt) {
         throw new Error("Failed to construct initialPrompt");
       }

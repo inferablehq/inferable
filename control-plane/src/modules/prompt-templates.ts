@@ -414,6 +414,7 @@ export const mergeRunConfigOptions = (
     reasoningTraces: options.reasoningTraces,
     callSummarization: options.callSummarization,
     modelIdentifier: options.modelIdentifier,
+    input: options.input,
   };
 
   if (runConfig.inputSchema) {
