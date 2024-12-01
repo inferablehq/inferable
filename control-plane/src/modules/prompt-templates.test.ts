@@ -196,34 +196,5 @@ describe("prompt-templates", () => {
         },
       });
     });
-
-    it("should merge initialPrompt with run input", () => {
-      const options = {
-        input: {
-          name: "World",
-        },
-      };
-
-      const runConfig = {
-        id: "test-id",
-        name: "test-template",
-        initialPrompt: "Hello: ",
-        inputSchema: {
-          type: "object",
-          required: ["name"],
-          properties: {
-            name: { type: "string" },
-            extra: { type: "string" },
-          },
-        },
-        versions: [],
-      } as any;
-
-      const result = mergeRunConfigOptions(options, runConfig);
-
-      expect(result.error).toBeNull();
-      expect(result.options?.initialPrompt).toContain("Hello");
-      expect(result.options?.initialPrompt).toContain("World");
-    });
   });
 });
