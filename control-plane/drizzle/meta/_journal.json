@@ -1310,6 +1310,13 @@
       "when": 1732102415195,
       "tag": "0187_sour_black_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 188,
+      "version": "7",
+      "when": 1733027065060,
+      "tag": "0188_shiny_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

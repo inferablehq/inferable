@@ -354,46 +354,6 @@ export const workflowMessages = pgTable(
   }),
 );
 
-export const workflowInputRequests = pgTable(
-  "workflow_input_requests",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    description: varchar("description", { length: 1024 }),
-    workflow_id: varchar("workflow_id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    created_at: timestamp("created_at", {
-      withTimezone: true,
-      precision: 6,
-    })
-      .defaultNow()
-      .notNull(),
-    resolved_at: timestamp("resolved_at", {
-      withTimezone: true,
-      precision: 6,
-    }),
-    service: varchar("service", { length: 30 }),
-    function: varchar("function", { length: 1024 }),
-    request_args: text("request_args"),
-    request_identifier: varchar("request_identifier", {
-      length: 1023,
-    }).notNull(),
-    type: text("type", {
-      enum: ["approval", "input"],
-    }).notNull(),
-    presented_options: text("presented_options").array(),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.workflow_id, table.id],
-      name: "workflow_input_requests_workflow_id_id",
-    }),
-    workflowReference: foreignKey({
-      columns: [table.workflow_id, table.cluster_id],
-      foreignColumns: [workflows.id, workflows.cluster_id],
-    }).onDelete("cascade"),
-  }),
-);
-
 export const embeddings = pgTable(
   "embeddings",
   {
