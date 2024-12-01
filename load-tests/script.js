@@ -1,11 +1,15 @@
 import http from 'k6/http';
 import { sleep, check } from 'k6';
 
-// K6 defaults
-// export const options = {
-//   vus: 1,
-//   iterations: 1,
-// };
+export const options = {
+  // K6 defaults
+  // vus: 1,
+  // iterations: 1,
+  thresholds: {
+    // expect all checks to pass
+    checks: ['rate>=1'],
+  },
+};
 
 const API_SECRET = __ENV.INFERABLE_TEST_API_SECRET
 const CLUSTER_ID = __ENV.INFERABLE_TEST_CLUSTER_ID
@@ -18,7 +22,7 @@ export default function () {
 
   // Create a new run
   const postRunResponse = http.post(`${BASE_URL}/clusters/${CLUSTER_ID}/runs`, JSON.stringify({
-    initialPrompt: 'Get the special word from from the `searchHaystack` function',
+    initialPrompt: 'Get the special word from the `searchHaystack` function',
     resultSchema: {
       type: 'object',
       properties: {
