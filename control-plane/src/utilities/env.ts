@@ -43,7 +43,6 @@ const envSchema = z
 
     SQS_RUN_PROCESS_QUEUE_URL: z.string(),
     SQS_RUN_GENERATE_NAME_QUEUE_URL: z.string(),
-    SQS_LEARNING_INGEST_QUEUE_URL: z.string().optional(),
     SQS_CUSTOMER_TELEMETRY_QUEUE_URL: z.string(),
     SQS_EXTERNAL_TOOL_CALL_QUEUE_URL: z.string(),
 

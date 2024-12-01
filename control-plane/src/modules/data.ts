@@ -455,62 +455,6 @@ export const embeddings = pgTable(
   }),
 );
 
-export const knowledgeLearnings = pgTable(
-  "knowledge_learnings",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    summary: text("summary").notNull(),
-    accepted: boolean("accepted").notNull().default(false),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id],
-    }),
-  }),
-);
-
-export const knowledgeLearningsRelations = relations(
-  knowledgeLearnings,
-  ({ many }) => ({
-    entities: many(knowledgeEntities, {
-      relationName: "knowledgeLearnings",
-    }),
-  }),
-);
-
-export const knowledgeEntities = pgTable(
-  "knowledge_entities",
-  {
-    cluster_id: varchar("cluster_id").notNull(),
-    learning_id: varchar("learning_id", { length: 1024 }),
-    type: text("type", {
-      enum: ["tool"],
-    }),
-    name: varchar("name", { length: 1024 }),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.name, table.learning_id],
-    }),
-    learningReference: foreignKey({
-      columns: [table.cluster_id, table.learning_id],
-      foreignColumns: [knowledgeLearnings.cluster_id, knowledgeLearnings.id],
-    }).onDelete("cascade"),
-  }),
-);
-
-export const knowledgeEntitiesRelations = relations(
-  knowledgeEntities,
-  ({ one }) => ({
-    learning: one(knowledgeLearnings, {
-      relationName: "knowledgeLearnings",
-      fields: [knowledgeEntities.cluster_id, knowledgeEntities.learning_id],
-      references: [knowledgeLearnings.cluster_id, knowledgeLearnings.id],
-    }),
-  }),
-);
-
 export const apiKeys = pgTable(
   "api_keys",
   {
@@ -704,10 +648,6 @@ export const analyticsSnapshots = pgTable(
 export const db = drizzle(pool, {
   schema: {
     workflows,
-    knowledgeLearnings,
-    knowledgeLearningsRelations,
-    knowledgeEntities,
-    knowledgeEntitiesRelations,
     toolMetadata,
     promptTemplates,
     events,

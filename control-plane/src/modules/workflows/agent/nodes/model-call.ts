@@ -4,20 +4,16 @@ import { logger } from "../../../observability/logger";
 import { WorkflowAgentState, WorkflowAgentStateMessage } from "../state";
 import {
   addAttributes,
-  injectTraceContext,
   withSpan,
 } from "../../../observability/tracer";
 import { AgentError } from "../../../../utilities/errors";
 import { z } from "zod";
 import { ulid } from "ulid";
 
-import { learningSchema } from "../../../contract";
 import { deserializeFunctionSchema } from "../../../service-definitions";
 import { validateFunctionSchema } from "inferable";
 import { JsonSchemaInput } from "inferable/bin/types";
 import { toolSchema } from "./tool-parser";
-import { sqs } from "../../../sqs";
-import { env } from "../../../../utilities/env";
 import { Model } from "../../../models";
 import { ToolUseBlock } from "@anthropic-ai/sdk/resources";
 
@@ -90,18 +86,13 @@ const _handleModelCall = async (
           }
         : {}),
 
-      learnings: z
-        .array(learningSchema)
-        .describe(
-          "Any information you have learned about the tools as a result of this step, do not repeat.",
-        )
-        .optional(),
       issue: z
         .string()
         .describe(
           "Describe any issues you have encountered in this step. Specifically related to the tools you are using.",
         )
         .optional(),
+
       invocations: z
         .array(
           z.object({
@@ -136,33 +127,6 @@ const _handleModelCall = async (
     "Once all tasks have been completed, return the final result as a structured object.",
     "Provide concise and clear responses. Use **bold** to highlight important words.",
     state.additionalContext,
-    "If you learn details about an entity, include them in the 'learnings' field.",
-    "<LEARNING_EXAMPLES>",
-    JSON.stringify({
-      entities: [
-        {
-          name: "loadWebpage",
-          type: "tool",
-        },
-      ],
-      summary: "Requires a fully qualified URL",
-      relevance: {
-        temporality: "transient",
-      },
-    }),
-    JSON.stringify({
-      summary: "Is currently impacted by network issues",
-      entities: [
-        {
-          name: "sendEmail",
-          type: "tool",
-        },
-      ],
-      relevance: {
-        temporality: "transient",
-      },
-    }),
-    "</LEARNING_EXAMPLES>",
     "<TOOLS_SCHEMAS>",
     schemaString,
     "</TOOLS_SCHEMAS>",
@@ -349,56 +313,6 @@ const _handleModelCall = async (
     };
   }
 
-  if (data.learnings && data.learnings.length > 0) {
-    data.learnings = data.learnings.filter((learning) => {
-      const missing = learning.entities?.filter((entity) => {
-        return !state.allAvailableTools.includes(entity.name);
-      });
-
-      if (missing && missing.length > 0) {
-        logger.info("Filtering out learning as entities could not be found", {
-          learning,
-        });
-        return false;
-      }
-
-      const selfReference = learning.entities.find((entity) => {
-        return learning.summary.includes(entity.name);
-      });
-
-      if (!!selfReference) {
-        logger.info(
-          "Filtering out learning as it references entity in summary",
-          {
-            learning,
-          },
-        );
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  if (
-    env.SQS_LEARNING_INGEST_QUEUE_URL &&
-    data.learnings &&
-    data.learnings.length > 0
-  ) {
-    await sqs
-      .sendMessage({
-        QueueUrl: env.SQS_LEARNING_INGEST_QUEUE_URL,
-        MessageBody: JSON.stringify({
-          clusterId: state.workflow.clusterId,
-          runId: state.workflow.id,
-          learnings: data.learnings,
-          ...injectTraceContext(),
-        }),
-      })
-      .catch((e) => {
-        logger.error("Failed to send learning to SQS", { error: e });
-      });
-  }
 
   return {
     messages: [
@@ -411,7 +325,6 @@ const _handleModelCall = async (
             id: ulid(),
             reasoning: invocation.reasoning as string | undefined,
           })),
-          learnings: data.learnings,
           issue: data.issue,
           result: data.result,
           message: typeof data.message === "string" ? data.message : undefined,

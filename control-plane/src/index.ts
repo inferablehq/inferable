@@ -10,7 +10,6 @@ import * as serviceDefinitions from "./modules/service-definitions";
 import * as events from "./modules/observability/events";
 import * as router from "./modules/router";
 import * as redis from "./modules/redis";
-import * as knowledge from "./modules/knowledge/queues";
 import * as toolhouse from "./modules/integrations/toolhouse";
 import * as externalCalls from "./modules/jobs/external";
 import * as models from "./modules/models/routing";
@@ -128,16 +127,15 @@ const startTime = Date.now();
     jobs.start(),
     serviceDefinitions.start(),
     workflows.start(),
-    knowledge.start(),
     models.start(),
     redis.start(),
+    customerTelemetry.start(),
+    toolhouse.start(),
+    externalCalls.start(),
     ...(env.EE_DEPLOYMENT
       ? [
           flagsmith?.getEnvironmentFlags(),
-          customerTelemetry.start(),
           analytics.start(),
-          toolhouse.start(),
-          externalCalls.start(),
         ]
       : []),
   ])
@@ -176,7 +174,6 @@ process.on("SIGTERM", async () => {
     flagsmith?.close(),
     hdx?.shutdown(),
     redis.stop(),
-    knowledge.stop(),
     customerTelemetry.stop(),
     externalCalls.stop(),
   ]);
