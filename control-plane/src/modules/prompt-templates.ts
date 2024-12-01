@@ -442,6 +442,10 @@ export const mergeRunConfigOptions = (
     }
   }
 
+  if (options.input) {
+    mergedOptions.initialPrompt = `${mergedOptions.initialPrompt}\n\n<DATA>\n${JSON.stringify(options.input, null, 2)}\n</DATA>`;
+  }
+
   mergedOptions.messageMetadata = {
     displayable: {
       templateName: runConfig.name,

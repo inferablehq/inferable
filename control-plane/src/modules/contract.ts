@@ -524,29 +524,17 @@ export const definition = {
         .describe(
           "When provided, the run will be marked as as a test / evaluation",
         ),
-      configId: z
-        .string()
-        .optional()
-        .describe("The run configuration ID to use"),
-      input: z
-        .object({})
-        .passthrough()
-        .describe(
-          "Structured input arguments to merge with the initial prompt. The schema must match the run configuration input schema if defined",
-        )
-        .optional(),
       config: z
         .object({
-          id: z.string().describe("DEPRECATED"),
+          id: z.string().describe("The run configuration ID"),
           input: z
             .object({})
             .passthrough()
             .describe(
-              "DEPRECATED",
+              "The run configuration input arguments, the schema must match the run configuration input schema",
             )
             .optional(),
         })
-        .describe("DEPRECATED")
         .optional(),
       context: anyObject
         .optional()
