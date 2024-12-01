@@ -756,23 +756,6 @@ export const definition = {
       messageId: z.string(),
     }),
   },
-  storeServiceMetadata: {
-    method: "PUT",
-    path: "/clusters/:clusterId/services/:service/keys/:key",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      value: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      key: z.string(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-  },
   getClusterExport: {
     method: "GET",
     path: "/clusters/:clusterId/export",

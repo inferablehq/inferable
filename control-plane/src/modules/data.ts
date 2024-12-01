@@ -220,26 +220,6 @@ export const integrations = pgTable(
   }),
 );
 
-export const serviceMetadata = pgTable(
-  "service_metadata",
-  {
-    cluster_id: varchar("cluster_id")
-      .references(() => clusters.id)
-      .notNull(),
-    service: varchar("service", { length: 1024 }).notNull(),
-    key: text("status", {
-      enum: ["incoming-webhook-token"],
-    }).notNull(),
-    value: text("value").notNull(),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.service, table.key],
-      name: "service_metadata_cluster_id_service_key",
-    }),
-  }),
-);
-
 export const workflowMetadata = pgTable(
   "workflow_metadata",
   {

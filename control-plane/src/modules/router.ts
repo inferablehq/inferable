@@ -8,7 +8,6 @@ import { contract } from "./contract";
 import * as data from "./data";
 import * as management from "./management";
 import * as events from "./observability/events";
-import { storeServiceMetadata } from "./service-metadata";
 import {
   assertGenericMessage,
   editHumanMessage,
@@ -337,30 +336,6 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: messages.upserted,
-    };
-  },
-  storeServiceMetadata: async (request) => {
-    const machine = request.request.getAuth().isMachine();
-
-    const { clusterId, service, key } = request.params;
-    const { value } = request.body;
-
-    if (machine.clusterId !== clusterId) {
-      return {
-        status: 401,
-      };
-    }
-
-    await storeServiceMetadata({
-      clusterId,
-      key,
-      value,
-      service,
-    });
-
-    return {
-      status: 204,
-      body: undefined,
     };
   },
   getClusterExport: async (request) => {
