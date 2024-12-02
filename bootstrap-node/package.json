@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "inferable": "^0.30.51",
+    "inferable": "^0.30.57",
     "tsx": "^4.19.2",
     "zod": "^3.23.8"
   },
