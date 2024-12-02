@@ -10,6 +10,7 @@ import {
   extractCustomerAuthState,
 } from "./auth";
 import * as jwtToken from "./clerk-token";
+import { redisClient } from "../redis";
 
 jest.mock("../../utilities/env");
 
@@ -32,8 +33,20 @@ const mockJwt = {
 };
 
 describe("extractAuthState", () => {
-  beforeEach(() => {
+  beforeAll(async () => {
+    // Ensure Redis client is connected
+    await redisClient?.connect();
+  });
+
+  afterAll(async () => {
+    // Close Redis connection after all tests
+    await redisClient?.quit();
+  });
+
+  beforeEach(async () => {
     jest.resetAllMocks();
+    // Clear all keys in Redis before each test
+    await redisClient?.flushAll();
   });
 
   it("should return undefined if no valid token found", async () => {

@@ -895,6 +895,9 @@ export const definition = {
     headers: z.object({
       authorization: z.string(),
     }),
+    query: z.object({
+      limit: z.coerce.number().min(10).max(50).default(50),
+    }),
     responses: {
       200: z.array(
         z.object({

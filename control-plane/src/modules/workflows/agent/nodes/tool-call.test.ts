@@ -6,6 +6,7 @@ import { NotFoundError } from "../../../../utilities/errors";
 import { ulid } from "ulid";
 import { WorkflowAgentState } from "../state";
 import { assertResultMessage } from "../../workflow-messages";
+import { redisClient } from "../../../redis";
 
 describe("handleToolCalls", () => {
   const workflow = {
@@ -54,8 +55,20 @@ describe("handleToolCalls", () => {
     waitingJobs: [],
   };
 
-  beforeEach(() => {
+  beforeAll(async () => {
+    // Ensure Redis client is connected
+    await redisClient?.connect();
+  });
+
+  afterAll(async () => {
+    // Close Redis connection after all tests
+    await redisClient?.quit();
+  });
+
+  beforeEach(async () => {
     jest.clearAllMocks();
+    // Clear all keys in Redis before each test
+    await redisClient?.flushAll();
   });
 
   it("should call a tool", async () => {

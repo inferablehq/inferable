@@ -1,7 +1,23 @@
+import { redisClient } from "../redis";
 import { createOwner } from "../test/util";
 import * as apiSecret from "./api-secret";
 
 describe("verifyApiKey", () => {
+  beforeAll(async () => {
+    // Ensure Redis client is connected
+    await redisClient?.connect();
+  });
+
+  afterAll(async () => {
+    // Close Redis connection after all tests
+    await redisClient?.quit();
+  });
+
+  beforeEach(async () => {
+    // Clear all keys in Redis before each test
+    await redisClient?.flushAll();
+  });
+
   it("should verify an api secret when the key exists", async () => {
     const owner = await createOwner();
     const key = await apiSecret.createApiKey({

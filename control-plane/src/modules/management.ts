@@ -4,21 +4,9 @@ import * as errors from "../utilities/errors";
 import * as data from "./data";
 import { randomName } from "./names";
 import {
-  ServiceDefinition,
-  parseServiceDefinition,
   storedServiceDefinitionSchema,
 } from "./service-definitions";
 import { VersionedTexts } from "./versioned-text";
-
-type Job = {
-  id: string;
-  targetFn: string;
-  service: string | null;
-  resultType: string | null;
-  status: string;
-  createdAt: Date;
-  functionExecutionTime: number | null;
-};
 
 export const getClusters = async ({
   organizationId,
