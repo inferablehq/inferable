@@ -17,7 +17,6 @@ import * as events from "../observability/events";
 import { rateLimiter } from "../rate-limiter";
 import { addAttributes } from "../observability/tracer";
 import { customerTelemetry } from "../customer-telemetry";
-import { ulid } from "ulid";
 type TrackingOptions = {
   clusterId?: string;
   runId?: string;
