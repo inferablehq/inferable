@@ -314,7 +314,7 @@ export const workflows = pgTable(
     reasoning_traces: boolean("reasoning_traces").default(true).notNull(),
     interactive: boolean("interactive").default(true).notNull(),
     enable_summarization: boolean("enable_summarization")
-      .default(true)
+      .default(false)
       .notNull(),
     customer_auth_token: text("customer_auth_token"),
     auth_context: json("auth_context"),
