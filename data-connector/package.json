@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "tsx src/index.ts",
-    "dev": "nodemon src/index.ts",
+    "dev": "tsx --watch -r dotenv/config src/index.ts",
     "docker": "docker-compose up --build",
     "docker:push": "docker build . -t inferable/data-connector && docker push inferable/data-connector:latest",
     "seed": "tsx example_data/seed-postgres.ts"

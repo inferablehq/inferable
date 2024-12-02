@@ -3,10 +3,9 @@
   "paranoidMode": 0,
   "connectors": [
     {
-      "type": "postgres",
-      "name": "myPostgres",
-      "connectionString": "process.env.POSTGRES_URL",
-      "schema": "process.env.POSTGRES_SCHEMA"
+      "type": "open-api",
+      "specUrl": "https://api.inferable.ai/public/oas.json",
+      "endpoint": "https://api.inferable.ai"
     }
   ]
 }

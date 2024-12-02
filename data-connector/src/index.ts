@@ -3,6 +3,7 @@ import "dotenv/config";
 import { Inferable } from "inferable";
 import { PostgresClient } from "./postgres";
 import { RegisteredService } from "inferable/bin/types";
+import { OpenAPIClient } from "./open-api";
 
 const parseConfig = () => {
   const config = require("../config.json");
@@ -42,6 +43,14 @@ const parseConfig = () => {
         privacyMode: config.privacyMode === 1,
       });
       const service = postgresClient.createService(client);
+      services.push(service);
+    } else if (connector.type === "open-api") {
+      const openAPIClient = new OpenAPIClient({
+        ...connector,
+        paranoidMode: config.paranoidMode === 1,
+        privacyMode: config.privacyMode === 1,
+      });
+      const service = openAPIClient.createService(client);
       services.push(service);
     }
   }
