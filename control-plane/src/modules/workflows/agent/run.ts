@@ -91,7 +91,7 @@ export const run = async (run: Run) => {
         done: false,
         invocations: [
           {
-            toolName: "searchHaystack",
+            toolName: "default_searchHaystack",
             input: {}
           }
         ]
