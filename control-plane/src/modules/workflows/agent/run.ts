@@ -30,6 +30,7 @@ import { buildMockFunctionTool } from "./tools/mock-function";
 import { getClusterInternalTools } from "./tools/cluster-internal-tools";
 import { buildCurrentDateTimeTool } from "./tools/date-time";
 import { CURRENT_DATE_TIME_TOOL_NAME } from "./tools/date-time";
+import { env } from "../../../utilities/env";
 
 /**
  * Run a workflow from the most recent saved state
@@ -80,8 +81,33 @@ export const run = async (run: Run) => {
   const mockToolsMap: Record<string, DynamicStructuredTool> =
     await buildMockTools(run);
 
+  let mockModelResponses;
+  if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
+    logger.info("Mocking model responses for load test");
+
+    //https://github.com/inferablehq/inferable/blob/main/load-tests/script.js
+    mockModelResponses = [
+      JSON.stringify({
+        done: false,
+        invocations: [
+          {
+            toolName: "default_searchHaystack",
+            input: {}
+          }
+        ]
+      }),
+      JSON.stringify({
+        done: true,
+        result: {
+          word: "needle"
+        }
+      })
+    ]
+  }
+
   const app = await createWorkflowAgent({
     workflow: run,
+    mockModelResponses,
     allAvailableTools,
     additionalContext,
     getTool: async (toolCall) => {

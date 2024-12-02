@@ -142,8 +142,6 @@ export const FunctionConfigSchema = z.object({
     .optional(),
   retryCountOnStall: z.number().optional(),
   timeoutSeconds: z.number().optional(),
-  // Deprecated
-  requiresApproval: z.boolean().default(false).optional(),
   private: z.boolean().default(false).optional(),
 });
 
@@ -288,7 +286,7 @@ export const definition = {
       200: z.undefined(),
       401: z.undefined(),
       400: z.object({
-        issues: z.array(z.any()),
+        message: z.string(),
       }),
     },
     pathParams: z.object({
@@ -405,6 +403,35 @@ export const definition = {
       includeMeta: z.string().optional(),
     }),
   },
+  listUsageActivity: {
+    method: "GET",
+    path: "/clusters/:clusterId/usage",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    responses: {
+      200: z.object({
+        modelUsage: z.array(
+          z.object({
+            date: z.string(),
+            modelId: z.string().nullable(),
+            totalInputTokens: z.number(),
+            totalOutputTokens: z.number(),
+            totalModelInvocations: z.number(),
+          }),
+        ),
+        agentRuns: z.array(
+          z.object({
+            date: z.string(),
+            totalAgentRuns: z.number(),
+          }),
+        ),
+      }),
+    },
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+  },
   getEventMeta: {
     method: "GET",
     path: "/clusters/:clusterId/events/:eventId/meta",
@@ -448,7 +475,7 @@ export const definition = {
         .optional()
         .describe("The name of the run, if not provided it will be generated"),
       model: z
-        .enum(["claude-3-5-sonnet", "claude-3-5-sonnet:beta", "claude-3-haiku"])
+        .enum(["claude-3-5-sonnet", "claude-3-haiku"])
         .optional()
         .describe("The model identifier for the run"),
       resultSchema: anyObject
@@ -497,17 +524,29 @@ export const definition = {
         .describe(
           "When provided, the run will be marked as as a test / evaluation",
         ),
+      configId: z
+        .string()
+        .optional()
+        .describe("The run configuration ID to use"),
+      input: z
+        .object({})
+        .passthrough()
+        .describe(
+          "Structured input arguments to merge with the initial prompt. The schema must match the run configuration input schema if defined",
+        )
+        .optional(),
       config: z
         .object({
-          id: z.string().describe("The run configuration ID"),
+          id: z.string().describe("DEPRECATED"),
           input: z
             .object({})
             .passthrough()
             .describe(
-              "The run configuration input arguments, the schema must match the run configuration input schema",
+              "DEPRECATED",
             )
             .optional(),
         })
+        .describe("DEPRECATED")
         .optional(),
       context: anyObject
         .optional()
@@ -703,55 +742,6 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
-  resolveInputRequest: {
-    method: "POST",
-    path: "/clusters/:clusterId/runs/:runId/input-requests/:inputRequestId",
-    headers: z.object({
-      authorization: z.string().optional(),
-    }),
-    body: z.object({
-      input: z.string(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-      404: z.undefined(),
-    },
-    pathParams: z.object({
-      runId: z.string(),
-      inputRequestId: z.string(),
-      clusterId: z.string(),
-    }),
-  },
-  getInputRequest: {
-    method: "GET",
-    path: "/clusters/:clusterId/runs/:runId/input-requests/:inputRequestId",
-    headers: z.object({
-      authorization: z.string().optional(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      runId: z.string(),
-      inputRequestId: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-        runId: z.string(),
-        clusterId: z.string(),
-        resolvedAt: z.date().nullable(),
-        createdAt: z.date(),
-        requestArgs: z.string().nullable(),
-        service: z.string().nullable(),
-        function: z.string().nullable(),
-        description: z.string().nullable(),
-        type: z.string(),
-        options: z.array(z.string()).optional(),
-      }),
-      401: z.undefined(),
-      404: z.undefined(),
-    },
-  },
   oas: {
     method: "GET",
     path: "/public/oas.json",
@@ -777,23 +767,6 @@ export const definition = {
       runId: z.string(),
       messageId: z.string(),
     }),
-  },
-  storeServiceMetadata: {
-    method: "PUT",
-    path: "/clusters/:clusterId/services/:service/keys/:key",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      value: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      key: z.string(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
   },
   getClusterExport: {
     method: "GET",
@@ -972,7 +945,6 @@ export const definition = {
       messagesAfter: z.string().default("0"),
       activityAfter: z.string().default("0"),
       jobsAfter: z.string().default("0"),
-      inputRequestsAfter: z.string().default("0"),
     }),
     pathParams: z.object({
       clusterId: z.string(),
@@ -1020,19 +992,6 @@ export const definition = {
             createdAt: z.date(),
             approved: z.boolean().nullable(),
             approvalRequested: z.boolean().nullable(),
-          }),
-        ),
-        inputRequests: z.array(
-          z.object({
-            id: z.string(),
-            type: z.string(),
-            requestArgs: z.string().nullable().optional(),
-            resolvedAt: z.date().nullable().optional(),
-            createdAt: z.date(),
-            service: z.string().nullable().optional(),
-            function: z.string().nullable().optional(),
-            description: z.string().nullable().optional(),
-            presentedOptions: z.array(z.string()).nullable().optional(),
           }),
         ),
         run: z.object({

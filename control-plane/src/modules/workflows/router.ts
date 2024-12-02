@@ -70,12 +70,21 @@ export const runsRouter = initServer().router(
       await auth.canAccess({ cluster: { clusterId } });
       auth.canCreate({ run: true });
 
-      if (body.template) {
-        logger.info("Depreacted `run.template` provided in call to createRun");
-        body.config = body.template;
+      // TODO: Remove once use of deprecated fields is removed
+      if (body.config) {
+        logger.info("Depreacted `run.config` provided in call to createRun");
+        body.configId = body.configId ?? body.config.id;
+        body.input = body.input ?? body.config.input;
       }
 
-      if (!body.initialPrompt && !body.config) {
+      // TODO: Remove once use of deprecated fields is removed
+      if (body.template) {
+        logger.info("Depreacted `run.template` provided in call to createRun");
+        body.configId = body.configId ?? body.template.id;
+        body.input = body.input ?? body.template.input;
+      }
+
+      if (!body.initialPrompt && !body.configId) {
         return {
           status: 400,
           body: {
@@ -124,13 +133,13 @@ export const runsRouter = initServer().router(
         callSummarization: body.callSummarization,
         reasoningTraces: body.reasoningTraces,
 
-        input: body.config?.input,
+        input: body.input,
       };
 
-      const runConfig = body.config
+      const runConfig = body.configId
         ? await getRunConfig({
             clusterId,
-            id: body.config.id,
+            id: body.configId,
           })
         : undefined;
 
@@ -146,6 +155,10 @@ export const runsRouter = initServer().router(
         }
 
         runOptions = merged.options;
+      }
+
+      if (runOptions.input) {
+        runOptions.initialPrompt = `${runOptions.initialPrompt}\n\n<DATA>\n${JSON.stringify(runOptions.input, null, 2)}\n</DATA>`;
       }
 
       if (!runOptions.initialPrompt) {

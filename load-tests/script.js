@@ -1,11 +1,18 @@
 import http from 'k6/http';
 import { sleep, check } from 'k6';
+import { Trend } from 'k6/metrics';
 
-// K6 defaults
-// export const options = {
-//   vus: 1,
-//   iterations: 1,
-// };
+const runTime = new Trend('run_time', true);
+
+export const options = {
+  // K6 defaults
+  // vus: 1,
+  // iterations: 1,
+  // expect all checks to pass
+  thresholds: {
+    checks: ['rate==1.0'],
+  },
+};
 
 const API_SECRET = __ENV.INFERABLE_TEST_API_SECRET
 const CLUSTER_ID = __ENV.INFERABLE_TEST_CLUSTER_ID
@@ -18,7 +25,15 @@ export default function () {
 
   // Create a new run
   const postRunResponse = http.post(`${BASE_URL}/clusters/${CLUSTER_ID}/runs`, JSON.stringify({
-    initialPrompt: 'Get the special word from from the `searchHaystack` function',
+    name: "Load Test",
+    initialPrompt: 'Get the special word from the `searchHaystack` function',
+    reasoningTraces: false,
+    attachedFunctions: [
+      {
+        function: "searchHaystack",
+        service: "default",
+      },
+    ],
     resultSchema: {
       type: 'object',
       properties: {
@@ -40,9 +55,11 @@ export default function () {
 
   const runId = postRunResponse.json('id');
 
+  const start = new Date().getTime();
+
   // Poll the run status until complete or timeout
   let attempts = 0;
-  const maxAttempts = 10;
+  const maxAttempts = 300;
 
   while (attempts < maxAttempts) {
     const getRunResponse = http.get(`${BASE_URL}/clusters/${CLUSTER_ID}/runs/${runId}`, {
@@ -53,15 +70,29 @@ export default function () {
 
     const run = getRunResponse.json();
 
-    if (!['running', 'pending'].includes(run.status)) {
+    check(getRunResponse, {
+      'run request succeeded': (r) => r.status === 200
+    });
+
+    if (!run) {
+      throw new Error("Run request failed");
+    }
+
+    if (!['running', 'pending', 'paused'].includes(run.status)) {
 
       check(run, {
         'run completed': (r) => r.status === 'done'
       });
 
+      if (! "word" in run.result) {
+        throw new Error('Missing required result field');
+      }
+
       check(run, {
         'found needle word': (r) => r.result.word === 'needle'
       });
+
+      runTime.add(new Date().getTime() - start);
 
       break;
     }
@@ -70,4 +101,7 @@ export default function () {
     sleep(1);
   }
 
+  check(attempts, {
+    'attempts < maxAttempts': (a) => a < maxAttempts
+  });
 }

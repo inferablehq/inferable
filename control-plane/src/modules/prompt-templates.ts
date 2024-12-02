@@ -414,6 +414,7 @@ export const mergeRunConfigOptions = (
     reasoningTraces: options.reasoningTraces,
     callSummarization: options.callSummarization,
     modelIdentifier: options.modelIdentifier,
+    input: options.input,
   };
 
   if (runConfig.inputSchema) {
@@ -440,10 +441,6 @@ export const mergeRunConfigOptions = (
         error: validationError,
       };
     }
-  }
-
-  if (options.input) {
-    mergedOptions.initialPrompt = `${mergedOptions.initialPrompt}\n\n<DATA>\n${JSON.stringify(options.input, null, 2)}\n</DATA>`;
   }
 
   mergedOptions.messageMetadata = {

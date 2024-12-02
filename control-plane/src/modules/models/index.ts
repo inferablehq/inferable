@@ -336,6 +336,60 @@ const parseStructuredResponse = ({
   };
 };
 
+export const buildMockModel = ({
+  mockResponses,
+  responseCount,
+}: {
+  mockResponses: string[];
+  responseCount: number;
+}): Model => {
+  return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    identifier: "mock" as any,
+    embedQuery: async () => {
+      throw new Error("Not implemented");
+    },
+    call: async () => {
+      throw new Error("Not implemented");
+    },
+    structured: async (options) => {
+      if (responseCount >= mockResponses.length) {
+        throw new Error("Mock model ran out of responses");
+      }
+
+      const parsed = options.schema.safeParse(
+        JSON.parse(
+          mockResponses[responseCount]
+        )
+      );
+
+      // Sleep for between 500 and 1500 ms
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.random() * 1000 + 500)
+      );
+
+      if (!parsed.success) {
+        return {
+          raw: { content: [] } as unknown as Anthropic.Message,
+          parsed: {
+            success: false,
+            error: parsed.error,
+          },
+        };
+      }
+
+      return {
+        raw: { content: [] } as unknown as Anthropic.Message,
+        parsed: {
+          success: true,
+          data: parsed.data,
+        },
+      };
+
+    },
+  };
+}
+
 const trackModelUsage = async ({
   runId,
   clusterId,

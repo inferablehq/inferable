@@ -220,26 +220,6 @@ export const integrations = pgTable(
   }),
 );
 
-export const serviceMetadata = pgTable(
-  "service_metadata",
-  {
-    cluster_id: varchar("cluster_id")
-      .references(() => clusters.id)
-      .notNull(),
-    service: varchar("service", { length: 1024 }).notNull(),
-    key: text("status", {
-      enum: ["incoming-webhook-token"],
-    }).notNull(),
-    value: text("value").notNull(),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.service, table.key],
-      name: "service_metadata_cluster_id_service_key",
-    }),
-  }),
-);
-
 export const workflowMetadata = pgTable(
   "workflow_metadata",
   {
@@ -374,46 +354,6 @@ export const workflowMessages = pgTable(
   }),
 );
 
-export const workflowInputRequests = pgTable(
-  "workflow_input_requests",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    description: varchar("description", { length: 1024 }),
-    workflow_id: varchar("workflow_id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    created_at: timestamp("created_at", {
-      withTimezone: true,
-      precision: 6,
-    })
-      .defaultNow()
-      .notNull(),
-    resolved_at: timestamp("resolved_at", {
-      withTimezone: true,
-      precision: 6,
-    }),
-    service: varchar("service", { length: 30 }),
-    function: varchar("function", { length: 1024 }),
-    request_args: text("request_args"),
-    request_identifier: varchar("request_identifier", {
-      length: 1023,
-    }).notNull(),
-    type: text("type", {
-      enum: ["approval", "input"],
-    }).notNull(),
-    presented_options: text("presented_options").array(),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.workflow_id, table.id],
-      name: "workflow_input_requests_workflow_id_id",
-    }),
-    workflowReference: foreignKey({
-      columns: [table.workflow_id, table.cluster_id],
-      foreignColumns: [workflows.id, workflows.cluster_id],
-    }).onDelete("cascade"),
-  }),
-);
-
 export const embeddings = pgTable(
   "embeddings",
   {
@@ -452,62 +392,6 @@ export const embeddings = pgTable(
       table.id,
       table.raw_data_hash,
     ),
-  }),
-);
-
-export const knowledgeLearnings = pgTable(
-  "knowledge_learnings",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    summary: text("summary").notNull(),
-    accepted: boolean("accepted").notNull().default(false),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id],
-    }),
-  }),
-);
-
-export const knowledgeLearningsRelations = relations(
-  knowledgeLearnings,
-  ({ many }) => ({
-    entities: many(knowledgeEntities, {
-      relationName: "knowledgeLearnings",
-    }),
-  }),
-);
-
-export const knowledgeEntities = pgTable(
-  "knowledge_entities",
-  {
-    cluster_id: varchar("cluster_id").notNull(),
-    learning_id: varchar("learning_id", { length: 1024 }),
-    type: text("type", {
-      enum: ["tool"],
-    }),
-    name: varchar("name", { length: 1024 }),
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.name, table.learning_id],
-    }),
-    learningReference: foreignKey({
-      columns: [table.cluster_id, table.learning_id],
-      foreignColumns: [knowledgeLearnings.cluster_id, knowledgeLearnings.id],
-    }).onDelete("cascade"),
-  }),
-);
-
-export const knowledgeEntitiesRelations = relations(
-  knowledgeEntities,
-  ({ one }) => ({
-    learning: one(knowledgeLearnings, {
-      relationName: "knowledgeLearnings",
-      fields: [knowledgeEntities.cluster_id, knowledgeEntities.learning_id],
-      references: [knowledgeLearnings.cluster_id, knowledgeLearnings.id],
-    }),
   }),
 );
 
@@ -704,10 +588,6 @@ export const analyticsSnapshots = pgTable(
 export const db = drizzle(pool, {
   schema: {
     workflows,
-    knowledgeLearnings,
-    knowledgeLearningsRelations,
-    knowledgeEntities,
-    knowledgeEntitiesRelations,
     toolMetadata,
     promptTemplates,
     events,

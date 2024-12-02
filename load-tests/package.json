@@ -10,7 +10,7 @@
   },
   "homepage": "https://github.com/inferablehq/inferable#readme",
   "dependencies": {
-    "inferable": "^0.30.55"
+    "inferable": "^0.30.57"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

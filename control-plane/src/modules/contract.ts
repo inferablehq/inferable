@@ -524,17 +524,29 @@ export const definition = {
         .describe(
           "When provided, the run will be marked as as a test / evaluation",
         ),
+      configId: z
+        .string()
+        .optional()
+        .describe("The run configuration ID to use"),
+      input: z
+        .object({})
+        .passthrough()
+        .describe(
+          "Structured input arguments to merge with the initial prompt. The schema must match the run configuration input schema if defined",
+        )
+        .optional(),
       config: z
         .object({
-          id: z.string().describe("The run configuration ID"),
+          id: z.string().describe("DEPRECATED"),
           input: z
             .object({})
             .passthrough()
             .describe(
-              "The run configuration input arguments, the schema must match the run configuration input schema",
+              "DEPRECATED",
             )
             .optional(),
         })
+        .describe("DEPRECATED")
         .optional(),
       context: anyObject
         .optional()
@@ -755,23 +767,6 @@ export const definition = {
       runId: z.string(),
       messageId: z.string(),
     }),
-  },
-  storeServiceMetadata: {
-    method: "PUT",
-    path: "/clusters/:clusterId/services/:service/keys/:key",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      value: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      key: z.string(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
   },
   getClusterExport: {
     method: "GET",

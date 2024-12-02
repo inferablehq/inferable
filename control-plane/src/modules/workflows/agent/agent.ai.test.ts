@@ -335,98 +335,90 @@ describe("Agent", () => {
       );
       expect(outputState.messages[5]).toHaveProperty("type", "agent");
     });
-  });
 
-  describe.skip("learning", () => {
-    const orderCallback = jest.fn();
-    const authCallback = jest.fn();
 
-    const tools = [
-      new DynamicStructuredTool<any>({
-        name: "orderSearch",
-        description: "Searches for an order by customer name",
-        schema: z.object({
-          query: z.string(),
+    it("should respect mock responses", async () => {
+      const tools = [
+        new DynamicStructuredTool<any>({
+          name: "searchHaystack",
+          description: "Search haystack",
+          schema: z.object({
+          }).passthrough(),
+          func: async (input: any) => {
+            return toolCallback(input.input);
+          },
         }),
-        func: async (input: any) => {
-          return orderCallback(input.input);
-        },
-      }),
-      new DynamicStructuredTool<any>({
-        name: "authenticate",
-        description: "Refreshes the authentication token",
-        schema: z.object({}),
-        func: async (input: any) => {
-          return authCallback(input.input);
-        },
-      }),
-    ];
+      ];
 
-    it("should record tool learnings", async () => {
       const app = await createWorkflowAgent({
-        workflow,
-        allAvailableTools: ["orderSearch", "authenticate"],
+        workflow: {
+          ...workflow,
+          resultSchema: {
+            type: "object",
+            properties: {
+              word: {
+                type: "string"
+              }
+            }
+          }
+        },
+        allAvailableTools: ["searchHaystack"],
         findRelevantTools: async () => tools,
         getTool: async (input) =>
           tools.find((tool) => tool.name === input.toolName)!,
         postStepSave: async () => {},
+        mockModelResponses: [
+          JSON.stringify({
+            done: false,
+            invocations: [
+              {
+                toolName: "searchHaystack",
+                input: {}
+              }
+            ]
+          }),
+          JSON.stringify({
+            done: true,
+            result: {
+              word: "needle"
+            }
+          })
+        ]
       });
 
-      orderCallback.mockResolvedValueOnce(
-        JSON.stringify({
-          result: JSON.stringify({ error: "unauthenticated" }),
-          resultType: "resolution",
-          status: "failure",
-        }),
-      );
 
-      orderCallback.mockResolvedValueOnce(
-        JSON.stringify({
-          result: JSON.stringify({
-            orders: [
-              {
-                customerId: "cus-223",
-                orderId: "ord-313",
-                details: "Reuben sandwich",
-              },
-            ],
-          }),
-          resultType: "resolution",
-          status: "success",
+      toolCallback.mockResolvedValue(JSON.stringify({
+        result: JSON.stringify({
+          word: "needle"
         }),
-      );
-
-      authCallback.mockResolvedValueOnce(
-        JSON.stringify({
-          result: "done",
-          resultType: "resolution",
-          status: "success",
-        }),
-      );
+        resultType: "resolution",
+        status: "success",
+      }));
 
       const outputState = await app.invoke({
         messages: [
           {
             data: {
-              message: "Get details for John's orders",
+              message: "What is the special word?",
             },
             type: "human",
           },
         ],
       });
 
-      const learnings = outputState.messages.reduce(
-        (acc: any, m: WorkflowAgentStateMessage) => {
-          if (m.type === "agent" && m.data.learnings) {
-            acc.push(...m.data.learnings);
-          }
-          return acc;
-        },
-        [],
-      ) as any[];
-
-      expect(learnings).toBeInstanceOf(Array);
-      expect(learnings.length).toBeGreaterThan(0);
+      expect(outputState.messages).toHaveLength(4);
+      expect(outputState.messages[0]).toHaveProperty("type", "human");
+      expect(outputState.messages[1]).toHaveProperty("type", "agent");
+      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[3]).toHaveProperty("type", "agent");
+      expect(outputState.messages[3].data).toHaveProperty(
+        "result",
+        {
+          word: "needle"
+        }
+      )
+      expect(toolCallback).toHaveBeenCalledTimes(1);
     });
   });
+
 });
