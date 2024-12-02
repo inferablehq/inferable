@@ -9,7 +9,7 @@ export const createCache = <T>(namespace: symbol) => {
   return {
     get: async (key: string) => {
       const localResult = localCache.get<T>(`${namespace.toString()}:${key}`);
-      if (localResult) {
+      if (localResult !== undefined) {
         return localResult;
       }
 
