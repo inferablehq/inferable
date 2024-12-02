@@ -1,10 +1,8 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { createWorkflowAgent } from "./agent";
 import { z } from "zod";
-import { ulid } from "ulid";
-import { SpecialResultTypes } from "./tools/functions";
 import { assertResultMessage } from "../workflow-messages";
-import { WorkflowAgentStateMessage } from "./state";
+import { redisClient } from "../../redis";
 
 if (process.env.CI) {
   jest.retryTimes(3);
@@ -34,8 +32,20 @@ describe("Agent", () => {
     }),
   ];
 
+  beforeAll(async () => {
+    // Ensure Redis client is connected
+    await redisClient?.connect();
+  });
+
+  afterAll(async () => {
+    // Close Redis connection after all tests
+    await redisClient?.quit();
+  });
+
   beforeEach(async () => {
     toolCallback.mockReset();
+    // Clear all keys in Redis before each test
+    await redisClient?.flushAll();
   });
 
   describe("function calling", () => {

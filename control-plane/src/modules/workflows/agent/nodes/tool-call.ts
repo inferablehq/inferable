@@ -147,7 +147,7 @@ const _handleToolCall = async (
   try {
     tool = await getTool(toolCall);
   } catch (error) {
-    customerTelemetry.track({
+    await customerTelemetry.track({
       type: "toolCall",
       toolName,
       clusterId: workflow.clusterId,
@@ -364,7 +364,7 @@ const _handleToolCall = async (
       toolName,
     });
 
-    customerTelemetry.track({
+    await customerTelemetry.track({
       type: "toolCall",
       toolName,
       clusterId: workflow.clusterId,
