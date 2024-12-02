@@ -4,6 +4,7 @@ const API_SECRET = process.env.INFERABLE_TEST_API_SECRET
 
 const client = new Inferable({
   apiSecret: API_SECRET,
+  machineId: `load-test-${Math.floor(Math.random() * 1000000)}`,
 })
 
 client.default.register({
