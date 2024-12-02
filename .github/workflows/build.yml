@@ -563,7 +563,7 @@ jobs:
         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         aws-region: us-east-1
     - name: Notify start deploy to Rollbar
-      uses: rollbar/github-deploy-action@2.1.1
+      uses: rollbar/github-deploy-action@2.1.2
       id: rollbar_pre_deploy
       with:
         environment: 'production'
@@ -585,7 +585,7 @@ jobs:
           ApiImageTag=${{ github.sha }},
           AppImageTag=${{ github.sha }}
     - name: Notify finish deploy to Rollbar
-      uses: rollbar/github-deploy-action@2.1.1
+      uses: rollbar/github-deploy-action@2.1.2
       id: rollbar_post_deploy
       with:
         environment: 'production'
