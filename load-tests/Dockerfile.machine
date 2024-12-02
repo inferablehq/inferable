@@ -12,4 +12,4 @@ COPY entrypoint.sh ./
 
 RUN npm install -g tsx
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["bash", "./entrypoint.sh"]
