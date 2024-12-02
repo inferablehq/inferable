@@ -11,7 +11,7 @@ import {
   postToolEdge,
 } from "./nodes/edges";
 import { AgentMessage } from "../workflow-messages";
-import { buildModel } from "../../models";
+import { buildMockModel, buildModel } from "../../models";
 
 export type ReleventToolLookup = (
   state: WorkflowAgentState,
@@ -28,6 +28,7 @@ export const createWorkflowAgent = async ({
   postStepSave,
   findRelevantTools,
   getTool,
+  mockModelResponses,
 }: {
   workflow: Run;
   additionalContext?: string;
@@ -35,6 +36,7 @@ export const createWorkflowAgent = async ({
   postStepSave: PostStepSave;
   findRelevantTools: ReleventToolLookup;
   getTool: ToolFetcher;
+  mockModelResponses?: string[];
 }) => {
   const workflowGraph = new StateGraph<WorkflowAgentState>({
     channels: createStateGraphChannels({
@@ -46,6 +48,13 @@ export const createWorkflowAgent = async ({
     .addNode(MODEL_CALL_NODE_NAME, (state) =>
       handleModelCall(
         state,
+        mockModelResponses ?
+        // If mock responses are provided, use the mock model
+        buildMockModel({
+          mockResponses: mockModelResponses,
+          responseCount: state.messages.filter((m) => m.type === "agent").length
+        }) :
+        // Otherwise, use the real model
         buildModel({
           identifier: workflow.modelIdentifier ?? "claude-3-5-sonnet",
           purpose: "agent_loop.reasoning",
