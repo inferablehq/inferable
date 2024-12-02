@@ -1317,6 +1317,13 @@
       "when": 1733027065060,
       "tag": "0188_shiny_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 189,
+      "version": "7",
+      "when": 1733170569617,
+      "tag": "0189_funny_nomad",
+      "breakpoints": true
     }
   ]
 }
