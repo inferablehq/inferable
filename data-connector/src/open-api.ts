@@ -4,10 +4,15 @@ import fetch from "node-fetch";
 import type { DataConnector } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import crypto from "crypto";
+import { FunctionRegistrationInput } from "inferable/bin/types";
+import assert from "assert";
 
 export class OpenAPIClient implements DataConnector {
   private spec: OpenAPIV3.Document | null = null;
   private initialized: Promise<void>;
+  private operations: ReturnType<
+    typeof this.openApiOperationToInferableFunction
+  >[] = [];
 
   constructor(
     private params: {
@@ -18,20 +23,42 @@ export class OpenAPIClient implements DataConnector {
       privacyMode: boolean;
       paranoidMode: boolean;
     },
-  ) {
-    this.initialized = this.initialize();
-  }
+  ) {}
 
   executeQuery(input: { query: string }, ctx: ContextInput): Promise<any> {
     throw new Error("Method not implemented.");
   }
 
-  private initialize = async () => {
+  public initialize = async () => {
     try {
       const response = await fetch(this.params.specUrl);
       this.spec = (await response.json()) as OpenAPIV3.Document;
       console.log(
         `OpenAPI spec loaded successfully from ${this.params.specUrl}`,
+      );
+
+      // Convert paths and their operations into functions
+      for (const [path, pathItem] of Object.entries(this.spec.paths)) {
+        if (!pathItem) continue;
+
+        const operations = ["get", "post", "put", "delete", "patch"] as const;
+
+        for (const method of operations) {
+          const operation = pathItem[method];
+          if (!operation || !operation.operationId) continue;
+
+          const inferableFunction = this.openApiOperationToInferableFunction(
+            operation,
+            path,
+            method,
+          );
+
+          this.operations.push(inferableFunction);
+        }
+      }
+
+      console.log(
+        `Loaded ${this.operations.length} operations from OpenAPI spec`,
       );
 
       if (this.params.privacyMode) {
@@ -43,6 +70,92 @@ export class OpenAPIClient implements DataConnector {
       console.error("Failed to initialize OpenAPI connection:", error);
       throw error;
     }
+  };
+
+  private openApiOperationToInferableFunction = (
+    operation: OpenAPIV3.OperationObject,
+    path: string,
+    method: string,
+  ): FunctionRegistrationInput<any> => {
+    // Build input parameters schema
+    const parameters = operation.parameters || [];
+    const parameterSchemas: Record<string, any> = {};
+
+    // Group parameters by their location (path, query, header)
+    const parametersByLocation = {
+      path: [] as string[],
+      query: [] as string[],
+      header: [] as string[],
+    };
+
+    parameters.forEach((param) => {
+      if ("name" in param && "in" in param) {
+        parametersByLocation[
+          param.in as keyof typeof parametersByLocation
+        ]?.push(param.name);
+        if (param.schema) {
+          parameterSchemas[param.name] = param.schema;
+        }
+      }
+    });
+
+    // Handle request body if it exists
+    let bodySchema:
+      | OpenAPIV3.ReferenceObject
+      | OpenAPIV3.SchemaObject
+      | undefined = undefined;
+    if (operation.requestBody && "content" in operation.requestBody) {
+      const content = operation.requestBody.content["application/json"];
+      if (content?.schema) {
+        bodySchema = content.schema;
+      }
+    }
+
+    assert(operation.operationId, "Operation ID is required");
+    assert(path, "Path is required");
+
+    const hasParameters = Object.keys(parameterSchemas).length > 0;
+
+    const summary =
+      operation.summary ||
+      operation.description ||
+      `${method.toUpperCase()} ${path}`;
+
+    return {
+      name: operation.operationId,
+      description: `${summary}. Ask the user to provide values for any required parameters.`,
+      func: this.executeRequest,
+      schema: {
+        input: z.object({
+          path: path.includes(":")
+            ? z
+                .string()
+                .describe(
+                  `Must be ${path} with values substituted for any path parameters.`,
+                )
+            : z.literal(path),
+          method: z.literal(method.toUpperCase()),
+          parameters: hasParameters
+            ? z
+                .record(z.any())
+                .optional()
+                .describe(
+                  `URL and query parameters. Must match the following: ${JSON.stringify(
+                    parametersByLocation,
+                  )}`,
+                )
+            : z.undefined(),
+          body: bodySchema
+            ? z
+                .any()
+                .optional()
+                .describe(
+                  `Request body. Must match: ${JSON.stringify(bodySchema)}`,
+                )
+            : z.undefined(),
+        }),
+      },
+    };
   };
 
   getContext = async () => {
@@ -157,7 +270,17 @@ export class OpenAPIClient implements DataConnector {
       body: input.body ? JSON.stringify(input.body) : undefined,
     });
 
-    const data = await response.json();
+    const data = await response.text();
+
+    let parsed: object;
+
+    try {
+      parsed = JSON.parse(data);
+    } catch (error) {
+      parsed = {
+        data,
+      };
+    }
 
     if (this.params.privacyMode) {
       return {
@@ -166,12 +289,12 @@ export class OpenAPIClient implements DataConnector {
         blob: blob({
           name: "Results",
           type: "application/json",
-          data: data,
+          data: parsed,
         }),
       };
     }
 
-    return data;
+    return parsed;
   };
 
   private connectionStringHash = () => {
@@ -193,21 +316,8 @@ export class OpenAPIClient implements DataConnector {
       description: "Gets the OpenAPI specification schema.",
     });
 
-    service.register({
-      name: "executeRequest",
-      func: this.executeRequest,
-      description: "Executes an HTTP request against the OpenAPI endpoint.",
-      schema: {
-        input: z.object({
-          path: z.string().describe("The endpoint path"),
-          method: z.string().describe("The HTTP method"),
-          parameters: z
-            .record(z.any())
-            .optional()
-            .describe("URL and query parameters"),
-          body: z.any().optional().describe("Request body"),
-        }),
-      },
+    this.operations.forEach((operation) => {
+      service.register(operation);
     });
 
     return service;

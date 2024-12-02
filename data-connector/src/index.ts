@@ -42,6 +42,7 @@ const parseConfig = () => {
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
       });
+      await postgresClient.initialize();
       const service = postgresClient.createService(client);
       services.push(service);
     } else if (connector.type === "open-api") {
@@ -50,6 +51,7 @@ const parseConfig = () => {
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
       });
+      await openAPIClient.initialize();
       const service = openAPIClient.createService(client);
       services.push(service);
     }

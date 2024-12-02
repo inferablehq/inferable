@@ -19,10 +19,9 @@ export class PostgresClient implements DataConnector {
     },
   ) {
     assert(params.schema, "Schema parameter is required");
-    this.initialized = this.initialize();
   }
 
-  private initialize = async () => {
+  public initialize = async () => {
     try {
       const client = await this.getClient();
       const res = await client.query(`SELECT NOW() as now`);
