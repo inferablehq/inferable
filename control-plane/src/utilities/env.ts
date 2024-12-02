@@ -48,6 +48,8 @@ const envSchema = z
 
     SQS_BASE_QUEUE_URL: z.string().optional(),
 
+    LOAD_TEST_CLUSTER_ID: z.string().optional(),
+
     // Required in EE (Disabled by default)
     EE_DEPLOYMENT: truthy.default(false),
 
