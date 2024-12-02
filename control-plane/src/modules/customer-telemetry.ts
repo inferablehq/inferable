@@ -33,11 +33,11 @@ const eventSchema = z.discriminatedUnion("type", [
 type ObservabilityEvent = z.infer<typeof eventSchema>;
 
 const customerTelemetryEnabledCache = createCache(
-  Symbol("customer-telemetry-enabled"),
+  Symbol("customerTelemetryEnabled"),
 );
 
 async function hasCustomerTelemetryEnabled(clusterId: string) {
-  const cached = customerTelemetryEnabledCache.get(clusterId);
+  const cached = await customerTelemetryEnabledCache.get(clusterId);
 
   if (cached === true || cached === false) {
     return cached;
@@ -45,7 +45,7 @@ async function hasCustomerTelemetryEnabled(clusterId: string) {
 
   const integrations = await getIntegrations({ clusterId });
   const enabled = !!integrations.langfuse;
-  customerTelemetryEnabledCache.set(clusterId, enabled, 60);
+  await customerTelemetryEnabledCache.set(clusterId, enabled, 60);
 
   return enabled;
 }

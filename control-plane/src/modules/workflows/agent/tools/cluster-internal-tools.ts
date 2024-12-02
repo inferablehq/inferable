@@ -13,7 +13,7 @@ import {
 
 const clusterSettingsCache = createCache<{
   enableKnowledgebase: boolean;
-}>(Symbol("cluster-settings"));
+}>(Symbol("clusterSettings"));
 
 const CACHE_TTL = 60 * 2; // 2 minutes
 
@@ -27,7 +27,7 @@ export const getClusterInternalTools = async (
 ): Promise<Record<string, InternalToolBuilder>> => {
   const cacheKey = `cluster:${clusterId}`;
 
-  let settings = clusterSettingsCache.get(cacheKey);
+  let settings = await clusterSettingsCache.get(cacheKey);
 
   if (!settings) {
     // Get cluster settings
@@ -35,7 +35,7 @@ export const getClusterInternalTools = async (
     settings = {
       enableKnowledgebase: cluster.enableKnowledgebase,
     };
-    clusterSettingsCache.set(cacheKey, settings, CACHE_TTL);
+    await clusterSettingsCache.set(cacheKey, settings, CACHE_TTL);
   }
 
   const tools: Record<string, InternalToolBuilder> = {};

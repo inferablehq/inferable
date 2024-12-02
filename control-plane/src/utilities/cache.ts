@@ -1,16 +1,34 @@
 import NodeCache from "node-cache";
+import { redisClient } from "../modules/redis";
 
-const nodeCache = new NodeCache({
+const localCache = new NodeCache({
   maxKeys: 5000,
 });
 
 export const createCache = <T>(namespace: symbol) => {
   return {
-    get: (key: string) => {
-      return nodeCache.get<T>(`${namespace.toString()}:${key}`);
+    get: async (key: string) => {
+      const localResult = localCache.get<T>(`${namespace.toString()}:${key}`);
+      if (localResult) {
+        return localResult;
+      }
+
+      const redisResult = await redisClient?.get(`${namespace.toString()}:${key}`);
+      if (redisResult) {
+        return JSON.parse(redisResult) as T;
+      }
+      return undefined;
     },
-    set: (key: string, value: T, ttl: number) => {
-      return nodeCache.set(`${namespace.toString()}:${key}`, value, ttl);
+    set: async (key: string, value: T, ttl: number) => {
+      await redisClient?.set(
+        `${namespace.toString()}:${key}`,
+        JSON.stringify(value),
+        {
+          EX: ttl
+        }
+
+      )
+      return localCache.set(`${namespace.toString()}:${key}`, value, ttl);
     },
   };
 };

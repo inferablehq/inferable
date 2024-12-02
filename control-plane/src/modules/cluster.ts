@@ -49,7 +49,7 @@ export const clusterExists = async ({
   organizationId: string;
   clusterId: string;
 }): Promise<boolean> => {
-  const cached = cache.get(`${organizationId}:${clusterId}`);
+  const cached = await cache.get(`${organizationId}:${clusterId}`);
 
   if (cached !== undefined) {
     return cached;
@@ -68,7 +68,7 @@ export const clusterExists = async ({
     );
 
   const exists = cluster.count > 0;
-  cache.set(`${organizationId}:${clusterId}`, exists, 1000 * 60);
+  await cache.set(`${organizationId}:${clusterId}`, exists, 1000 * 60);
   return exists;
 };
 
