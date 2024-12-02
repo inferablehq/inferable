@@ -70,10 +70,6 @@ type RunInput = Omit<
  * ```
  */
 export class Inferable {
-  static getMachineId(): string {
-    return machineId();
-  }
-
   static getVersion(): string {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     return require(path.join(__dirname, "..", "package.json")).version;
@@ -110,7 +106,11 @@ export class Inferable {
    * const client = new Inferable();
    * ```
    */
-  constructor(options?: { apiSecret?: string; endpoint?: string }) {
+  constructor(options?: {
+    apiSecret?: string;
+    endpoint?: string
+    machineId?: string
+  }) {
     if (options?.apiSecret && process.env.INFERABLE_API_SECRET) {
       log(
         "API Secret was provided as an option and environment variable. Constructor argument will be used.",
@@ -137,7 +137,8 @@ export class Inferable {
       options?.endpoint ||
       process.env.INFERABLE_API_ENDPOINT ||
       "https://api.inferable.ai";
-    this.machineId = machineId();
+
+    this.machineId = options?.machineId || machineId();
 
     this.client = createApiClient({
       baseUrl: this.endpoint,
