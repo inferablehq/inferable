@@ -8,7 +8,8 @@ const client = new Inferable({
 })
 
 client.default.register({
-  func: () => {
+  func: (_, context) => {
+    console.log("Handling request", context)
     return {
       word: "needle"
     }

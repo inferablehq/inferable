@@ -26,6 +26,7 @@ export default function () {
   // Create a new run
   const postRunResponse = http.post(`${BASE_URL}/clusters/${CLUSTER_ID}/runs`, JSON.stringify({
     initialPrompt: 'Get the special word from the `searchHaystack` function',
+    reasoningTraces: false,
     attachedFunctions: [
       {
         function: "searchHaystack",

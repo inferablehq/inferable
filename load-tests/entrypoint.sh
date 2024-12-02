@@ -14,5 +14,6 @@ done
 # Wait for all instances to finish
 for pid in "${PIDS[@]}"; do
   wait $pid
+  echo "Instance $pid finished"
 done
 
