@@ -1,13 +1,16 @@
 import http from 'k6/http';
 import { sleep, check } from 'k6';
+import { Trend } from 'k6/metrics';
+
+const runTime = new Trend('run_time', true);
 
 export const options = {
   // K6 defaults
   // vus: 1,
   // iterations: 1,
+  // expect all checks to pass
   thresholds: {
-    // expect all checks to pass
-    checks: ['rate>=1'],
+    checks: ['rate==1.0'],
   },
 };
 
@@ -23,6 +26,12 @@ export default function () {
   // Create a new run
   const postRunResponse = http.post(`${BASE_URL}/clusters/${CLUSTER_ID}/runs`, JSON.stringify({
     initialPrompt: 'Get the special word from the `searchHaystack` function',
+    attachedFunctions: [
+      {
+        function: "searchHaystack",
+        service: "default",
+      },
+    ],
     resultSchema: {
       type: 'object',
       properties: {
@@ -44,6 +53,8 @@ export default function () {
 
   const runId = postRunResponse.json('id');
 
+  const start = new Date().getTime();
+
   // Poll the run status until complete or timeout
   let attempts = 0;
   const maxAttempts = 10;
@@ -56,6 +67,14 @@ export default function () {
     });
 
     const run = getRunResponse.json();
+
+    check(getRunResponse, {
+      'run request succeeded': (r) => r.status === 200
+    });
+
+    if (!run) {
+      throw new Error("Run request failed");
+    }
 
     if (!['running', 'pending', 'paused'].includes(run.status)) {
 
@@ -71,6 +90,8 @@ export default function () {
         'found needle word': (r) => r.result.word === 'needle'
       });
 
+      runTime.add(new Date().getTime() - start);
+
       break;
     }
 
@@ -78,4 +99,7 @@ export default function () {
     sleep(1);
   }
 
+  check(attempts, {
+    'attempts < maxAttempts': (a) => a < maxAttempts
+  });
 }
