@@ -553,7 +553,7 @@ jobs:
     permissions:
       id-token: write
     needs:
-      [check_changes, build-app-image, build-control-plane-image]
+      [check_changes, build-app-image, build-control-plane-image, test-control-plane]
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
