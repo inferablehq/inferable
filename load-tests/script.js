@@ -57,11 +57,15 @@ export default function () {
 
     const run = getRunResponse.json();
 
-    if (!['running', 'pending'].includes(run.status)) {
+    if (!['running', 'pending', 'paused'].includes(run.status)) {
 
       check(run, {
         'run completed': (r) => r.status === 'done'
       });
+
+      if (! "word" in run.result) {
+        throw new Error('Missing required result field');
+      }
 
       check(run, {
         'found needle word': (r) => r.result.word === 'needle'
