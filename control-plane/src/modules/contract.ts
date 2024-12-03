@@ -565,7 +565,7 @@ export const definition = {
         .describe("Enable reasoning traces"),
       callSummarization: z
         .boolean()
-        .default(true)
+        .default(false)
         .optional()
         .describe("Enable summarization of oversized call results"),
       interactive: z
