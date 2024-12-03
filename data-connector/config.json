@@ -3,11 +3,17 @@
   "paranoidMode": 0,
   "connectors": [
     {
+      "type": "postgres",
+      "name": "myPostgres",
+      "connectionString": "process.env.POSTGRES_URL",
+      "schema": "process.env.POSTGRES_SCHEMA"
+    },
+    {
       "type": "open-api",
-      "specUrl": "https://api.inferable.ai/public/oas.json",
-      "endpoint": "https://api.inferable.ai",
+      "specUrl": "process.env.OPENAPI_SPEC_URL",
+      "endpoint": "process.env.SERVER_URL",
       "defaultHeaders": {
-        "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDIyMkFBQSIsImtpZCI6Imluc18yYTY1VkFobFJsSFRiRjVhS21zMHZhRVRxQUkiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwczovL2FwcC5pbmZlcmFibGUuYWkiLCJleHAiOjE3MzMxODYyNjAsImlhdCI6MTczMzE4MjY2MCwiaXNzIjoiaHR0cHM6Ly9jbGVyay5pbmZlcmFibGUuYWkiLCJqdGkiOiI3YjlmMzVhZDFiMWRkMjRhZDRkMCIsIm5iZiI6MTczMzE4MjY1NSwib3JnX2lkIjoib3JnXzJsSGxjc25ia2c2NWhmTjhBbGJHNDdpRFZKZSIsIm9yZ19yb2xlIjoib3JnOmFkbWluIiwic3ViIjoidXNlcl8yYUFHTFhJTzNlbWVvRHpxdlJkWENuRkVPcHcifQ.bHQ0XTj7KhoJ1OvlpW15zcwGcE5sZWT1ul0v1FsLeHVPGrlMdT-jim-wL2PIRQqFs8JDUMWsIxGsc3eMbMk044bCNkh0fEd1V1x5N80aIFQ6y5Ln7gtgIIVYF4pvylhErMMoWUzDOXKbzO7snAedzSgTe9EPJacP9Xwd2Q7H42cR67qeeRRS7PGHBWJx8WFNAEXIRzz6B-rcA3eBTWQ5u9ddjUnifKhmKz9DNK_cp2BOdgeLpTiKrwMK6QdeapsenQAek4IhpagLTm6uUzaHLc-EV_fwQh9LxorrMIsKJtQaANQDo4OBJKm4Sb6gshR-jw-B7mMIuDpI-UHVhS8cxw"
+        "Authorization": "process.env.SERVER_AUTH_HEADER"
       }
     }
   ]

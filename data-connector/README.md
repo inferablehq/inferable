@@ -1,8 +1,6 @@
-# Inferable Data Connector
+![Inferable Data Connector](./assets/hero.png)
 
-Inferable Data Connector is a bridge between your data systems and Inferable. Configure your data sources in a json file and start conversing with your data in natural language.
-
-Works locally, and in any dockerized environment without exposing your database to the public internet.
+Inferable Data Connector is a bridge between your data systems and Inferable. Configure your data sources in a json file and start conversing with your data in natural language. Works locally, and in any dockerized environment without exposing your credentials (database credentials, API keys, etc.) to the public internet.
 
 ## Features
 
@@ -12,6 +10,14 @@ Works locally, and in any dockerized environment without exposing your database 
 - 🔄 **Adapts to schema changes**: The connector automatically adapts to schema changes by periodically fetching the data system schema. (Table definitions, API definitions, etc.)
 - 🤿 **Optional Privacy Mode**: Query outputs are never sent to the model. Instead, the function returns results directly to the end user without any model involvement.
 - 🔍 **Optional Paranoid Mode**: Adds an additional safety layer by requiring manual approval before executing any query so you can review the query and data before it is executed.
+
+## Connectors
+
+- [x] [Postgres](./src/postgres.ts)
+- [x] [OpenAPI](./src/open-api.ts)
+- [ ] [GraphQL](./src/graphql.ts)
+- [ ] [MySQL](./src/mysql.ts)
+- [ ] [SQLite](./src/sqlite.ts)
 
 ## Quick Start
 
@@ -88,14 +94,25 @@ Example configuration:
 
 Each connector is defined in the `config.connectors` array.
 
-- `type`: The type of connector. Currently only `postgres` is supported.
-- `name`: The name of the connector. This is the Inferable service name. One will be generated if not provided.
+- `config.connectors[].type`: The type of connector. Currently only `postgres` is supported.
+- `config.connectors[].name`: The name of the connector. This is the Inferable service name. One will be generated if not provided.
 
-### Connector-specific configuration
+<details>
+<summary>Postgres Connector Configuration</summary>
 
-| Connector | Configuration                   |
-| --------- | ------------------------------- |
-| Postgres  | `connectionString` and `schema` |
+- `config.connectors[].connectionString`: The connection string to your database. (e.g. `postgresql://postgres:postgres@localhost:5432/postgres`)
+- `config.connectors[].schema`: The schema to use. (e.g. `public`)
+
+</details>
+
+<details>
+<summary>OpenAPI Connector Configuration</summary>
+
+- `config.connectors[].specUrl`: The URL to your OpenAPI spec. Must be publicly accessible.
+- `config.connectors[].endpoint`: The endpoint to use. (e.g. `https://api.inferable.ai`)
+- `config.connectors[].defaultHeaders`: The default headers to use. (e.g. `{"Authorization": "Bearer <token>"}`)
+
+</details>
 
 ### config.privacyMode
 
