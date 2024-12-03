@@ -17,10 +17,14 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 - [x] [OpenAPI](./src/open-api/open-api.ts)
 - [x] [GraphQL](./src/graphql/graphql.ts)
 - [x] [MySQL](./src/mysql/mysql.ts)
+<<<<<<< HEAD
 - [x] [SQLite](./src/sqlite/sqlite.ts)
 - [ ] [MongoDB](./src/mongodb/mongodb.ts)
 - [ ] [Big Query](./src/big-query/big-query.ts)
 - [ ] [Google Sheets](./src/google-sheets/google-sheets.ts)
+=======
+- [ ] [SQLite](./src/sqlite/sqlite.ts)
+>>>>>>> origin/main
 
 ## Quick Start
 
@@ -134,6 +138,7 @@ Each connector is defined in the `config.connectors` array.
 
 </details>
 
+<<<<<<< HEAD
 <details>
 <summary>SQLite Connector Configuration</summary>
 
@@ -141,6 +146,8 @@ Each connector is defined in the `config.connectors` array.
 
 </details>
 
+=======
+>>>>>>> origin/main
 ### config.privacyMode
 
 When enabled (`config.privacyMode=1`), raw data is never sent to the model. Instead:
