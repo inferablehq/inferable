@@ -9,7 +9,7 @@ import assert from "assert";
 
 export class OpenAPIClient implements DataConnector {
   private spec: OpenAPIV3.Document | null = null;
-  private initialized: Promise<void>;
+  private initialized = false;
   private operations: ReturnType<
     typeof this.openApiOperationToInferableFunction
   >[] = [];
@@ -66,6 +66,8 @@ export class OpenAPIClient implements DataConnector {
           "Privacy mode is enabled, response data will not be sent to the model.",
         );
       }
+
+      this.initialized = true;
     } catch (error) {
       console.error("Failed to initialize OpenAPI connection:", error);
       throw error;
@@ -158,65 +160,6 @@ export class OpenAPIClient implements DataConnector {
     };
   };
 
-  getContext = async () => {
-    await this.initialized;
-    if (!this.spec) throw new Error("OpenAPI spec not initialized");
-
-    const context: any[] = [];
-
-    // Convert paths and their operations into a structured context
-    for (const [path, pathItem] of Object.entries(this.spec.paths)) {
-      if (!pathItem) continue;
-
-      const operations = ["get", "post", "put", "delete", "patch"] as const;
-
-      for (const method of operations) {
-        const operation = pathItem[method];
-        if (!operation) continue;
-
-        const endpoint = {
-          path: path.substring(0, 100),
-          method: method.toUpperCase(),
-          summary: operation.summary?.substring(0, 100),
-          parameters:
-            operation.parameters
-              ?.map((param) => {
-                if ("name" in param) {
-                  return {
-                    name: param.name,
-                    in: param.in,
-                    required: param.required,
-                    schema: param.schema,
-                  };
-                }
-                return null;
-              })
-              .filter(Boolean) ?? [],
-          requestBody: operation.requestBody
-            ? {
-                required: (operation.requestBody as OpenAPIV3.RequestBodyObject)
-                  .required,
-                content: Object.keys(
-                  (operation.requestBody as OpenAPIV3.RequestBodyObject)
-                    .content,
-                ),
-              }
-            : null,
-          responses: Object.entries(operation.responses).map(
-            ([code, response]) => ({
-              code,
-              description: (response as OpenAPIV3.ResponseObject).description,
-            }),
-          ),
-        };
-
-        context.push(endpoint);
-      }
-    }
-
-    return context;
-  };
-
   executeRequest = async (
     input: {
       path: string;
@@ -235,7 +178,7 @@ export class OpenAPIClient implements DataConnector {
       }
     }
 
-    await this.initialized;
+    if (!this.initialized) throw new Error("OpenAPI spec not initialized");
     if (!this.spec) throw new Error("OpenAPI spec not initialized");
 
     // Use the provided endpoint or fall back to the spec's server URL
@@ -308,12 +251,6 @@ export class OpenAPIClient implements DataConnector {
   createService = (client: Inferable) => {
     const service = client.service({
       name: this.params.name ?? `openapi${this.connectionStringHash()}`,
-    });
-
-    service.register({
-      name: "getContext",
-      func: this.getContext,
-      description: "Gets the OpenAPI specification schema.",
     });
 
     this.operations.forEach((operation) => {
