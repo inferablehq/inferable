@@ -12,13 +12,14 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "fastify": "^4.28.1",
+    "graphql-tag": "^2.12.6",
     "inferable": "^0.30.48",
     "pg": "^8.13.1",
     "tsx": "^4.19.2"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.1.0",
     "@types/node": "^20.11.19",
-    "typescript": "^5.3.3",
-    "@faker-js/faker": "^9.1.0"
+    "typescript": "^5.3.3"
   }
 }

@@ -15,6 +15,14 @@
       "defaultHeaders": {
         "Authorization": "process.env.SERVER_AUTH_HEADER"
       }
+    },
+    {
+      "type": "graphql",
+      "schemaUrl": "process.env.GRAPHQL_SCHEMA_URL",
+      "endpoint": "process.env.GRAPHQL_ENDPOINT",
+      "defaultHeaders": {
+        "Authorization": "process.env.GRAPHQL_AUTH_HEADER"
+      }
     }
   ]
 }
