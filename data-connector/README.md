@@ -1,6 +1,6 @@
 ![Inferable Data Connector](./assets/hero.png)
 
-Inferable Data Connector is a bridge between your data systems and Inferable. Configure your data sources in a json file and start conversing with your data in natural language. Works locally, and in any dockerized environment without exposing your credentials (database credentials, API keys, etc.) to the public internet.
+Inferable Data Connector is a bridge between your data systems and Inferable. Configure your data sources in a json file and start conversing with your data in natural language. Works locally, and in any dockerized environment allowing connection to private resources (DB connection / API endpoints) without exposing them to the public internet.
 
 ## Features
 
