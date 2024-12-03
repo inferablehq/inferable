@@ -10,7 +10,6 @@ import {
 } from "graphql";
 import { approvalRequest, blob, ContextInput, Inferable } from "inferable";
 import { FunctionRegistrationInput } from "inferable/bin/types";
-import fetch from "node-fetch";
 import { z } from "zod";
 import type { DataConnector } from "../types";
 

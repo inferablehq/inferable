@@ -12,6 +12,7 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "fastify": "^4.28.1",
+    "graphql": "^16.9.0",
     "graphql-tag": "^2.12.6",
     "inferable": "^0.30.48",
     "pg": "^8.13.1",
