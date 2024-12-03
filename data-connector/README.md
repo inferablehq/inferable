@@ -13,14 +13,14 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 
 ## Connectors
 
-- [x] [Postgres](./src/postgres/postgres.ts)
-- [x] [OpenAPI](./src/open-api/open-api.ts)
-- [x] [GraphQL](./src/graphql/graphql.ts)
-- [x] [MySQL](./src/mysql/mysql.ts)
-- [x] [SQLite](./src/sqlite/sqlite.ts)
-- [ ] [MongoDB](./src/mongodb/mongodb.ts)
-- [ ] [Big Query](./src/big-query/big-query.ts)
-- [ ] [Google Sheets](./src/google-sheets/google-sheets.ts)
+- [x] [Postgres](./src/postgres)
+- [x] [OpenAPI](./src/open-api)
+- [x] [GraphQL](./src/graphql)
+- [x] [MySQL](./src/mysql)
+- [x] [SQLite](./src/sqlite)
+- [ ] [MongoDB](./src/mongodb)
+- [ ] [Big Query](./src/big-query)
+- [ ] [Google Sheets](./src/google-sheets)
 
 ## Quick Start
 
@@ -72,7 +72,7 @@ This will:
 
 The demo database comes pre-loaded with sample data (defined in `example_data/seed.ts`). You can use this to experiment with queries and understand how the connector works.
 
-## Configuration
+# Configuration
 
 The connector is configured using the [`config.json`](./config.json) file.
 
@@ -93,7 +93,51 @@ Example configuration:
 }
 ```
 
-### config.connectors
+It can be used to define multiple connectors, and allows environment variables substitution by prefixing the variable name with `process.env.`.
+
+When running in docker, the `config.json` can be mounted to `/app/config.json` in the container.
+Otherwise, the default [`config.json`](./config.json) file will be used.
+
+## Mounting With Docker
+
+```bash
+docker run -e INFERABLE_API_SECRET="sk_xxxx" \
+           -e POSTGRES_URL="postgresql://postgres:postgres@localhost:5432/postgres" \
+           -e POSTGRES_SCHEMA="public" \
+           -v $PWD/config.json:/app/config.json \
+           --network host \
+           inferable/data-connector
+```
+
+## Mounting with Docker Compose
+
+```yaml
+version: '3'
+services:
+  data-connector:
+    image: inferable/data-connector:latest
+    configs:
+      - source: connector_config
+        target: /app/config.json
+
+configs:
+  connector_config:
+    content: |
+      {
+        "privacyMode": 0,
+        "paranoidMode": 0,
+        "connectors": [
+          {
+            "type": "postgres",
+            "name": "myPostgres",
+            "connectionString": "postgresql://postgres:postgres@postgres:5432/postgres",
+            "schema": "public"
+          }
+        ]
+      }
+```
+
+## config.connectors
 
 Each connector is defined in the `config.connectors` array.
 
@@ -114,30 +158,6 @@ Each connector is defined in the `config.connectors` array.
 - `config.connectors[].specUrl`: The URL to your OpenAPI spec. Must be publicly accessible.
 - `config.connectors[].endpoint`: The endpoint to use. (e.g. `https://api.inferable.ai`)
 - `config.connectors[].defaultHeaders`: The default headers to use. (e.g. `{"Authorization": "Bearer <token>"}`)
-
-</details>
-
-<details>
-<summary>GraphQL Connector Configuration</summary>
-
-- `config.connectors[].schemaUrl`: The URL to your GraphQL schema. Must be publicly accessible.
-- `config.connectors[].endpoint`: The endpoint to use. (e.g. `https://api.inferable.ai`)
-- `config.connectors[].defaultHeaders`: The default headers to use. (e.g. `{"Authorization": "Bearer <token>"}`)
-
-</details>
-
-<details>
-<summary>MySQL Connector Configuration</summary>
-
-- `config.connectors[].connectionString`: The connection string to your database. (e.g. `mysql://root:mysql@localhost:3306/mysql`)
-- `config.connectors[].schema`: The schema to use. (e.g. `mysql`)
-
-</details>
-
-<details>
-<summary>SQLite Connector Configuration</summary>
-
-- `config.connectors[].filePath`: The path to your SQLite database file. (e.g. `/path/to/your/database.sqlite`)
 
 </details>
 

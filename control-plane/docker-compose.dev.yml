@@ -21,6 +21,18 @@ services:
       - "9324:9324"
       - "9325:9325"
 
+  # Use the data connector to manage the database
+  # https://github.com/inferablehq/inferable/tree/main/data-connector
+  # data-connector:
+  #   image: inferable/data-connector:latest
+  #   environment:
+  #     INFERABLE_API_SECRET: ${INFERABLE_API_SECRET}
+  #   depends_on:
+  #     - postgres
+  #   configs:
+  #     - source: connector_config
+  #       target: /app/config.json
+
 volumes:
   pgdata:
   elasticmqdata:
@@ -36,3 +48,18 @@ configs:
         customer-telemetry {}
         external-tool-call {}
       }
+
+  # connector_config:
+  #   content: |
+  #     {
+  #       "privacyMode": 0,
+  #       "paranoidMode": 0,
+  #       "connectors": [
+  #         {
+  #           "type": "postgres",
+  #           "name": "developmentPostgres",
+  #           "connectionString": "postgresql://inferable:inferable@postgres:5432/inferable",
+  #           "schema": "public"
+  #         }
+  #       ]
+  #     }
