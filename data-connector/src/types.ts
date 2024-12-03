@@ -1,4 +1,4 @@
-import type { ContextInput, Inferable } from "inferable";
+import type { Inferable } from "inferable";
 
 export interface DataConnector {
   initialize(): Promise<void>;

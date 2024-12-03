@@ -25,10 +25,6 @@ export class OpenAPIClient implements DataConnector {
     },
   ) {}
 
-  executeQuery(input: { query: string }, ctx: ContextInput): Promise<any> {
-    throw new Error("Method not implemented.");
-  }
-
   public initialize = async () => {
     try {
       const response = await fetch(this.params.specUrl);
