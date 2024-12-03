@@ -18,6 +18,9 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 - [x] [GraphQL](./src/graphql/graphql.ts)
 - [x] [MySQL](./src/mysql/mysql.ts)
 - [x] [SQLite](./src/sqlite/sqlite.ts)
+- [ ] [MongoDB](./src/mongodb/mongodb.ts)
+- [ ] [Big Query](./src/big-query/big-query.ts)
+- [ ] [Google Sheets](./src/google-sheets/google-sheets.ts)
 
 ## Quick Start
 
