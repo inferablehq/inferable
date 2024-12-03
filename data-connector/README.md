@@ -123,6 +123,14 @@ Each connector is defined in the `config.connectors` array.
 
 </details>
 
+<details>
+<summary>MySQL Connector Configuration</summary>
+
+- `config.connectors[].connectionString`: The connection string to your database. (e.g. `mysql://root:mysql@localhost:3306/mysql`)
+- `config.connectors[].schema`: The schema to use. (e.g. `mysql`)
+
+</details>
+
 ### config.privacyMode
 
 When enabled (`config.privacyMode=1`), raw data is never sent to the model. Instead:
