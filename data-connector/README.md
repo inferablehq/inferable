@@ -49,7 +49,7 @@ docker run -e INFERABLE_API_SECRET="sk_xxxx" \
 2. Rename `.env.example` to `.env` and set your Inferable API secret:
 
 ```bash
-INFERABLE_SECRET=your_secret_here
+INFERABLE_API_SECRET=your_secret_here
 
 # DEMO POSTGRES CONFIG
 POSTGRES_URL=postgresql://postgres:postgres@db:5432/postgres
@@ -114,6 +114,30 @@ Each connector is defined in the `config.connectors` array.
 - `config.connectors[].specUrl`: The URL to your OpenAPI spec. Must be publicly accessible.
 - `config.connectors[].endpoint`: The endpoint to use. (e.g. `https://api.inferable.ai`)
 - `config.connectors[].defaultHeaders`: The default headers to use. (e.g. `{"Authorization": "Bearer <token>"}`)
+
+</details>
+
+<details>
+<summary>GraphQL Connector Configuration</summary>
+
+- `config.connectors[].schemaUrl`: The URL to your GraphQL schema. Must be publicly accessible.
+- `config.connectors[].endpoint`: The endpoint to use. (e.g. `https://api.inferable.ai`)
+- `config.connectors[].defaultHeaders`: The default headers to use. (e.g. `{"Authorization": "Bearer <token>"}`)
+
+</details>
+
+<details>
+<summary>MySQL Connector Configuration</summary>
+
+- `config.connectors[].connectionString`: The connection string to your database. (e.g. `mysql://root:mysql@localhost:3306/mysql`)
+- `config.connectors[].schema`: The schema to use. (e.g. `mysql`)
+
+</details>
+
+<details>
+<summary>SQLite Connector Configuration</summary>
+
+- `config.connectors[].filePath`: The path to your SQLite database file. (e.g. `/path/to/your/database.sqlite`)
 
 </details>
 
