@@ -46,7 +46,7 @@ docker run -e INFERABLE_API_SECRET="sk_xxxx" \
 2. Rename `.env.example` to `.env` and set your Inferable API secret:
 
 ```bash
-INFERABLE_SECRET=your_secret_here
+INFERABLE_API_SECRET=your_secret_here
 
 # DEMO POSTGRES CONFIG
 POSTGRES_URL=postgresql://postgres:postgres@db:5432/postgres

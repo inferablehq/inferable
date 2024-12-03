@@ -3,11 +3,11 @@ import { approvalRequest, blob, ContextInput, Inferable } from "inferable";
 import pg from "pg";
 import { z } from "zod";
 import crypto from "crypto";
-import type { DataConnector } from "../types";
+import type { DataConnector } from "./types";
 
 export class PostgresClient implements DataConnector {
   private client: pg.Client | null = null;
-  private initialized = false;
+  private initialized: Promise<void>;
 
   constructor(
     private params: {
@@ -34,7 +34,6 @@ export class PostgresClient implements DataConnector {
 
       process.removeListener("SIGTERM", this.handleSigterm);
       process.on("SIGTERM", this.handleSigterm);
-      this.initialized = true;
     } catch (error) {
       console.error("Failed to initialize database connection:", error);
       throw error;
@@ -71,8 +70,8 @@ export class PostgresClient implements DataConnector {
     return res.rows;
   };
 
-  getPostgresContext = async () => {
-    if (!this.initialized) throw new Error("Database not initialized");
+  getContext = async () => {
+    await this.initialized;
     const client = await this.getClient();
     const tables = await this.getAllTables();
 
@@ -109,10 +108,7 @@ export class PostgresClient implements DataConnector {
     return context;
   };
 
-  executePostgresQuery = async (
-    input: { query: string },
-    ctx: ContextInput,
-  ) => {
+  executeQuery = async (input: { query: string }, ctx: ContextInput) => {
     if (this.params.paranoidMode) {
       if (!ctx.approved) {
         console.log("Query requires approval");
@@ -122,7 +118,7 @@ export class PostgresClient implements DataConnector {
       }
     }
 
-    if (!this.initialized) throw new Error("Database not initialized");
+    await this.initialized;
     const client = await this.getClient();
     const res = await client.query(input.query);
 
@@ -156,14 +152,14 @@ export class PostgresClient implements DataConnector {
     });
 
     service.register({
-      name: "getPostgresContext",
-      func: this.getPostgresContext,
+      name: "getContext",
+      func: this.getContext,
       description: "Gets the schema of the database.",
     });
 
     service.register({
-      name: "executePostgresQuery",
-      func: this.executePostgresQuery,
+      name: "executeQuery",
+      func: this.executeQuery,
       description:
         "Executes a raw SQL query. If this fails, you need to getContext to learn the schema first.",
       schema: {
