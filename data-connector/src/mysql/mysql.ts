@@ -1,12 +1,12 @@
 import assert from "assert";
 import { approvalRequest, blob, ContextInput, Inferable } from "inferable";
-import pg from "pg";
+import mysql from "mysql2/promise";
 import { z } from "zod";
 import crypto from "crypto";
 import type { DataConnector } from "../types";
 
-export class PostgresClient implements DataConnector {
-  private client: pg.Client | null = null;
+export class MySQLClient implements DataConnector {
+  private connection: mysql.Connection | null = null;
   private initialized = false;
 
   constructor(
@@ -23,9 +23,9 @@ export class PostgresClient implements DataConnector {
 
   public initialize = async () => {
     try {
-      const client = await this.getClient();
-      const res = await client.query(`SELECT NOW() as now`);
-      console.log(`Initial probe successful: ${res.rows[0].now}`);
+      const connection = await this.getConnection();
+      const [rows] = await connection.query("SELECT NOW() as now");
+      console.log(`Initial probe successful: ${(rows as any)[0].now}`);
       if (this.params.privacyMode) {
         console.log(
           "Privacy mode is enabled, table data will not be sent to the model.",
@@ -42,55 +42,51 @@ export class PostgresClient implements DataConnector {
   };
 
   private handleSigterm = async () => {
-    if (this.client) {
-      await this.client.end();
+    if (this.connection) {
+      await this.connection.end();
     }
   };
 
-  private getClient = async () => {
-    if (!this.client) {
-      this.client = new pg.Client({
-        connectionString: this.params.connectionString,
-        ssl: false,
-      });
-
-      await this.client.connect();
-
-      return this.client;
+  private getConnection = async () => {
+    if (!this.connection) {
+      this.connection = await mysql.createConnection(
+        this.params.connectionString,
+      );
+      return this.connection;
     }
 
-    return this.client;
+    return this.connection;
   };
 
   private getAllTables = async () => {
-    const client = await this.getClient();
-    const res = await client.query(
-      "SELECT * FROM pg_catalog.pg_tables WHERE schemaname = $1",
+    const connection = await this.getConnection();
+    const [rows] = await connection.query(
+      "SELECT TABLE_NAME as tablename FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?",
       [this.params.schema],
     );
-    return res.rows;
+    return rows as any[];
   };
 
-  getPostgresContext = async () => {
+  getMysqlContext = async () => {
     if (!this.initialized) throw new Error("Database not initialized");
-    const client = await this.getClient();
+    const connection = await this.getConnection();
     const tables = await this.getAllTables();
 
     const context: any[] = [];
 
     for (const table of tables) {
-      const sample = await client.query(
+      const [rows] = await connection.query(
         `SELECT * FROM ${this.params.schema}.${table.tablename} LIMIT 1`,
       );
 
-      if (sample.rows.length > 0) {
-        const columns = Object.keys(sample.rows[0]);
+      if ((rows as any[]).length > 0) {
+        const columns = Object.keys((rows as any[])[0]);
         const tableContext = {
           tableName: table.tablename.substring(0, 100),
           columns: columns.map((col) => col.substring(0, 100)),
           sampleData: this.params.privacyMode
             ? []
-            : sample.rows.map((row) =>
+            : (rows as any[]).map((row) =>
                 Object.values(row).map((value) =>
                   String(value).substring(0, 50),
                 ),
@@ -109,10 +105,7 @@ export class PostgresClient implements DataConnector {
     return context;
   };
 
-  executePostgresQuery = async (
-    input: { query: string },
-    ctx: ContextInput,
-  ) => {
+  executeMysqlQuery = async (input: { query: string }, ctx: ContextInput) => {
     if (this.params.paranoidMode) {
       if (!ctx.approved) {
         console.log("Query requires approval");
@@ -123,8 +116,8 @@ export class PostgresClient implements DataConnector {
     }
 
     if (!this.initialized) throw new Error("Database not initialized");
-    const client = await this.getClient();
-    const res = await client.query(input.query);
+    const connection = await this.getConnection();
+    const [rows] = await connection.query(input.query);
 
     if (this.params.privacyMode) {
       return {
@@ -133,12 +126,12 @@ export class PostgresClient implements DataConnector {
         blob: blob({
           name: "Results",
           type: "application/json",
-          data: res.rows,
+          data: rows,
         }),
       };
     }
 
-    return res.rows;
+    return rows;
   };
 
   private connectionStringHash = () => {
@@ -151,19 +144,18 @@ export class PostgresClient implements DataConnector {
 
   createService = (client: Inferable) => {
     const service = client.service({
-      name:
-        this.params.name ?? `postgres_database_${this.connectionStringHash()}`,
+      name: this.params.name ?? `mysql_database_${this.connectionStringHash()}`,
     });
 
     service.register({
-      name: "getPostgresContext",
-      func: this.getPostgresContext,
+      name: "getMysqlContext",
+      func: this.getMysqlContext,
       description: "Gets the schema of the database.",
     });
 
     service.register({
-      name: "executePostgresQuery",
-      func: this.executePostgresQuery,
+      name: "executeMysqlQuery",
+      func: this.executeMysqlQuery,
       description:
         "Executes a raw SQL query. If this fails, you need to getContext to learn the schema first.",
       schema: {

@@ -5,11 +5,11 @@ import { PostgresClient } from "./postgres/postgres";
 import { RegisteredService } from "inferable/bin/types";
 import { OpenAPIClient } from "./open-api/open-api";
 import { GraphQLClient } from "./graphql/graphql";
+import { MySQLClient } from "./mysql/mysql";
 
 const parseConfig = (connector: any) => {
   for (const [key, value] of Object.entries(connector)) {
     if (typeof value === "object") {
-      console.log("Parsing object", key);
       connector[key] = parseConfig(value);
     } else if (typeof value === "string" && value.startsWith("process.env.")) {
       const actual = process.env[value.replace("process.env.", "")];
@@ -63,6 +63,15 @@ const parseConfig = (connector: any) => {
       });
       await graphQLClient.initialize();
       const service = graphQLClient.createService(client);
+      services.push(service);
+    } else if (connector.type === "mysql") {
+      const mysqlClient = new MySQLClient({
+        ...connector,
+        paranoidMode: config.paranoidMode === 1,
+        privacyMode: config.privacyMode === 1,
+      });
+      await mysqlClient.initialize();
+      const service = mysqlClient.createService(client);
       services.push(service);
     } else {
       throw new Error(`Unknown connector type: ${connector.type}`);

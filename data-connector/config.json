@@ -10,6 +10,7 @@
     },
     {
       "type": "open-api",
+      "name": "myOpenApi",
       "specUrl": "process.env.OPENAPI_SPEC_URL",
       "endpoint": "process.env.SERVER_URL",
       "defaultHeaders": {
@@ -18,11 +19,18 @@
     },
     {
       "type": "graphql",
+      "name": "myGraphql",
       "schemaUrl": "process.env.GRAPHQL_SCHEMA_URL",
       "endpoint": "process.env.GRAPHQL_ENDPOINT",
       "defaultHeaders": {
         "Authorization": "process.env.GRAPHQL_AUTH_HEADER"
       }
+    },
+    {
+      "type": "mysql",
+      "name": "myMysql",
+      "connectionString": "process.env.MYSQL_URL",
+      "schema": "process.env.MYSQL_SCHEMA"
     }
   ]
 }
