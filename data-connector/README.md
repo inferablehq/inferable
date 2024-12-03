@@ -195,6 +195,12 @@ A: By default, yes, but enabling `config.privacyMode` ensures that only database
 **Q: Where do the queries execute?**
 A: All queries execute within your dockerized environment. Neither the model nor the Inferable Control Plane have direct query execution capabilities.
 
+## Failure Modes
+
+**Context Window Limitations**: The connector may face challenges with large database schemas, large OpenAPI specs, or large GraphQL schemas. In such cases, you may need to provide multiple subsets of the schema to the model via multiple `config.connectors` entries.
+
+**Return Data Limitations**: The connector may face latency issues with large data sets. In such cases, turning on `config.privacyMode` will prevent the model from seeing the raw data, and instead return the data directly to the user.
+
 ## Contributing
 
 We welcome contributions! To add support for a new database:
