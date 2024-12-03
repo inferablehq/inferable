@@ -3,11 +3,11 @@ import { approvalRequest, blob, ContextInput, Inferable } from "inferable";
 import pg from "pg";
 import { z } from "zod";
 import crypto from "crypto";
-import type { DataConnector } from "./types";
+import type { DataConnector } from "../types";
 
 export class PostgresClient implements DataConnector {
   private client: pg.Client | null = null;
-  private initialized: Promise<void>;
+  private initialized = false;
 
   constructor(
     private params: {
@@ -34,6 +34,7 @@ export class PostgresClient implements DataConnector {
 
       process.removeListener("SIGTERM", this.handleSigterm);
       process.on("SIGTERM", this.handleSigterm);
+      this.initialized = true;
     } catch (error) {
       console.error("Failed to initialize database connection:", error);
       throw error;
@@ -71,7 +72,7 @@ export class PostgresClient implements DataConnector {
   };
 
   getContext = async () => {
-    await this.initialized;
+    if (!this.initialized) throw new Error("Database not initialized");
     const client = await this.getClient();
     const tables = await this.getAllTables();
 
@@ -118,7 +119,7 @@ export class PostgresClient implements DataConnector {
       }
     }
 
-    await this.initialized;
+    if (!this.initialized) throw new Error("Database not initialized");
     const client = await this.getClient();
     const res = await client.query(input.query);
 

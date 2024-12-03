@@ -1,9 +1,9 @@
 import "dotenv/config";
 
 import { Inferable } from "inferable";
-import { PostgresClient } from "./postgres";
+import { PostgresClient } from "./postgres/postgres";
 import { RegisteredService } from "inferable/bin/types";
-import { OpenAPIClient } from "./open-api";
+import { OpenAPIClient } from "./open-api/open-api";
 
 const parseConfig = () => {
   const config = require("../config.json");
