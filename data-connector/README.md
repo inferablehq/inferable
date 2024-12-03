@@ -13,11 +13,11 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 
 ## Connectors
 
-- [x] [Postgres](./src/postgres.ts)
-- [x] [OpenAPI](./src/open-api.ts)
-- [x] [GraphQL](./src/graphql.ts)
-- [ ] [MySQL](./src/mysql.ts)
-- [ ] [SQLite](./src/sqlite.ts)
+- [x] [Postgres](./src/postgres/postgres.ts)
+- [x] [OpenAPI](./src/open-api/open-api.ts)
+- [x] [GraphQL](./src/graphql/graphql.ts)
+- [ ] [MySQL](./src/mysql/mysql.ts)
+- [ ] [SQLite](./src/sqlite/sqlite.ts)
 
 ## Quick Start
 
