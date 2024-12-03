@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { Inferable } from 'inferable';
 import { z } from 'zod';
 
-const HISTORY_PATH = './history.json';
+const HISTORY_PATH = path.join(__dirname, 'history.json')
 
 if (!existsSync(HISTORY_PATH)) {
   writeFileSync(HISTORY_PATH, JSON.stringify({ suggestions: [] }));

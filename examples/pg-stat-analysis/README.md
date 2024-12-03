@@ -10,13 +10,6 @@
 
 `@inferable/pg-stat-analysis` is an analytical agent designed to evaluate and improve the performance of your PostgreSQL database through recommendations based on access patterns. The agent provides suggestions such as creating indexes or other optimization strategies to enhance query performance. It makes use of the `pg_stat_statements` extension to provide data-driven recommendations.
 
-## Features
-
-- Analyzes PostgreSQL database performance using `pg_stat_statements`.
-- Provides suggestions for performance improvements.
-- Avoids recommending redundant actions, such as VACUUM suggestions if auto-vacuum is enabled.
-- Utilizes type-safety via Zod schema validation.
-
 ## Prerequisites
 
 - **Node.js** - Ensure you have Node.js installed.
