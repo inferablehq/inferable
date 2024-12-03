@@ -6,6 +6,7 @@ import { RegisteredService } from "inferable/bin/types";
 import { OpenAPIClient } from "./open-api/open-api";
 import { GraphQLClient } from "./graphql/graphql";
 import { MySQLClient } from "./mysql/mysql";
+import { SQLiteClient } from "./sqlite/sqlite";
 
 const parseConfig = (connector: any) => {
   for (const [key, value] of Object.entries(connector)) {
@@ -72,6 +73,15 @@ const parseConfig = (connector: any) => {
       });
       await mysqlClient.initialize();
       const service = mysqlClient.createService(client);
+      services.push(service);
+    } else if (connector.type === "sqlite") {
+      const sqliteClient = new SQLiteClient({
+        ...connector,
+        paranoidMode: config.paranoidMode === 1,
+        privacyMode: config.privacyMode === 1,
+      });
+      await sqliteClient.initialize();
+      const service = sqliteClient.createService(client);
       services.push(service);
     } else {
       throw new Error(`Unknown connector type: ${connector.type}`);

@@ -31,6 +31,11 @@
       "name": "myMysql",
       "connectionString": "process.env.MYSQL_URL",
       "schema": "process.env.MYSQL_SCHEMA"
+    },
+    {
+      "type": "sqlite",
+      "name": "mySqlite",
+      "filePath": "process.env.SQLITE_PATH"
     }
   ]
 }

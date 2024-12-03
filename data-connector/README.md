@@ -17,7 +17,7 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 - [x] [OpenAPI](./src/open-api/open-api.ts)
 - [x] [GraphQL](./src/graphql/graphql.ts)
 - [x] [MySQL](./src/mysql/mysql.ts)
-- [ ] [SQLite](./src/sqlite/sqlite.ts)
+- [x] [SQLite](./src/sqlite/sqlite.ts)
 
 ## Quick Start
 
@@ -128,6 +128,13 @@ Each connector is defined in the `config.connectors` array.
 
 - `config.connectors[].connectionString`: The connection string to your database. (e.g. `mysql://root:mysql@localhost:3306/mysql`)
 - `config.connectors[].schema`: The schema to use. (e.g. `mysql`)
+
+</details>
+
+<details>
+<summary>SQLite Connector Configuration</summary>
+
+- `config.connectors[].filePath`: The path to your SQLite database file. (e.g. `/path/to/your/database.sqlite`)
 
 </details>
 
