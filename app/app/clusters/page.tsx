@@ -4,7 +4,6 @@ import { ClusterCard } from "@/components/cluster-card";
 import { CreateClusterButton } from "@/components/create-cluster-button";
 import { auth } from "@clerk/nextjs";
 import { Lightbulb } from "lucide-react";
-import Link from "next/link";
 
 export const metadata = {
   title: "Clusters",
@@ -29,13 +28,6 @@ async function App() {
       <div className="p-6">
         <div className="">
           <h1 className="text-2xl">Clusters</h1>
-          <p className="text-gray-500 text-sm">
-            Select a cluster to view details. You can create clusters from your{" "}
-            <Link className="underline" href="https://console.inferable.ai">
-              developer console
-            </Link>
-            .
-          </p>
         </div>
         <div className="h-4" />
 
