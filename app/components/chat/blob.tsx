@@ -7,8 +7,8 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { formatRelative } from "date-fns";
 
-// 5mb
-const MAX_RENDER_SIZE_BYTES = 5 * 1024 * 1024;
+// 50kb
+const MAX_RENDER_SIZE_BYTES = 5 * 1024;
 
 export function Blob({
   blob,
