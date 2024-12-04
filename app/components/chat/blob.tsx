@@ -6,6 +6,7 @@ import { ReadOnlyJSON } from "../read-only-json";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { formatRelative } from "date-fns";
+import { FileWarningIcon } from "lucide-react";
 
 // 50kb
 const MAX_RENDER_SIZE_BYTES = 5 * 1024;
@@ -23,18 +24,25 @@ export function Blob({
   const [oversize, setOversize] = useState(false);
 
   const fetchBlobData = useCallback(async () => {
-    const response = await client.getBlobData({
-      headers: {
-        authorization: `Bearer ${await getToken()}`,
-      },
-      params: {
-        blobId: blob.id,
-        clusterId,
-      },
-    });
+    const cached = localStorage.getItem(`blob-${blob.id}`);
+    if (cached) {
+      setData(localStorage.getItem(`blob-${blob.id}`));
+    } else {
+      const response = await client.getBlobData({
+        headers: {
+          authorization: `Bearer ${await getToken()}`,
+        },
+        params: {
+          blobId: blob.id,
+          clusterId,
+        },
+      });
 
-    if (response.status === 200) {
-      setData(response.body);
+      if (response.status === 200) {
+        // Cache in local storage
+        localStorage.setItem(`blob-${blob.id}`, response.body);
+        setData(response.body);
+      }
     }
     setFetching(false);
   }, [blob.id, clusterId, getToken]);
@@ -42,13 +50,8 @@ export function Blob({
   const downloadBlob = useCallback(async () => {
     if (!data) return;
 
-    const buffer = new TextEncoder().encode(atob(data));
-    const base64Data = btoa(String.fromCharCode(...Array.from(buffer)));
-
-    const dataUri = `data:${blob.type};base64,${base64Data}`;
-
     const a = document.createElement("a");
-    a.href = dataUri;
+    a.href = `data:${blob.type};base64,${data}`;
     a.download = blob.name;
 
     document.body.appendChild(a);
@@ -71,7 +74,7 @@ export function Blob({
       <CardHeader>
         <CardTitle className="flex items-center font-semibold text-md">
           <div className="flex flex-row space-x-2">
-            <p>Blob: {blob.name}</p>
+            <p>Blob</p>
             <p className="text-muted-foreground font-normal">
               {formatRelative(blob.createdAt, new Date())}
             </p>
@@ -81,14 +84,16 @@ export function Blob({
           <p>
             This result was returned as a <a href="https://docs.inferable.ai/pages/blobs" className="underline">Blob</a>. The model did not recieve this data and can not make inferences about it.
           </p>
-            {data && oversize && (
-            <p className="mt-2">
-              Result was too large to render.
-            </p>
-            )}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col space-y-4">
+      <CardContent className="flex flex-col">
+        {fetching && <p>Loading...</p>}
+        {data && oversize && (
+          <div className="flex items-center space-x-2 text-muted-foreground mb-1">
+            <FileWarningIcon size={16} />
+            <span>Result was too large to render.</span>
+          </div>
+        )}
         {data && !oversize && blob.type === "application/json" && (
           <div className="text-xs text-muted-foreground mb-2">
             <ReadOnlyJSON
