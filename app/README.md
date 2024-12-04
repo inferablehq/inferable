@@ -19,7 +19,7 @@ To run the UI locally for development, you will need the control plane running. 
 
 2. Populate environment variables:
 
-Development environment varaiables are managed in the `.env`.
+Development environment variables are managed in the `.env`.
 
 `.env.base` contains a base set of required environment variables. Copy `.env.base` to `.env`.
 
