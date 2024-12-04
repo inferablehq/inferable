@@ -19,6 +19,7 @@ export class OpenAPIClient implements DataConnector {
       name?: string;
       specUrl: string;
       endpoint?: string;
+      allowedOperations?: string[];
       maxResultLength: number;
       defaultHeaders?: Record<string, string>;
       privacyMode: boolean;
@@ -34,6 +35,15 @@ export class OpenAPIClient implements DataConnector {
         `OpenAPI spec loaded successfully from ${this.params.specUrl}`,
       );
 
+      if (this.params.allowedOperations) {
+        console.log(
+          "Filtering operations based on allowedOperations.",
+          {
+            allowedOperations: this.params.allowedOperations,
+          },
+        )
+      }
+
       // Convert paths and their operations into functions
       for (const [path, pathItem] of Object.entries(this.spec.paths)) {
         if (!pathItem) continue;
@@ -43,6 +53,11 @@ export class OpenAPIClient implements DataConnector {
         for (const method of operations) {
           const operation = pathItem[method];
           if (!operation || !operation.operationId) continue;
+
+          if (this.params.allowedOperations && !this.params.allowedOperations.includes(operation.operationId)) {
+            continue;
+          }
+
 
           const inferableFunction = this.openApiOperationToInferableFunction(
             operation,

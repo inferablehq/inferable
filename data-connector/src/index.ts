@@ -57,50 +57,50 @@ const parseConfig = (connector: any) => {
 
     if (connector.type === "postgres") {
       const postgresClient = new PostgresClient({
-        ...connector,
-        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
+        maxResultLength: Number(config.maxResultLength),
+        ...connector,
       });
       await postgresClient.initialize();
       const service = postgresClient.createService(client);
       services.push(service);
     } else if (connector.type === "open-api") {
       const openAPIClient = new OpenAPIClient({
-        ...connector,
-        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
+        maxResultLength: Number(config.maxResultLength),
+        ...connector,
       });
       await openAPIClient.initialize();
       const service = openAPIClient.createService(client);
       services.push(service);
     } else if (connector.type === "graphql") {
       const graphQLClient = new GraphQLClient({
-        ...connector,
-        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
+        maxResultLength: Number(config.maxResultLength),
+        ...connector,
       });
       await graphQLClient.initialize();
       const service = graphQLClient.createService(client);
       services.push(service);
     } else if (connector.type === "mysql") {
       const mysqlClient = new MySQLClient({
-        ...connector,
-        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
+        maxResultLength: Number(config.maxResultLength),
+        ...connector,
       });
       await mysqlClient.initialize();
       const service = mysqlClient.createService(client);
       services.push(service);
     } else if (connector.type === "sqlite") {
       const sqliteClient = new SQLiteClient({
-        ...connector,
-        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
+        maxResultLength: Number(config.maxResultLength),
+        ...connector,
       });
       await sqliteClient.initialize();
       const service = sqliteClient.createService(client);
