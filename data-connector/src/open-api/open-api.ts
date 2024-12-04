@@ -1,10 +1,11 @@
 import { approvalRequest, blob, ContextInput, Inferable } from "inferable";
 import { z } from "zod";
 import type { DataConnector } from "../types";
-import { OpenAPIV3 } from "openapi-types";
+import { OpenAPI, OpenAPIV3 } from "openapi-types";
 import crypto from "crypto";
 import { FunctionRegistrationInput } from "inferable/bin/types";
 import assert from "assert";
+import yaml from "js-yaml";
 
 export class OpenAPIClient implements DataConnector {
   private spec: OpenAPIV3.Document | null = null;
@@ -27,8 +28,8 @@ export class OpenAPIClient implements DataConnector {
 
   public initialize = async () => {
     try {
-      const response = await fetch(this.params.specUrl);
-      this.spec = (await response.json()) as OpenAPIV3.Document;
+      // Handle Yaml or JSON
+      this.spec = await this.fetchOpenAPISchema(this.params.specUrl);
       console.log(
         `OpenAPI spec loaded successfully from ${this.params.specUrl}`,
       );
@@ -120,19 +121,15 @@ export class OpenAPIClient implements DataConnector {
       `${method.toUpperCase()} ${path}`;
 
     return {
-      name: operation.operationId,
+      name: this.camelCase(operation.operationId),
       description: `${summary}. Ask the user to provide values for any required parameters.`,
-      func: this.executeRequest,
+      func: this.executeRequest({
+        path,
+        method,
+        parametersByLocation,
+      }),
       schema: {
         input: z.object({
-          path: path.includes(":")
-            ? z
-                .string()
-                .describe(
-                  `Must be ${path} with values substituted for any path parameters.`,
-                )
-            : z.literal(path),
-          method: z.literal(method.toUpperCase()),
           parameters: hasParameters
             ? z
                 .record(z.any())
@@ -156,10 +153,16 @@ export class OpenAPIClient implements DataConnector {
     };
   };
 
-  executeRequest = async (
+  executeRequest = (endpoint: {
+    path: string;
+    method: string;
+    parametersByLocation: {
+      path: string[];
+      query: string[];
+      header: string[];
+    }
+  }) => async (
     input: {
-      path: string;
-      method: string;
       parameters?: Record<string, any>;
       body?: any;
     },
@@ -183,16 +186,34 @@ export class OpenAPIClient implements DataConnector {
       this.spec.servers?.[0]?.url ||
       ""
     ).toString();
-    let finalPath = input.path;
+
+    let finalPath = endpoint.path;
 
     if (input.parameters) {
+
       // Replace path parameters
-      Object.entries(input.parameters).forEach(([key, value]) => {
-        finalPath = finalPath.replace(
-          `{${key}}`,
-          encodeURIComponent(String(value)),
-        );
-      });
+      let pathParameters: string[] = [];
+      finalPath = Object
+        .entries(input.parameters)
+        .filter(([key]) => endpoint.parametersByLocation.path.includes(key))
+        .reduce((path, [key, value]) => {
+          if (path.includes(`{${key}}`)) {
+            pathParameters.push(key);
+          }
+
+          return path.replace(`{${key}}`, encodeURIComponent(String(value)));
+        }, finalPath);
+
+      // Add any query parameters
+      finalPath += '?' + Object
+        .entries(input.parameters)
+        .filter(([key]) => endpoint.parametersByLocation.query.includes(key))
+        .filter(([key]) => !pathParameters.includes(key))
+        .reduce(
+          (params, [key, value]) => {
+            params.set(key, String(value));
+            return params;
+          }, new URLSearchParams()).toString();
     }
 
     url += finalPath;
@@ -203,8 +224,17 @@ export class OpenAPIClient implements DataConnector {
       ...this.params.defaultHeaders,
     };
 
+    if (input.parameters) {
+      // Add any additional headers
+      Object.entries(input.parameters)
+        .filter(([key]) => endpoint.parametersByLocation.header.includes(key))
+        .forEach(([key, value]) => {
+          headers[key] = String(value);
+        });
+    }
+
     const response = await fetch(url, {
-      method: input.method,
+      method: endpoint.method,
       headers,
       body: input.body ? JSON.stringify(input.body) : undefined,
     });
@@ -267,4 +297,42 @@ export class OpenAPIClient implements DataConnector {
 
     return service;
   };
+
+  private camelCase = (operationId: string) => {
+    return operationId
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("");
+  }
+
+  private fetchOpenAPISchema = async (
+    url: string,
+  ): Promise<OpenAPIV3.Document>  => {
+    try {
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch schema: ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json') || url.endsWith('.json');
+      const isYaml = contentType.includes('application/x-yaml') || url.endsWith('.yaml') || url.endsWith('.yml');
+
+      const schemaText = await response.text();
+
+      if (isJson) {
+        return JSON.parse(schemaText) as OpenAPIV3.Document;
+      } else if (isYaml) {
+        return yaml.load(schemaText) as OpenAPIV3.Document;
+      } else {
+        throw new Error(`Unsupported format or mismatch between requested and detected format.`);
+      }
+    } catch (error) {
+      console.error('Error downloading OpenAPI schema:', error);
+      throw error;
+    }
+  }
 }
+
+
