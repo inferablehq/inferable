@@ -143,6 +143,8 @@ Each connector is defined in the `config.connectors` array.
 
 - `config.connectors[].type`: The type of connector. Currently only `postgres` is supported.
 - `config.connectors[].name`: The name of the connector. This is the Inferable service name. One will be generated if not provided.
+- `config.connectors[].privacyMode`: The privacy mode. Set to `1` to enable `privacyMode` (Overrides the value at `config.privacyMode`)
+- `config.connectors[].paranoidMode`: The paranoid mode. Set to `1` to enable `paranoidMode` (Overrides the value at `config.paranoidMode`)
 
 <details>
 <summary>Postgres Connector Configuration</summary>

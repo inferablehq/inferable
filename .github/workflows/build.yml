@@ -25,6 +25,7 @@ jobs:
       sdk_react: ${{ steps.filter.outputs.sdk_react }}
       cli: ${{ steps.filter.outputs.cli }}
       control_plane: ${{ steps.filter.outputs.control_plane }}
+      data_connector: ${{ steps.filter.outputs.data_connector }}
       app: ${{ steps.filter.outputs.app }}
       # Deploy steps (Docker build / CFN) if either control-plane or app changed
       deploy: ${{ steps.filter.outputs.deploy }}
@@ -546,6 +547,36 @@ jobs:
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $DOCKERHUB_USERNAME/control-plane:latest
           docker push $DOCKERHUB_USERNAME/control-plane:$IMAGE_TAG
           docker push $DOCKERHUB_USERNAME/control-plane:latest
+
+  build-data-connector-image:
+    runs-on: ubuntu-latest
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.data_connector == 'true' && github.ref == 'refs/heads/main' }}
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Control Plane Docker Image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: |
+          docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+          cd data-connector
+          VERSION=${{ github.sha }}
+          SHORT_VERSION=$(echo ${{ github.sha }} | cut -c 1-6)
+          docker buildx build \
+          --target run \
+          --push \
+          --build-arg="VERSION=$VERSION" \
+          --build-arg="SHORT_VERSION=$SHORT_VERSION" \
+          -t $DOCKERHUB_USERNAME/data-connector:$IMAGE_TAG -t $DOCKERHUB_USERNAME/$data-connector:latest ./
 
   deploy-cloud:
     runs-on: ubuntu-latest
