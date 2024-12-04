@@ -11,7 +11,6 @@ The Inferable Web UI is a user interface for Inferable's control plane. It is op
 
 <img src="https://github.com/inferablehq/inferable/blob/main/app/assets/screenshot.png" alt="Inferable UI" width="100%" style="border-radius: 10px" />
 
-
 ### Local Development
 
 1. Start the control plane:

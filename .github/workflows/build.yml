@@ -85,7 +85,7 @@ jobs:
   test-control-plane:
     runs-on: ubuntu-latest
     needs: [check_changes, build-control-plane]
-    if: ${{ needs.check_changes.outputs.control_plane == 'true' }}
+    if: ${{ needs.check_changes.outputs.control_plane == 'true' || needs.check_changes.outputs.deploy == 'true' }}
     defaults:
       run:
         working-directory: control-plane
