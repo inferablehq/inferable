@@ -18,6 +18,7 @@ export class OpenAPIClient implements DataConnector {
       name?: string;
       specUrl: string;
       endpoint?: string;
+      maxResultLength: number;
       defaultHeaders?: Record<string, string>;
       privacyMode: boolean;
       paranoidMode: boolean;
@@ -224,6 +225,18 @@ export class OpenAPIClient implements DataConnector {
       return {
         message:
           "This request was executed in privacy mode. Data was returned to the user directly.",
+        blob: blob({
+          name: "Results",
+          type: "application/json",
+          data: parsed,
+        }),
+      };
+    }
+
+    if (JSON.stringify(parsed).length > this.params.maxResultLength) {
+      return {
+        message:
+          "This query returned too much data. Data was returned to the user directly.",
         blob: blob({
           name: "Results",
           type: "application/json",

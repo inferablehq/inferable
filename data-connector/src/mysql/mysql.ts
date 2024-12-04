@@ -14,6 +14,7 @@ export class MySQLClient implements DataConnector {
       name?: string;
       schema: string;
       connectionString: string;
+      maxResultLength: number;
       privacyMode: boolean;
       paranoidMode: boolean;
     },
@@ -123,6 +124,18 @@ export class MySQLClient implements DataConnector {
       return {
         message:
           "This query was executed in privacy mode. Data was returned to the user directly.",
+        blob: blob({
+          name: "Results",
+          type: "application/json",
+          data: rows,
+        }),
+      };
+    }
+
+    if (JSON.stringify(rows).length > this.params.maxResultLength) {
+      return {
+        message:
+          "This query returned too much data. Data was returned to the user directly.",
         blob: blob({
           name: "Results",
           type: "application/json",

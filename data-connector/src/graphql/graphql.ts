@@ -25,6 +25,7 @@ export class GraphQLClient implements DataConnector {
       name?: string;
       schemaUrl: string;
       endpoint: string;
+      maxResultLength: number;
       defaultHeaders?: Record<string, string>;
       privacyMode: boolean;
       paranoidMode: boolean;
@@ -172,6 +173,18 @@ To understand the input and output types for this operation, use the searchGraph
           name: "Results",
           type: "application/json",
           data,
+        }),
+      };
+    }
+
+    if (JSON.stringify(data).length > this.params.maxResultLength) {
+      return {
+        message:
+          "This query returned too much data. Data was returned to the user directly.",
+        blob: blob({
+          name: "Results",
+          type: "application/json",
+          data: data,
         }),
       };
     }

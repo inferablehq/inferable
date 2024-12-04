@@ -14,6 +14,7 @@ export class SQLiteClient implements DataConnector {
     private params: {
       name?: string;
       filePath: string;
+      maxResultLength: number;
       privacyMode: boolean;
       paranoidMode: boolean;
     },
@@ -121,6 +122,18 @@ export class SQLiteClient implements DataConnector {
       return {
         message:
           "This query was executed in privacy mode. Data was returned to the user directly.",
+        blob: blob({
+          name: "Results",
+          type: "application/json",
+          data: rows,
+        }),
+      };
+    }
+
+    if (JSON.stringify(rows).length > this.params.maxResultLength) {
+      return {
+        message:
+          "This query returned too much data. Data was returned to the user directly.",
         blob: blob({
           name: "Results",
           type: "application/json",

@@ -51,9 +51,14 @@ const parseConfig = (connector: any) => {
       continue;
     }
 
+    if (!!connector.maxResultLength && isNaN(Number(connector.maxResultLength))) {
+      throw new Error("maxResultLength must be a number");
+    }
+
     if (connector.type === "postgres") {
       const postgresClient = new PostgresClient({
         ...connector,
+        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
       });
@@ -63,6 +68,7 @@ const parseConfig = (connector: any) => {
     } else if (connector.type === "open-api") {
       const openAPIClient = new OpenAPIClient({
         ...connector,
+        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
       });
@@ -72,6 +78,7 @@ const parseConfig = (connector: any) => {
     } else if (connector.type === "graphql") {
       const graphQLClient = new GraphQLClient({
         ...connector,
+        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
       });
@@ -81,6 +88,7 @@ const parseConfig = (connector: any) => {
     } else if (connector.type === "mysql") {
       const mysqlClient = new MySQLClient({
         ...connector,
+        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
       });
@@ -90,6 +98,7 @@ const parseConfig = (connector: any) => {
     } else if (connector.type === "sqlite") {
       const sqliteClient = new SQLiteClient({
         ...connector,
+        maxResultLength: Number(config.maxResultLength),
         paranoidMode: config.paranoidMode === 1,
         privacyMode: config.privacyMode === 1,
       });

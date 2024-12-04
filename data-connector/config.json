@@ -1,6 +1,7 @@
 {
   "privacyMode": 0,
   "paranoidMode": 0,
+  "maxResultLength": 20000,
   "connectors": [
     {
       "type": "postgres",

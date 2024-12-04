@@ -16,7 +16,6 @@
     "graphql-tag": "^2.12.6",
     "inferable": "^0.30.48",
     "mysql2": "^3.11.5",
-    "pg": "^8.13.1",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "tsx": "^4.19.2"
@@ -24,6 +23,8 @@
   "devDependencies": {
     "@faker-js/faker": "^9.1.0",
     "@types/node": "^20.11.19",
+    "@types/pg": "^8.11.10",
+    "pg": "^8.13.1",
     "typescript": "^5.3.3"
   }
 }
