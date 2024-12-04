@@ -11,11 +11,20 @@ import { SQLiteClient } from "./sqlite/sqlite";
 const parseConfig = (connector: any) => {
   for (const [key, value] of Object.entries(connector)) {
     if (typeof value === "object") {
-      connector[key] = parseConfig(value);
+      const config = parseConfig(value);
+      if (!config) {
+        delete connector[key];
+        console.warn(
+          `Connector ${key} has invalid configuration. It will be skipped.`,
+        )
+      }
+
+      connector[key] = config;
     } else if (typeof value === "string" && value.startsWith("process.env.")) {
       const actual = process.env[value.replace("process.env.", "")];
       if (!actual) {
-        throw new Error(`Environment variable ${value} not found`);
+        console.warn(`Environment variable ${value} not found.`);
+        return;
       }
       connector[key] = actual;
     }
@@ -38,6 +47,10 @@ const parseConfig = (connector: any) => {
   const services: RegisteredService[] = [];
 
   for (const connector of config.connectors) {
+    if (!connector) {
+      continue;
+    }
+
     if (connector.type === "postgres") {
       const postgresClient = new PostgresClient({
         ...connector,
