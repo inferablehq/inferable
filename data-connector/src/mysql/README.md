@@ -36,7 +36,7 @@ sequenceDiagram
 
     %% Query Execution
     LLM->>Connector: executeMysqlQuery()
-    alt Paranoid Mode
+    alt Approval Mode
         Connector->>Human: Request approval
         Human-->>Connector: Approve query
     end
@@ -54,7 +54,7 @@ sequenceDiagram
 
 - **Schema Analysis**: Automatically maps database structure for LLM context
 - **Privacy Mode**: Prevents sensitive data from passing through the LLM
-- **Paranoid Mode**: Requires human approval for query execution
+- **Approval Mode**: Requires human approval for query execution
 - **Sample Data**: Provides example rows to help LLM understand data patterns
 
 ## Important Considerations

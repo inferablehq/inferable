@@ -1,6 +1,6 @@
 {
   "privacyMode": 0,
-  "paranoidMode": 0,
+  "approvalMode": 0,
   "maxResultLength": 20000,
   "connectors": [
     {

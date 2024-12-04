@@ -574,7 +574,6 @@ jobs:
           VERSION=${{ github.sha }}
           SHORT_VERSION=$(echo ${{ github.sha }} | cut -c 1-6)
           docker buildx build \
-          --target run \
           --push \
           --build-arg="VERSION=$VERSION" \
           --build-arg="SHORT_VERSION=$SHORT_VERSION" \

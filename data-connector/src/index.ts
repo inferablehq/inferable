@@ -57,7 +57,7 @@ const parseConfig = (connector: any) => {
 
     if (connector.type === "postgres") {
       const postgresClient = new PostgresClient({
-        paranoidMode: config.paranoidMode === 1,
+        approvalMode: config.approvalMode === 1,
         privacyMode: config.privacyMode === 1,
         maxResultLength: Number(config.maxResultLength),
         ...connector,
@@ -67,7 +67,7 @@ const parseConfig = (connector: any) => {
       services.push(service);
     } else if (connector.type === "open-api") {
       const openAPIClient = new OpenAPIClient({
-        paranoidMode: config.paranoidMode === 1,
+        approvalMode: config.approvalMode === 1,
         privacyMode: config.privacyMode === 1,
         maxResultLength: Number(config.maxResultLength),
         ...connector,
@@ -77,7 +77,7 @@ const parseConfig = (connector: any) => {
       services.push(service);
     } else if (connector.type === "graphql") {
       const graphQLClient = new GraphQLClient({
-        paranoidMode: config.paranoidMode === 1,
+        approvalMode: config.approvalMode === 1,
         privacyMode: config.privacyMode === 1,
         maxResultLength: Number(config.maxResultLength),
         ...connector,
@@ -87,7 +87,7 @@ const parseConfig = (connector: any) => {
       services.push(service);
     } else if (connector.type === "mysql") {
       const mysqlClient = new MySQLClient({
-        paranoidMode: config.paranoidMode === 1,
+        approvalMode: config.approvalMode === 1,
         privacyMode: config.privacyMode === 1,
         maxResultLength: Number(config.maxResultLength),
         ...connector,
@@ -97,7 +97,7 @@ const parseConfig = (connector: any) => {
       services.push(service);
     } else if (connector.type === "sqlite") {
       const sqliteClient = new SQLiteClient({
-        paranoidMode: config.paranoidMode === 1,
+        approvalMode: config.approvalMode === 1,
         privacyMode: config.privacyMode === 1,
         maxResultLength: Number(config.maxResultLength),
         ...connector,

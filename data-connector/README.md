@@ -9,7 +9,7 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 - 🧩 **Extensible**: Adding a new data source is as simple as writing a new connector. See the [Postgres](./src/postgres.ts) connector for an example.
 - 🔄 **Adapts to schema changes**: The connector automatically adapts to schema changes by periodically fetching the data system schema. (Table definitions, API definitions, etc.)
 - 🤿 **Optional Privacy Mode**: Query outputs are never sent to the model. Instead, the function returns results directly to the end user without any model involvement.
-- 🔍 **Optional Paranoid Mode**: Adds an additional safety layer by requiring manual approval before executing any query so you can review the query and data before it is executed.
+- 🔍 **Optional Approval Mode**: Adds an additional safety layer by requiring manual approval before executing any query so you can review the query and data before it is executed.
 
 ## Connectors
 
@@ -81,7 +81,7 @@ Example configuration:
 ```json
 {
   "privacyMode": 0,
-  "paranoidMode": 0,
+  "approvalMode": 0,
   "connectors": [
     {
       "type": "postgres",
@@ -125,7 +125,7 @@ configs:
     content: |
       {
         "privacyMode": 0,
-        "paranoidMode": 0,
+        "approvalMode": 0,
         "connectors": [
           {
             "type": "postgres",
@@ -144,7 +144,7 @@ Each connector is defined in the `config.connectors` array.
 - `config.connectors[].type`: The type of connector. Currently only `postgres` is supported.
 - `config.connectors[].name`: The name of the connector. This is the Inferable service name. One will be generated if not provided.
 - `config.connectors[].privacyMode`: The privacy mode. Set to `1` to enable `privacyMode` (Overrides the value at `config.privacyMode`)
-- `config.connectors[].paranoidMode`: The paranoid mode. Set to `1` to enable `paranoidMode` (Overrides the value at `config.paranoidMode`)
+- `config.connectors[].approvalMode`: The approval mode. Set to `1` to enable `approvalMode` (Overrides the value at `config.approvalMode`)
 
 <details>
 <summary>Postgres Connector Configuration</summary>
@@ -200,11 +200,11 @@ Note: This may limit some advanced reasoning capabilities that require direct da
 
 ![Privacy Mode](./assets/privacy.png)
 
-### config.paranoidMode
+### config.approvalMode
 
-Adds an additional safety layer by requiring manual approval before executing any queries. Enable with `config.paranoidMode=1`. This can get annoying really quickly, so we've disabled it by default.
+Adds an additional safety layer by requiring manual approval before executing any queries. Enable with `config.approvalMode=1`. This can get annoying really quickly, so we've disabled it by default.
 
-![Paranoid Mode](./assets/paranoid.gif)
+![Approval Mode](./assets/paranoid.gif)
 
 ## Production Deployment
 
@@ -219,7 +219,7 @@ When deploying to production, follow these security best practices:
 
 3. **Query Approval**:
 
-- Set `config.paranoidMode=1` to require manual approval of queries.
+- Set `config.approvalMode=1` to require manual approval of queries.
 - This provides an additional layer of control over database interactions
 
 ## Architecture

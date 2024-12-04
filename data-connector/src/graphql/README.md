@@ -44,7 +44,7 @@ sequenceDiagram
 
     %% Query Execution
     LLM->>Connector: Execute operation
-    alt Paranoid Mode
+    alt Approval Mode
         Connector->>Human: Request approval
         Human-->>Connector: Approve request
     end
@@ -63,7 +63,7 @@ sequenceDiagram
 - **Schema Introspection**: Provides detailed type information for constructing queries
 - **Automatic Function Generation**: Creates Inferable functions from GraphQL operations
 - **Privacy Mode**: Prevents sensitive API responses from passing through the LLM
-- **Paranoid Mode**: Requires human approval for API requests
+- **Approval Mode**: Requires human approval for API requests
 - **Type Validation**: Ensures queries match the GraphQL schema
 
 ## Important Considerations
@@ -121,7 +121,7 @@ query user($id: ID!) {
 
 - **Authentication**: Configure through defaultHeaders
 - **Privacy Mode**: Prevents sensitive API responses from reaching the LLM
-- **Paranoid Mode**: Requires approval before making requests
+- **Approval Mode**: Requires approval before making requests
 - **Schema Validation**: Ensures queries match the GraphQL schema
 
 ### GraphQL-Specific Features

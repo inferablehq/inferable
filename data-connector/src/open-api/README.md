@@ -39,7 +39,7 @@ sequenceDiagram
 
     %% Request Execution
     LLM->>Connector: Execute operation
-    alt Paranoid Mode
+    alt Approval Mode
         Connector->>Human: Request approval
         Human-->>Connector: Approve request
     end
@@ -57,7 +57,7 @@ sequenceDiagram
 
 - **Automatic Function Generation**: Creates Inferable functions from OpenAPI operations
 - **Privacy Mode**: Prevents sensitive API responses from passing through the LLM
-- **Paranoid Mode**: Requires human approval for API requests
+- **Approval Mode**: Requires human approval for API requests
 - **Parameter Validation**: Ensures requests match the OpenAPI specification
 - **Default Headers**: Supports global headers for authentication
 - **OperationId Filtering**: Explicitly allow certain OpenAPI operations
@@ -93,7 +93,7 @@ By default, the connector will attach **all** operations in the OpenAPI spec to 
 
 - **Authentication**: Configure through defaultHeaders
 - **Privacy Mode**: Prevents sensitive API responses from reaching the LLM
-- **Paranoid Mode**: Requires approval before making requests
+- **Approval Mode**: Requires approval before making requests
 - **URL Validation**: Ensures requests match the OpenAPI spec paths
 
 ### OpenAPI-Specific Features

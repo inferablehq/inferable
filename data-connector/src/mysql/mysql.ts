@@ -16,7 +16,7 @@ export class MySQLClient implements DataConnector {
       connectionString: string;
       maxResultLength: number;
       privacyMode: boolean;
-      paranoidMode: boolean;
+      approvalMode: boolean;
     },
   ) {
     assert(params.schema, "Schema parameter is required");
@@ -107,7 +107,7 @@ export class MySQLClient implements DataConnector {
   };
 
   executeMysqlQuery = async (input: { query: string }, ctx: ContextInput) => {
-    if (this.params.paranoidMode) {
+    if (this.params.approvalMode) {
       if (!ctx.approved) {
         console.log("Query requires approval");
         return approvalRequest();

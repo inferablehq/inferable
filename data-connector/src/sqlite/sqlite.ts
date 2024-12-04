@@ -16,7 +16,7 @@ export class SQLiteClient implements DataConnector {
       filePath: string;
       maxResultLength: number;
       privacyMode: boolean;
-      paranoidMode: boolean;
+      approvalMode: boolean;
     },
   ) {
     assert(params.filePath, "File path parameter is required");
@@ -105,7 +105,7 @@ export class SQLiteClient implements DataConnector {
   };
 
   executeSqliteQuery = async (input: { query: string }, ctx: ContextInput) => {
-    if (this.params.paranoidMode) {
+    if (this.params.approvalMode) {
       if (!ctx.approved) {
         console.log("Query requires approval");
         return approvalRequest();

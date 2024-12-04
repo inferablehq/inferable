@@ -23,7 +23,7 @@ export class OpenAPIClient implements DataConnector {
       maxResultLength: number;
       defaultHeaders?: Record<string, string>;
       privacyMode: boolean;
-      paranoidMode: boolean;
+      approvalMode: boolean;
     },
   ) {}
 
@@ -183,7 +183,7 @@ export class OpenAPIClient implements DataConnector {
     },
     ctx: ContextInput,
   ) => {
-    if (this.params.paranoidMode) {
+    if (this.params.approvalMode) {
       if (!ctx.approved) {
         console.log("Request requires approval");
         return approvalRequest();
