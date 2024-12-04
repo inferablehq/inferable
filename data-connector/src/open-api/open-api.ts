@@ -1,6 +1,5 @@
 import { approvalRequest, blob, ContextInput, Inferable } from "inferable";
 import { z } from "zod";
-import fetch from "node-fetch";
 import type { DataConnector } from "../types";
 import { OpenAPIV3 } from "openapi-types";
 import crypto from "crypto";

@@ -16,7 +16,6 @@
     "graphql-tag": "^2.12.6",
     "inferable": "^0.30.48",
     "mysql2": "^3.11.5",
-    "node-fetch": "^3.3.2",
     "pg": "^8.13.1",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
