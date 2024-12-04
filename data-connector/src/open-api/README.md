@@ -14,7 +14,7 @@ Configure the connector in your `config.json`:
   "endpoint": "process.env.SERVER_URL",
   "defaultHeaders": {
     "Authorization": "process.env.SERVER_AUTH_HEADER"
-  }
+  },
 }
 ```
 
@@ -60,6 +60,7 @@ sequenceDiagram
 - **Paranoid Mode**: Requires human approval for API requests
 - **Parameter Validation**: Ensures requests match the OpenAPI specification
 - **Default Headers**: Supports global headers for authentication
+- **OperationId Filtering**: Explicitly allow certain OpenAPI operations
 
 ## Important Considerations
 
@@ -83,6 +84,10 @@ The connector automatically generates functions from OpenAPI operations:
   }
 }
 ```
+
+### Large Schemas
+
+By default, the connector will attach **all** operations in the OpenAPI spec to the model. If your schema is large, consider using `config.connectors[].allowedOperations` to explicitly allow only the operations you need.
 
 ### Security Considerations
 

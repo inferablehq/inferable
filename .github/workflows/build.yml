@@ -563,7 +563,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build Control Plane Docker Image
+      - name: Build Data Connector Docker Image
         env:
           IMAGE_TAG: ${{ github.sha }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -578,7 +578,7 @@ jobs:
           --push \
           --build-arg="VERSION=$VERSION" \
           --build-arg="SHORT_VERSION=$SHORT_VERSION" \
-          -t $DOCKERHUB_USERNAME/data-connector:$IMAGE_TAG -t $DOCKERHUB_USERNAME/$data-connector:latest ./
+          -t $DOCKERHUB_USERNAME/data-connector:$IMAGE_TAG -t $DOCKERHUB_USERNAME/data-connector:latest ./
 
   deploy-cloud:
     runs-on: ubuntu-latest

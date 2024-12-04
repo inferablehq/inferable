@@ -160,6 +160,7 @@ Each connector is defined in the `config.connectors` array.
 - `config.connectors[].specUrl`: The URL to your OpenAPI spec. Must be publicly accessible.
 - `config.connectors[].endpoint`: The endpoint to use. (e.g. `https://api.inferable.ai`)
 - `config.connectors[].defaultHeaders`: The default headers to use. (e.g. `{"Authorization": "Bearer <token>"}`)
+- `config.connectors[].allowedOperations`: Explicit OpenAPI operationIDs to allow.
 
 </details>
 
