@@ -14,7 +14,7 @@
     "fastify": "^4.28.1",
     "graphql": "^16.9.0",
     "graphql-tag": "^2.12.6",
-    "inferable": "^0.30.48",
+    "inferable": "^0.30.58",
     "mysql2": "^3.11.5",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
