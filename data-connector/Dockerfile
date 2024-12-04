@@ -12,7 +12,6 @@ RUN npm install
 
 COPY src ./src
 COPY config.json ./config.json
-COPY .env ./
 
 # Expose DEBUG traces
 ENV DEBUG=inferable:*
