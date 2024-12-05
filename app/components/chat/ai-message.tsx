@@ -1,12 +1,19 @@
 import { agentDataSchema } from "@/client/contract";
 import { formatRelative } from "date-fns";
 import { startCase } from "lodash";
-import { AlertTriangle, Brain, CheckCircleIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  Brain,
+  CheckCircleIcon,
+  MessageCircle,
+  MessageCircleReply,
+  Speaker,
+  Speech,
+} from "lucide-react";
 import { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import { z } from "zod";
-import { JsonForm } from "../json-form";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { JSONDisplay } from "../JSONDisplay";
 import { MessageContainerProps } from "./workflow-event";
 
 interface DataSectionProps {
@@ -16,12 +23,12 @@ interface DataSectionProps {
 }
 
 const DataSection = ({ title, icon: Icon, content }: DataSectionProps) => (
-  <div>
-    <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-      <Icon size={16} />
+  <div className="mb-4 last:mb-0">
+    <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-2">
+      <Icon size={16} className="text-primary/70" />
       <span>{title}</span>
     </div>
-    {content}
+    <div className="ml-6">{content}</div>
   </div>
 );
 
@@ -36,12 +43,12 @@ const ResultSection = ({ result }: { result: object }) => {
       <div className="space-y-4">
         {Object.entries(basicData).map(([key, value]) => (
           <div key={key}>
-            <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+            <div className="text-sm font-medium text-muted-foreground/80 mb-2">
               {startCase(key)}
-            </h4>
-            <div className="bg-muted rounded-md p-3">
+            </div>
+            <div className="bg-muted rounded-md p-3 shadow-sm">
               {value.split("\n").map((v, index) => (
-                <p key={index} className="text-sm leading-relaxed py-1">
+                <p key={index} className="text-sm leading-relaxed">
                   {v}
                 </p>
               ))}
@@ -52,7 +59,7 @@ const ResultSection = ({ result }: { result: object }) => {
     );
   }
 
-  return <JsonForm label="" value={result} />;
+  return <JSONDisplay json={result} />;
 };
 
 export const AiMessage = ({ data, createdAt }: MessageContainerProps) => {
@@ -65,63 +72,81 @@ export const AiMessage = ({ data, createdAt }: MessageContainerProps) => {
   }
 
   return (
-    <Card className="ml-4 mb-4 mr-4">
-      <CardHeader>
-        <CardTitle className="flex items-center font-semibold text-md">
-          <div className="flex flex-row space-x-2">
-            <p>Inferable AI</p>
-            <p className="text-muted-foreground font-normal">
-              {formatRelative(createdAt, new Date())}
-            </p>
+    <div className="mx-4">
+      <div className="rounded-xl bg-secondary/30 p-4 shadow-sm border border-border/50 backdrop-blur-sm">
+        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Brain size={18} className="text-primary" />
           </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col space-y-4">
-        {message && (
-          <DataSection
-            title="Message"
-            icon={CheckCircleIcon}
-            content={
-              <ReactMarkdown className="text-sm text-muted-foreground my-2">
-                {message}
-              </ReactMarkdown>
-            }
-          />
-        )}
-        {result && <ResultSection result={result} />}
-        {issue && (
-          <DataSection
-            title="Issue"
-            icon={AlertTriangle}
-            content={<p className="text-xs">{issue}</p>}
-          />
-        )}
-        {hasReasoning &&
-          invocations?.map((invocation, index) => (
+          <div>
+            <div className="text-sm font-medium">Inferable</div>
+            <div className="text-xs text-muted-foreground">
+              {formatRelative(createdAt, new Date())}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {message && (
             <DataSection
-              key={index}
-              title="Reasoning"
-              icon={Brain}
+              title="Message"
+              icon={MessageCircleReply}
               content={
-                <p className="text-xs text">
-                  Invoking {invocation.toolName}: {invocation.reasoning}
+                <ReactMarkdown className="text-sm text-muted-foreground prose-sm prose-p:leading-relaxed prose-p:my-1.5 prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md">
+                  {message}
+                </ReactMarkdown>
+              }
+            />
+          )}
+          {result && <ResultSection result={result} />}
+          {issue && (
+            <DataSection
+              title="Issue"
+              icon={AlertTriangle}
+              content={
+                <p className="text-sm text-red-500/80 bg-red-500/5 rounded-md p-3">
+                  {issue}
                 </p>
               }
             />
+          )}
+          {hasReasoning &&
+            invocations?.map((invocation, index) => (
+              <DataSection
+                key={index}
+                title="Reasoning"
+                icon={Brain}
+                content={
+                  <div className="">
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium">
+                        Invoking {invocation.toolName}:
+                      </span>{" "}
+                      {invocation.reasoning}
+                    </p>
+                  </div>
+                }
+              />
+            ))}
+          {learnings?.map((learning, index) => (
+            <DataSection
+              key={index}
+              title="Learning"
+              icon={Brain}
+              content={
+                <div className="bg-primary/5 rounded-md p-3">
+                  <p className="text-sm text-muted-foreground">
+                    {learning.summary}
+                    <span className="text-xs ml-2 text-muted-foreground/70">
+                      ({learning.entities.map((e: any) => e.name).join(", ")})
+                    </span>
+                  </p>
+                </div>
+              }
+            />
           ))}
-        {learnings?.map((learning, index) => (
-          <DataSection
-            key={index}
-            title="Learning"
-            icon={Brain}
-            content={
-              <p className="text-xs">
-                {`${learning.summary} (${learning.entities.map((e: any) => e.name).join(", ")})`}
-              </p>
-            }
-          />
-        ))}
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 };

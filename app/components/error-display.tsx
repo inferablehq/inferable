@@ -14,7 +14,7 @@ interface ErrorDisplayProps {
 }
 
 const getHumorousMessage = (
-  status?: number,
+  status?: number
 ): { message: string; icon: JSX.Element } => {
   switch (status) {
     case 400:
@@ -53,8 +53,7 @@ const getHumorousMessage = (
       };
     default:
       return {
-        message:
-          "Error detected - And we're not quite sure why. Devs are on it.",
+        message: "Devs are on it.",
         icon: <Bot className="h-5 w-5" />,
       };
   }
@@ -63,7 +62,8 @@ const getHumorousMessage = (
 export default function ErrorDisplay({ status, error }: ErrorDisplayProps) {
   const errorContent = getHumorousMessage(status);
 
-  const message = error?.body?.error?.message || error?.error?.message;
+  const message =
+    error?.body?.error?.message || error?.error?.message || error?.message;
 
   return (
     <div className="h-[80vh] w-full flex items-center justify-center">

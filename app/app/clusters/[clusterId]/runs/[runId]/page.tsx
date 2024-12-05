@@ -1,6 +1,5 @@
 "use client";
 
-import { EventsOverlayButton } from "@/components/events-overlay";
 import { Run } from "@/components/workflow";
 
 function Page({
@@ -11,18 +10,7 @@ function Page({
     runId: string;
   };
 }) {
-  return (
-    <div>
-      <div className="flex flex-row mb-2 space-x-2 items-center">
-        <EventsOverlayButton
-          clusterId={clusterId}
-          query={{ workflowId: runId }}
-          text="Events"
-        />
-      </div>
-      <Run clusterId={clusterId} runId={runId} />
-    </div>
-  );
+  return <Run clusterId={clusterId} runId={runId} />;
 }
 
 export default Page;

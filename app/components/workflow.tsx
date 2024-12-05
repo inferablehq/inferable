@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { FunctionSquareIcon, RefreshCcw, TestTube2Icon } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { useCallback, useEffect, useState } from "react";
-import { Virtuoso } from "react-virtuoso";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 import { ulid } from "ulid";
@@ -54,11 +53,20 @@ function ElementWrapper({
 
   return (
     <div
-      className={`${dimmable ? `opacity-60` : ``} transition-all duration-300 workflow-element-wrapper mb-4`}
+      className={`${
+        dimmable ? `opacity-60` : ``
+      } transition-all duration-300 workflow-element-wrapper mb-4`}
     >
       {children}
     </div>
   );
+}
+
+function smoothScrollToBottom(element: HTMLElement) {
+  element.scrollTo({
+    top: element.scrollHeight,
+    behavior: "smooth",
+  });
 }
 
 export function Run({
@@ -74,7 +82,7 @@ export function Run({
     (c: string, w?: string) => {
       router.push(`/clusters/${c}/runs/${w ?? ""}`);
     },
-    [router],
+    [router]
   );
 
   const { getToken } = useAuth();
@@ -176,7 +184,7 @@ export function Run({
         });
       }
     },
-    [clusterId, runId, getToken, setPrompt, goToRun, wipMessages],
+    [clusterId, runId, getToken, setPrompt, goToRun, wipMessages]
   );
 
   const submitApproval = useCallback(
@@ -210,7 +218,7 @@ export function Run({
         createErrorToast(result, "Failed to approve call");
       }
     },
-    [getToken],
+    [getToken]
   );
 
   const [mutableId, setMutableId] = useState("7ZZZZZZZZZZZZZZZZZZZZZZZZZ");
@@ -219,7 +227,7 @@ export function Run({
   const organization = useOrganization();
 
   const role = user.user?.organizationMemberships.find(
-    (o) => o.organization.id === organization?.organization?.id,
+    (o) => o.organization.id === organization?.organization?.id
   )?.role;
 
   const isAdmin = role === "org:admin";
@@ -387,7 +395,7 @@ export function Run({
                     {JSON.stringify(
                       runTimeline?.run.failureReason ?? "Unknown failure",
                       null,
-                      2,
+                      2
                     )}
                   </pre>
                   <Button
@@ -431,18 +439,6 @@ export function Run({
         }
       : null;
 
-  const thinkingFooter =
-    runTimeline?.run.status === "running"
-      ? {
-          element: (
-            <ElementWrapper id={"thinking-indicator"} mutableId={mutableId}>
-              <ThinkingIndicator />
-            </ElementWrapper>
-          ),
-          timestamp: new Date().getTime(),
-        }
-      : null;
-
   const pendingMessage =
     wipMessages.queue
       .filter((m) => !runTimeline?.messages.map((m) => m.id).includes(m.id))
@@ -483,30 +479,36 @@ export function Run({
     ...activityElements,
     ...pendingMessage,
     ...blobElements,
-    thinkingFooter,
   ]
     .filter(Boolean)
     .sort((a, b) => (a!.timestamp > b!.timestamp ? 1 : -1))
-    .map((item) => item!.element)
-    .concat([<div key="spacer" className="h-[1rem]" />]);
+    .map((item) => item!.element);
 
   const isEditable = isAdmin || isOwner;
 
-  const topItemCount = (failedHeader ? 1 : 0) + (testHeader ? 1 : 0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      smoothScrollToBottom(container);
+    }
+  }, [elements.length]);
 
   return (
     <div className="h-[calc(100vh-16rem)] overflow-hidden rounded-sm">
-      <div className="h-[calc(100vh-25rem)] border rounded-sm text-sm">
-        <Virtuoso
-          followOutput="smooth"
-          data={elements.length > 0 ? elements : [messageSkeleton]}
-          topItemCount={topItemCount}
-          initialTopMostItemIndex={elements.length}
-          itemContent={(index, element) => {
-            return element;
-          }}
-        />
+      <div
+        ref={scrollContainerRef}
+        className="h-[calc(100vh-25rem)] border rounded-sm text-sm overflow-y-auto scroll-smooth"
+      >
+        {elements.length > 0 ? (
+          <div className="flex flex-col">{elements}</div>
+        ) : (
+          messageSkeleton
+        )}
       </div>
+      <div ref={messagesEndRef} />
       <div className="flex flex-col space-y-2 p-2 bg-slate-50 border">
         {!!runTimeline && isEditable ? (
           <div className="flex flex-col space-y-2">
@@ -524,9 +526,22 @@ export function Run({
               }}
             />
             <div className="flex flex-row space-x-2">
-              <Button onClick={() => onSubmit(prompt)} size="sm">
-                Send
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button
+                  onClick={() => onSubmit(prompt)}
+                  size="sm"
+                  disabled={runTimeline?.run.status === "running"}
+                >
+                  {runTimeline?.run.status === "running" ? (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Send"
+                  )}
+                </Button>
+              </div>
               <div className="flex-grow">&nbsp;</div>
               <FeedbackDialog
                 runId={runId}

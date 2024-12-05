@@ -10,12 +10,10 @@ const messages = [
 ];
 
 export function ThinkingIndicator() {
-  const [currentMessage, setCurrentMessage] = useState(messages[0]);
   const [dots, setDots] = useState("");
 
   useEffect(() => {
     const changeMessage = () => {
-      setCurrentMessage(messages[Math.floor(Math.random() * messages.length)]);
       // Set next interval randomly between 1000ms and 5000ms
       const nextInterval = Math.floor(Math.random() * 4000) + 1000;
       setTimeout(changeMessage, nextInterval);
@@ -35,10 +33,5 @@ export function ThinkingIndicator() {
     };
   }, []);
 
-  return (
-    <p className="text-muted-foreground text-xs ml-5">
-      {currentMessage}
-      {dots}
-    </p>
-  );
+  return <p className="text-muted-foreground text-xs ml-5">{dots}</p>;
 }

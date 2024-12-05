@@ -36,7 +36,7 @@ function Home({
     <main className="flex-grow">
       <div className="flex space-x-6 pt-6 pb-6 pl-6 pr-2">
         <RunList clusterId={clusterId} />
-        <div className="w-8/12 flex flex-col space-y-2 overflow-auto">
+        <div className="w-7/12 flex flex-col space-y-2 overflow-auto">
           {children}
         </div>
         <div className="w-1/12 flex flex-col">

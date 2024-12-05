@@ -11,7 +11,6 @@ import {
 import { useEffect, useState } from "react";
 import {
   DeadGrayCircle,
-  DeadGreenCircle,
   DeadRedCircle,
   LiveGreenCircle,
   SmallDeadGrayCircle,
@@ -49,10 +48,10 @@ export class ServerConnectionStatus {
 
 export function ServerConnectionPane() {
   const [lastEvent, setLastEvent] = useState(
-    ServerConnectionStatus.getLastEvent(),
+    ServerConnectionStatus.getLastEvent()
   );
   const [recentEvents, setRecentEvents] = useState(
-    ServerConnectionStatus.getRecentEvents(),
+    ServerConnectionStatus.getRecentEvents()
   );
 
   useEffect(() => {

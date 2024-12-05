@@ -21,13 +21,14 @@ import { useAuth } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { Cpu } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { JsonForm } from "../json-form";
+import { JSONDisplay } from "../JSONDisplay";
 import { Button } from "../ui/button";
 import ToolContextButton from "./ToolContextButton";
+import { formatRelative } from "date-fns";
 
 const statusCircle = (
   status: WorkflowJob["status"],
-  resultType: WorkflowJob["resultType"],
+  resultType: WorkflowJob["resultType"]
 ) => {
   if (status === "pending") {
     return <SmallLiveAmberCircle />;
@@ -136,14 +137,16 @@ function FunctionCall({
   }, [status, getJobDetail]);
 
   return (
-    <div className={`mr-2 ml-4`}>
+    <div className="mr-2 ml-4">
       <Sheet open={editing} onOpenChange={(o) => setEditing(o)}>
         <div>
           <div className="flex flex-row items-center space-x-2">
             <SheetTrigger>
               <Button
                 size="sm"
-                className={`${approvalRequested && !approved ? "opacity-50" : ""} border bg-transparent border-gray-100 text-black hover:bg-gray-200`}
+                className={`${
+                  approvalRequested && !approved ? "opacity-50" : ""
+                } border bg-transparent border-gray-100 text-black hover:bg-gray-200`}
                 asChild
               >
                 <div className="flex flex-row items-center text-sm font-mono">
@@ -195,30 +198,95 @@ function FunctionCall({
         <SheetContent style={{ minWidth: 800 }} className="overflow-scroll">
           <SheetHeader>
             <SheetTitle>
-              {service}.{targetFn}()
+              <span className="font-mono">
+                {service}.{targetFn}()
+              </span>
             </SheetTitle>
-            <SheetDescription>{jobId}</SheetDescription>
           </SheetHeader>
           <div className="h-4" />
-          <div className="flex flex-col space-y-2 mt-2 text-sm">
-            <h1 className="text-sm text-muted-foreground">Metadata</h1>
-            <JsonForm
-              label="Metadata"
-              value={{
-                executingMachineId: job?.executingMachineId,
-                status: job?.status,
-                createdAt: job?.createdAt,
-              }}
-            />
-            <h1 className="text-sm text-muted-foreground">Input</h1>
-            {job?.targetArgs && (
-              <JsonForm label="Input" value={unpack(job.targetArgs) || {}} />
-            )}
-            <h1 className="text-sm text-muted-foreground">Result</h1>
-            {(job?.result && (
-              <JsonForm label="Output" value={unpack(job.result) || {}} />
-            )) ||
-              "Waiting..."}
+          <div className="space-y-4">
+            <div className="rounded-xl bg-secondary/30 p-4 shadow-sm border border-border/50">
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Cpu className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">Function Call</div>
+                  <div className="text-xs text-muted-foreground font-mono">
+                    {job?.createdAt
+                      ? new Date(job.createdAt).toISOString()
+                      : "Unknown"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-2">
+                    <Cpu size={16} className="text-primary/70" />
+                    <span>Metadata</span>
+                  </div>
+                  <div className="ml-6 bg-muted rounded-md p-3">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-muted-foreground">Status</div>
+                      <div className="font-medium flex items-center gap-2">
+                        <span className="font-mono">
+                          {job?.status || "Unknown"}
+                        </span>
+                        {statusCircle(
+                          job?.status as WorkflowJob["status"],
+                          resultType
+                        )}
+                      </div>
+
+                      <div className="text-muted-foreground">Machine ID</div>
+                      <div className="font-medium font-mono">
+                        {job?.executingMachineId || "Not assigned"}
+                      </div>
+
+                      <div className="text-muted-foreground">Created</div>
+                      <div className="font-medium">
+                        {job?.createdAt
+                          ? formatRelative(new Date(job.createdAt), new Date())
+                          : "Unknown"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-2">
+                    <Cpu size={16} className="text-primary/70" />
+                    <span>Input</span>
+                  </div>
+                  <div className="ml-6 bg-muted rounded-md p-3">
+                    {job?.targetArgs ? (
+                      <JSONDisplay json={unpack(job.targetArgs) || {}} />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No input data
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-2">
+                    <Cpu size={16} className="text-primary/70" />
+                    <span>Result</span>
+                  </div>
+                  <div className="ml-6 bg-muted rounded-md p-3">
+                    {job?.result ? (
+                      <JSONDisplay json={unpack(job.result) || {}} />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Waiting...
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </SheetContent>
       </Sheet>

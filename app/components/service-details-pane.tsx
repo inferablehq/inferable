@@ -10,9 +10,5 @@ export function ServiceDetailsPane({
     return <div>No services available</div>;
   }
 
-  return (
-    <div>
-      <ServicesOverview clusterId={clusterDetails.id} />
-    </div>
-  );
+  return <ServicesOverview clusterId={clusterDetails.id} />;
 }
