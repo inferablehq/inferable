@@ -538,13 +538,7 @@ export const definition = {
       config: z
         .object({
           id: z.string().describe("DEPRECATED"),
-          input: z
-            .object({})
-            .passthrough()
-            .describe(
-              "DEPRECATED",
-            )
-            .optional(),
+          input: z.object({}).passthrough().describe("DEPRECATED").optional(),
         })
         .describe("DEPRECATED")
         .optional(),
@@ -1517,6 +1511,22 @@ export const definition = {
     pathParams: z.object({
       clusterId: z.string(),
     }),
+  },
+  getServerStats: {
+    method: "GET",
+    path: "/stats",
+    responses: {
+      200: z.object({
+        functionCalls: z.object({
+          count: z.number(),
+        }),
+        tokenUsage: z.object({
+          input: z.number(),
+          output: z.number(),
+        }),
+        refreshedAt: z.number(),
+      }),
+    },
   },
 } as const;
 

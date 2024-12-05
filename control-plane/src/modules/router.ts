@@ -46,6 +46,7 @@ import { callsRouter } from "./calls/router";
 import { buildModel } from "./models";
 import { deserializeFunctionSchema } from "./service-definitions";
 import { integrationsRouter } from "./integrations/router";
+import { getServerStats } from "./server-stats";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -898,6 +899,14 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: result.parsed,
+    };
+  },
+  getServerStats: async () => {
+    const stats = await getServerStats();
+
+    return {
+      status: 200,
+      body: stats,
     };
   },
 });
