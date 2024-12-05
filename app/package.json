@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@clerk/clerk-sdk-node": "^4.13.4",
-    "@clerk/nextjs": "^4.29.3",
+    "@clerk/clerk-sdk-node": "^5.0.72",
+    "@clerk/nextjs": "^6.7.0",
     "@hookform/resolvers": "^3.9.0",
     "@mdxeditor/editor": "^3.14.0",
     "@radix-ui/react-accordion": "^1.2.0",
