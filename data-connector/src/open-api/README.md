@@ -1,5 +1,10 @@
 # OpenAPI Data Connector
 
+> 📝 The OpenAPI Data Connector is experimental and still under development.
+> You may run into issues with large OpenAPI schemas and function selection performance.
+> We are working on this currently, in the mean time we recommend [limiting the operations](#large-schemas) as nescessary.
+> If you encounter any issues, please [open an issue](https://github.com/inferablehq/inferable/issues/).
+
 The OpenAPI Data Connector enables LLMs to interact with REST APIs through Inferable by automatically generating functions from OpenAPI/Swagger specifications.
 
 ## Request Configuration

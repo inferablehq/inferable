@@ -1,15 +1,19 @@
 ![Inferable Data Connector](./assets/hero.png)
 
-Inferable Data Connector is a bridge between your data systems and Inferable. Configure your data sources in a json file and start conversing with your data in natural language. Works locally, and in any dockerized environment allowing connection to private resources (DB connection / API endpoints) without exposing them to the public internet.
+Inferable Data Connector is a bridge between your data systems and [Inferable](https://inferable.ai). Configure your data sources in a json file and start conversing with your data in natural language. Works locally, and in any dockerized environment allowing connection to private resources (DB connection / API endpoints) without exposing them to the public internet.
 
 ## Features
 
-- 🔐 **Secure Credential Management**: Your credentials are never exfiltrated outside of the dockerized environment.
+- 🔐 **Secure Credential Handling**: Credentials (DB connection strings, API keys, etc.) never leave your environment.
 - 🌐 **No incoming network access required**: The connector runs inside your network, or in your local machine, and "pulls" instructions from Inferable.
-- 🧩 **Extensible**: Adding a new data source is as simple as writing a new connector. See the [Postgres](./src/postgres.ts) connector for an example.
+- 🧩 **Extensible**: Adding a new data source is as simple as writing a a new [function](https://docs.inferable.ai/pages/functions).
 - 🔄 **Adapts to schema changes**: The connector automatically adapts to schema changes by periodically fetching the data system schema. (Table definitions, API definitions, etc.)
 - 🤿 **Optional Privacy Mode**: Query outputs are never sent to the model. Instead, the function returns results directly to the end user without any model involvement.
-- 🔍 **Optional Approval Mode**: Adds an additional safety layer by requiring manual approval before executing any query so you can review the query and data before it is executed.
+- 🔍 **Optional Approval Mode**: Adds an additional safety layer by requiring manual approval before executing each query.
+
+<div align="center">
+  <a target="_blank" href="https://youtu.be/v0oKldk7KBc"><img width="60%" alt="walkthrough video" src="https://img.youtube.com/vi/v0oKldk7KBc/0.jpg"></a>
+</div>
 
 ## Connectors
 
@@ -22,16 +26,10 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 - [ ] [Big Query](./src/big-query)
 - [ ] [Google Sheets](./src/google-sheets)
 
-## Walkthrough
-
-<div align="center">
-  <a target="_blank" href="https://youtu.be/v0oKldk7KBc"><img width="60%" alt="walkthrough video" src="https://img.youtube.com/vi/v0oKldk7KBc/0.jpg"></a>
-</div>
-
 ## Quick Start
 
 > 🔑 You will need an Inferable [Cluster API Key](https://docs.inferable.ai/pages/auth#cluster-api-keys) in order to use this connector.
-> Create an [Inferable Cloud key](https://app.inferable.ai) or follow the [self-hosting guide](https://docs.inferable.ai/pages/self-hosting).
+> Create an [Inferable Cloud key](https://app.inferable.ai) or follow the Inferable [self-hosting guide](https://docs.inferable.ai/pages/self-hosting).
 
 ### Running with your own Postgres DB
 
@@ -51,7 +49,7 @@ docker run -e INFERABLE_API_SECRET="sk_xxxx" \
            inferable/data-connector
 ```
 
-3. Open the [Inferable Playground](https://app.inferable.ai) (Or `localhost` if you're running [locally](https://docs.inferable.ai/pages/self-hosting)).
+3. Open the [Inferable Playground](https://app.inferable.ai) (Or `localhost` if you're running [Inferable locally](https://docs.inferable.ai/pages/self-hosting)).
 
 ### Running with a Demo Postgres DB
 
@@ -79,9 +77,9 @@ This will:
 - Launch the Inferable connector service
 - Provide you with a direct link to the Inferable playground where you can start querying
 
-4. Open the [Inferable Playground](https://app.inferable.ai) (Or `localhost` if you're running [locally](https://docs.inferable.ai/pages/self-hosting)).
+4. Open the [Inferable Playground](https://app.inferable.ai) (Or `localhost` if you're running [Inferable locally](https://docs.inferable.ai/pages/self-hosting)).
 
-## Sample Data
+#### Sample Data
 
 The demo database comes pre-loaded with sample data (defined in `example_data/seed.ts`). You can use this to experiment with queries and understand how the connector works.
 
@@ -257,7 +255,7 @@ A: All queries execute within your dockerized environment. Neither the model nor
 
 ## Failure Modes
 
-**Context Window Limitations**: The connector may face challenges with large database schemas, large OpenAPI specs, or large GraphQL schemas. In such cases, you may need to provide multiple subsets of the schema to the model via multiple `config.connectors` entries.
+**Context Window Limitations**: The connector may face challenges with large database schemas, large OpenAPI specs, or large GraphQL schemas. In such cases, you may need to provide multiple subsets of the schema to the model via multiple `config.connectors` entries or limit the [attached operations](src/open-api#large-schemas)
 
 **Return Data Limitations**: The connector may face latency issues with large data sets. In such cases, turning on `config.privacyMode` will prevent the model from seeing the raw data, and instead return the data directly to the user.
 
@@ -273,4 +271,4 @@ We're actively working on adding more data connectors to support various databas
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](../LICENSE) file for details.

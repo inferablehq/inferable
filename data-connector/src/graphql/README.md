@@ -1,5 +1,8 @@
 # GraphQL Data Connector
 
+> 📝 The GraphQL Data Connector is experimental and still under development.
+> If you encounter any issues, please [open an issue](https://github.com/inferablehq/inferable/issues/).
+
 The GraphQL Data Connector enables LLMs to interact with GraphQL APIs through Inferable by automatically generating functions from GraphQL schemas and providing schema introspection capabilities.
 
 ## Configuration
