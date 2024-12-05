@@ -14,20 +14,24 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 ## Connectors
 
 - [x] [Postgres](./src/postgres)
-- [x] [OpenAPI](./src/open-api)
-- [x] [GraphQL](./src/graphql)
 - [x] [MySQL](./src/mysql)
 - [x] [SQLite](./src/sqlite)
+- [x] [OpenAPI](./src/open-api) (Experimental)
+- [x] [GraphQL](./src/graphql) (Experimental)
 - [ ] [MongoDB](./src/mongodb)
 - [ ] [Big Query](./src/big-query)
 - [ ] [Google Sheets](./src/google-sheets)
 
 ## Walkthrough
+
 <div align="center">
   <a target="_blank" href="https://youtu.be/v0oKldk7KBc"><img width="60%" alt="walkthrough video" src="https://img.youtube.com/vi/v0oKldk7KBc/0.jpg"></a>
 </div>
 
 ## Quick Start
+
+> 🔑 You will need an Inferable [Cluster API Key](https://docs.inferable.ai/pages/auth#cluster-api-keys) in order to use this connector.
+> Create an [Inferable Cloud key](https://app.inferable.ai) or follow the [self-hosting guide](https://docs.inferable.ai/pages/self-hosting).
 
 ### Running with your own Postgres DB
 
@@ -46,6 +50,8 @@ docker run -e INFERABLE_API_SECRET="sk_xxxx" \
            --network host \
            inferable/data-connector
 ```
+
+3. Open the [Inferable Playground](https://app.inferable.ai) (Or `localhost` if you're running [locally](https://docs.inferable.ai/pages/self-hosting)).
 
 ### Running with a Demo Postgres DB
 
@@ -72,6 +78,8 @@ This will:
 - Start a PostgreSQL database with sample data
 - Launch the Inferable connector service
 - Provide you with a direct link to the Inferable playground where you can start querying
+
+4. Open the [Inferable Playground](https://app.inferable.ai) (Or `localhost` if you're running [locally](https://docs.inferable.ai/pages/self-hosting)).
 
 ## Sample Data
 
