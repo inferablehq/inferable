@@ -22,6 +22,11 @@ Inferable Data Connector is a bridge between your data systems and Inferable. Co
 - [ ] [Big Query](./src/big-query)
 - [ ] [Google Sheets](./src/google-sheets)
 
+## Walkthrough
+<div align="center">
+  <a target="_blank" href="https://youtu.be/v0oKldk7KBc"><img width="60%" alt="walkthrough video" src="https://img.youtube.com/vi/v0oKldk7KBc/0.jpg"></a>
+</div>
+
 ## Quick Start
 
 ### Running with your own Postgres DB
