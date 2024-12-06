@@ -47,7 +47,7 @@ const summarizePost = async ({ data }: { data: object }) =>
     .run({
       initialPrompt: `
       <data>
-        ${JSON.stringify(data)}
+        ${JSON.stringify(data).substring(0, 20_000)}
       </data>
 
       You are given a post from Hacker News, and a url for the post's comments.
