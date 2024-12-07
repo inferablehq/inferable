@@ -372,10 +372,9 @@ export const runsRouter = initServer().router(
           runId,
           after: messagesAfter,
         }),
-        events.getActivityByWorkflowIdForUserAttentionLevel({
+        events.getActivityForTimeline({
           clusterId,
           runId,
-          userAttentionLevel: "info",
           after: activityAfter,
         }),
         getJobsForWorkflow({

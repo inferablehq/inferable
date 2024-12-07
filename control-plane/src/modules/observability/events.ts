@@ -1,7 +1,7 @@
 import { ulid } from "ulid";
 import { db, events as eventsTable } from "../data";
 import { logger } from "./logger";
-import { eq, and, gte, SQL, desc, or, sql } from "drizzle-orm";
+import { eq, and, gte, SQL, desc, or, sql, inArray } from "drizzle-orm";
 import { NotFoundError } from "../../utilities/errors";
 
 export type EventTypes =
@@ -18,13 +18,6 @@ export type EventTypes =
   | "machineStalled"
   | "machineResourceProbe"
   | "modelInvocation"
-  | "functionInvocation"
-  | "encryptedAgentMessage"
-  | "workflowScheduleCreated"
-  | "workflowScheduleRemoved"
-  | "listenerAttached"
-  | "listenerDetached"
-  | "listenerNotificationReceived"
   | "humanMessage"
   | "systemMessage"
   | "agentMessage"
@@ -243,6 +236,48 @@ export const getActivityByWorkflowIdForUserAttentionLevel = async (params: {
           eventsTable.attention_level,
           userAttentionLevels[params.userAttentionLevel],
         ),
+      ),
+    )
+    .limit(100)
+    .orderBy(desc(eventsTable.created_at));
+
+  return results;
+};
+
+export const getActivityForTimeline = async (params: {
+  clusterId: string;
+  runId: string;
+  after?: string;
+}) => {
+  const results = await db
+    .select({
+      id: eventsTable.id,
+      clusterId: eventsTable.cluster_id,
+      type: eventsTable.type,
+      jobId: eventsTable.job_id,
+      machineId: eventsTable.machine_id,
+      service: eventsTable.service,
+      createdAt: eventsTable.created_at,
+      targetFn: eventsTable.target_fn,
+      resultType: eventsTable.result_type,
+      status: eventsTable.status,
+      workflowId: eventsTable.run_id,
+    })
+    .from(eventsTable)
+    .where(
+      and(
+        eq(eventsTable.cluster_id, params.clusterId),
+        eq(eventsTable.run_id, params.runId),
+        inArray(eventsTable.type, [
+          "jobCreated",
+          "jobAcknowledged",
+          "jobResulted",
+          "jobStalled",
+          "jobStalledTooManyTimes",
+          "jobRecovered",
+          "resultSummarized",
+          "knowledgeArtifactsAccessed",
+        ]),
       ),
     )
     .limit(100)
