@@ -403,35 +403,6 @@ export const definition = {
       includeMeta: z.string().optional(),
     }),
   },
-  listUsageActivity: {
-    method: "GET",
-    path: "/clusters/:clusterId/usage",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        modelUsage: z.array(
-          z.object({
-            date: z.string(),
-            modelId: z.string().nullable(),
-            totalInputTokens: z.number(),
-            totalOutputTokens: z.number(),
-            totalModelInvocations: z.number(),
-          }),
-        ),
-        agentRuns: z.array(
-          z.object({
-            date: z.string(),
-            totalAgentRuns: z.number(),
-          }),
-        ),
-      }),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
   getEventMeta: {
     method: "GET",
     path: "/clusters/:clusterId/events/:eventId/meta",
@@ -524,23 +495,17 @@ export const definition = {
         .describe(
           "When provided, the run will be marked as as a test / evaluation",
         ),
-      configId: z
-        .string()
-        .optional()
-        .describe("The run configuration ID to use"),
-      input: z
-        .object({})
-        .passthrough()
-        .describe(
-          "Structured input arguments to merge with the initial prompt. The schema must match the run configuration input schema if defined",
-        )
-        .optional(),
       config: z
         .object({
-          id: z.string().describe("DEPRECATED"),
-          input: z.object({}).passthrough().describe("DEPRECATED").optional(),
+          id: z.string().describe("The run configuration ID"),
+          input: z
+            .object({})
+            .passthrough()
+            .describe(
+              "The run configuration input arguments, the schema must match the run configuration input schema",
+            )
+            .optional(),
         })
-        .describe("DEPRECATED")
         .optional(),
       context: anyObject
         .optional()
@@ -559,7 +524,7 @@ export const definition = {
         .describe("Enable reasoning traces"),
       callSummarization: z
         .boolean()
-        .default(false)
+        .default(true)
         .optional()
         .describe("Enable summarization of oversized call results"),
       interactive: z
@@ -762,6 +727,23 @@ export const definition = {
       messageId: z.string(),
     }),
   },
+  storeServiceMetadata: {
+    method: "PUT",
+    path: "/clusters/:clusterId/services/:service/keys/:key",
+    headers: z.object({ authorization: z.string() }),
+    body: z.object({
+      value: z.string(),
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      service: z.string(),
+      key: z.string(),
+    }),
+    responses: {
+      204: z.undefined(),
+      401: z.undefined(),
+    },
+  },
   getClusterExport: {
     method: "GET",
     path: "/clusters/:clusterId/export",
@@ -888,9 +870,6 @@ export const definition = {
     path: "/clusters/:clusterId/machines",
     headers: z.object({
       authorization: z.string(),
-    }),
-    query: z.object({
-      limit: z.coerce.number().min(10).max(50).default(50),
     }),
     responses: {
       200: z.array(
@@ -1511,22 +1490,6 @@ export const definition = {
     pathParams: z.object({
       clusterId: z.string(),
     }),
-  },
-  getServerStats: {
-    method: "GET",
-    path: "/stats",
-    responses: {
-      200: z.object({
-        functionCalls: z.object({
-          count: z.number(),
-        }),
-        tokenUsage: z.object({
-          input: z.number(),
-          output: z.number(),
-        }),
-        refreshedAt: z.number(),
-      }),
-    },
   },
 } as const;
 

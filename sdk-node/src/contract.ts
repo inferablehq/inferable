@@ -538,7 +538,13 @@ export const definition = {
       config: z
         .object({
           id: z.string().describe("DEPRECATED"),
-          input: z.object({}).passthrough().describe("DEPRECATED").optional(),
+          input: z
+            .object({})
+            .passthrough()
+            .describe(
+              "DEPRECATED",
+            )
+            .optional(),
         })
         .describe("DEPRECATED")
         .optional(),
@@ -559,7 +565,7 @@ export const definition = {
         .describe("Enable reasoning traces"),
       callSummarization: z
         .boolean()
-        .default(false)
+        .default(true)
         .optional()
         .describe("Enable summarization of oversized call results"),
       interactive: z
@@ -888,9 +894,6 @@ export const definition = {
     path: "/clusters/:clusterId/machines",
     headers: z.object({
       authorization: z.string(),
-    }),
-    query: z.object({
-      limit: z.coerce.number().min(10).max(50).default(50),
     }),
     responses: {
       200: z.array(
@@ -1511,22 +1514,6 @@ export const definition = {
     pathParams: z.object({
       clusterId: z.string(),
     }),
-  },
-  getServerStats: {
-    method: "GET",
-    path: "/stats",
-    responses: {
-      200: z.object({
-        functionCalls: z.object({
-          count: z.number(),
-        }),
-        tokenUsage: z.object({
-          input: z.number(),
-          output: z.number(),
-        }),
-        refreshedAt: z.number(),
-      }),
-    },
   },
 } as const;
 
