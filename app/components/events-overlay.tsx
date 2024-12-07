@@ -81,17 +81,17 @@ const typeToText: { [key: string]: string } = {
   jobCreated: "Job was created.",
   jobStatusRequest: `Caller asked for the status of the job.`,
   jobReceived: `Function was received by the machine for execution.`,
-  jobResulted: `Function execution concluded.`,
+  functionResulted: `Function execution concluded.`,
   jobStalled: `Function execution did not complete within the expected time frame. The function is marked as stalled.`,
   jobRecovered: `Function execution was recovered after being marked as stalled.`,
   jobStalledTooManyTimes: `Function execution did not complete within the expected time frame too many times. The execution has resulted in a failure.`,
   agentMessage: `Agent message produced.`,
   agentEnd: `Agent workflow concluded.`,
   jobAcknowledged: `Job was acknowledged by the machine.`,
-  agentTool: `Agent is invoking a tool.`,
+  callingFunction: `Agent is invoking a tool.`,
   humanMessage: `Human sent a message.`,
   machineRegistered: `Machine registered with the control plane.`,
-  agentToolError: `Invoked tool produced an error.`,
+  functionErrored: `Invoked tool produced an error.`,
   modelInvocation: `A call was made to the model.`,
 };
 
@@ -129,7 +129,7 @@ const chartConfig: ChartConfig = {
     label: "Job Received",
     color: "hsl(210, 100%, 70%)", // Blue
   },
-  jobResulted: {
+  functionResulted: {
     label: "Job Resulted",
     color: "hsl(210, 100%, 70%)", // Blue
   },
@@ -157,7 +157,7 @@ const chartConfig: ChartConfig = {
     label: "Job Acknowledged",
     color: "hsl(210, 100%, 70%)", // Blue
   },
-  agentTool: {
+  callingFunction: {
     label: "Agent Tool",
     color: "hsl(210, 100%, 70%)", // Blue
   },
@@ -169,7 +169,7 @@ const chartConfig: ChartConfig = {
     label: "Machine Registered",
     color: "hsl(210, 100%, 70%)", // Blue
   },
-  agentToolError: {
+  functionErrored: {
     label: "Agent Tool Error",
     color: "hsl(0, 100%, 70%)", // Red
   },
@@ -183,7 +183,7 @@ const getEventCountsByTime = (events: Event[]) => {
   if (events.length === 0) return [];
 
   const earliestEventTime = new Date(
-    Math.min(...events.map((event) => new Date(event.createdAt).getTime())),
+    Math.min(...events.map((event) => new Date(event.createdAt).getTime()))
   );
 
   const timeNow = new Date();
@@ -195,7 +195,7 @@ const getEventCountsByTime = (events: Event[]) => {
   const bucketStartTimes = Array.from({ length: bucketCount }, (_, i) => {
     const time = new Date(earliestEventTime);
     time.setMilliseconds(
-      time.getMilliseconds() + i * (differenceInMs / bucketCount),
+      time.getMilliseconds() + i * (differenceInMs / bucketCount)
     );
     return time;
   });
@@ -208,13 +208,10 @@ const getEventCountsByTime = (events: Event[]) => {
     });
     return {
       date: t.toISOString(),
-      ...eventsInBucket.reduce(
-        (acc, event) => {
-          acc[event.type] = (acc[event.type] || 0) + 1;
-          return acc;
-        },
-        {} as Record<string, number>,
-      ),
+      ...eventsInBucket.reduce((acc, event) => {
+        acc[event.type] = (acc[event.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
     };
   });
 };
@@ -252,7 +249,7 @@ function EventsOverlay({
     Object.entries(query).map(([key, value]) => ({
       key: key as FilterKey,
       value: value as string,
-    })),
+    }))
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
@@ -269,13 +266,10 @@ function EventsOverlay({
           params: {
             clusterId,
           },
-          query: filters.reduce(
-            (acc, filter) => {
-              acc[filter.key] = filter.value;
-              return acc;
-            },
-            {} as Partial<Record<FilterKey, string>>,
-          ),
+          query: filters.reduce((acc, filter) => {
+            acc[filter.key] = filter.value;
+            return acc;
+          }, {} as Partial<Record<FilterKey, string>>),
         });
 
         if (response.status === 200) {
@@ -289,7 +283,7 @@ function EventsOverlay({
         setLoading(false);
       }
     },
-    [clusterId, getToken],
+    [clusterId, getToken]
   );
 
   useEffect(() => {
@@ -317,7 +311,7 @@ function EventsOverlay({
       const updated = [...prev];
       newFilters.forEach((newFilter) => {
         const existingIndex = updated.findIndex(
-          (f) => f.key === newFilter.key && f.value === newFilter.value,
+          (f) => f.key === newFilter.key && f.value === newFilter.value
         );
         if (existingIndex === -1) {
           updated.push(newFilter);
@@ -331,8 +325,8 @@ function EventsOverlay({
     setFilters((prev) =>
       prev.filter(
         (f) =>
-          !(f.key === filterToRemove.key && f.value === filterToRemove.value),
-      ),
+          !(f.key === filterToRemove.key && f.value === filterToRemove.value)
+      )
     );
   };
 

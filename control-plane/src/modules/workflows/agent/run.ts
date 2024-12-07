@@ -31,6 +31,7 @@ import { getClusterInternalTools } from "./tools/cluster-internal-tools";
 import { buildCurrentDateTimeTool } from "./tools/date-time";
 import { CURRENT_DATE_TIME_TOOL_NAME } from "./tools/date-time";
 import { env } from "../../../utilities/env";
+import { events } from "../../observability/events";
 
 /**
  * Run a workflow from the most recent saved state
@@ -73,16 +74,19 @@ export const run = async (run: Run) => {
         serviceFunctionEmbeddingId({
           serviceName: service.name,
           functionName: f.name,
-        })
+        }),
       );
-    })
+    }),
   );
 
   const mockToolsMap: Record<string, DynamicStructuredTool> =
     await buildMockTools(run);
 
   let mockModelResponses;
-  if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
+  if (
+    !!env.LOAD_TEST_CLUSTER_ID &&
+    run.clusterId === env.LOAD_TEST_CLUSTER_ID
+  ) {
     logger.info("Mocking model responses for load test");
 
     //https://github.com/inferablehq/inferable/blob/main/load-tests/script.js
@@ -92,17 +96,17 @@ export const run = async (run: Run) => {
         invocations: [
           {
             toolName: "default_searchHaystack",
-            input: {}
-          }
-        ]
+            input: {},
+          },
+        ],
       }),
       JSON.stringify({
         done: true,
         result: {
-          word: "needle"
-        }
-      })
-    ]
+          word: "needle",
+        },
+      }),
+    ];
   }
 
   const app = await createWorkflowAgent({
@@ -130,7 +134,7 @@ export const run = async (run: Run) => {
       const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
         run.clusterId,
         "service-function",
-        toolCall.toolName
+        toolCall.toolName,
       );
 
       if (serviceFunctionDetails) {
@@ -155,7 +159,7 @@ export const run = async (run: Run) => {
         // optimistically embed the next search query
         // this is not critical to the workflow, so we can do it in the background
         embedSearchQuery(
-          state.messages.map((m) => JSON.stringify(m.data)).join(" ")
+          state.messages.map((m) => JSON.stringify(m.data)).join(" "),
         );
       }
 
@@ -190,7 +194,7 @@ export const run = async (run: Run) => {
       },
       {
         recursionLimit: 100,
-      }
+      },
     );
 
     const parsedOutput = z
@@ -262,7 +266,7 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
         workflow.clusterId,
         "service-function",
         search,
-        30
+        30,
       )
     : [];
 
@@ -278,7 +282,7 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
       const metadata = await getToolMetadata(
         workflow.clusterId,
         toolDetails.serviceName,
-        toolDetails.functionName
+        toolDetails.functionName,
       );
 
       const contextArr = [];
@@ -291,7 +295,7 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
         contextArr.push(
           `<result_keys>${metadata.resultKeys
             .slice(0, 10)
-            .map((k) => k.key)}</result_keys>`
+            .map((k) => k.key)}</result_keys>`,
         );
       }
 
@@ -300,7 +304,7 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
         functionName: toolDetails.functionName,
         toolContext: contextArr.join("\n\n"),
       };
-    })
+    }),
   );
 
   const selectedTools = relatedTools.map((toolDetails) =>
@@ -311,13 +315,13 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
         toolContexts.find(
           (c) =>
             c?.serviceName === toolDetails.serviceName &&
-            c?.functionName === toolDetails.functionName
+            c?.functionName === toolDetails.functionName,
         )?.toolContext,
       ]
         .filter(Boolean)
         .join("\n\n"),
       schema: toolDetails.schema,
-    })
+    }),
   );
 
   return selectedTools;
@@ -334,6 +338,7 @@ const buildAdditionalContext = async (workflow: Run) => {
 };
 
 export const findRelevantTools = async (state: WorkflowAgentState) => {
+  const start = Date.now();
   const workflow = state.workflow;
 
   const tools: DynamicStructuredTool[] = [];
@@ -359,12 +364,12 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
       const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
         workflow.clusterId,
         "service-function",
-        tool
+        tool,
       );
 
       if (!serviceFunctionDetails) {
         throw new Error(
-          `Tool ${tool} not found in cluster ${workflow.clusterId}`
+          `Tool ${tool} not found in cluster ${workflow.clusterId}`,
         );
       }
 
@@ -372,23 +377,32 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
         buildAbstractServiceFunctionTool({
           ...serviceFunctionDetails,
           schema: serviceFunctionDetails.schema,
-        })
+        }),
       );
     }
   } else {
     const found = await findRelatedFunctionTools(
       workflow,
-      state.messages.map((m) => JSON.stringify(m.data)).join(" ")
+      state.messages.map((m) => JSON.stringify(m.data)).join(" "),
     );
 
     tools.push(...found);
 
-    const accessKnowledgeArtifactsTool = await buildAccessKnowledgeArtifacts(
-      workflow
-    );
+    const accessKnowledgeArtifactsTool =
+      await buildAccessKnowledgeArtifacts(workflow);
 
     // When tools are not specified, attach all internalTools
     tools.push(accessKnowledgeArtifactsTool);
+
+    events.write({
+      type: "functionRegistrySearchCompleted",
+      workflowId: workflow.id,
+      clusterId: workflow.clusterId,
+      meta: {
+        duration: Date.now() - start,
+        tools: tools.map((t) => t.name),
+      },
+    });
   }
 
   return tools;
@@ -402,7 +416,7 @@ export const buildMockTools = async (workflow: Run) => {
 
   if (!workflow.test) {
     logger.warn(
-      "Workflow is not marked as test enabled but contains mocks. Mocks will be ignored."
+      "Workflow is not marked as test enabled but contains mocks. Mocks will be ignored.",
     );
     return mocks;
   }
@@ -430,7 +444,7 @@ export const buildMockTools = async (workflow: Run) => {
     }
 
     const serviceDefinition = serviceDefinitions.find(
-      (sd) => sd.name === serviceName
+      (sd) => sd.name === serviceName,
     );
 
     if (!serviceDefinition) {
@@ -439,13 +453,13 @@ export const buildMockTools = async (workflow: Run) => {
         {
           key,
           serviceName,
-        }
+        },
       );
       continue;
     }
 
     const functionDefinition = serviceDefinition.functions?.find(
-      (f) => f.name === functionName
+      (f) => f.name === functionName,
     );
 
     if (!functionDefinition) {
@@ -455,7 +469,7 @@ export const buildMockTools = async (workflow: Run) => {
           key,
           serviceName,
           functionName,
-        }
+        },
       );
       continue;
     }

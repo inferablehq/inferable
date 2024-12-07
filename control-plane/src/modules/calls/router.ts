@@ -120,6 +120,12 @@ export const callsRouter = initServer().router(
           sdkLanguage: request.headers["x-machine-sdk-language"],
           xForwardedFor: request.headers["x-forwarded-for"],
           ip: request.request.ip,
+        }).catch((e) => {
+          // don't fail the request if the machine upsert fails
+
+          logger.error("Failed to upsert machine", {
+            error: e,
+          });
         }),
         jobs.persistJobResult({
           owner: machine,

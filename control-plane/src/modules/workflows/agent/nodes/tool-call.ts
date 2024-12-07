@@ -9,6 +9,7 @@ import {
   AgentError,
   InvalidJobArgumentsError,
 } from "../../../../utilities/errors";
+import { customerTelemetry } from "../../../customer-telemetry";
 import * as events from "../../../observability/events";
 import { logger } from "../../../observability/logger";
 import { addAttributes, withSpan } from "../../../observability/tracer";
@@ -17,8 +18,6 @@ import { Run } from "../../workflows";
 import { ToolFetcher } from "../agent";
 import { WorkflowAgentState } from "../state";
 import { SpecialResultTypes, parseFunctionResponse } from "../tools/functions";
-import { z } from "zod";
-import { customerTelemetry } from "../../../customer-telemetry";
 
 export const TOOL_CALL_NODE_NAME = "action";
 
@@ -187,7 +186,7 @@ const _handleToolCall = async (
   };
 
   events.write({
-    type: "agentTool",
+    type: "callingFunction",
     clusterId: workflow.clusterId,
     workflowId: workflow.id,
     toolName,
@@ -218,7 +217,7 @@ const _handleToolCall = async (
 
     if (response.resultType === "rejection") {
       events.write({
-        type: "agentToolError",
+        type: "functionErrored",
         clusterId: workflow.clusterId,
         workflowId: workflow.id,
         meta: {
@@ -292,7 +291,7 @@ const _handleToolCall = async (
   } catch (error) {
     if (error instanceof ToolInputParsingException) {
       events.write({
-        type: "agentToolError",
+        type: "functionErrored",
         clusterId: workflow.clusterId,
         workflowId: workflow.id,
         meta: {
@@ -350,7 +349,7 @@ const _handleToolCall = async (
 
     if (error instanceof InvalidJobArgumentsError) {
       events.write({
-        type: "agentToolError",
+        type: "functionErrored",
         clusterId: workflow.clusterId,
         workflowId: workflow.id,
         meta: {

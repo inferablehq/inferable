@@ -1,15 +1,15 @@
+import { and, desc, eq, gte, SQL, sql } from "drizzle-orm";
 import { ulid } from "ulid";
+import { NotFoundError } from "../../utilities/errors";
 import { db, events as eventsTable } from "../data";
 import { logger } from "./logger";
-import { eq, and, gte, SQL, desc, or, sql, inArray } from "drizzle-orm";
-import { NotFoundError } from "../../utilities/errors";
 
 export type EventTypes =
   | "jobCreated"
   | "jobAcknowledged"
   | "jobStatusRequest"
-  | "jobResulted"
-  | "jobResultedButNotPersisted"
+  | "functionResulted"
+  | "functionResultedButNotPersisted"
   | "jobStalled"
   | "jobStalledTooManyTimes"
   | "jobRecovered"
@@ -21,11 +21,12 @@ export type EventTypes =
   | "humanMessage"
   | "systemMessage"
   | "agentMessage"
-  | "agentTool"
-  | "agentToolError"
+  | "callingFunction"
+  | "functionErrored"
   | "workflowFeedbackSubmitted"
   | "resultSummarized"
-  | "knowledgeArtifactsAccessed";
+  | "knowledgeArtifactsAccessed"
+  | "functionRegistrySearchCompleted";
 
 type Event = {
   clusterId: string;
@@ -68,6 +69,8 @@ type Event = {
     originalResultSize?: number;
     summarySize?: number;
     artifacts?: string[];
+    duration?: number;
+    tools?: string[];
   };
 };
 
@@ -81,7 +84,7 @@ export const userAttentionLevels = {
 const typeToUserAttentionLevel = {
   jobCreated: 10,
   jobAcknowledged: 10,
-  jobResulted: 10,
+  functionResulted: 10,
   jobStalled: 30,
   jobStalledTooManyTimes: 40,
   jobRecovered: 30,
@@ -90,8 +93,8 @@ const typeToUserAttentionLevel = {
   machineResourceProbe: 10,
   modelInvocation: 10,
   functionInvocation: 10,
-  agentTool: 10,
-  agentToolError: 10,
+  callingFunction: 10,
+  functionErrored: 10,
   resultSummarized: 20,
   knowledgeArtifactsAccessed: 20,
 } as const;
@@ -268,16 +271,6 @@ export const getActivityForTimeline = async (params: {
       and(
         eq(eventsTable.cluster_id, params.clusterId),
         eq(eventsTable.run_id, params.runId),
-        inArray(eventsTable.type, [
-          "jobCreated",
-          "jobAcknowledged",
-          "jobResulted",
-          "jobStalled",
-          "jobStalledTooManyTimes",
-          "jobRecovered",
-          "resultSummarized",
-          "knowledgeArtifactsAccessed",
-        ]),
       ),
     )
     .limit(100)

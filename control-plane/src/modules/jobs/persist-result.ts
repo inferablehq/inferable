@@ -1,20 +1,9 @@
-import {
-  and,
-  eq,
-  gt,
-  isNotNull,
-  isNull,
-  lt,
-  lte,
-  ne,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 import * as data from "../data";
 import * as events from "../observability/events";
 import { logger } from "../observability/logger";
-import { resumeRun } from "../workflows/workflows";
 import { upsertResultKeys } from "../tool-metadata";
+import { resumeRun } from "../workflows/workflows";
 
 type PersistResultParams = {
   result: string;
@@ -88,7 +77,7 @@ export async function persistJobResult({
       result,
       result_type: resultType,
       resulted_at: sql`now()`,
-      function_execution_time_ms: functionExecutionTime,
+      function_execution_time_ms: functionExecutionTime || null,
       status: "success",
     })
     .where(
@@ -111,15 +100,15 @@ export async function persistJobResult({
       jobId,
     });
     events.write({
-      type: "jobResultedButNotPersisted",
+      type: "functionResultedButNotPersisted",
       service: updateResult[0]?.service,
       clusterId: owner.clusterId,
       jobId,
       machineId,
       targetFn: updateResult[0]?.targetFn,
       resultType,
+      workflowId: updateResult[0]?.runId ?? undefined,
       meta: {
-        result,
         functionExecutionTime,
       },
     });
@@ -148,15 +137,15 @@ export async function persistJobResult({
     });
 
     events.write({
-      type: "jobResulted",
+      type: "functionResulted",
       service: updateResult[0]?.service,
       clusterId: owner.clusterId,
       jobId,
       machineId,
       targetFn: updateResult[0]?.targetFn,
       resultType,
+      workflowId: updateResult[0]?.runId ?? undefined,
       meta: {
-        result,
         functionExecutionTime,
       },
     });
@@ -198,6 +187,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
       targetFn: data.jobs.target_fn,
       clusterId: data.jobs.cluster_id,
       remainingAttempts: data.jobs.remaining_attempts,
+      runId: data.jobs.workflow_id,
     });
 
   const stalledMachines = await data.db
@@ -228,6 +218,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
     target_fn: string;
     cluster_id: string;
     remaining_attempts: number;
+    runId: string | undefined;
   }>(
     sql`
       UPDATE jobs as j
@@ -286,6 +277,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
       clusterId: row.clusterId,
       jobId: row.id,
       type: "jobStalled",
+      workflowId: row.runId ?? undefined,
       meta: {
         attemptsRemaining: row.remainingAttempts ?? undefined,
         reason: "timeout",
@@ -299,6 +291,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
       clusterId: row.cluster_id,
       jobId: row.id,
       type: "jobStalled",
+      workflowId: row.runId ?? undefined,
       meta: {
         attemptsRemaining: row.remaining_attempts ?? undefined,
         reason: "machine stalled",
