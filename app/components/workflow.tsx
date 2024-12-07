@@ -308,14 +308,27 @@ export function Run({
     })) || [];
 
   const activityElements =
-    runTimeline?.activity.map((a) => ({
-      element: (
-        <ElementWrapper id={a.id} key={a.id} mutableId={mutableId}>
-          <DebugEvent clusterId={clusterId} event={a} />
-        </ElementWrapper>
-      ),
-      timestamp: new Date(a.createdAt).getTime(),
-    })) || [];
+    runTimeline?.activity
+      .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1))
+      .map((a, index) => ({
+        element: (
+          <ElementWrapper id={a.id} key={a.id} mutableId={mutableId}>
+            <DebugEvent
+              clusterId={clusterId}
+              event={a}
+              msSincePreviousEvent={
+                index > 0
+                  ? new Date(a.createdAt).getTime() -
+                    new Date(
+                      runTimeline?.activity[index - 1]?.createdAt ?? 0
+                    ).getTime()
+                  : 0
+              }
+            />
+          </ElementWrapper>
+        ),
+        timestamp: new Date(a.createdAt).getTime(),
+      })) || [];
 
   const testHeader =
     runTimeline?.run.test === true

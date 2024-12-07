@@ -34,12 +34,14 @@ function formatDateTime(date: string | Date) {
 export function DebugEvent({
   event,
   clusterId,
+  msSincePreviousEvent,
 }: {
   event: ClientInferResponseBody<
     typeof contract.getRunTimeline,
     200
   >["activity"][number];
   clusterId: string;
+  msSincePreviousEvent: number;
 }) {
   const [eventMeta, setEventMeta] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,8 +79,11 @@ export function DebugEvent({
           <p className="text-sm font-medium text-gray-700">
             {startCase(event.type)}
           </p>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground font-mono">
             {formatDateTime(event.createdAt)}
+            <span className="text-muted-foreground font-mono text-blue-400">
+              {msSincePreviousEvent ? ` +${msSincePreviousEvent / 1000}s` : ""}
+            </span>
           </span>
         </div>
         <Sheet>
