@@ -23,6 +23,7 @@ import {
   validateFunctionSchema,
   validateServiceName,
 } from "./util";
+import { Assertions, assertRun } from "./assertions";
 
 // Custom json formatter
 debug.formatters.J = (json) => {
@@ -108,8 +109,8 @@ export class Inferable {
    */
   constructor(options?: {
     apiSecret?: string;
-    endpoint?: string
-    machineId?: string
+    endpoint?: string;
+    machineId?: string;
   }) {
     if (options?.apiSecret && process.env.INFERABLE_API_SECRET) {
       log(
@@ -257,14 +258,18 @@ export class Inferable {
       }
     }
 
-    return {
+    const returnable = {
       id: runResult.body.id,
       /**
        * Polls until the run reaches a terminal state (!= "pending" && != "running" && != "paused") or maxWaitTime is reached.
        * @param maxWaitTime The maximum amount of time to wait for the run to reach a terminal state. Defaults to 60 seconds.
        * @param interval The amount of time to wait between polling attempts. Defaults to 500ms.
        */
-      poll: async (options?: { maxWaitTime?: number; interval?: number }) => {
+      poll: async <T = unknown>(options?: {
+        maxWaitTime?: number;
+        interval?: number;
+        assertions?: Assertions<T>;
+      }): Promise<T> => {
         if (!this.clusterId) {
           throw new InferableError(
             "Cluster ID must be provided to manage runs",
@@ -299,8 +304,23 @@ export class Inferable {
             continue;
           }
 
-          return pollResult.body;
+          const assertionsResult = await assertRun<T>({
+            clusterId: this.clusterId,
+            runId: runResult.body.id,
+            client: this.client,
+            result: pollResult.body.result as T,
+            functionCalls: [], // TODO: Add function calls
+            assertions: options?.assertions || [],
+          });
+
+          if (!assertionsResult.assertionsPassed) {
+            return returnable.poll(options);
+          }
+
+          return pollResult.body.result as T; // Cast the result to the inferred type
         }
+
+        throw new InferableError("Run timed out");
       },
       /**
        * Retrieves the messages for a run.
@@ -325,6 +345,8 @@ export class Inferable {
         };
       },
     };
+
+    return returnable;
   }
 
   /**
