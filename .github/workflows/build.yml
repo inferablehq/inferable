@@ -498,6 +498,7 @@ jobs:
           --build-arg="NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.CLOUD_PROD_CLERK_PUBLISHABLE_KEY }}" \
           --build-arg="NEXT_PUBLIC_HYPERDX_API_KEY=${{ secrets.CLOUD_PROD_HYPERDX_API_KEY }}" \
           --build-arg="NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.CLOUD_PROD_POSTHOG_KEY }}" \
+          --build-arg="NEXT_PUBLIC_CRISP_WEBSITE_ID=${{ secrets.CLOUD_PROD_CRISP_WEBSITE_ID }}" \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./
 
   build-control-plane-image:
