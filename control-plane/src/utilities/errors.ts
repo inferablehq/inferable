@@ -1,3 +1,5 @@
+import { RateLimitError, InternalServerError } from "@anthropic-ai/sdk";
+
 export class RetryableError extends Error {
   constructor(message: string) {
     super(message);
@@ -5,18 +7,30 @@ export class RetryableError extends Error {
   }
 }
 
+const retryableErrors = [RetryableError, RateLimitError, InternalServerError]
 const retryableErrorMessages = [
-  "Connection terminated due to connection timeout",
+  // DB Connection Errors
+  "connection terminated due to connection timeout",
   "timeout exceeded when trying to connect",
-  "Connection terminated unexpectedly",
-  "account does not have an agreement to this model",
+  "connection terminated unexpectedly",
+  // DB Connection Pool Exhaustion
+  "remaining connection slots are reserved for roles with the SUPERUSER attribute",
+  "too many clients already",
+  // Bedrock Errors
+  "503 bedrock is unable to process your request",
+  "429 too many requests"
 ];
 
 export const isRetryableError = (error: unknown) => {
-  if (error instanceof Error && retryableErrorMessages.includes(error.message))
-    return true;
+  if (error instanceof Error && retryableErrorMessages.find((message) => error.message.toLowerCase().includes(message))) {
+    return true
+  }
 
-  return error instanceof RetryableError;
+  if (error instanceof Error && retryableErrors.find((type) => error instanceof type)) {
+    return true;
+  }
+
+  return false;
 };
 
 export class AuthenticationError extends Error {

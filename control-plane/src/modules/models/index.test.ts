@@ -53,6 +53,7 @@ describe("buildModel", () => {
       });
     });
 
+
     it("should not retry other errors", async () => {
       const error = new Error("");
       mockCreate.mockImplementationOnce(() => {
@@ -77,5 +78,48 @@ describe("buildModel", () => {
         identifier: "claude-3-haiku",
       });
     });
+
+    it.skip("should throw after exhausting retries", async () => {
+      mockCreate.mockImplementation(() => {
+        throw new RetryableError("");
+      });
+
+      const model = buildModel({
+        identifier: "claude-3-haiku",
+      });
+
+      await expect(
+        () => model.call({
+          messages: [],
+        })
+      ).rejects.toThrow(RetryableError);
+
+      expect(getRouting).toHaveBeenCalledTimes(6);
+
+      expect(getRouting).toHaveBeenCalledWith({
+        index: 0,
+        identifier: "claude-3-haiku",
+      });
+
+      expect(getRouting).toHaveBeenCalledWith({
+        index: 1,
+        identifier: "claude-3-haiku",
+      });
+
+      expect(getRouting).toHaveBeenCalledWith({
+        index: 2,
+        identifier: "claude-3-haiku",
+      });
+
+      expect(getRouting).toHaveBeenCalledWith({
+        index: 3,
+        identifier: "claude-3-haiku",
+      });
+
+      expect(getRouting).toHaveBeenCalledWith({
+        index: 4,
+        identifier: "claude-3-haiku",
+      });
+    }, 60_000);
   });
 });
