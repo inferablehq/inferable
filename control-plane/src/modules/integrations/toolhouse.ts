@@ -1,14 +1,14 @@
-import Anthropic, { BadRequestError } from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import { Toolhouse } from "@toolhouseai/sdk";
+import { eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
+import { integrationSchema } from "../contract";
 import * as cron from "../cron";
 import * as data from "../data";
-import { eq, isNotNull } from "drizzle-orm";
-import { logger } from "../observability/logger";
-import { upsertServiceDefinition } from "../service-definitions";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
+import { logger } from "../observability/logger";
 import { packer } from "../packer";
-import { integrationSchema } from "../contract";
+import { upsertServiceDefinition } from "../service-definitions";
 
 const ToolHouseResultSchema = z.array(
   z.object({

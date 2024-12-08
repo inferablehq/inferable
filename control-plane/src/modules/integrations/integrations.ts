@@ -4,10 +4,12 @@ import { z } from "zod";
 
 const toolhouseIntegration = "toolhouse";
 const langfuseIntegration = "langfuse";
+const tavilyIntegration = "tavily";
 
 export const allowedIntegrations = [
   toolhouseIntegration,
   langfuseIntegration,
+  tavilyIntegration,
 ] as const;
 
 export const integrationSchema = z.object({
@@ -26,6 +28,12 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
+  [tavilyIntegration]: z
+    .object({
+      apiKey: z.string(),
+    })
+    .optional()
+    .nullable(),
 });
 
 export const getIntegrations = async ({
@@ -37,6 +45,7 @@ export const getIntegrations = async ({
     .select({
       toolhouse: integrations.toolhouse,
       langfuse: integrations.langfuse,
+      tavily: integrations.tavily,
     })
     .from(integrations)
     .where(eq(integrations.cluster_id, clusterId))
@@ -45,6 +54,7 @@ export const getIntegrations = async ({
         integration ?? {
           toolhouse: null,
           langfuse: null,
+          tavily: null,
         },
     );
 };
