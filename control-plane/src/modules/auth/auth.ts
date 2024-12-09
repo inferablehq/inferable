@@ -370,6 +370,12 @@ export const extractCustomerAuthState = async (
     return undefined;
   }
 
+  if (!cluster.enable_customer_auth) {
+    throw new AuthenticationError(
+      "Customer auth is not enabled for this cluster",
+    );
+  }
+
   const context = await verifyCustomerProvidedAuth({
     token: token,
     clusterId: clusterId,

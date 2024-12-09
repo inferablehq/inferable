@@ -499,7 +499,9 @@ describe("extractAuthState", () => {
 describe("extractCustomerAuthState", () => {
   let owner: Awaited<ReturnType<typeof createOwner>>;
   beforeEach(async () => {
-    owner = await createOwner();
+    owner = await createOwner({
+      enableCustomerAuth: true,
+    });
     jest.resetAllMocks();
   });
 
@@ -526,6 +528,19 @@ describe("extractCustomerAuthState", () => {
       token: "abc123",
     });
   });
+
+  it("should throw if customer auth is not enabled for cluster", async () => {
+    owner = await createOwner({
+      enableCustomerAuth: false,
+    });
+
+    mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+      someAuthValue: "someValue",
+    });
+
+    await expect(extractCustomerAuthState("abc123", owner.clusterId)).rejects.toThrow("Customer auth is not enabled for this cluster");
+  });
+
 
   describe("isUser", () => {
     it("should throw", async () => {
