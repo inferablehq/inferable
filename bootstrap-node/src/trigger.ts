@@ -16,7 +16,7 @@ client
   .run({
     initialPrompt: `
       Iteratively inspect the source code at the current directory, and produce a report.
-      You may selectively inspect the contents of files. You can only access files starting with ./
+      You may selectively inspect the contents of files. You can only access files starting with "./"
     `.trim(),
     resultSchema: reportSchema,
   })

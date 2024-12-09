@@ -6,13 +6,16 @@
 
 This is a Node.js bootstrap application that demonstrates how to integrate and use our SDK. It serves as a reference implementation and starting point for Node.js developers.
 
-## The Application
+## Docs
+
+To follow along with the docs, go to our [quickstart](https://docs.inferable.ai/quick-start).
+
+## What does this application do?
 
 The application demonstrates an agent that can inspect and analyze source code by iteratively executing system commands. It shows how to:
 
-- Register Typescript functions with Inferable
-- Trigger a Run programmatically to provide a goal
-- Restrict the agent's access to the filesystem using source code
+1. Register Typescript functions with Inferable ([index.ts](./src/index.ts))
+2. Trigger a Run programmatically to provide a goal ([run.ts](./src/run.ts))
 
 ```mermaid
 sequenceDiagram
@@ -42,7 +45,7 @@ npm run dev
 2. Trigger the Run
 
 ```bash
-npm run run
+npm run trigger
 ```
 
 ## How it works

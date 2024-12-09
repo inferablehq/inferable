@@ -6,25 +6,32 @@
 
 This is a Go bootstrap application that demonstrates how to integrate and use our SDK. It serves as a reference implementation and starting point for Go developers.
 
-## The Application
+## Docs
 
-The application is a simple Go application that extracts the top posts from Hacker News and summarizes the comments for each post. It demonstrates how to:
+To follow along with the docs, go to our [quickstart](https://docs.inferable.ai/quick-start).
 
-- Register Go functions with Inferable
-- Trigger a Run programmatically to orchestrate the functions
-- Control the control flow of the Run using native Go control flow primitives
+## What does this application do?
+
+The application demonstrates an agent that can inspect and analyze source code by iteratively executing system commands. It shows how to:
+
+1. Register Go functions with Inferable ([main.go](./main.go))
+2. Trigger a Run programmatically to provide a goal ([cmd/trigger.go](./cmd/trigger.go))
 
 ```mermaid
 sequenceDiagram
-    participant extract
-    participant summarizePost
-    participant generatePage
+    participant Agent
+    participant exec
+    participant FileSystem
 
-    extract->>extract: Get top 3 HN posts
-    extract->>summarizePost: Posts data
-    summarizePost->>summarizePost: Get & analyze comments
-    summarizePost->>generatePage: Summaries data
-    generatePage->>generatePage: Generate HTML
+    Agent->>exec: Request file listing (ls)
+    exec->>FileSystem: Execute ls command
+    FileSystem->>exec: Return file list
+    exec->>Agent: File list results
+    Agent->>exec: Request file contents (cat)
+    exec->>FileSystem: Execute cat command
+    FileSystem->>exec: Return file contents
+    exec->>Agent: File contents
+    Agent->>Agent: Analyze code and generate report
 ```
 
 ## How to Run
@@ -38,25 +45,34 @@ go run main.go
 2. Trigger the Run
 
 ```bash
-go run cmd/run.go
+go run cmd/trigger.go
 ```
 
 ## How it works
 
-1. The worker machine uses the Inferable Go SDK to register the functions with Inferable. These functions are:
+1. The worker machine uses the Inferable Go SDK to register the `exec` function with Inferable. This function:
 
-- `GetUrlContent`: Get the html content of any url
-- `ScoreHNPost`: Score a post based on the number of comments and upvotes
-- `GeneratePage`: Generate an HTML page with the summaries and save it to a tmp file in your OS's temp directory
+   - Accepts `ls` or `cat` commands with path arguments
+   - Only allows accessing paths that start with "./"
+   - Returns the stdout and stderr from the command execution
 
-2. The `run.go` script defines "Runs" with the Inferable Go SDK. These are:
+2. The `trigger.go` script creates a Re-Act agent that:
 
-- `extractRun`: Extracts the top 3 HN posts
-- `summarizeRun`: Summarizes the comments for a given post
-- `generateRun`: Generates an HTML page from the summaries
+   - Receives an initial prompt to inspect source code in the current directory
+   - Can iteratively call the `exec` function to list and read files
+   - Produces a final report containing:
+     - The name of the program
+     - A list of its capabilities
 
-3. Given the run configuration (prompts, result schema, etc), the worker machine will orchestrate the functions to generate the page.
+3. The agent will:
 
-- `extractRun` will get the top 3 HN posts using the `GetUrlContent` function, and score them using the `ScoreHNPost` function
-- `summarizeRun` will summarize the comments for each post using the `GetUrlContent` function
-- `generateRun` will generate the HTML page using the `GeneratePage` function
+   - Use `ls` to discover files in the directory
+   - Use `cat` to read the contents of relevant files
+   - Analyze the code to understand its functionality
+   - Generate a structured report based on its findings
+
+## Security
+
+- The `exec` function is restricted to only allow `ls` and `cat` commands
+- File access is restricted to paths starting with "./"
+- The constraints are enforced by source code, and cannot be bypassed by the agent
