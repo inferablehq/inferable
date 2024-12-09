@@ -1,0 +1,35 @@
+{
+  "name": "@inferable/assistant-ui",
+  "version": "0.0.0",
+  "description": "Assistant UI Inferable runtime provider",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf ./dist",
+    "test": "jest ./src",
+    "dev": "vite"
+  },
+  "author": "Inferable, Inc.",
+  "license": "MIT",
+  "devDependencies": {
+    "@assistant-ui/react": "^0.7.11",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/preset-typescript": "^7.26.0",
+    "@types/jest": "^29.5.14",
+    "@types/react": "^18.3.14",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "jest": "^29.7.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.4.1",
+    "tailwindcss": "^3.4.16",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.3"
+  },
+  "dependencies": {
+    "@inferable/react": "^0.0.5"
+  }
+}

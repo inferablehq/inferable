@@ -29,6 +29,8 @@ pnpm add @inferable/react
 
 ## Quick Start
 
+> More details on Inferable front-end usage can be found [here](https://docs.inferable.ai/pages/frontend).
+
 ### useRun Hook
 
 The `useRun` hook returns an object with the following properties:
