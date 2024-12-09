@@ -168,18 +168,6 @@ export const runsRouter = initServer().router(
       let customerProvidedAuth = undefined;
       if (auth.type === "customer-provided") {
         customerProvidedAuth = auth.isCustomerProvided();
-
-        if (!runConfig) {
-          throw new AuthenticationError(
-            "Customer provided auth can only trigger run configurations",
-          );
-        }
-
-        if (!runConfig.public) {
-          throw new AuthenticationError(
-            "Customer provided auth can only trigger public run configurations",
-          );
-        }
       }
 
       const workflow = await createRunWithMessage({

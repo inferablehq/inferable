@@ -1,0 +1,1 @@
+ALTER TABLE "clusters" ADD COLUMN "enable_customer_auth" boolean DEFAULT false NOT NULL;
