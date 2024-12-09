@@ -107,6 +107,15 @@ app.addHook("onRequest", (request, _reply, done) => {
   );
 });
 
+app.addHook('onResponse', async (request, reply) => {
+  if (request.routerPath === '/live' && reply.statusCode >= 400) {
+    logger.warn('Live endpoint returned error', {
+      statusCode: reply.statusCode,
+      path: request.url
+    })
+  }
+});
+
 const startTime = Date.now();
 
 (async function start() {
