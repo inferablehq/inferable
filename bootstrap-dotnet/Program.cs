@@ -31,6 +31,14 @@ class Program
         var serviceProvider = services.BuildServiceProvider();
         var client = serviceProvider.GetRequiredService<InferableClient>();
 
+        // Check if "trigger" command was passed
+        if (args.Length > 0 && args[0].ToLower() == "trigger")
+        {
+            await RunSourceInspection.RunAsync(client);
+            return;
+        }
+
+        // Default behavior - run the service
         Console.WriteLine("Starting client...");
         Register.RegisterFunctions(client);
         await client.Default.StartAsync();

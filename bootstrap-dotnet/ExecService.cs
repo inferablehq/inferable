@@ -42,9 +42,9 @@ public static class ExecService
             };
 
             using var process = Process.Start(startInfo);
-            var stdout = process.StandardOutput.ReadToEnd().Trim();
-            var stderr = process.StandardError.ReadToEnd().Trim();
-            process.WaitForExit();
+            var stdout = process?.StandardOutput.ReadToEnd().Trim();
+            var stderr = process?.StandardError.ReadToEnd().Trim();
+            process?.WaitForExit();
 
             return new ExecResponse
             {
@@ -62,15 +62,15 @@ public static class ExecService
     }
 }
 
-public class ExecInput
+public struct ExecInput
 {
-    public string Command { get; set; }
-    public string Arg { get; set; }
+    public required string Command { get; set; }
+    public required string Arg { get; set; }
 }
 
 public class ExecResponse
 {
-    public string Stdout { get; set; }
-    public string Stderr { get; set; }
-    public string Error { get; set; }
+    public string? Stdout { get; set; }
+    public string? Stderr { get; set; }
+    public string? Error { get; set; }
 }

@@ -39,7 +39,7 @@ public static class RunSourceInspection
             throw new Exception("No result found in run");
         }
 
-        var report = JsonSerializer.Deserialize<Report>(result.Result.ToString()!);
+        var report = JsonSerializer.Deserialize<Report>(result?.Result?.ToString() ?? "");
         Console.WriteLine($"Report: {JsonSerializer.Serialize(report)}");
     }
 }
