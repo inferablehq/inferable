@@ -3,6 +3,5 @@ module.exports = {
     tailwindcss: {
       config: "./demo/tailwind.config.js",
     },
-    autoprefixer: {},
   },
 }
