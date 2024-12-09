@@ -1,0 +1,12 @@
+NOTICE
+======
+
+This project is licensed under the MIT License, except where otherwise noted.
+
+Third-Party Materials
+---------------------
+Portions of this project include works licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0):
+
+- caniuse-lite (NPM)
+  - Source: https://github.com/browserslist/caniuse-lite
+  - License: CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
