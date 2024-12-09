@@ -16,6 +16,7 @@ client.default.register({
   func: async ({ command, arg }: { command: string; arg: string }) => {
     assert(arg.startsWith("./"), "can only access paths starting with ./");
     const { stdout, stderr } = await execFilePromise(command, [arg]);
+
     return {
       stdout: stdout.trim(),
       stderr: stderr.trim(),
