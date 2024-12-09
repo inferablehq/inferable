@@ -2,6 +2,7 @@ import { Inferable } from "inferable";
 import { z } from "zod";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import assert from "assert";
 
 const execFilePromise = promisify(execFile);
 
@@ -12,9 +13,9 @@ const client = new Inferable({
 
 client.default.register({
   name: "exec",
-  func: async ({ command, arg }: { command: string; arg?: string }) => {
-    const args = arg ? [arg] : [];
-    const { stdout, stderr } = await execFilePromise(command, args);
+  func: async ({ command, arg }: { command: string; arg: string }) => {
+    assert(arg.startsWith("./"), "can only access paths starting with ./");
+    const { stdout, stderr } = await execFilePromise(command, [arg]);
     return {
       stdout: stdout.trim(),
       stderr: stderr.trim(),
@@ -24,12 +25,9 @@ client.default.register({
   schema: {
     input: z.object({
       command: z
-        .enum(["pwd", "ls", "cat", "echo"]) // This prevents arbitrary commands
+        .enum(["ls", "cat"]) // This prevents arbitrary commands
         .describe("The command to execute"),
-      arg: z
-        .string()
-        .describe("The argument to pass to the command")
-        .optional(),
+      arg: z.string().describe("The argument to pass to the command"),
     }),
   },
 });

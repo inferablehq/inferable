@@ -15,8 +15,8 @@ const reportSchema = z.object({
 client
   .run({
     initialPrompt: `
-      Iteratively inspect the files at the current directory, and produce a report.
-      You may selectively inspect the contents of files.
+      Iteratively inspect the source code at the current directory, and produce a report.
+      You may selectively inspect the contents of files. You can only access files starting with ./
     `.trim(),
     resultSchema: reportSchema,
   })
