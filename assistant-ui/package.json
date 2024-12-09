@@ -31,6 +31,6 @@
     "vite": "^6.0.3"
   },
   "dependencies": {
-    "@inferable/react": "^0.0.5"
+    "@inferable/react": "^0.0.6"
   }
 }
