@@ -49,40 +49,33 @@ It can be used to interact with an existing run by specifying the `runId`:
 ```typescript
 const { messages, run, createMessage, start } = useRun({
   clusterId: 'your-cluster-id',
-  customerProvidedSecret: 'your-customer-provided-secret',
-  runId: 'your-run-id',
+  apiSecret: 'your-api-secret',
+  authType: 'customer', // or 'cluster'
   // pollInterval: 1000, // Optional: defaults to 1000ms
 });
+
+start({
+  runId: 'your-run-id',
+})
 ```
 
 
 #### New Runs
 
-It can be used to create a new run by specifying a `configId`:
+It can be used to create a new run by specifying an `initialPrompt`:
 
 ```typescript
 const { messages, run, createMessage, start } = useRun({
   clusterId: 'your-cluster-id',
-  customerProvidedSecret: 'your-customer-provided-secret',
-  initialMessage: 'Hello!',
-  configId: 'your-run-config-id',
-  // configInput: {} // Optional: if the config has an inputSchema
+  apiSecret: 'your-api-secret',
+  authType: 'customer', // or 'cluster'
   // pollInterval: 1000, // Optional: defaults to 1000ms
 });
+
+start({
+  initialPrompt: 'Hello!',
+})
 ```
-
-#### Start
-
-Once the hook is initialized, you can start the run by calling the `start` function:
-
-```typescript
-start()
-
-// Access messages and run state
-console.log(messages); // Array of messages in the run
-console.log(run); // Current run status and metadata
-```
-
 
 #### Adding Messages
 
@@ -103,7 +96,8 @@ You can handle errors by providing an `onError` callback:
 ```typescript
 const { messages, run, createMessage } = useRun({
   clusterId: 'your-cluster-id',
-  customerProvidedSecret: 'your-secret',
+  apiSecret: 'your-api-secret',
+  authType: 'customer', // or 'cluster'
   configId: 'your-config-id',
   onError: (error) => {
     console.error('Run error:', error);
@@ -124,7 +118,7 @@ const { messages } = useRun({
 
 ## Local Development
 
-There is development server included in the repository at `./test-page`.
+There is development server included in the repository at `./demo`.
 
 1. Start the development server:
 ```bash

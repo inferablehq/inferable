@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRun } from '../hooks/useRun';
+import { useRun } from '../src';
 
 type TestPageProps = {
   baseUrl?: string;
@@ -33,7 +33,9 @@ export function TestPage(props: TestPageProps) {
         <button
           onClick={() => {
             setStarted(true);
-            start();
+            start({
+              initialPrompt: props.initialPrompt
+            });
           }}
           style={{ padding: '8px 16px' }}
         >

@@ -7,20 +7,23 @@ import { contract } from "./contract";
 export const createApiClient = ({
   baseUrl,
   clientAbortController,
-  customerProvidedSecret,
+  authType,
   apiSecret,
 }: {
-  baseUrl?: string;
-  clientAbortController?: AbortController;
-  customerProvidedSecret?: string;
-  apiSecret?: string
-}) =>
-  initClient(contract, {
+    baseUrl?: string;
+    clientAbortController?: AbortController;
+    authType?: 'customer' | 'cluster';
+    apiSecret?: string
+  }) =>  {
+  const baseHeaders = authType === 'customer' ? {
+    Authorization: `customer ${apiSecret}`
+  } : {
+      Authorization: `bearer ${apiSecret}`
+    };
+
+  return initClient(contract, {
     baseUrl: baseUrl ?? "https://api.inferable.ai",
-    baseHeaders: {
-      ...(customerProvidedSecret ? { authorization: `customer ${customerProvidedSecret}` } : {}),
-      ...(apiSecret ?  {authorization: `bearer ${apiSecret}`} : {})
-    },
+    baseHeaders,
     api: async (args) => {
       try {
         return await tsRestFetchApi({
@@ -37,4 +40,5 @@ export const createApiClient = ({
         };
       }
     },
-  });
+  })
+};
