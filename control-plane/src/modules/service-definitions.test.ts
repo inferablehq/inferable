@@ -1,5 +1,5 @@
 import { dereferenceSync, JSONSchema } from "dereference-json-schema";
-import { InvalidJobArgumentsError } from "../utilities/errors";
+import { InvalidJobArgumentsError, InvalidServiceRegistrationError } from "../utilities/errors";
 import { packer } from "./packer";
 import {
   deserializeFunctionSchema,
@@ -7,9 +7,11 @@ import {
   parseJobArgs,
   serviceFunctionEmbeddingId,
   updateServiceEmbeddings,
+  validateServiceRegistration,
 } from "./service-definitions";
 import { createOwner } from "./test/util";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { z } from "zod";
 describe("updateServiceEmbeddings", () => {
   let owner: { clusterId: string };
   beforeAll(async () => {
@@ -281,3 +283,91 @@ describe("deserializeFunctionSchema", () => {
     });
   });
 });
+
+describe("validateServiceRegistration", () => {
+  it("should reject invalid schema", () => {
+    expect(() => {
+      validateServiceRegistration({
+        service: "default",
+        definition: {
+          name: "default",
+          functions: [
+            {
+              name: "someFn",
+              schema: JSON.stringify({
+                type: "wrong_type",
+              })
+            },
+          ],
+        },
+      });
+    }).toThrow(InvalidServiceRegistrationError);
+  })
+
+  it("should accept valid schema", () => {
+    expect(() => {
+      validateServiceRegistration({
+        service: "default",
+        definition: {
+          name: "default",
+          functions: [
+            {
+              name: "someFn",
+              description: "someFn",
+              schema: JSON.stringify(zodToJsonSchema(
+                z.object({
+                  test: z.string(),
+                })
+              ))
+            },
+          ],
+        },
+      });
+    }).not.toThrow();
+  })
+
+  it("should reject incorrect handleCustomerAuth registration", () => {
+    expect(() => {
+      validateServiceRegistration({
+        service: "default",
+        definition: {
+          name: "default",
+          functions: [
+            {
+              name: "handleCustomerAuth",
+              description: "handleCustomerAuth",
+              schema: JSON.stringify(zodToJsonSchema(
+                z.object({
+                  test: z.string(),
+                })
+              ))
+            },
+          ],
+        },
+      });
+    }).toThrow(InvalidServiceRegistrationError);
+  })
+
+  it("should accept valid handleCustomerAuth registration", () => {
+    expect(() => {
+      validateServiceRegistration({
+        service: "default",
+        definition: {
+          name: "default",
+          functions: [
+            {
+              name: "handleCustomerAuth",
+              description: "handleCustomerAuth",
+              schema: JSON.stringify(zodToJsonSchema(
+                z.object({
+                  token: z.string(),
+                })
+              ))
+            },
+          ],
+        },
+      });
+    }).not.toThrow();
+  })
+
+})
