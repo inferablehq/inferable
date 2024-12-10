@@ -77,7 +77,7 @@ type OnStatusChangeInput struct {
 // Input object for handleCustomerAuth functions
 // https://docs.inferable.ai/pages/auth#handlecustomerauth
 type HandleCustomerAuthInput struct {
-	Token   string      `json:"token"`
+	Token string `json:"token"`
 }
 
 type runResult = OnStatusChangeInput
