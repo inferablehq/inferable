@@ -1,0 +1,1 @@
+ALTER TABLE "prompt_templates" DROP COLUMN IF EXISTS "public";

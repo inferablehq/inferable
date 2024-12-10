@@ -77,7 +77,6 @@ export default function EditPromptTemplate({
     initialPrompt?: string;
     systemPrompt?: string;
     attachedFunctions: string;
-    public: boolean;
     resultSchema?: string;
     inputSchema?: string;
   }) => {
@@ -90,7 +89,6 @@ export default function EditPromptTemplate({
           systemPrompt:
             formData.systemPrompt === "" ? undefined : formData.systemPrompt,
           name: formData.name === "" ? undefined : formData.name,
-          public: formData.public,
           resultSchema: formData.resultSchema
             ? JSON.parse(formData.resultSchema)
             : undefined,
@@ -195,7 +193,6 @@ export default function EditPromptTemplate({
                             attachedFunctions: version.attachedFunctions,
                             resultSchema: version.resultSchema,
                             inputSchema: version.inputSchema,
-                            public: version.public,
                           });
                           setSelectedVersion(version.version);
                           toast.success(
@@ -231,7 +228,6 @@ export default function EditPromptTemplate({
               initialPrompt: promptTemplate.initialPrompt ?? undefined,
               systemPrompt: promptTemplate.systemPrompt ?? undefined,
               attachedFunctions: promptTemplate.attachedFunctions,
-              public: promptTemplate.public,
               resultSchema: promptTemplate.resultSchema
                 ? promptTemplate.resultSchema
                 : undefined,

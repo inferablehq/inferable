@@ -17,7 +17,6 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { StructuredOutputEditor } from "./structured-output-editor";
-import { Switch } from "../ui/switch";
 import Link from "next/link";
 
 const formSchema = z.object({
@@ -27,7 +26,6 @@ const formSchema = z.object({
   attachedFunctions: z.string(),
   resultSchema: z.string().optional(),
   inputSchema: z.string().optional(),
-  public: z.boolean().default(false),
 });
 
 type PromptTemplateFormProps = {
@@ -38,7 +36,6 @@ type PromptTemplateFormProps = {
     attachedFunctions: string[];
     resultSchema?: unknown;
     inputSchema?: unknown;
-    public: boolean;
   };
   onSubmit: (data: z.infer<typeof formSchema>) => Promise<void>;
   isLoading: boolean;
@@ -58,7 +55,6 @@ export function PromptTemplateForm({
       attachedFunctions: initialData.attachedFunctions?.join(", "),
       resultSchema: JSON.stringify(initialData.resultSchema, null, 2),
       inputSchema: JSON.stringify(initialData.inputSchema, null, 2),
-      public: initialData.public,
     },
   });
 
@@ -252,36 +248,6 @@ export function PromptTemplateForm({
             )}
           />
         </div>
-        <FormField
-          control={form.control}
-          name="public"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Public (Front end usage)</FormLabel>
-              <FormDescription>
-                Should this Run Configuration be avilable for use from front end
-                applications.
-                <br />
-                Please see our{" "}
-                <Link
-                  href="https://docs.inferable.ai/pages/frontend"
-                  target="_blank"
-                  className="underline"
-                >
-                  docs
-                </Link>{" "}
-                for more information
-              </FormDescription>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <Button type="submit" disabled={isLoading}>
           {isLoading ? "Saving..." : "Save Run Configuration"}
         </Button>

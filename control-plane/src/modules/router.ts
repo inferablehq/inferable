@@ -540,7 +540,6 @@ export const router = initServer().router(contract, {
       attachedFunctions,
       resultSchema,
       inputSchema,
-      public: isPublic,
     } = request.body;
 
     const auth = request.request.getAuth();
@@ -576,7 +575,6 @@ export const router = initServer().router(contract, {
       attachedFunctions,
       resultSchema,
       inputSchema,
-      isPublic,
     });
 
     posthog?.capture({
@@ -609,7 +607,6 @@ export const router = initServer().router(contract, {
       attachedFunctions,
       resultSchema,
       inputSchema,
-      public: isPublic,
     } = request.body;
 
     const auth = request.request.getAuth();
@@ -650,7 +647,6 @@ export const router = initServer().router(contract, {
       attachedFunctions,
       resultSchema,
       inputSchema,
-      isPublic,
     });
 
     posthog?.capture({

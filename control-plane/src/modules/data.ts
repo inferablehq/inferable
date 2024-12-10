@@ -520,7 +520,6 @@ export const promptTemplates = pgTable(
     // TODO: Rename this to result_schema
     result_schema: json("structured_output"),
     input_schema: json("input_schema"),
-    public: boolean("public").notNull().default(false),
     created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
