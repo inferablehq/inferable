@@ -7,10 +7,15 @@ import { packer } from "../packer";
 import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
 import { getServiceDefinition } from "../service-definitions";
+import { createCache, hashFromSecret } from "../../utilities/cache";
 
 export const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
 export const VERIFY_FUNCTION_SERVICE = "default";
 const VERIFY_FUNCTION_ID = `${VERIFY_FUNCTION_SERVICE}_${VERIFY_FUNCTION_NAME}`;
+
+const customerAuthContextCache = createCache<unknown>(
+  Symbol("customerAuthContextCache"),
+);
 
 /**
  * Calls the customer provided verify function and returns the result
@@ -22,6 +27,14 @@ export const verifyCustomerProvidedAuth = async ({
   token: string;
   clusterId: string;
 }): Promise<unknown> => {
+
+  const secretHash = hashFromSecret(token);
+
+  const cached = await customerAuthContextCache.get(secretHash);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const serviceDefinition = await getServiceDefinition({
       service: VERIFY_FUNCTION_SERVICE,
@@ -56,7 +69,7 @@ export const verifyCustomerProvidedAuth = async ({
     const result = await getJobStatusSync({
       jobId: id,
       owner: { clusterId },
-      ttl: 5_000,
+      ttl: 15_000,
     });
 
     if (
@@ -68,6 +81,8 @@ export const verifyCustomerProvidedAuth = async ({
         `Call to ${VERIFY_FUNCTION_ID} failed. Result: ${result.result}`,
       );
     }
+
+    await customerAuthContextCache.set(secretHash, result, 300);
 
     return packer.unpack(result.result);
   } catch (e) {

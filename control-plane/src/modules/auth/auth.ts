@@ -373,6 +373,7 @@ export const extractCustomerAuthState = async (
   if (!cluster.enable_customer_auth) {
     throw new AuthenticationError(
       "Customer auth is not enabled for this cluster",
+      "https://docs.inferable.ai/pages/auth#customer-provided-secrets"
     );
   }
 

@@ -1,20 +1,16 @@
 import * as data from "../data";
 import { eq, and, isNull } from "drizzle-orm";
-import { createHash, randomBytes } from "crypto";
+import { randomBytes } from "crypto";
 import { logger } from "../observability/logger";
-import { createCache } from "../../utilities/cache";
+import { createCache, hashFromSecret } from "../../utilities/cache";
 
-const authContextCache = createCache<{
+const apiKeyContextCache = createCache<{
   clusterId: string;
   id: string;
   organizationId: string;
 }>(
-  Symbol("authContextCach"),
+  Symbol("apiKeyContextCache"),
 );
-
-const hashFromSecret = (secret: string): string => {
-  return createHash("sha256").update(secret).digest("hex");
-};
 
 export const isApiSecret = (authorization: string): boolean =>
   authorization.startsWith("sk_");
@@ -26,7 +22,7 @@ export const verifyApiKey = async (
 > => {
   const secretHash = hashFromSecret(secret);
 
-  const cached = await authContextCache.get(secretHash);
+  const cached = await apiKeyContextCache.get(secretHash);
 
   if (cached) {
     return cached;
@@ -60,7 +56,7 @@ export const verifyApiKey = async (
     return undefined;
   }
 
-  await authContextCache.set(secretHash, {
+  await apiKeyContextCache.set(secretHash, {
     clusterId: result.clusterId,
     id: result.id,
     organizationId: result.organizationId,
