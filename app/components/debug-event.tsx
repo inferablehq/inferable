@@ -71,14 +71,12 @@ export function DebugEvent({
 
   return (
     <div className="ml-8 py-2 relative">
-      <div className="absolute left-1 top-0 bottom-0 w-[2px] bg-gray-200 -top-2 -bottom-2"></div>
+      <div className="absolute left-1 top-0 bottom-0 w-[2px] bg-gray-200 -top-4 -bottom-4"></div>
 
       <div className="flex items-center space-x-2 mb-1 relative">
         <div className="w-2 h-2 bg-blue-500 rounded-full relative z-10 ring-4 ring-white"></div>
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-gray-700">
-            {startCase(event.type)}
-          </p>
+          <p className="text-xs text-gray-700">{startCase(event.type)}</p>
           <span className="text-xs text-muted-foreground font-mono">
             {formatDateTime(event.createdAt)}
             <span className="text-muted-foreground font-mono text-blue-400">
