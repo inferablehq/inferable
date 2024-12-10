@@ -1,6 +1,15 @@
 import { useInferableRuntime } from '../src'
-import { Thread } from "@assistant-ui/react";
-import toast from "react-hot-toast";
+import { AssistantRuntimeProvider, Thread } from "@assistant-ui/react";
+
+const FallbackToolUI = ({args, result, toolName}) =>
+  <div className="center">
+    <h1>Tool: {toolName}</h1>
+    <h2>Input:</h2>
+    <pre className="whitespace-pre-wrap">{JSON.stringify(args, null, 2)}</pre>
+    <h2>Output:</h2>
+    {result && <pre className="whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>}
+    {!result && <p>No output</p>}
+  </div>
 
 const TestPage = () => {
   const existingRunId = localStorage.getItem("runID")
@@ -24,7 +33,13 @@ const TestPage = () => {
 
   return (
     <div className="h-full">
-      <Thread runtime={runtime}/>
+      <AssistantRuntimeProvider runtime={runtime}>
+        <Thread assistantMessage={{
+          components: {
+            ToolFallback: FallbackToolUI
+          },
+        }} />
+      </AssistantRuntimeProvider>
     </div>
   );
 };
