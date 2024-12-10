@@ -33,97 +33,94 @@ export const isRetryableError = (error: unknown) => {
   return false;
 };
 
-export class AuthenticationError extends Error {
+export class DocumentedError extends Error {
+  docsLink?: string;
+
+  constructor(message: string, docsLink?: string) {
+    super(message);
+    this.name = "DocumentedError";
+    this.docsLink = docsLink
+  }
+}
+
+export class AuthenticationError extends DocumentedError {
   statusCode = 401;
 
-  constructor(message: string) {
-    super(message);
+  constructor(
+    message: string,
+    docsLink: string = "https://docs.inferable.ai/pages/auth"
+  ) {
+    super(message, docsLink);
     this.name = "AuthenticationError";
   }
 }
 
-export class NotFoundError extends Error {
+export class NotFoundError extends DocumentedError {
   statusCode: number = 404;
 
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, docsLink?: string) {
+    super(message, docsLink);
     this.name = "NotFoundError";
   }
 }
 
-export class BadRequestError extends Error {
+export class BadRequestError extends DocumentedError {
   statusCode: number = 400;
 
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, docsLink?: string) {
+    super(message, docsLink);
     this.name = "BadRequestError";
   }
 }
 
-export class JobPollTimeoutError extends Error {
+export class JobPollTimeoutError extends DocumentedError {
   statusCode: number = 408;
 
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, docsLink?: string) {
+    super(message, docsLink);
     this.name = "JobRequestTimeoutError";
   }
 }
 
-export class InvalidServiceRegistrationError extends Error {
+export class InvalidServiceRegistrationError extends DocumentedError {
   statusCode = 400;
 
-  constructor(message: string) {
-    super(message);
+  constructor(
+    message: string,
+    docsLink: string = "https://docs.inferable.ai/pages/functions#options"
+  ) {
+    super(message, docsLink);
     this.name = "InvalidServiceRegistrationError";
   }
 }
 
-export class InvalidJobArgumentsError extends Error {
+export class InvalidJobArgumentsError extends DocumentedError {
   statusCode = 400;
 
-  constructor(message: string) {
-    super(message);
+  constructor(
+    message: string,
+    docsLink: string = "https://docs.inferable.ai/pages/functions#options"
+  ) {
+    super(message, docsLink);
     this.name = "InvalidArgumentsError";
   }
 }
 
-export class ContentTooLarge extends Error {
-  statusCode = 413;
-
-  constructor(message: string) {
-    super(message);
-    this.name = "ContentTooLarge";
-  }
-}
-
-export class AgentError extends Error {
-  constructor(message: string) {
-    super(message);
+export class AgentError extends DocumentedError {
+  constructor(message: string, docsLink?: string) {
+    super(message, docsLink);
     this.name = "AgentError";
   }
 }
 
-export class JobAuthenticationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "JobAuthenticationError";
-  }
-}
-
-export class PromptableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "PromptableError";
-  }
-}
-
-export class RunBusyError extends Error {
+export class RunBusyError extends DocumentedError {
   statusCode = 409;
 
   constructor(
     message: string = "Run is still processing, please try again later.",
+    docsLink: string = "https://docs.inferable.ai/pages/runs#lifecycle"
   ) {
-    super(message);
+    super(message, docsLink);
     this.name = "RunBusyError";
   }
 }
