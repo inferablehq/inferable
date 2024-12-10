@@ -7,8 +7,8 @@ import { packer } from "../packer";
 import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
 
-const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
-const VERIFY_FUNCTION_SERVICE = "default";
+export const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
+export const VERIFY_FUNCTION_SERVICE = "default";
 const VERIFY_FUNCTION_ID = `${VERIFY_FUNCTION_SERVICE}_${VERIFY_FUNCTION_NAME}`;
 
 /**
