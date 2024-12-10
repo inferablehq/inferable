@@ -24,6 +24,7 @@ export const masked = () => {
 
 export {
   statusChangeSchema,
+  handleCustomerAuthSchema,
   ContextInput,
 } from "./types";
 
