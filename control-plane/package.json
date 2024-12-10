@@ -42,7 +42,7 @@
     "fastify": "^4.21.0",
     "fastify-plugin": "^4.5.1",
     "flagsmith-nodejs": "^3.3.3",
-    "inferable": "^0.30.39",
+    "inferable": "^0.30.59",
     "jest": "^29.6.4",
     "js-tiktoken": "^1.0.12",
     "json-schema-to-zod": "^2.1.0",
