@@ -34,7 +34,7 @@ namespace Inferable
   /// Input object for handleCustomerAuth functions
   /// https://docs.inferable.ai/pages/auth#handlecustomerauth
   /// </summary>
-  public struct HandleCustomerAuthInput<T>
+  public struct HandleCustomerAuthInput
   {
     [JsonPropertyName("token")]
     public string Token { get; set; }
