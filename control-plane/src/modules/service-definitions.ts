@@ -1,6 +1,6 @@
 import { and, eq, lte } from "drizzle-orm";
 import {
-    handleCustomerAuthSchema,
+  handleCustomerAuthSchema,
   validateDescription,
   validateFunctionName,
   validateFunctionSchema,
