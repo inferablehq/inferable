@@ -29,7 +29,7 @@ export const verifyCustomerProvidedAuth = async ({
   clusterId: string;
 }): Promise<unknown> => {
 
-  const secretHash = hashFromSecret(token);
+  const secretHash = hashFromSecret(`${clusterId}:${token}`);
 
   const cached = await customerAuthContextCache.get(secretHash);
   if (cached) {
