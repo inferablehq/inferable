@@ -31,18 +31,19 @@ pnpm add @inferable/trpc-connector
 
 ## Quick Start
 
-Create your tRPC router as normal:
+Create your tRPC router with the Inferable plugin:
 
 ```ts
-const t = initTRPC.create();
+import { inferablePlugin } from "@inferable/trpc-connector";
 
-const router = t.router;
-const publicProcedure = t.procedure;
+const t = initTRPC.create();
+const withInferable = inferablePlugin();
 
 const appRouter = t.router({
-  userById: publicProcedure
+  userById: t.procedure
+    .unstable_concat(withInferable) // It's safe to use unstable_concat - https://trpc.io/docs/faq#unstable
     .input(z.object({ id: z.string() }))
-    .meta({ inferable: true }) // <--- Mark this procedure for Inferable
+    .meta({ description: "Fetch a user by their ID" }) // This will be used to encrich the LLM context
     .query(({ input }) => {
       return users.find((user) => user.id === input.id);
     }),
@@ -83,16 +84,20 @@ const result = await client.run({
 });
 ```
 
-## Notes
+## Technical Details
 
-- Preserve Middleware: All your existing tRPC middleware continues to work
-- Type Safety: Maintains full type safety through your tRPC router
-- Selective Exposure: Only procedures marked with meta({ inferable: true }) are exposed
-- Custom Descriptions: Add descriptions to help guide the AI through meta({ description: "..." })
+The plugin does two things:
+
+1. It adds a `meta` field to the procedures with `{ inferable: { enabled: true } }`. This is used to identify the procedures that should be exposed as Inferable functions.
+2. It adds a `ctx` field to the tRPC procedure so you can validate the context that's passed by Inferable in your down stream procedures or middleware.
+
+- This allows you model [human in the loop](https://docs.inferable.ai/pages/human-in-the-loop) workflows where you can fire off a approval request to a human before the function is run.
+- It also allows you to handle [end-user authentication](https://docs.inferable.ai/pages/end-user-authentication) in your tRPC procedures.
+- For more information on the context object, see the [context documentation](https://docs.inferable.ai/pages/context).
 
 ## Documentation
 
-Inferable documentation contains all the information you need to get started with Inferable.
+[Inferable documentation](https://docs.inferable.ai) contains all the information you need to get started with Inferable.
 
 ## Support
 

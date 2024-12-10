@@ -1,19 +1,22 @@
 import { AnyRouter, initTRPC } from "@trpc/server";
 import { Inferable } from "inferable";
-import { RegisteredService } from "inferable/bin/types";
+import { ContextInput, RegisteredService } from "inferable/bin/types";
 
 type FunctionConfig = {
   path: string;
   description: string | undefined;
   inputs: any | undefined;
-  fn: (input: unknown) => any;
+  fn: (input: unknown, ctx: ContextInput) => any;
 };
 
 type Procedure = {
   _def?: {
     meta?: {
       description?: string;
-      inferable?: boolean;
+      inferable?: {
+        enabled: boolean;
+        additionalContext?: string;
+      };
     };
     inputs?: any;
   };
@@ -24,6 +27,18 @@ function camelCase(str: string) {
     .split(".")
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
     .join("");
+}
+
+export function inferableTRPC() {
+  const t = initTRPC.context().meta().create();
+
+  return {
+    proc: t.procedure.meta({ inferable: true }).use(async (opts) => {
+      return opts.next({
+        ctx: opts.ctx as ContextInput,
+      });
+    }),
+  };
 }
 
 export function createInferableService({
@@ -43,24 +58,35 @@ export function createInferableService({
 }): RegisteredService {
   const fns: FunctionConfig[] = [];
 
-  const caller = createCaller(contextGetter?.() ?? {});
-
   for (const [path, procedure] of Object.entries(router._def.procedures) as [
     string,
     Procedure
   ][]) {
     if (procedure._def?.meta?.inferable) {
-      if (typeof caller[path] !== "function") {
-        throw new Error(
-          `Procedure ${path} is not a function. Got ${typeof caller[path]}`
-        );
-      }
-
       fns.push({
         path,
-        description: procedure._def?.meta?.description,
+        description:
+          [
+            procedure._def?.meta?.description,
+            procedure._def?.meta?.inferable?.additionalContext,
+          ]
+            .filter(Boolean)
+            .join("\n") || undefined,
         inputs: procedure._def?.inputs,
-        fn: caller[path],
+        fn: async (input: unknown, ctx: ContextInput) => {
+          const context = contextGetter ? await contextGetter() : {};
+          const caller = createCaller({ ...ctx, context });
+
+          if (typeof caller[path] !== "function") {
+            throw new Error(
+              `Procedure ${path} is not a function. Got ${typeof caller[path]}`
+            );
+          }
+
+          const fn = caller[path] as (input: unknown) => any;
+
+          return fn(input);
+        },
       });
     }
   }

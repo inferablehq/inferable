@@ -1,8 +1,8 @@
 import { initTRPC } from "@trpc/server";
 import { createHTTPServer } from "@trpc/server/adapters/standalone";
 import { z } from "zod";
-import { createInferableService } from ".";
-import { Inferable } from "inferable";
+import { createInferableService, inferableTRPC } from ".";
+import { ContextInput, Inferable } from "inferable";
 import assert from "assert";
 
 /**
@@ -23,6 +23,8 @@ const users = [
   { id: "2", name: "Jane Doe", email: "jane.doe@example.com" },
 ];
 
+const plugin = inferableTRPC();
+
 const appRouter = t.router({
   "": publicProcedure.query(() => {
     return `Inferable TRPC Connector Test v${
@@ -30,14 +32,14 @@ const appRouter = t.router({
     }`;
   }),
   userById: publicProcedure
+    .unstable_concat(plugin.proc)
     .input(z.object({ id: z.string() }))
-    .meta({ inferable: true })
-    .query(({ input }) => {
+    .query(({ input, ctx }) => {
       return users.find((user) => user.id === input.id);
     }),
   users: router({
     create: publicProcedure
-      .meta({ description: "Create a new user", inferable: true })
+      .unstable_concat(plugin.proc)
       .input(z.object({ name: z.string(), email: z.string() }))
       .mutation(({ input }) => {
         const newUser = { id: (users.length + 1).toString(), ...input };
