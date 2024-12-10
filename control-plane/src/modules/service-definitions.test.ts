@@ -340,7 +340,7 @@ describe("validateServiceRegistration", () => {
                 z.object({
                   test: z.string(),
                 })
-              ))
+              )),
             },
           ],
         },
@@ -370,4 +370,47 @@ describe("validateServiceRegistration", () => {
     }).not.toThrow();
   })
 
+  it("should reject invalid cache.keyPath jsonpath", () => {
+    expect(() => {
+      validateServiceRegistration({
+        service: "default",
+        definition: {
+          name: "default",
+          functions: [
+            {
+              name: "myFn",
+              config: {
+                cache: {
+                  keyPath: "$invalid",
+                  ttlSeconds: 10
+                }
+              }
+            },
+          ],
+        },
+      });
+    }).toThrow(InvalidServiceRegistrationError);
+  })
+
+  it("should accept valid cache.keyPath jsonpath", () => {
+    expect(() => {
+      validateServiceRegistration({
+        service: "default",
+        definition: {
+          name: "default",
+          functions: [
+            {
+              name: "myFn",
+              config: {
+                cache: {
+                  keyPath: "$.someKey",
+                  ttlSeconds: 10
+                }
+              }
+            },
+          ],
+        },
+      });
+    }).not.toThrow();
+  })
 })

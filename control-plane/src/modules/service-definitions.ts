@@ -1,6 +1,5 @@
 import { and, eq, lte } from "drizzle-orm";
 import {
-  handleCustomerAuthSchema,
   validateDescription,
   validateFunctionName,
   validateFunctionSchema,
@@ -20,6 +19,7 @@ import { embeddableEntitiy } from "./embeddings/embeddings";
 import { logger } from "./observability/logger";
 import { packer } from "./packer";
 import { withThrottle } from "./util";
+import jsonpath from "jsonpath";
 
 // The time without a ping before a service is considered expired
 const SERVICE_LIVE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
@@ -400,10 +400,20 @@ export const validateServiceRegistration = ({
       }
     }
 
-    const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
-    const VERIFY_FUNCTION_SERVICE = "default";
+    if (fn.config?.cache) {
+      try {
+        jsonpath.parse(fn.config.cache.keyPath);
+      } catch {
+        throw new InvalidServiceRegistrationError(
+          `${fn.name} cache.keyPath is invalid`,
+          "https://docs.inferable.ai/pages/functions#config-cache"
+        )
+      }
+    }
 
     // Checks for customer auth handler
+    const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
+    const VERIFY_FUNCTION_SERVICE = "default";
     if (service === VERIFY_FUNCTION_SERVICE && fn.name === VERIFY_FUNCTION_NAME) {
       if (!fn.schema) {
         throw new InvalidServiceRegistrationError(

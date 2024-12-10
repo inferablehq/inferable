@@ -11,7 +11,7 @@ import {
   getServiceDefinition,
   parseJobArgs,
 } from "../service-definitions";
-import { extractWithPath } from "../util";
+import { extractWithJsonPath } from "../util";
 import { externalServices } from "./external";
 import { env } from "../../utilities/env";
 import { injectTraceContext } from "../observability/tracer";
@@ -34,12 +34,15 @@ type CreateJobParams = {
 
 const DEFAULT_RETRY_COUNT_ON_STALL = 0;
 
-const extractKeyFromPath = (path: string, args: unknown) => {
+const extractCacheKeyFromJsonPath = (path: string, args: unknown) => {
   try {
-    return extractWithPath(path, args)[0];
+    return extractWithJsonPath(path, args)[0];
   } catch (error) {
     if (error instanceof NotFoundError) {
-      throw new InvalidJobArgumentsError(error.message);
+      throw new InvalidJobArgumentsError(
+        `Failed to extract cache key from arguments: ${error.message}`,
+        "https://docs.inferable.ai/pages/functions#config-cache"
+      );
     }
     throw error;
   }
@@ -94,7 +97,7 @@ export const createJob = async (params: {
   };
 
   if (config?.cache?.keyPath && config?.cache?.ttlSeconds) {
-    const cacheKey = extractKeyFromPath(config.cache.keyPath, args);
+    const cacheKey = extractCacheKeyFromJsonPath(config.cache.keyPath, args);
 
     const { id, created } = await createJobStrategies.cached({
       ...jobConfig,
