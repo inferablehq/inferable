@@ -3,7 +3,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx -r dotenv/config --watch src/index.ts",
-    "run": "tsx -r dotenv/config src/run.ts"
+    "trigger": "tsx -r dotenv/config src/trigger.ts"
   },
   "engines": {
     "node": ">=20"

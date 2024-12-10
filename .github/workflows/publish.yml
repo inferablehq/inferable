@@ -17,6 +17,7 @@ jobs:
     outputs:
       sdk_node: ${{ steps.filter.outputs.sdk_node }}
       sdk_react: ${{ steps.filter.outputs.sdk_react }}
+      assistant_ui: ${{ steps.filter.outputs.assistant_ui }}
       sdk_dotnet: ${{ steps.filter.outputs.sdk_dotnet }}
       sdk_go: ${{ steps.filter.outputs.sdk_go }}
       cli: ${{ steps.filter.outputs.cli }}
@@ -35,6 +36,8 @@ jobs:
               - 'sdk-node/**'
             sdk_react:
               - 'sdk-react/**'
+            assistant_ui:
+              - 'assistant-ui/**'
             sdk_dotnet:
               - 'sdk-dotnet/**'
             sdk_go:
@@ -157,6 +160,45 @@ jobs:
           npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
           version=$(npx release-it --release-version)
           npx release-it --npm.skipChecks --git.tagName=sdk-react/v${version} --no-github.release --git.commitMessage="Bump sdk-react version to ${version}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-assistant-ui:
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.assistant_ui == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    defaults:
+      run:
+        working-directory: assistant-ui
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: assistant-ui/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build package
+        run: npm run build
+      - name: Configure Git User
+        run: |
+          git config --global user.name "Inferable CI"
+          git config --global user.email "ci@inferable.ai"
+      - name: Release It
+        run: |
+          npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
+          version=$(npx release-it --release-version)
+          npx release-it --npm.skipChecks --git.tagName=assistant-ui/v${version} --no-github.release --git.commitMessage="Bump assistant-ui version to ${version}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

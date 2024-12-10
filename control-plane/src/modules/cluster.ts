@@ -26,6 +26,7 @@ export const getClusterDetails = async (clusterId: string) => {
       id: data.clusters.id,
       name: data.clusters.name,
       description: data.clusters.description,
+      enable_customer_auth: data.clusters.enable_customer_auth,
       additional_context: data.clusters.additional_context,
       organization_id: data.clusters.organization_id,
       deleted_at: data.clusters.deleted_at,

@@ -340,6 +340,7 @@ export const definition = {
         .describe(
           "Enable additional logging (Including prompts and results) for use by Inferable support",
         ),
+      enableCustomerAuth: z.boolean().optional(),
       enableRunConfigs: z.boolean().optional(),
       enableKnowledgebase: z.boolean().optional(),
     }),
@@ -358,6 +359,7 @@ export const definition = {
         additionalContext: VersionedTextsSchema.nullable(),
         createdAt: z.date(),
         debug: z.boolean(),
+        enableCustomerAuth: z.boolean(),
         enableRunConfigs: z.boolean(),
         enableKnowledgebase: z.boolean(),
         lastPingAt: z.date().nullable(),

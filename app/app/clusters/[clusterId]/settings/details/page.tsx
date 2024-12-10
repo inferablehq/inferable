@@ -29,11 +29,13 @@ import toast from "react-hot-toast";
 import { z } from "zod";
 import { Loading } from "@/components/loading";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const formSchema = z.object({
   name: z.string(),
   description: z.string().default(""),
   debug: z.boolean().default(false),
+  enableCustomerAuth: z.boolean().default(false),
   enableRunConfigs: z.boolean().default(false),
   enableKnowledgebase: z.boolean().default(false),
 });
@@ -63,6 +65,10 @@ export default function DetailsPage({
         form.setValue("description", details.body.description ?? "");
         form.setValue("debug", details.body.debug ?? false);
         form.setValue(
+          "enableCustomerAuth",
+          details.body.enableCustomerAuth ?? false,
+        );
+        form.setValue(
           "enableRunConfigs",
           details.body.enableRunConfigs ?? false,
         );
@@ -90,6 +96,7 @@ export default function DetailsPage({
             name: data.name,
             description: data.description,
             debug: data.debug,
+            enableCustomerAuth: data.enableCustomerAuth,
             enableRunConfigs: data.enableRunConfigs,
             enableKnowledgebase: data.enableKnowledgebase,
           },
@@ -159,8 +166,7 @@ export default function DetailsPage({
                         </FormLabel>
                         <FormDescription>
                           Create and edit templates for runs directly in the UI.
-                          This allows you to create and edit configurations for
-                          runs from the UI.
+                          This allows you to  <Link className="underline" href="https://docs.inferable.ai/pages/run-configs">create and edit configurations</Link> for runs from the UI.
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -204,15 +210,35 @@ export default function DetailsPage({
               <div className="text-lg font-medium">Advanced Settings</div>
               <FormField
                 control={form.control}
+                name="enableCustomerAuth"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Customer Provided Auth
+                      </FormLabel>
+                      <FormDescription>
+                        Allow this cluster to be authenticated with <Link className="underline" href="https://docs.inferable.ai/pages/auth#customer-provided-secrets">customer provided authentication tokens</Link>.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="debug"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">Debug Logging</FormLabel>
                       <FormDescription>
-                        Allow Inferable to capture additional debug logs for the
-                        purpose of troubleshooting. This applies to all runs
-                        created from this cluster while enabled.
+                        Allow Inferable to capture additional debug logs for the purpose of troubleshooting.
                       </FormDescription>
                     </div>
                     <FormControl>

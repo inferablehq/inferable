@@ -21,7 +21,7 @@ export type FunctionInput<T extends z.ZodTypeAny | JsonSchemaInput> =
       any;
 
 /**
- * Schema type that will be returned to a Run's OnStatusChange Function
+ * Schema for onStatusChange functions
  *
  * @example
  * ```ts
@@ -41,6 +41,25 @@ export const statusChangeSchema = {
     metadata: z.record(z.string()).nullable().optional(),
   }),
 };
+
+/**
+ * Schema for handleCustomerAuth functions
+ *
+ * @example
+ * ```ts
+ * inferable.default.register({
+ *   name: "handleCustomerAuth",
+ *   schema: handleCustomerAuthSchema,
+ *   func: (_input) => {},
+ * });
+ * ```
+ */
+export const handleCustomerAuthSchema = {
+  input: z.object({
+    token: z.string(),
+  }),
+};
+
 
 import type { JSONSchema4Type } from "json-schema";
 import type { JsonSchema7Type } from "zod-to-json-schema";

@@ -79,6 +79,7 @@ export const editClusterDetails = async ({
   description,
   additionalContext,
   debug,
+  enableCustomerAuth,
   enableRunConfigs,
   enableKnowledgebase,
 }: {
@@ -88,6 +89,7 @@ export const editClusterDetails = async ({
   description?: string;
   additionalContext?: VersionedTexts;
   debug?: boolean;
+  enableCustomerAuth?: boolean;
   enableRunConfigs?: boolean;
   enableKnowledgebase?: boolean;
 }) => {
@@ -98,6 +100,7 @@ export const editClusterDetails = async ({
       name,
       additional_context: additionalContext,
       debug,
+      enable_customer_auth: enableCustomerAuth,
       enable_run_configs: enableRunConfigs,
       enable_knowledgebase: enableKnowledgebase,
     })
@@ -129,6 +132,7 @@ export const getClusterDetails = async ({
   lastPingAt: Date | null;
   additionalContext: VersionedTexts | null;
   debug: boolean;
+  enableCustomerAuth: boolean;
   enableRunConfigs: boolean;
   enableKnowledgebase: boolean;
 }> => {
@@ -141,6 +145,7 @@ export const getClusterDetails = async ({
         createdAt: data.clusters.created_at,
         additionalContext: data.clusters.additional_context,
         debug: data.clusters.debug,
+        enableCustomerAuth: data.clusters.enable_customer_auth,
         enableRunConfigs: data.clusters.enable_run_configs,
         enableKnowledgebase: data.clusters.enable_knowledgebase,
       })
@@ -178,6 +183,7 @@ export const getClusterDetails = async ({
     debug: cluster.debug,
     additionalContext: cluster.additionalContext,
     lastPingAt: machines[0]?.maxLastPingAt,
+    enableCustomerAuth: cluster.enableCustomerAuth,
     enableRunConfigs: cluster.enableRunConfigs,
     enableKnowledgebase: cluster.enableKnowledgebase,
   };

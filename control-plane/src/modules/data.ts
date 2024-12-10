@@ -136,6 +136,7 @@ export const clusters = pgTable(
     id: varchar("id", { length: 1024 }).primaryKey(),
     name: varchar("name", { length: 1024 }).notNull(),
     debug: boolean("debug").notNull().default(false),
+    enable_customer_auth: boolean("enable_customer_auth").notNull().default(false),
     enable_run_configs: boolean("enable_run_configs").notNull().default(false),
     enable_knowledgebase: boolean("enable_knowledgebase")
       .notNull()

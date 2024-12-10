@@ -23,6 +23,7 @@ jobs:
       sdk_dotnet: ${{ steps.filter.outputs.sdk_dotnet }}
       sdk_go: ${{ steps.filter.outputs.sdk_go }}
       sdk_react: ${{ steps.filter.outputs.sdk_react }}
+      assistant_ui: ${{ steps.filter.outputs.assistant_ui }}
       cli: ${{ steps.filter.outputs.cli }}
       control_plane: ${{ steps.filter.outputs.control_plane }}
       data_connector: ${{ steps.filter.outputs.data_connector }}
@@ -48,6 +49,8 @@ jobs:
               - 'sdk-go/**'
             sdk_react:
               - 'sdk-react/**'
+            assistant_ui:
+              - 'assistant-ui/**'
             cli:
               - 'cli/**'
             control_plane:
@@ -412,6 +415,29 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm test
+
+  build-assistant-ui:
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.assistant_ui == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: assistant-ui
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: assistant-ui/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build package
+        run: npm run build
 
   build-load-test-machine-image:
     runs-on: ubuntu-latest

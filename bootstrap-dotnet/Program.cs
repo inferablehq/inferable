@@ -7,21 +7,17 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // Load environment variables in development
         if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
             Env.Load();
         }
 
-        // Setup dependency injection
         var services = new ServiceCollection();
 
-        // Add logging
         services.AddLogging(builder => {
             builder.AddConsole();
         });
 
-        // Configure Inferable client
         services.AddSingleton<InferableClient>(sp => {
             var options = new InferableOptions {
                 ApiSecret = Environment.GetEnvironmentVariable("INFERABLE_API_SECRET"),
@@ -35,21 +31,20 @@ class Program
         var serviceProvider = services.BuildServiceProvider();
         var client = serviceProvider.GetRequiredService<InferableClient>();
 
-        // Check command line arguments
-        if (args.Length > 0 && args[0].ToLower() == "run")
+        // Check if "trigger" command was passed
+        if (args.Length > 0 && args[0].ToLower() == "trigger")
         {
-            Console.WriteLine("Running HN extraction...");
-            await RunHNExtraction.RunAsync(client);
+            await RunSourceInspection.RunAsync(client);
+            return;
         }
-        else
-        {
-            Console.WriteLine("Starting client...");
-            Register.RegisterFunctions(client);
-            await client.Default.StartAsync();
 
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
-        }
+        // Default behavior - run the service
+        Console.WriteLine("Starting client...");
+        Register.RegisterFunctions(client);
+        await client.Default.StartAsync();
+
+        Console.WriteLine("Press any key to exit...");
+        Console.ReadKey();
     }
 }
 
