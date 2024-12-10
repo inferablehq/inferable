@@ -1,6 +1,6 @@
 import { and, eq, lte } from "drizzle-orm";
 import {
-    handleCustomerAuthSchema,
+  handleCustomerAuthSchema,
   validateDescription,
   validateFunctionName,
   validateFunctionSchema,
@@ -20,7 +20,6 @@ import { embeddableEntitiy } from "./embeddings/embeddings";
 import { logger } from "./observability/logger";
 import { packer } from "./packer";
 import { withThrottle } from "./util";
-import { VERIFY_FUNCTION_NAME, VERIFY_FUNCTION_SERVICE } from "./auth/customer-auth";
 
 // The time without a ping before a service is considered expired
 const SERVICE_LIVE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
@@ -400,6 +399,9 @@ export const validateServiceRegistration = ({
         );
       }
     }
+
+    const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
+    const VERIFY_FUNCTION_SERVICE = "default";
 
     // Checks for customer auth handler
     if (service === VERIFY_FUNCTION_SERVICE && fn.name === VERIFY_FUNCTION_NAME) {
