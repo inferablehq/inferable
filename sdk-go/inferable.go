@@ -65,12 +65,19 @@ type InferableOptions struct {
 	MachineID   string
 }
 
-// Struct type that will be returned to a Run's OnStatusChange Function
+// Input object for onStatusChange functions
+// https://docs.inferable.ai/pages/runs#onstatuschange
 type OnStatusChangeInput struct {
 	Status   string      `json:"status"`
 	RunId    string      `json:"runId"`
 	Result   interface{} `json:"result"`
 	Metadata interface{} `json:"metadata"`
+}
+
+// Input object for handleCustomerAuth functions
+// https://docs.inferable.ai/pages/auth#handlecustomerauth
+type HandleCustomerAuthInput struct {
+	Token   string      `json:"token"`
 }
 
 type runResult = OnStatusChangeInput
