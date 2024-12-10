@@ -2,7 +2,7 @@ import { initTRPC } from "@trpc/server";
 import { createHTTPServer } from "@trpc/server/adapters/standalone";
 import { z } from "zod";
 import { createInferableService, inferableTRPC } from ".";
-import { ContextInput, Inferable } from "inferable";
+import { approvalRequest, ContextInput, Inferable } from "inferable";
 import assert from "assert";
 
 /**
@@ -35,6 +35,10 @@ const appRouter = t.router({
     .unstable_concat(plugin.proc)
     .input(z.object({ id: z.string() }))
     .query(({ input, ctx }) => {
+      if (input.id === "dangerous" && !ctx.approved) {
+        return approvalRequest();
+      }
+
       return users.find((user) => user.id === input.id);
     }),
   users: router({
