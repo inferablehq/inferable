@@ -11,8 +11,9 @@ namespace Inferable
   }
 
   /// <summary>
-  /// Object type that will be returned to a Run's OnStatusChange Function.
+  /// Input object for onStatusChange functions
   /// Generic type T is the type of the result the run's (resultSchema)
+  /// https://docs.inferable.ai/pages/runs#onstatuschange
   /// </summary>
   public struct OnStatusChangeInput<T>
   {
@@ -27,6 +28,16 @@ namespace Inferable
 
     [JsonPropertyName("metadata")]
     public Dictionary<string, string> Metadata { get; set; }
+  }
+
+  /// <summary>
+  /// Input object for handleCustomerAuth functions
+  /// https://docs.inferable.ai/pages/auth#handlecustomerauth
+  /// </summary>
+  public struct HandleCustomerAuthInput<T>
+  {
+    [JsonPropertyName("token")]
+    public string Token { get; set; }
   }
 
   public class InferableOptions
