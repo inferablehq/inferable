@@ -89,14 +89,17 @@ export const verifyCustomerProvidedAuth = async ({
     if (e instanceof JobPollTimeoutError) {
       throw new AuthenticationError(
         `Call to ${VERIFY_FUNCTION_ID} did not complete in time`,
+        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
       );
     }
 
-    if (e instanceof InvalidJobArgumentsError) {
+    if (e instanceof Error) {
       throw new AuthenticationError(
-        `Could not find ${VERIFY_FUNCTION_ID} registration`,
+      `Call to ${VERIFY_FUNCTION_ID} failed with error: ${e.message}`,
+        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
       );
     }
+
     throw e;
   }
 };
