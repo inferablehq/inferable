@@ -1,5 +1,6 @@
 import { and, eq, lte } from "drizzle-orm";
 import {
+  handleCustomerAuthSchema,
   validateDescription,
   validateFunctionName,
   validateFunctionSchema,
@@ -369,7 +370,7 @@ export const updateServiceEmbeddings = async ({
   );
 };
 
-const validateServiceRegistration = ({
+export const validateServiceRegistration = ({
   service,
   definition,
 }: {
@@ -395,6 +396,29 @@ const validateServiceRegistration = ({
       if (errors.length > 0) {
         throw new InvalidServiceRegistrationError(
           `${fn.name} schema invalid: ${JSON.stringify(errors)}`,
+        );
+      }
+    }
+
+    const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
+    const VERIFY_FUNCTION_SERVICE = "default";
+
+    // Checks for customer auth handler
+    if (service === VERIFY_FUNCTION_SERVICE && fn.name === VERIFY_FUNCTION_NAME) {
+      if (!fn.schema) {
+        throw new InvalidServiceRegistrationError(
+          `${fn.name} must have a valid schema`,
+          "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+        );
+      }
+
+      // Check that the schema accepts and expected value
+      const zodSchema = deserializeFunctionSchema(fn.schema);
+      const schema = zodSchema.safeParse({ token: "test" });
+      if (!schema.success) {
+        throw new InvalidServiceRegistrationError(
+          `${fn.name} schema is not valid`,
+          "https://docs.inferable.ai/pages/auth#handlecustomerauth"
         );
       }
     }

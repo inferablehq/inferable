@@ -34,7 +34,7 @@ pnpm add @inferable/assistant-ui
 
 ```typescript
 import { useInferableRuntime } from '@inferable/assistant-ui';
-import { Thread } from "@assistant-ui/react";
+import { AssistantRuntimeProvider, Thread } from "@assistant-ui/react";
 
 const { runtime, run } = useInferableRuntime({
   clusterId: '<YOUR_CLUSTER_ID>',
@@ -46,7 +46,9 @@ const { runtime, run } = useInferableRuntime({
 
 return (
   <div className="h-full">
-    <Thread runtime={runtime}/>
+    <AssistantRuntimeProvider runtime={runtime}>
+      <Thread/>
+    </AssistantRuntimeProvider>
   </div>
 );
 ```
@@ -66,6 +68,49 @@ You can handle errors by providing an `onError` callback:
       console.error(error);
     }
   })
+```
+
+### Rendering function UI
+
+You can provide assistant-ui with [custom UI components](https://www.assistant-ui.com/docs/guides/ToolUI) for rendering Inferable function calls / results.
+
+#### Example
+
+```typescript
+// Fallback UI
+const FallbackToolUI = ({args, result, toolName}) =>
+  <div className="center">
+    <h1>Tool: {toolName}</h1>
+    <h2>Input:</h2>
+    <pre className="whitespace-pre-wrap">{JSON.stringify(args, null, 2)}</pre>
+    <h2>Output:</h2>
+    {result && <pre className="whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>}
+    {!result && <p>No output</p>}
+  </div>
+
+// Custom UI example
+const SearchToolUI = makeAssistantToolUI<any, any>({
+  toolName: "default_webSearch",
+  render: ({ args }) => {
+    return <p>webSearch({args.query})</p>;
+  },
+});
+
+return (
+  <div className="h-full">
+    <AssistantRuntimeProvider runtime={runtime}>
+      <Thread
+        tools={[
+          WebSearchToolUI
+        ]},
+        assistantMessage={{
+          components: {
+            ToolFallback: FallbackToolUI
+          },
+      }} />
+    </AssistantRuntimeProvider>
+  </div>
+);
 ```
 
 

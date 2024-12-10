@@ -81,7 +81,7 @@ export function useInferableRuntime({
     runtime: useExternalStoreRuntime({
       isRunning,
       messages,
-      convertMessage,
+      convertMessage: (message) => convertMessage(message, messages),
       onNew,
     }),
     run,
@@ -89,7 +89,7 @@ export function useInferableRuntime({
 
 }
 
-const convertMessage = (message: any): ThreadMessageLike => {
+const convertMessage = (message: any, allMessages: any): ThreadMessageLike => {
   switch (message.type) {
     case "human": {
       const parsedData = genericMessageDataSchema.parse(message.data);
@@ -114,31 +114,49 @@ const convertMessage = (message: any): ThreadMessageLike => {
         });
       }
 
+      if (parsedData.invocations) {
+
+        parsedData.invocations.forEach((invocation) => {
+
+          // Attempt to find corresponding `invocation-result` message
+          let result = null;
+          allMessages.forEach((message: any) => {
+            if ('type' in message && message.type !== "invocation-result") {
+              return false
+            }
+
+            const parsedResult = resultDataSchema.parse(message.data);
+
+            if (parsedResult.id === invocation.id) {
+              result = parsedResult.result;
+              return true;
+            }
+          });
+
+          content.push({
+            type: "tool-call",
+            toolName: invocation.toolName,
+            args: invocation.input,
+            toolCallId: invocation.id,
+            result
+          });
+        })
+      }
+
+      if (content.length === 0) {
+        return {
+          id: message.id,
+          role: "system",
+          content: "MESSAGE HAS NO CONTENT"
+        }
+      }
+
       return {
         id: message.id,
         role: "assistant",
         content: content
       }
     }
-    case "invocation-result": {
-      const parsedData = resultDataSchema.parse(message.data);
-
-      // TODO: Search chat history for the corresponding invocation mesasge (With args)
-
-      return {
-        id: message.id,
-        role: "assistant",
-        content: [{
-          type: "tool-call",
-          toolName: "inferable",
-          args: {},
-          toolCallId: parsedData.id,
-          result: parsedData.result,
-        }]
-      }
-
-    }
-
   }
 
   return {
@@ -146,7 +164,7 @@ const convertMessage = (message: any): ThreadMessageLike => {
     role: "system",
     content: [{
       type: "text",
-      text: ""
+      text: `UNKNON MESSAGE TYPE: ${message.type}`
     }],
   };
 }

@@ -50,7 +50,7 @@ jobs:
             sdk_react:
               - 'sdk-react/**'
             assistant_ui:
-              - 'assistant-ui/**'
+              - 'connectors/assistant-ui/**'
             cli:
               - 'cli/**'
             control_plane:
@@ -424,7 +424,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: assistant-ui
+        working-directory: connectors/assistant-ui
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -433,7 +433,7 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
-          cache-dependency-path: assistant-ui/package-lock.json
+          cache-dependency-path: connectors/assistant-ui/package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Build package

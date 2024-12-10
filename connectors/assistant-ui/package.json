@@ -1,6 +1,6 @@
 {
   "name": "@inferable/assistant-ui",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "description": "Assistant UI Inferable runtime provider",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

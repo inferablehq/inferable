@@ -6,9 +6,10 @@ import {
 import { packer } from "../packer";
 import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
+import { getServiceDefinition } from "../service-definitions";
 
-const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
-const VERIFY_FUNCTION_SERVICE = "default";
+export const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
+export const VERIFY_FUNCTION_SERVICE = "default";
 const VERIFY_FUNCTION_ID = `${VERIFY_FUNCTION_SERVICE}_${VERIFY_FUNCTION_NAME}`;
 
 /**
@@ -22,6 +23,25 @@ export const verifyCustomerProvidedAuth = async ({
   clusterId: string;
 }): Promise<unknown> => {
   try {
+    const serviceDefinition = await getServiceDefinition({
+      service: VERIFY_FUNCTION_SERVICE,
+      owner: {
+        clusterId: clusterId,
+      },
+    });
+
+    const functionDefinition = serviceDefinition?.functions?.find(
+      (f) => f.name === VERIFY_FUNCTION_NAME,
+    );
+
+
+    if (!functionDefinition) {
+      throw new AuthenticationError(
+        `${VERIFY_FUNCTION_ID} is not registered`,
+        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+      );
+    }
+
     const { id } = await jobs.createJob({
       service: VERIFY_FUNCTION_SERVICE,
       targetFn: VERIFY_FUNCTION_NAME,

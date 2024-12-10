@@ -72,9 +72,16 @@ app.setErrorHandler((error, request, reply) => {
     hdx?.recordException(error);
   }
 
+  let docsLink;
+
+  if ('docsLink' in error) {
+    docsLink = error.docsLink
+  }
+
   return reply.status(statusCode).send({
     error: {
       message: statusCode === 500 ? "Internal server error" : error.message,
+      docsLink,
     },
   });
 });
