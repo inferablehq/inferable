@@ -8,6 +8,7 @@ import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
 import { getServiceDefinition } from "../service-definitions";
 import { createCache, hashFromSecret } from "../../utilities/cache";
+import { logger } from "../observability/logger";
 
 export const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
 export const VERIFY_FUNCTION_SERVICE = "default";
@@ -32,6 +33,12 @@ export const verifyCustomerProvidedAuth = async ({
 
   const cached = await customerAuthContextCache.get(secretHash);
   if (cached) {
+    if (typeof cached === "object" && 'error' in cached && typeof cached.error === "string") {
+      throw new AuthenticationError(
+        cached.error,
+        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+      );
+    }
     return cached;
   }
 
@@ -72,13 +79,24 @@ export const verifyCustomerProvidedAuth = async ({
       ttl: 15_000,
     });
 
-    if (
-      result.status !== "success" ||
-      result.resultType !== "resolution" ||
-      !result.result
-    ) {
+    if (result.status == "success" && result.resultType !== "resolution") {
       throw new AuthenticationError(
-        `Call to ${VERIFY_FUNCTION_ID} failed. Result: ${result.result}`,
+        "Customer provided token is not valid",
+        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+      );
+    }
+
+    // This isn't expected
+    if (result.status != "success") {
+      throw new Error(
+        `Failed to call ${VERIFY_FUNCTION_ID}: ${result.result}`,
+      );
+    }
+
+    if (!result.result) {
+      throw new AuthenticationError(
+        `${VERIFY_FUNCTION_ID} did not return a result`,
+        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
       );
     }
 
@@ -93,11 +111,12 @@ export const verifyCustomerProvidedAuth = async ({
       );
     }
 
-    if (e instanceof Error) {
-      throw new AuthenticationError(
-      `Call to ${VERIFY_FUNCTION_ID} failed with error: ${e.message}`,
-        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
-      );
+    // Cache the auth error for 1 minutes
+    if (e instanceof AuthenticationError) {
+      await customerAuthContextCache.set(secretHash, {
+        error: e.message
+      }, 60);
+      throw e;
     }
 
     throw e;
