@@ -4,7 +4,7 @@
 
 # tRPC Adapter for Inferable
 
-![npm version](https://badge.fury.io/js/@inferable/trpc-connector.svg)
+![npm version](https://badge.fury.io/js/@inferable/trpc-adapter.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 The Inferable tRPC Adapter allows you to expose your existing tRPC router endpoints as Inferable functions. This enables AI agents to interact with your tRPC API while preserving all your existing middleware and type safety.
