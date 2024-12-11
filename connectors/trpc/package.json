@@ -1,7 +1,7 @@
 {
-  "name": "@inferable/trpc-connector",
+  "name": "@inferable/trpc-adapter",
   "version": "0.1.0",
-  "description": "tRPC connector for Inferable",
+  "description": "Build your Inferable agent functions from your existing tRPC procedures.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
