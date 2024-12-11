@@ -24,7 +24,7 @@ export const masked = () => {
 
 export {
   onStatusChangeInput,
-  handleCustomerAuthInput,
+  handleCustomAuthInput,
   ContextInput,
 } from "./types";
 

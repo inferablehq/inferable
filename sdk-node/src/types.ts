@@ -23,6 +23,7 @@ export type FunctionInput<T extends z.ZodTypeAny | JsonSchemaInput> =
 /**
  * Schema for onStatusChange functions
  *
+ * @see {@link https://docs.inferable.ai/pages/runs#onstatuschange}
  * @example
  * ```ts
  * inferable.default.register({
@@ -43,20 +44,21 @@ export const onStatusChangeInput = z.object({
 });
 
 /**
- * Schema for handleCustomerAuth functions
+ * Schema for handleCustomAuth functions
  *
+ * @see {@link https://docs.inferable.ai/pages/custom-auth}
  * @example
  * ```ts
  * inferable.default.register({
- *   name: "handleCustomerAuth",
+ *   name: "handleCustomAuth",
  *   schema: {
- *    input: handleCustomerAuthInput
+ *    input: handleCustomAuthInput
  *   },
  *   func: (_input) => {},
  * });
  * ```
  */
-export const handleCustomerAuthInput = z.object({
+export const handleCustomAuthInput = z.object({
   token: z.string(),
 });
 
