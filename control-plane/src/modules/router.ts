@@ -140,7 +140,7 @@ export const router = initServer().router(contract, {
       name,
       additionalContext,
       debug,
-      enableCustomerAuth,
+      enableCustomAuth,
       enableRunConfigs,
       enableKnowledgebase,
     } = request.body;
@@ -152,7 +152,7 @@ export const router = initServer().router(contract, {
       description,
       additionalContext,
       debug,
-      enableCustomerAuth,
+      enableCustomAuth,
       enableRunConfigs,
       enableKnowledgebase,
     });

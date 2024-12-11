@@ -27,7 +27,7 @@ const getKey: GetPublicKeyOrSecret = (header, callback) => {
 /**
  * Check the validity of a Clerk issued JWT token.
  */
-export const verifyClerkToken = async (
+export const verify = async (
   token: string,
 ): Promise<
   | {

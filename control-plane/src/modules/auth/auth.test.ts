@@ -1,35 +1,35 @@
 import { ulid } from "ulid";
 import { createOwner } from "../test/util";
 import { Run, createRun, createRunWithMessage } from "../workflows/workflows";
-import * as customerAuth from "./customer-auth";
-import * as apiSecret from "./api-secret";
+import * as customAuth from "./custom";
+import * as clusterAuth from "./cluster";
+import * as clerkAuth from "./clerk";
 import {
   Auth,
   ClerkAuth,
   extractAuthState,
-  extractCustomerAuthState,
+  extractCustomAuthState,
 } from "./auth";
-import * as jwtToken from "./clerk-token";
 import { redisClient } from "../redis";
 
 jest.mock("../../utilities/env");
 
 // Mocking API Secret / JWT verification, there are seperate tests for these
-const mockApiSecret = {
-  verifyApiKey: jest.spyOn(apiSecret, "verifyApiKey"),
-  isApiSecret: jest.spyOn(apiSecret, "isApiSecret"),
+const mockClusterAuth = {
+  verifyApiKey: jest.spyOn(clusterAuth, "verify"),
+  isApiSecret: jest.spyOn(clusterAuth, "isApiSecret"),
 };
 
-// Mocking customer provided auth verification
-const mockCustomer = {
-  verifyCustomerProvidedAuth: jest.spyOn(
-    customerAuth,
-    "verifyCustomerProvidedAuth",
+// Mocking custom auth verification
+const mockCustomAuth = {
+  verify: jest.spyOn(
+    customAuth,
+    "verify",
   ),
 };
 
-const mockJwt = {
-  verify: jest.spyOn(jwtToken, "verifyClerkToken"),
+const mockClerkAuth = {
+  verify: jest.spyOn(clerkAuth, "verify"),
 };
 
 describe("extractAuthState", () => {
@@ -58,8 +58,8 @@ describe("extractAuthState", () => {
     const apiKeyTypes = ["API KEY"];
 
     it("should extract ApiKeyAuth from valid API secret", async () => {
-      mockApiSecret.isApiSecret.mockReturnValue(true);
-      mockApiSecret.verifyApiKey.mockResolvedValue({
+      mockClusterAuth.isApiSecret.mockReturnValue(true);
+      mockClusterAuth.verifyApiKey.mockResolvedValue({
         organizationId: "org_1",
         clusterId: "cluster_1",
         id: ulid(),
@@ -76,8 +76,8 @@ describe("extractAuthState", () => {
     describe("isUser", () => {
       describe.each(apiKeyTypes)("for %s", () => {
         it("should throw", async () => {
-          mockApiSecret.isApiSecret.mockReturnValue(true);
-          mockApiSecret.verifyApiKey.mockResolvedValue({
+          mockClusterAuth.isApiSecret.mockReturnValue(true);
+          mockClusterAuth.verifyApiKey.mockResolvedValue({
             organizationId: "org_1",
             clusterId: "cluster_1",
             id: ulid(),
@@ -94,8 +94,8 @@ describe("extractAuthState", () => {
       describe("cluster", () => {
         describe.each(apiKeyTypes)("for %s", () => {
           it("should succeed for same cluster", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -108,8 +108,8 @@ describe("extractAuthState", () => {
           });
 
           it("should throw for different cluster", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -127,8 +127,8 @@ describe("extractAuthState", () => {
         // API Keys can access runs
         describe.each(apiKeyTypes)("for %s", () => {
           it("should succeed", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -152,8 +152,8 @@ describe("extractAuthState", () => {
       describe("run", () => {
         describe.each(apiKeyTypes)("for %s", () => {
           it("should succeed", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -175,8 +175,8 @@ describe("extractAuthState", () => {
         // API Keys cannot manage cluster
         describe.each(apiKeyTypes)("for %s", () => {
           it("should throw", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -192,10 +192,10 @@ describe("extractAuthState", () => {
 
       describe("template", () => {
         // API Keys can manage templates
-        describe.each(apiKeyTypes)("for %s", (type) => {
+        describe.each(apiKeyTypes)("for %s", () => {
           it("should succeed", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -216,10 +216,10 @@ describe("extractAuthState", () => {
     describe("canCreate", () => {
       // API keys cannot create clusters
       describe("cluster", () => {
-        describe.each(apiKeyTypes)("for %s", (type) => {
+        describe.each(apiKeyTypes)("for %s", () => {
           it("should throw", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -233,10 +233,10 @@ describe("extractAuthState", () => {
 
       describe("template", () => {
         // API keys can create templates
-        describe.each(apiKeyTypes)("for %s", (type) => {
+        describe.each(apiKeyTypes)("for %s", () => {
           it("should succeed", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -250,10 +250,10 @@ describe("extractAuthState", () => {
 
       describe("run", () => {
         // API keys can create runs
-        describe.each(apiKeyTypes)("for %s", (type) => {
+        describe.each(apiKeyTypes)("for %s", () => {
           it("should succeed", async () => {
-            mockApiSecret.isApiSecret.mockReturnValue(true);
-            mockApiSecret.verifyApiKey.mockResolvedValue({
+            mockClusterAuth.isApiSecret.mockReturnValue(true);
+            mockClusterAuth.verifyApiKey.mockResolvedValue({
               organizationId: "org_1",
               clusterId: "cluster_1",
               id: ulid(),
@@ -269,7 +269,7 @@ describe("extractAuthState", () => {
 
   describe("ClerkAuth", () => {
     it("should extract UserAuth from valid JWT token", async () => {
-      mockJwt.verify.mockResolvedValue({
+      mockClerkAuth.verify.mockResolvedValue({
         userId: "cluster_1",
         orgId: "org_1",
         orgRole: "org:member",
@@ -289,7 +289,7 @@ describe("extractAuthState", () => {
     it("should allow access to owned cluster only", async () => {
       const owner = await createOwner();
 
-      mockJwt.verify.mockResolvedValue({
+      mockClerkAuth.verify.mockResolvedValue({
         userId: owner.userId,
         orgId: owner.organizationId,
         orgRole: "org:member",
@@ -330,7 +330,7 @@ describe("extractAuthState", () => {
         owner1 = await createOwner({ organizationId });
         owner2 = await createOwner({ organizationId });
 
-        mockJwt.verify.mockResolvedValueOnce({
+        mockClerkAuth.verify.mockResolvedValueOnce({
           userId: owner1.userId,
           orgId: owner1.organizationId,
           orgRole: "org:member",
@@ -346,7 +346,7 @@ describe("extractAuthState", () => {
           isAdmin: expect.any(Function),
         });
 
-        mockJwt.verify.mockResolvedValueOnce({
+        mockClerkAuth.verify.mockResolvedValueOnce({
           userId: owner2.userId,
           orgId: owner2.organizationId,
           orgRole: "org:member",
@@ -419,7 +419,7 @@ describe("extractAuthState", () => {
         it("should allow admin to manage runs in their organization", async () => {
           const admin = await createOwner({ organizationId });
 
-          mockJwt.verify.mockResolvedValueOnce({
+          mockClerkAuth.verify.mockResolvedValueOnce({
             userId: admin.userId,
             orgId: admin.organizationId,
             orgRole: "org:admin",
@@ -457,7 +457,7 @@ describe("extractAuthState", () => {
         it("should not allow admin to manage runs outside their organization", async () => {
           const admin = await createOwner();
 
-          mockJwt.verify.mockResolvedValueOnce({
+          mockClerkAuth.verify.mockResolvedValueOnce({
             userId: admin.userId,
             orgId: admin.organizationId,
             orgRole: "org:admin",
@@ -496,21 +496,21 @@ describe("extractAuthState", () => {
   });
 });
 
-describe("extractCustomerAuthState", () => {
+describe("extractCustomAuthState", () => {
   let owner: Awaited<ReturnType<typeof createOwner>>;
   beforeEach(async () => {
     owner = await createOwner({
-      enableCustomerAuth: true,
+      enableCustomAuth: true,
     });
     jest.resetAllMocks();
   });
 
   it("should extract ApiKeyAuth from valid API secret", async () => {
-    mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+    mockCustomAuth.verify.mockResolvedValue({
       someAuthValue: "someValue",
     });
 
-    const result = await extractCustomerAuthState("abc123", owner.clusterId);
+    const result = await extractCustomAuthState("abc123", owner.clusterId);
 
     expect(result).toMatchObject({
       type: "customer-provided",
@@ -523,7 +523,7 @@ describe("extractCustomerAuthState", () => {
       },
     });
 
-    expect(mockCustomer.verifyCustomerProvidedAuth).toHaveBeenCalledWith({
+    expect(mockCustomAuth.verify).toHaveBeenCalledWith({
       clusterId: owner.clusterId,
       token: "abc123",
     });
@@ -531,24 +531,24 @@ describe("extractCustomerAuthState", () => {
 
   it("should throw if customer auth is not enabled for cluster", async () => {
     owner = await createOwner({
-      enableCustomerAuth: false,
+      enableCustomAuth: false,
     });
 
-    mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+    mockCustomAuth.verify.mockResolvedValue({
       someAuthValue: "someValue",
     });
 
-    await expect(extractCustomerAuthState("abc123", owner.clusterId)).rejects.toThrow("Customer auth is not enabled for this cluster");
+    await expect(extractCustomAuthState("abc123", owner.clusterId)).rejects.toThrow("Customer auth is not enabled for this cluster");
   });
 
 
   describe("isUser", () => {
     it("should throw", async () => {
-      mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+      mockCustomAuth.verify.mockResolvedValue({
         someAuthValue: "someValue",
       });
 
-      const result = await extractCustomerAuthState("abc123", owner.clusterId);
+      const result = await extractCustomAuthState("abc123", owner.clusterId);
 
       expect(() => result!.isClerk()).toThrow();
     });
@@ -557,11 +557,11 @@ describe("extractCustomerAuthState", () => {
   describe("canAccess", () => {
     describe("cluster", () => {
       it("should succeed for same cluster", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -571,11 +571,11 @@ describe("extractCustomerAuthState", () => {
       });
 
       it("should throw for different cluster", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -586,18 +586,18 @@ describe("extractCustomerAuthState", () => {
     });
 
     describe("run", () => {
-      // Customer Provided auth can access runs
-      it("should succeed if run is customer authenticated", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+      // Custom auth can access runs
+      it("should succeed if run is custom authenticated", async () => {
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
         const run = await createRun({
           clusterId: owner.clusterId,
-          customerAuthToken: "abc123",
+          customAuthToken: "abc123",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -611,17 +611,17 @@ describe("extractCustomerAuthState", () => {
         ).resolves.toBeDefined();
       });
 
-      it("should throw if customer authenticated token doesn't match", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+      it("should throw if custom authenticated token doesn't match", async () => {
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
         const run = await createRun({
           clusterId: owner.clusterId,
-          customerAuthToken: "abc123",
+          customAuthToken: "abc123",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "def456",
           owner.clusterId,
         );
@@ -635,8 +635,8 @@ describe("extractCustomerAuthState", () => {
         ).rejects.toThrow();
       });
 
-      it("should throw if run is not customer authenticated", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+      it("should throw if run is not custom authenticated", async () => {
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
@@ -644,7 +644,7 @@ describe("extractCustomerAuthState", () => {
           clusterId: owner.clusterId,
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -661,19 +661,19 @@ describe("extractCustomerAuthState", () => {
   });
 
   describe("canManage", () => {
-    // Customer Provided auth can manage run
+    // Custom auth can manage run
     describe("run", () => {
-      it("should succeed if run is customer authenticated", async () => {
+      it("should succeed if run is custom authenticated", async () => {
         const run = await createRun({
           clusterId: owner.clusterId,
-          customerAuthToken: "abc123",
+          customAuthToken: "abc123",
         });
 
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -691,14 +691,14 @@ describe("extractCustomerAuthState", () => {
       it("should throw if customer authenticated token doesn't match", async () => {
         const run = await createRun({
           clusterId: owner.clusterId,
-          customerAuthToken: "abc123",
+          customAuthToken: "abc123",
         });
 
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "def456",
           owner.clusterId,
         );
@@ -717,11 +717,11 @@ describe("extractCustomerAuthState", () => {
           clusterId: owner.clusterId,
         });
 
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -739,11 +739,11 @@ describe("extractCustomerAuthState", () => {
     describe("cluster", () => {
       // Customer Provided auth can not manage cluster
       it("should throw", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -756,11 +756,11 @@ describe("extractCustomerAuthState", () => {
     describe("template", () => {
       // Customer Provided auth can not manage templates
       it("should throw", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -775,14 +775,14 @@ describe("extractCustomerAuthState", () => {
   });
 
   describe("canCreate", () => {
-    // Customer provided auth cannot create clusters
+    // Custom auth cannot create clusters
     describe("cluster", () => {
       it("should throw", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -793,11 +793,11 @@ describe("extractCustomerAuthState", () => {
     describe("template", () => {
       // Customer provided auth cannot create templates
       it("should throw", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );
@@ -808,11 +808,11 @@ describe("extractCustomerAuthState", () => {
     describe("run", () => {
       // Customer provided auth can create runs
       it("should succeed", async () => {
-        mockCustomer.verifyCustomerProvidedAuth.mockResolvedValue({
+        mockCustomAuth.verify.mockResolvedValue({
           someAuthValue: "someValue",
         });
 
-        const result = await extractCustomerAuthState(
+        const result = await extractCustomAuthState(
           "abc123",
           owner.clusterId,
         );

@@ -15,7 +15,7 @@ const apiKeyContextCache = createCache<{
 export const isApiSecret = (authorization: string): boolean =>
   authorization.startsWith("sk_");
 
-export const verifyApiKey = async (
+export const verify = async (
   secret: string,
 ): Promise<
   { clusterId: string; id: string; organizationId: string } | undefined

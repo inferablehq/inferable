@@ -326,7 +326,7 @@ describe("validateServiceRegistration", () => {
     }).not.toThrow();
   })
 
-  it("should reject incorrect handleCustomerAuth registration", () => {
+  it("should reject incorrect handleCustomAuth registration", () => {
     expect(() => {
       validateServiceRegistration({
         service: "default",
@@ -334,8 +334,8 @@ describe("validateServiceRegistration", () => {
           name: "default",
           functions: [
             {
-              name: "handleCustomerAuth",
-              description: "handleCustomerAuth",
+              name: "handleCustomAuth",
+              description: "handleCustomAuth",
               schema: JSON.stringify(zodToJsonSchema(
                 z.object({
                   test: z.string(),
@@ -348,7 +348,7 @@ describe("validateServiceRegistration", () => {
     }).toThrow(InvalidServiceRegistrationError);
   })
 
-  it("should accept valid handleCustomerAuth registration", () => {
+  it("should accept valid handleCustomAuth registration", () => {
     expect(() => {
       validateServiceRegistration({
         service: "default",
@@ -356,8 +356,8 @@ describe("validateServiceRegistration", () => {
           name: "default",
           functions: [
             {
-              name: "handleCustomerAuth",
-              description: "handleCustomerAuth",
+              name: "handleCustomAuth",
+              description: "handleCustomAuth",
               schema: JSON.stringify(zodToJsonSchema(
                 z.object({
                   token: z.string(),

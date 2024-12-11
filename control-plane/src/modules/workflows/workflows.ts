@@ -83,7 +83,7 @@ export const createRun = async ({
   reasoningTraces,
   enableSummarization,
   modelIdentifier,
-  customerAuthToken,
+  customAuthToken,
   authContext,
   context,
 }: {
@@ -108,7 +108,7 @@ export const createRun = async ({
   reasoningTraces?: boolean;
   enableSummarization?: boolean;
   modelIdentifier?: ChatIdentifiers;
-  customerAuthToken?: string;
+  customAuthToken?: string;
   authContext?: unknown;
   context?: unknown;
 }): Promise<Run> => {
@@ -144,7 +144,7 @@ export const createRun = async ({
           config_id: configId,
           config_version: configVersion,
           model_identifier: modelIdentifier,
-          customer_auth_token: customerAuthToken,
+          custom_auth_token: customAuthToken,
           auth_context: authContext,
           context: context,
         },
@@ -478,7 +478,7 @@ export const createRunWithMessage = async ({
   enableSummarization,
   modelIdentifier,
   onStatusChange,
-  customerAuthToken,
+  customAuthToken,
   authContext,
   context,
 }: {
@@ -506,7 +506,7 @@ export const createRunWithMessage = async ({
   interactive?: boolean;
   enableSummarization?: boolean;
   modelIdentifier?: ChatIdentifiers;
-  customerAuthToken?: string;
+  customAuthToken?: string;
   authContext?: unknown;
   context?: unknown;
 }) => {
@@ -527,7 +527,7 @@ export const createRunWithMessage = async ({
     interactive,
     enableSummarization,
     modelIdentifier,
-    customerAuthToken,
+    customAuthToken,
     authContext,
     context,
   });
@@ -699,7 +699,7 @@ export const createRetry = async ({
   };
 };
 
-export const getRunCustomerAuthToken = async ({
+export const getRunCustomAuthToken = async ({
   clusterId,
   runId,
 }: {
@@ -708,7 +708,7 @@ export const getRunCustomerAuthToken = async ({
 }) => {
   const [workflow] = await db
     .select({
-      customerAuthToken: workflows.customer_auth_token,
+      customAuthToken: workflows.custom_auth_token,
     })
     .from(workflows)
     .where(and(eq(workflows.id, runId), eq(workflows.cluster_id, clusterId)))
@@ -718,5 +718,5 @@ export const getRunCustomerAuthToken = async ({
     throw new NotFoundError("Run not found");
   }
 
-  return workflow.customerAuthToken;
+  return workflow.customAuthToken;
 };

@@ -22,7 +22,7 @@ import {
   mergeRunConfigOptions,
   validateSchema,
 } from "../prompt-templates";
-import { AuthenticationError, NotFoundError } from "../../utilities/errors";
+import { NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
 import { normalizeFunctionReference } from "../service-definitions";
 import { dereferenceSync } from "dereference-json-schema";
@@ -165,9 +165,9 @@ export const runsRouter = initServer().router(
         throw new Error("Failed to construct initialPrompt");
       }
 
-      let customerProvidedAuth = undefined;
-      if (auth.type === "customer-provided") {
-        customerProvidedAuth = auth.isCustomerProvided();
+      let customAuth = undefined;
+      if (auth.type === "custom") {
+        customAuth = auth.isCustomAuth();
       }
 
       const workflow = await createRunWithMessage({
@@ -183,8 +183,8 @@ export const runsRouter = initServer().router(
         type: runConfig ? "template" : "human",
 
         // Customer Auth
-        authContext: customerProvidedAuth?.context,
-        customerAuthToken: customerProvidedAuth?.token,
+        authContext: customAuth?.context,
+        customAuthToken: customAuth?.token,
 
         context: body.context,
 

@@ -1,6 +1,6 @@
 import { initServer } from "@ts-rest/fastify";
 import { contract } from "../contract";
-import { createApiKey, listApiKeys, revokeApiKey } from "./api-secret";
+import { createApiKey, listApiKeys, revokeApiKey } from "./cluster";
 import { posthog } from "../posthog";
 
 export const authRouter = initServer().router(

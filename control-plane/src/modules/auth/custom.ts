@@ -1,6 +1,5 @@
 import {
   AuthenticationError,
-  InvalidJobArgumentsError,
   JobPollTimeoutError,
 } from "../../utilities/errors";
 import { packer } from "../packer";
@@ -8,20 +7,19 @@ import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
 import { getServiceDefinition } from "../service-definitions";
 import { createCache, hashFromSecret } from "../../utilities/cache";
-import { logger } from "../observability/logger";
 
-export const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
+export const VERIFY_FUNCTION_NAME = "handleCustomAuth";
 export const VERIFY_FUNCTION_SERVICE = "default";
 const VERIFY_FUNCTION_ID = `${VERIFY_FUNCTION_SERVICE}_${VERIFY_FUNCTION_NAME}`;
 
-const customerAuthContextCache = createCache<unknown>(
-  Symbol("customerAuthContextCache"),
+const customAuthContextCache = createCache<unknown>(
+  Symbol("customAuthContextCache"),
 );
 
 /**
- * Calls the customer provided verify function and returns the result
+ * Calls the custom verify function and returns the result
  */
-export const verifyCustomerProvidedAuth = async ({
+export const verify = async ({
   token,
   clusterId,
 }: {
@@ -31,7 +29,7 @@ export const verifyCustomerProvidedAuth = async ({
 
   const secretHash = hashFromSecret(`${clusterId}:${token}`);
 
-  const cached = await customerAuthContextCache.get(secretHash);
+  const cached = await customAuthContextCache.get(secretHash);
   if (cached) {
     if (typeof cached === "object" && 'error' in cached && typeof cached.error === "string") {
       throw new AuthenticationError(
@@ -81,7 +79,7 @@ export const verifyCustomerProvidedAuth = async ({
 
     if (result.status == "success" && result.resultType !== "resolution") {
       throw new AuthenticationError(
-        "Customer provided token is not valid",
+        "Custom auth token is not valid",
         "https://docs.inferable.ai/pages/auth#handlecustomerauth"
       );
     }
@@ -100,7 +98,7 @@ export const verifyCustomerProvidedAuth = async ({
       );
     }
 
-    await customerAuthContextCache.set(secretHash, result, 300);
+    await customAuthContextCache.set(secretHash, result, 300);
 
     return packer.unpack(result.result);
   } catch (e) {
@@ -113,7 +111,7 @@ export const verifyCustomerProvidedAuth = async ({
 
     // Cache the auth error for 1 minutes
     if (e instanceof AuthenticationError) {
-      await customerAuthContextCache.set(secretHash, {
+      await customAuthContextCache.set(secretHash, {
         error: e.message
       }, 60);
       throw e;
