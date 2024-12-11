@@ -2,7 +2,7 @@ import { ulid } from "ulid";
 import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
-import { createJob, pollJobs, getJob, requestApproval } from "./jobs";
+import { createJob, pollJobs, getJob, requestApproval, submitApproval } from "./jobs";
 import {
   acknowledgeJob,
   persistJobResult,
@@ -422,5 +422,106 @@ describe("pollJobs", () => {
 
     const result = await poll();
     expect(result.length).toBe(0);
+  });
+});
+
+describe("submitApproval", () => {
+  let owner: Awaited<ReturnType<typeof createOwner>>;
+  beforeAll(async () => {
+    owner = await createOwner();
+
+    await upsertServiceDefinition({
+      service: "testService",
+      definition: {
+        name: "testService",
+        functions: [
+          {
+            name: mockTargetFn,
+            schema: mockTargetSchema,
+          },
+        ],
+      },
+      owner,
+    });
+
+  })
+  it("should mark job as approved", async () => {
+
+    const result = await createJob({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      service: "testService",
+    });
+
+    expect(result.id).toBeDefined();
+    expect(result.created).toBe(true);
+
+    await requestApproval({
+      clusterId: owner.clusterId,
+      jobId: result.id,
+    })
+
+    const retreivedJob1 = await getJob({
+      jobId: result.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(retreivedJob1!.approvalRequested).toBe(true);
+
+    await submitApproval({
+      clusterId: owner.clusterId,
+      call: retreivedJob1!,
+      approved: true,
+    })
+
+    const retreivedJob2 = await getJob({
+      jobId: result.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(retreivedJob2!.approved).toBe(true);
+    expect(retreivedJob2!.status).toBe("pending");
+    expect(retreivedJob2!.resultType).toBe(null);
+  });
+
+  it("should mark job as denied", async () => {
+
+    const result = await createJob({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      service: "testService",
+    });
+
+    expect(result.id).toBeDefined();
+    expect(result.created).toBe(true);
+
+    await requestApproval({
+      clusterId: owner.clusterId,
+      jobId: result.id,
+    })
+
+    const retreivedJob1 = await getJob({
+      jobId: result.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(retreivedJob1!.approvalRequested).toBe(true);
+
+    await submitApproval({
+      clusterId: owner.clusterId,
+      call: retreivedJob1!,
+      approved: false,
+    })
+
+    const retreivedJob2 = await getJob({
+      jobId: result.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(retreivedJob2!.approved).toBe(false);
+    expect(retreivedJob2!.status).toBe("success");
+    expect(retreivedJob2!.resultType).toBe("rejection");
   });
 });
