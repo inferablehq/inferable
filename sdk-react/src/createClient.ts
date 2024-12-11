@@ -12,11 +12,11 @@ export const createApiClient = ({
 }: {
     baseUrl?: string;
     clientAbortController?: AbortController;
-    authType?: 'customer' | 'cluster';
+    authType?: 'custom' | 'cluster';
     apiSecret?: string
   }) =>  {
-  const baseHeaders = authType === 'customer' ? {
-    Authorization: `customer ${apiSecret}`
+  const baseHeaders = authType === 'custom' ? {
+    Authorization: `custom ${apiSecret}`
   } : {
       Authorization: `bearer ${apiSecret}`
     };

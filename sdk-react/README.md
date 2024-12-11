@@ -52,7 +52,7 @@ It can be used to interact with an existing run by specifying the `runId`:
 const { messages, run, createMessage, start } = useRun({
   clusterId: 'your-cluster-id',
   apiSecret: 'your-api-secret',
-  authType: 'customer', // or 'cluster'
+  authType: 'custom', // or 'cluster'
   // pollInterval: 1000, // Optional: defaults to 1000ms
 });
 
@@ -70,7 +70,7 @@ It can be used to create a new run by specifying an `initialPrompt`:
 const { messages, run, createMessage, start } = useRun({
   clusterId: 'your-cluster-id',
   apiSecret: 'your-api-secret',
-  authType: 'customer', // or 'cluster'
+  authType: 'custom', // or 'cluster'
   // pollInterval: 1000, // Optional: defaults to 1000ms
 });
 
@@ -99,7 +99,7 @@ You can handle errors by providing an `onError` callback:
 const { messages, run, createMessage } = useRun({
   clusterId: 'your-cluster-id',
   apiSecret: 'your-api-secret',
-  authType: 'customer', // or 'cluster'
+  authType: 'custom', // or 'cluster'
   configId: 'your-config-id',
   onError: (error) => {
     console.error('Run error:', error);

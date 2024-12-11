@@ -7,7 +7,7 @@ import { ClientInferRequest, ClientInferResponseBody } from '@ts-rest/core';
 type UseRunOptions = {
   clusterId: string;
   apiSecret: string;
-  authType?: 'customer' | 'cluster';
+  authType?: 'custom' | 'cluster';
   baseUrl?: string;
   pollInterval?: number;
   onError?: (error: Error) => void;

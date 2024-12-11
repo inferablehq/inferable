@@ -3,8 +3,8 @@ import { useRun } from '../src';
 
 type TestPageProps = {
   baseUrl?: string;
-  customerProvidedSecret?: string;
-  apiSecret?: string;
+  apiSecret: string;
+  authType?: 'custom' | 'cluster';
   clusterId: string;
   configId: string;
   initialPrompt?: string;
