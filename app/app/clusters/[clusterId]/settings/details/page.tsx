@@ -35,7 +35,7 @@ const formSchema = z.object({
   name: z.string(),
   description: z.string().default(""),
   debug: z.boolean().default(false),
-  enableCustomerAuth: z.boolean().default(false),
+  enableCustomAuth: z.boolean().default(false),
   enableRunConfigs: z.boolean().default(false),
   enableKnowledgebase: z.boolean().default(false),
 });
@@ -65,8 +65,8 @@ export default function DetailsPage({
         form.setValue("description", details.body.description ?? "");
         form.setValue("debug", details.body.debug ?? false);
         form.setValue(
-          "enableCustomerAuth",
-          details.body.enableCustomerAuth ?? false,
+          "enableCustomAuth",
+          details.body.enableCustomAuth ?? false,
         );
         form.setValue(
           "enableRunConfigs",
@@ -96,7 +96,7 @@ export default function DetailsPage({
             name: data.name,
             description: data.description,
             debug: data.debug,
-            enableCustomerAuth: data.enableCustomerAuth,
+            enableCustomAuth: data.enableCustomAuth,
             enableRunConfigs: data.enableRunConfigs,
             enableKnowledgebase: data.enableKnowledgebase,
           },
@@ -210,15 +210,15 @@ export default function DetailsPage({
               <div className="text-lg font-medium">Advanced Settings</div>
               <FormField
                 control={form.control}
-                name="enableCustomerAuth"
+                name="enableCustomAuth"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">
-                        Customer Provided Auth
+                        Custom Auth
                       </FormLabel>
                       <FormDescription>
-                        Allow this cluster to be authenticated with <Link className="underline" href="https://docs.inferable.ai/pages/auth#customer-provided-secrets">customer provided authentication tokens</Link>.
+                        Allow this cluster to be authenticated with <Link className="underline" href="https://docs.inferable.ai/pages/auth#customer-provided-secrets">custom authentication tokens</Link>.
                       </FormDescription>
                     </div>
                     <FormControl>
