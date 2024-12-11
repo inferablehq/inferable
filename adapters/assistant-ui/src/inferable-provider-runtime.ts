@@ -13,16 +13,19 @@ type RuntimeOptions = {
   clusterId: string;
 
   /**
-   * The API secret to use for authentication.
+   * The cluster API secret to use for authentication.
+   * This is not recommended as the key will be available in the browser.
+   *
+   * @see https://docs.inferable.ai/pages/auth
    */
-  apiSecret: string;
+  apiSecret?: string;
 
   /**
-   * The authentication mode to use.
-   * @default "cluster"
-   * @see http://docs.inferable.ai/pages/auth
+   * A custom auth token to use for authentication.
+   *
+   * @see https://docs.inferable.ai/pages/custom-auth
    */
-  authType?: "custom" | "cluster";
+  customAuthToken?: string;
 
   /**
    * Optional, provided if you want to resume an existing run.
@@ -39,7 +42,7 @@ type RuntimeOptions = {
 export function useInferableRuntime({
   clusterId,
   apiSecret,
-  authType,
+  customAuthToken,
   runId,
   onError
 }: RuntimeOptions) {
@@ -47,7 +50,7 @@ export function useInferableRuntime({
   const { messages, run, createMessage, start } = useRun({
     clusterId,
     apiSecret,
-    authType,
+    customAuthToken,
     onError,
   });
 

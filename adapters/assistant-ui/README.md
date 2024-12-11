@@ -38,7 +38,8 @@ import { AssistantRuntimeProvider, Thread } from "@assistant-ui/react";
 
 const { runtime, run } = useInferableRuntime({
   clusterId: '<YOUR_CLUSTER_ID>',
-  apiSecret: '<YOUR_API_SECRET>',
+  customAuthToken: 'your-custom-auth-token',
+  // apiSecret: 'your-api-secret', // Not recommended
   onError: (error) => {
     console.error(error);
   }
@@ -63,7 +64,8 @@ You can handle errors by providing an `onError` callback:
 ```typescript
   const { runtime, run } = useInferableRuntime({
     clusterId: '<YOUR_CLUSTER_ID>',
-    apiSecret: '<YOUR_API_SECRET>',
+    customAuthToken: 'your-custom-auth-token',
+    // apiSecret: 'your-api-secret', // Not recommended
     onError: (error) => {
       console.error(error);
     }
