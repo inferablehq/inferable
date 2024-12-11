@@ -22,7 +22,7 @@ type RuntimeOptions = {
    * @default "cluster"
    * @see http://docs.inferable.ai/pages/auth
    */
-  authType?: "customer" | "cluster";
+  authType?: "custom" | "cluster";
 
   /**
    * Optional, provided if you want to resume an existing run.
