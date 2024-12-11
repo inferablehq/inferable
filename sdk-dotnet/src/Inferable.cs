@@ -31,10 +31,10 @@ namespace Inferable
   }
 
   /// <summary>
-  /// Input object for handleCustomerAuth functions
-  /// https://docs.inferable.ai/pages/auth#handlecustomerauth
+  /// Input object for handleCustomAuth functions
+  /// https://docs.inferable.ai/pages/custom-auth
   /// </summary>
-  public struct HandleCustomerAuthInput
+  public struct HandleCustomAuthInput
   {
     [JsonPropertyName("token")]
     public string Token { get; set; }
