@@ -52,8 +52,8 @@ It can be used to interact with an existing run by specifying the `runId`:
 ```typescript
 const { messages, run, createMessage, start } = useRun({
   clusterId: 'your-cluster-id',
-  apiSecret: 'your-api-secret',
-  authType: 'custom', // or 'cluster'
+  customAuthToken: 'your-custom-auth-token',
+  // apiSecret: 'your-api-secret', // Not recommended
   // pollInterval: 1000, // Optional: defaults to 1000ms
 });
 
@@ -70,8 +70,8 @@ It can be used to create a new run by specifying an `initialPrompt`:
 ```typescript
 const { messages, run, createMessage, start } = useRun({
   clusterId: 'your-cluster-id',
-  apiSecret: 'your-api-secret',
-  authType: 'custom', // or 'cluster'
+  customAuthToken: 'your-custom-auth-token',
+  // apiSecret: 'your-api-secret', // Not recommended
   // pollInterval: 1000, // Optional: defaults to 1000ms
 });
 
@@ -99,8 +99,8 @@ You can handle errors by providing an `onError` callback:
 ```typescript
 const { messages, run, createMessage } = useRun({
   clusterId: 'your-cluster-id',
-  apiSecret: 'your-api-secret',
-  authType: 'custom', // or 'cluster'
+  customAuthToken: 'your-custom-auth-token',
+  // apiSecret: 'your-api-secret', // Not recommended
   configId: 'your-config-id',
   onError: (error) => {
     console.error('Run error:', error);
