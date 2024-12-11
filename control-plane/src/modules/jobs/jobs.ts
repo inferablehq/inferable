@@ -387,9 +387,9 @@ export async function submitApproval({
     await data.db
       .update(data.jobs)
       .set({
-        approved: true,
+        approved: false,
         status: "success",
-        result_type: "resolution",
+        result_type: "rejection",
         result: packer.pack({
           message: "This call was denied by the user.",
         }),
