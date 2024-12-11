@@ -74,9 +74,9 @@ type OnStatusChangeInput struct {
 	Metadata interface{} `json:"metadata"`
 }
 
-// Input object for handleCustomerAuth functions
-// https://docs.inferable.ai/pages/auth#handlecustomerauth
-type HandleCustomerAuthInput struct {
+// Input object for handleCustomAuth functions
+// https://docs.inferable.ai/pages/custom-auth
+type HandleCustomAuthInput struct {
 	Token string `json:"token"`
 }
 
