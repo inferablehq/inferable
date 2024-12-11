@@ -14,19 +14,19 @@ The Inferable tRPC Adapter allows you to expose your existing tRPC router endpoi
 ### npm
 
 ```bash
-npm install @inferable/trpc-connector
+npm install @inferable/trpc-adapter
 ```
 
 ### yarn
 
 ```bash
-yarn add @inferable/trpc-connector
+yarn add @inferable/trpc-adapter
 ```
 
 ### pnpm
 
 ```bash
-pnpm add @inferable/trpc-connector
+pnpm add @inferable/trpc-adapter
 ```
 
 ## Quick Start
@@ -34,7 +34,7 @@ pnpm add @inferable/trpc-connector
 Create your tRPC router with the Inferable plugin:
 
 ```ts
-import { inferablePlugin } from "@inferable/trpc-connector";
+import { inferablePlugin } from "@inferable/trpc-adapter";
 
 const t = initTRPC.create();
 const withInferable = inferablePlugin();
@@ -53,7 +53,7 @@ const appRouter = t.router({
 Create an Inferable service from your router:
 
 ```ts
-import { createInferableService } from "@inferable/trpc-connector";
+import { createInferableService } from "@inferable/trpc-adapter";
 import { Inferable } from "inferable";
 
 const client = new Inferable({
