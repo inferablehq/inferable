@@ -412,7 +412,7 @@ export const validateServiceRegistration = ({
     }
 
     // Checks for customer auth handler
-    const VERIFY_FUNCTION_NAME = "handleCustomerAuth";
+    const VERIFY_FUNCTION_NAME = "handleCustomAuth";
     const VERIFY_FUNCTION_SERVICE = "default";
     if (service === VERIFY_FUNCTION_SERVICE && fn.name === VERIFY_FUNCTION_NAME) {
       if (!fn.schema) {

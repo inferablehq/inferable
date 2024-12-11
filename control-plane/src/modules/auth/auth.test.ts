@@ -513,7 +513,7 @@ describe("extractCustomAuthState", () => {
     const result = await extractCustomAuthState("abc123", owner.clusterId);
 
     expect(result).toMatchObject({
-      type: "customer-provided",
+      type: "custom",
       organizationId: owner.organizationId,
       clusterId: owner.clusterId,
       canAccess: expect.any(Function),
@@ -529,7 +529,7 @@ describe("extractCustomAuthState", () => {
     });
   });
 
-  it("should throw if customer auth is not enabled for cluster", async () => {
+  it("should throw if custom auth is not enabled for cluster", async () => {
     owner = await createOwner({
       enableCustomAuth: false,
     });
@@ -538,7 +538,7 @@ describe("extractCustomAuthState", () => {
       someAuthValue: "someValue",
     });
 
-    await expect(extractCustomAuthState("abc123", owner.clusterId)).rejects.toThrow("Customer auth is not enabled for this cluster");
+    await expect(extractCustomAuthState("abc123", owner.clusterId)).rejects.toThrow("Custom auth is not enabled for this cluster");
   });
 
 
