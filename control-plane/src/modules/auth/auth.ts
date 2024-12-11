@@ -373,7 +373,7 @@ export const extractCustomAuthState = async (
   if (!cluster.enable_custom_auth) {
     throw new AuthenticationError(
       "Custom auth is not enabled for this cluster",
-      "https://docs.inferable.ai/pages/auth#customer-provided-secrets"
+      "https://docs.inferable.ai/pages/custom-auth"
     );
   }
 

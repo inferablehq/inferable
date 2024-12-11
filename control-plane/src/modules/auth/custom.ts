@@ -34,7 +34,7 @@ export const verify = async ({
     if (typeof cached === "object" && 'error' in cached && typeof cached.error === "string") {
       throw new AuthenticationError(
         cached.error,
-        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+        "https://docs.inferable.ai/pages/custom-auth"
       );
     }
     return cached;
@@ -56,7 +56,7 @@ export const verify = async ({
     if (!functionDefinition) {
       throw new AuthenticationError(
         `${VERIFY_FUNCTION_ID} is not registered`,
-        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+        "https://docs.inferable.ai/pages/custom-auth"
       );
     }
 
@@ -80,7 +80,7 @@ export const verify = async ({
     if (result.status == "success" && result.resultType !== "resolution") {
       throw new AuthenticationError(
         "Custom auth token is not valid",
-        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+        "https://docs.inferable.ai/pages/custom-auth"
       );
     }
 
@@ -94,7 +94,7 @@ export const verify = async ({
     if (!result.result) {
       throw new AuthenticationError(
         `${VERIFY_FUNCTION_ID} did not return a result`,
-        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+        "https://docs.inferable.ai/pages/custom-auth"
       );
     }
 
@@ -105,7 +105,7 @@ export const verify = async ({
     if (e instanceof JobPollTimeoutError) {
       throw new AuthenticationError(
         `Call to ${VERIFY_FUNCTION_ID} did not complete in time`,
-        "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+        "https://docs.inferable.ai/pages/custom-auth"
       );
     }
 
