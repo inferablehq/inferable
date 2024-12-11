@@ -92,7 +92,7 @@ The plugin does two things:
 2. It adds a `ctx` field to the tRPC procedure so you can validate the context that's passed by Inferable in your down stream procedures or middleware.
 
 - This allows you model [human in the loop](https://docs.inferable.ai/pages/human-in-the-loop) workflows where you can fire off a approval request to a human before the function is run.
-- It also allows you to handle [end-user authentication](https://docs.inferable.ai/pages/end-user-authentication) in your tRPC procedures.
+- It also allows you to handle [custom auth](https://docs.inferable.ai/pages/custom-auth) in your tRPC procedures.
 - For more information on the context object, see the [context documentation](https://docs.inferable.ai/pages/context).
 
 ## Documentation
