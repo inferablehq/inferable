@@ -5,6 +5,7 @@ import {
   desc,
   eq,
   inArray,
+  isNull,
   ne,
   or,
   sql,
@@ -622,7 +623,10 @@ export const getWaitingJobIds = async ({
         eq(jobs.cluster_id, clusterId),
         or(
           inArray(jobs.status, ["pending", "running"]),
-          and(eq(jobs.approval_requested, true), ne(jobs.approved, true)),
+          and(
+            eq(jobs.approval_requested, true),
+            isNull(jobs.approved)
+          ),
         ),
       ),
     );

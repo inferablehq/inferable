@@ -168,7 +168,7 @@ function FunctionCall({
                   functionName={targetFn}
                 />
               </div>
-              {approvalRequested && !approved && (
+              {approvalRequested && approved === null && (
                 <div className="flex gap-2">
                   <Button
                     size="sm"
