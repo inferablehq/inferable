@@ -459,7 +459,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build App Docker Image
         env:
@@ -500,7 +500,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build App Docker Image
         env:
@@ -547,7 +547,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build Control Plane Docker Image
         env:
@@ -587,7 +587,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Build Data Connector Docker Image
         env:
