@@ -1,4 +1,4 @@
-import { and, eq, gt, lte, sql } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { env } from "../../utilities/env";
 import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
@@ -381,7 +381,13 @@ export async function submitApproval({
         remaining_attempts: sql`remaining_attempts + 1`,
       })
       .where(
-        and(eq(data.jobs.id, call.id), eq(data.jobs.cluster_id, clusterId)),
+        and(
+          eq(data.jobs.id, call.id),
+          eq(data.jobs.cluster_id, clusterId),
+          // Do not allow denying a job that has already been approved
+          isNull(data.jobs.approved),
+          eq(data.jobs.approval_requested, true),
+        ),
       );
   } else {
     await data.db
@@ -395,7 +401,13 @@ export async function submitApproval({
         }),
       })
       .where(
-        and(eq(data.jobs.id, call.id), eq(data.jobs.cluster_id, clusterId)),
+        and(
+        eq(data.jobs.id, call.id),
+        eq(data.jobs.cluster_id, clusterId),
+        // Do not allow denying a job that has already been approved
+        isNull(data.jobs.approved),
+        eq(data.jobs.approval_requested, true),
+      ),
       );
 
     if (call.runId) {

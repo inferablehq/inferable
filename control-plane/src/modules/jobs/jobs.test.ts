@@ -483,6 +483,22 @@ describe("submitApproval", () => {
     expect(retreivedJob2!.approved).toBe(true);
     expect(retreivedJob2!.status).toBe("pending");
     expect(retreivedJob2!.resultType).toBe(null);
+
+    // Re-submitting approval should be a no-op
+    await submitApproval({
+      clusterId: owner.clusterId,
+      call: retreivedJob1!,
+      approved: false,
+    })
+
+    const retreivedJob3 = await getJob({
+      jobId: result.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(retreivedJob3!.approved).toBe(true);
+    expect(retreivedJob3!.status).toBe("pending");
+    expect(retreivedJob3!.resultType).toBe(null);
   });
 
   it("should mark job as denied", async () => {
@@ -523,5 +539,22 @@ describe("submitApproval", () => {
     expect(retreivedJob2!.approved).toBe(false);
     expect(retreivedJob2!.status).toBe("success");
     expect(retreivedJob2!.resultType).toBe("rejection");
+
+    // Re-submitting approval should be a no-op
+    await submitApproval({
+      clusterId: owner.clusterId,
+      call: retreivedJob1!,
+      approved: true,
+    })
+
+    const retreivedJob3 = await getJob({
+      jobId: result.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(retreivedJob3!.approved).toBe(false);
+    expect(retreivedJob3!.status).toBe("success");
+    expect(retreivedJob3!.resultType).toBe("rejection");
+
   });
 });
