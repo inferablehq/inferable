@@ -5,7 +5,9 @@ import { ContextInput, RegisteredService } from "inferable/bin/types";
 type FunctionConfig = {
   path: string;
   description: string | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   inputs: any | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fn: (input: unknown, ctx: ContextInput) => any;
 };
 
@@ -18,6 +20,7 @@ type Procedure = {
         additionalContext?: string;
       };
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     inputs?: any;
   };
 };
@@ -83,6 +86,7 @@ export function createInferableService({
             );
           }
 
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const fn = caller[path] as (input: unknown) => any;
 
           return fn(input);

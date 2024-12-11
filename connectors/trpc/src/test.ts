@@ -1,9 +1,9 @@
 import { initTRPC } from "@trpc/server";
 import { createHTTPServer } from "@trpc/server/adapters/standalone";
+import assert from "assert";
+import { approvalRequest, Inferable } from "inferable";
 import { z } from "zod";
 import { createInferableService, inferableTRPC } from ".";
-import { approvalRequest, ContextInput, Inferable } from "inferable";
-import assert from "assert";
 
 /**
  * Initialization of tRPC backend
@@ -27,9 +27,7 @@ const plugin = inferableTRPC();
 
 const appRouter = t.router({
   "": publicProcedure.query(() => {
-    return `Inferable TRPC Connector Test v${
-      require("../package.json").version
-    }`;
+    return `Inferable TRPC Connector Test`;
   }),
   userById: publicProcedure
     .unstable_concat(plugin.proc)
@@ -53,7 +51,7 @@ const appRouter = t.router({
   }),
 });
 
-const server = createHTTPServer({
+const { server } = createHTTPServer({
   router: appRouter,
 });
 
@@ -73,7 +71,7 @@ service
   .then(() => {
     console.log("Inferable service started");
   })
-  .then((s) => {
+  .then(() => {
     return client
       .run({
         initialPrompt: `Get the user with id 1`,
