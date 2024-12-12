@@ -1,6 +1,8 @@
 import { eq, sql } from "drizzle-orm";
 import { db, integrations } from "../data";
 import { z } from "zod";
+import { toolhouse } from "./toolhouse";
+import { tavily } from "./tavily";
 
 const toolhouseIntegration = "toolhouse";
 const langfuseIntegration = "langfuse";
@@ -35,6 +37,11 @@ export const integrationSchema = z.object({
     .optional()
     .nullable(),
 });
+
+export const integrationsLibs = {
+  [toolhouseIntegration]: toolhouse,
+  [tavilyIntegration]: tavily,
+};
 
 export const getIntegrations = async ({
   clusterId,
@@ -81,4 +88,14 @@ export const upsertIntegrations = async ({
         updated_at: sql`now()`,
       },
     });
+
+  await Promise.all(
+    Object.entries(config).map(([key, value]) => {
+      if (value) {
+        integrationsLibs[key as keyof typeof integrationsLibs]?.onActivate?.(
+          clusterId,
+        );
+      }
+    }),
+  );
 };

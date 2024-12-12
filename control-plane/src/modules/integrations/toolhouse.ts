@@ -9,6 +9,7 @@ import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";
+import { getIntegrations } from "./integrations";
 
 const ToolHouseResultSchema = z.array(
   z.object({
@@ -220,4 +221,18 @@ const toInferableName = (input: string) => {
 // Convert camelCase to snake_case
 const toToolHouseName = (input: string) => {
   return input.replace(/([A-Z])/g, "_$1").toLowerCase();
+};
+
+export const toolhouse = {
+  onActivate: async (clusterId: string) => {
+    return syncToolHouseService({
+      clusterId,
+      apiKey: await getIntegrations({ clusterId }).then(
+        (integrations) => integrations.toolhouse?.apiKey,
+      ),
+    });
+  },
+  onDeactivate: async (clusterId: string) => {
+    // TODO: (good-first-issue) Delete the service definition
+  },
 };

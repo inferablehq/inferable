@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { getIntegrations } from "./integrations";
+import { upsertServiceDefinition } from "../service-definitions";
+import { logger } from "../observability/logger";
 
 const TavilySearchParamsSchema = z.object({
   query: z.string(),
@@ -103,3 +105,79 @@ export async function searchTavily({
     throw error;
   }
 }
+
+const syncTavilyService = async ({
+  clusterId,
+  apiKey,
+}: {
+  clusterId: string;
+  apiKey?: string;
+}) => {
+  logger.info("Syncing Tavily", { clusterId });
+
+  if (!apiKey) {
+    logger.warn("No Tavily API key found for integration", { clusterId });
+    return;
+  }
+
+  await upsertServiceDefinition({
+    service: "Tavily",
+    definition: {
+      name: "Tavily",
+      functions: [
+        {
+          name: "search",
+          description:
+            "Perform a web search using Tavily's AI-powered search API",
+          schema: JSON.stringify({
+            type: "object",
+            properties: {
+              query: { type: "string", description: "The search query" },
+              searchDepth: {
+                type: "string",
+                enum: ["basic", "advanced"],
+                description:
+                  "The depth of the search. 'basic' is faster, 'advanced' is more thorough",
+              },
+              topic: {
+                type: "string",
+                enum: ["general", "news"],
+                description: "The type of content to search for",
+              },
+              days: {
+                type: "number",
+                description: "Number of days to look back for results",
+              },
+              maxResults: {
+                type: "number",
+                description: "Maximum number of results to return",
+              },
+              includeImages: {
+                type: "boolean",
+                description: "Whether to include images in the results",
+              },
+              includeAnswer: {
+                type: "boolean",
+                description: "Whether to include an AI-generated answer",
+              },
+            },
+            required: ["query"],
+          }),
+        },
+      ],
+    },
+    owner: { clusterId },
+  });
+};
+
+export const tavily = {
+  onActivate: async (clusterId: string) => {
+    return syncTavilyService({
+      clusterId,
+      apiKey: await tavilyApiKeyForCluster(clusterId),
+    });
+  },
+  onDeactivate: async (clusterId: string) => {
+    // TODO: (good-first-issue) Delete the service definition
+  },
+};
