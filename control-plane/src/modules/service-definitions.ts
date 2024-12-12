@@ -1,4 +1,4 @@
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, lte, sql } from "drizzle-orm";
 import {
   validateDescription,
   validateFunctionName,
@@ -103,28 +103,36 @@ export async function upsertServiceDefinition({
   service,
   definition,
   owner,
+  type = "ephemeral",
 }: {
   service: string;
   definition: ServiceDefinition;
   owner: { clusterId: string };
+  type?: "ephemeral" | "permanent";
 }) {
   validateServiceRegistration({
     service,
     definition,
   });
+
+  // In order to prevent the service from being deleted by the cleanup job,
+  // we set the timestamp to a future date if the service is permanent
+  const timestamp =
+    type === "permanent" ? sql`now() + interval '10 years'` : new Date();
+
   await data.db
     .insert(data.services)
     .values({
       service,
       definition,
       cluster_id: owner.clusterId,
-      timestamp: new Date(),
+      timestamp,
     })
     .onConflictDoUpdate({
       target: [data.services.service, data.services.cluster_id],
       set: {
         definition,
-        timestamp: new Date(),
+        timestamp,
       },
     });
 
@@ -286,7 +294,8 @@ export const cleanExpiredServiceDefinitions = async (): Promise<void> => {
     });
   });
 
-  if (serviceDefinitions.length === 10) {
+  if (serviceDefinitions.length > 0) {
+    // TODO: run this until all services are cleaned up
     return cleanExpiredServiceDefinitions();
   }
 };
