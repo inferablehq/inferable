@@ -11,7 +11,7 @@ import {
   deleteRun,
   getClusterWorkflows,
   getRunConfigMetrics,
-  getWorkflow,
+  getRun,
   getWorkflowDetail,
   updateWorkflow,
 } from "./workflows";
@@ -370,7 +370,7 @@ export const runsRouter = initServer().router(
           runId,
           after: jobsAfter,
         }),
-        getWorkflow({
+        getRun({
           clusterId,
           runId,
         }),

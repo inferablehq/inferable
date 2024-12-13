@@ -7,6 +7,8 @@ import { getRunsByMetadata } from '../workflows/metadata';
 import { addMessageAndResume, createRunWithMessage, Run } from '../workflows/workflows';
 import { AuthenticationError } from '../../utilities/errors';
 import { ulid } from 'ulid';
+import { InferSelectModel } from 'drizzle-orm';
+import { workflowMessages } from '../data';
 
 let app: App | undefined;
 
@@ -17,6 +19,36 @@ type MessageEvent = {
   event: KnownEventFromType<'message'>,
   client: webApi.WebClient
   clusterId: string
+}
+
+export const handleNewRunMessage = async ({ message, metadata }: {
+  message: {
+    id: string;
+    clusterId: string;
+    runId: string;
+    type: InferSelectModel<typeof workflowMessages>["type"];
+    data: InferSelectModel<typeof workflowMessages>["data"];
+  },
+  metadata?: Record<string, string>;
+}) => {
+  if (message.type !== "agent") {
+    return
+  }
+
+  if (!metadata?.[THREAD_META_KEY] || !metadata?.[CHANNEL_META_KEY]) {
+    return
+  }
+
+  if ('message' in message.data && message.data.message) {
+    app?.client.chat.postMessage({
+      thread_ts: metadata[THREAD_META_KEY],
+      channel: metadata[CHANNEL_META_KEY],
+      mrkdwn: true,
+      text: message.data.message
+    });
+  } else {
+    logger.warn("Slack initialted message does not have content");
+  }
 }
 
 export const start = async (fastify: FastifyInstance) => {

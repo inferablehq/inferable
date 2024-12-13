@@ -5,7 +5,7 @@ import { clusterExists, getClusterDetails } from "../cluster";
 import * as clusterAuth from "./cluster";
 import * as clerkAuth from "./clerk";
 import * as customAuth from "./custom";
-import { getRunCustomAuthToken, getWorkflow } from "../workflows/workflows";
+import { getRunCustomAuthToken, getRun } from "../workflows/workflows";
 import { logger } from "../observability/logger";
 import { env } from "../../utilities/env";
 
@@ -289,7 +289,7 @@ export const extractAuthState = async (
           await this.canAccess({
             cluster: { clusterId: opts.run.clusterId },
           });
-          const workflow = await getWorkflow({
+          const workflow = await getRun({
             clusterId: opts.run.clusterId,
             runId: opts.run.runId,
           });

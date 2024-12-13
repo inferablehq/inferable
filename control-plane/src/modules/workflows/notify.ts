@@ -1,10 +1,26 @@
+import { InferSelectModel } from "drizzle-orm";
 import * as jobs from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
-import { getWorkflowMetadata } from "./metadata";
+import { getRunMetadata } from "./metadata";
 import { Run } from "./workflows";
+import { workflowMessages } from "../data";
+import * as slack from "../slack";
 
-export const notifyRunHandler = async ({
+export const notifyNewMessage = async ({ message, metadata }: {
+  message: {
+    id: string;
+    clusterId: string;
+    runId: string;
+    type: InferSelectModel<typeof workflowMessages>["type"];
+    data: InferSelectModel<typeof workflowMessages>["data"];
+  },
+  metadata?: Record<string, string>;
+}) => {
+  await slack.handleNewRunMessage({ message, metadata });
+}
+
+export const notifyStatusChange = async ({
   run,
   status,
   result,
@@ -53,7 +69,7 @@ export const notifyRunHandler = async ({
   }
 
   try {
-    const metadata = await getWorkflowMetadata({
+    const metadata = await getRunMetadata({
       clusterId: run.clusterId,
       runId: run.id,
     });

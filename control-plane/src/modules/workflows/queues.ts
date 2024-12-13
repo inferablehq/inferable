@@ -2,13 +2,14 @@ import { env } from "../../utilities/env";
 import { createMutex } from "../data";
 import { logger } from "../observability/logger";
 import { BaseMessage, baseMessageSchema, sqs, withObservability } from "../sqs";
-import { run } from "./agent/run";
+import { processRun } from "./agent/run";
 import { generateTitle } from "./summarization";
-import { getWorkflow, updateWorkflow } from "./workflows";
+import { getRun, updateWorkflow } from "./workflows";
 
 import { Consumer } from "sqs-consumer";
 import { z } from "zod";
 import { injectTraceContext } from "../observability/tracer";
+import { getRunMetadata } from "./metadata";
 
 const runProcessConsumer = Consumer.create({
   queueUrl: env.SQS_RUN_PROCESS_QUEUE_URL,
@@ -99,14 +100,17 @@ async function handleRunProcess(message: BaseMessage) {
   }
 
   try {
-    const workflow = await getWorkflow({ clusterId, runId });
+    const [run, metadata] = await Promise.all([
+      getRun({ clusterId, runId }),
+      getRunMetadata({ clusterId, runId }),
+    ])
 
-    if (!workflow) {
+    if (!run) {
       logger.error("Received job for unknown workflow");
       return;
     }
 
-    await run(workflow);
+    await processRun(run, metadata);
   } finally {
     await unlock();
   }
@@ -139,7 +143,7 @@ async function handleRunNameGeneration(message: BaseMessage) {
   try {
     logger.info("Running name generation job");
 
-    const workflow = await getWorkflow({ clusterId, runId });
+    const workflow = await getRun({ clusterId, runId });
 
     const result = await generateTitle(content, workflow);
 
