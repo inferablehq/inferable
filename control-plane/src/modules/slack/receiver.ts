@@ -8,8 +8,7 @@ import {
   Logger,
   LogLevel,
 } from '@slack/bolt'
-import { FastifyInstance } from 'fastify';
-import { createServer } from 'http';
+import { FastifyInstance, FastifyPluginCallback } from 'fastify';
 import { logger } from '../observability/logger';
 
 const slackLogger: Logger = {
@@ -18,8 +17,8 @@ const slackLogger: Logger = {
   info: (message: string) => logger.info(message),
   warn: (message: string) => logger.warn(message),
   getLevel: () => LogLevel.INFO,
-  setLevel: (level: string) => void 0,
-  setName: (name: string) => void 0,
+  setLevel: () => void 0,
+  setName: () => void 0,
 }
 
 export class FastifySlackReceiver implements Receiver {
@@ -51,8 +50,17 @@ export class FastifySlackReceiver implements Receiver {
 
     return new Promise((resolve, reject) => {
       try {
-        // Bind request handler
-        this.fastify.post(this.path, (request, reply) => this.requestHandler(request, reply));
+        // Register a seperate plugin and dissable the content type parsers
+        const slackPlugin: FastifyPluginCallback = async (instance) => {
+          const contentTypes = ['application/json', 'application/x-www-form-urlencoded'];
+
+          instance.removeContentTypeParser(contentTypes);
+          instance.addContentTypeParser(contentTypes, { parseAs: 'string' }, instance.defaultTextParser);
+
+          instance.post('', (request, reply) => this.requestHandler(request, reply));
+        };
+
+        this.fastify.register(slackPlugin, { prefix: this.path });
         resolve(void 0);
       } catch (error) {
         reject(error);
