@@ -18,6 +18,7 @@ import { Run } from "../../workflows";
 import { ToolFetcher } from "../agent";
 import { WorkflowAgentState } from "../state";
 import { SpecialResultTypes, parseFunctionResponse } from "../tools/functions";
+import { trackCustomerTelemetry } from "../../../track-customer-telemetry";
 
 export const TOOL_CALL_NODE_NAME = "action";
 
@@ -146,7 +147,7 @@ const _handleToolCall = async (
   try {
     tool = await getTool(toolCall);
   } catch (error) {
-    await customerTelemetry.track({
+    await trackCustomerTelemetry({
       type: "toolCall",
       toolName,
       clusterId: workflow.clusterId,
@@ -226,7 +227,7 @@ const _handleToolCall = async (
         },
       });
 
-      customerTelemetry.track({
+      trackCustomerTelemetry({
         type: "toolCall",
         toolName,
         clusterId: workflow.clusterId,
@@ -255,7 +256,7 @@ const _handleToolCall = async (
     }
 
     if (response.resultType === "resolution") {
-      customerTelemetry.track({
+      trackCustomerTelemetry({
         type: "toolCall",
         toolName,
         clusterId: workflow.clusterId,
@@ -316,7 +317,7 @@ const _handleToolCall = async (
         );
       }
 
-      customerTelemetry.track({
+      trackCustomerTelemetry({
         type: "toolCall",
         toolName,
         clusterId: workflow.clusterId,
@@ -363,7 +364,7 @@ const _handleToolCall = async (
       toolName,
     });
 
-    await customerTelemetry.track({
+    await trackCustomerTelemetry({
       type: "toolCall",
       toolName,
       clusterId: workflow.clusterId,

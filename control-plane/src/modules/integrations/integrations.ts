@@ -1,49 +1,16 @@
 import { eq, sql } from "drizzle-orm";
-import { db, integrations } from "../data";
 import { z } from "zod";
-import { toolhouse } from "./toolhouse";
+import { db, integrations } from "../data";
+import { integrationSchema } from "./schema";
+import { tavilyIntegration } from "./constants";
 import { tavily } from "./tavily";
-
-const toolhouseIntegration = "toolhouse";
-const langfuseIntegration = "langfuse";
-const tavilyIntegration = "tavily";
-
-export const allowedIntegrations = [
-  toolhouseIntegration,
-  langfuseIntegration,
-  tavilyIntegration,
-] as const;
-
-export const externalServices = [toolhouse, tavily];
+import { toolhouseIntegration } from "./constants";
+import { toolhouse } from "./toolhouse";
 
 export const integrationsLibs = {
   [toolhouseIntegration]: toolhouse,
   [tavilyIntegration]: tavily,
 };
-
-export const integrationSchema = z.object({
-  [toolhouseIntegration]: z
-    .object({
-      apiKey: z.string(),
-    })
-    .optional()
-    .nullable(),
-  [langfuseIntegration]: z
-    .object({
-      publicKey: z.string(),
-      secretKey: z.string(),
-      baseUrl: z.string(),
-      sendMessagePayloads: z.boolean(),
-    })
-    .optional()
-    .nullable(),
-  [tavilyIntegration]: z
-    .object({
-      apiKey: z.string(),
-    })
-    .optional()
-    .nullable(),
-});
 
 export const getIntegrations = async ({
   clusterId,

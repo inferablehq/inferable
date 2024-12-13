@@ -16,7 +16,7 @@ import { env } from "../../utilities/env";
 import { injectTraceContext } from "../observability/tracer";
 import { logger } from "../observability/logger";
 import { sqs } from "../sqs";
-import { externalServices } from "../integrations/integrations";
+import { externalServices } from "../integrations/constants";
 
 type CreateJobParams = {
   jobId: string;
@@ -270,7 +270,7 @@ const onAfterJobCreated = async ({
     },
   });
 
-  if (externalServices.some((s) => s.name === service)) {
+  if (externalServices.includes(service)) {
     await sqs
       .sendMessage({
         QueueUrl: env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL,
