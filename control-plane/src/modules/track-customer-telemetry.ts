@@ -19,7 +19,7 @@ type ObservabilityEvent = z.infer<
 export async function trackCustomerTelemetry(event: ObservabilityEvent) {
   const queueUrl = env.SQS_CUSTOMER_TELEMETRY_QUEUE_URL;
 
-  return await withSpan(
+  return withSpan(
     "sqs.send_model_call_event",
     async () => {
       try {
@@ -59,5 +59,11 @@ export async function trackCustomerTelemetry(event: ObservabilityEvent) {
         "sqs.queue.url": queueUrl,
       },
     },
-  );
+  ).catch((error) => {
+    logger.warn("Error sending customer telemetry event to SQS", {
+      error,
+      event,
+      queueUrl,
+    });
+  });
 }
