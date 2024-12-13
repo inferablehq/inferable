@@ -23,7 +23,7 @@ import { flagsmith } from "./modules/flagsmith";
 import { runMigrations } from "./utilities/migrate";
 import { customerTelemetry } from "./modules/customer-telemetry";
 
-export const app = fastify({
+const app = fastify({
   logger: env.ENABLE_FASTIFY_LOGGER,
 });
 

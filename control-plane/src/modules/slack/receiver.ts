@@ -8,7 +8,7 @@ import {
   Logger,
   LogLevel,
 } from '@slack/bolt'
-import { FastifyInstance, FastifyPluginCallback } from 'fastify';
+import { FastifyInstance, FastifyPluginCallback, FastifyReply, FastifyRequest } from 'fastify';
 import { logger } from '../observability/logger';
 
 const slackLogger: Logger = {
@@ -21,21 +21,23 @@ const slackLogger: Logger = {
   setName: () => void 0,
 }
 
-export class FastifySlackReceiver implements Receiver {
-  fastify: FastifyInstance;
-  app?: App;
+type FastifySlackReceiverParams = {
+  fastify: FastifyInstance
   path: string
   signingSecret: string
+}
+
+export class FastifySlackReceiver implements Receiver {
+  private fastify: FastifyInstance;
+  private app?: App;
+  private path: string
+  private signingSecret: string
 
   constructor({
-    path = '/slack/events',
+    path,
     fastify,
     signingSecret,
-  }: {
-      path?: string
-      fastify: FastifyInstance
-      signingSecret: string
-    }) {
+  }: FastifySlackReceiverParams) {
     this.fastify = fastify;
     this.path = path
     this.signingSecret = signingSecret
@@ -45,57 +47,47 @@ export class FastifySlackReceiver implements Receiver {
     this.app = app;
   }
 
-  start() {
-    logger.info("Starting Slack receiver")
+  async start() {
+    logger.info("Registering Slack receiver")
 
-    return new Promise((resolve, reject) => {
-      try {
-        // Register a seperate plugin and dissable the content type parsers
-        const slackPlugin: FastifyPluginCallback = async (instance) => {
-          const contentTypes = ['application/json', 'application/x-www-form-urlencoded'];
+    // Register a seperate plugin and disable the content type parsers for the route
+    const slackPlugin: FastifyPluginCallback = async (instance) => {
+      const contentTypes = ['application/json', 'application/x-www-form-urlencoded'];
 
-          instance.removeContentTypeParser(contentTypes);
-          instance.addContentTypeParser(contentTypes, { parseAs: 'string' }, instance.defaultTextParser);
+      instance.removeContentTypeParser(contentTypes);
+      instance.addContentTypeParser(contentTypes, { parseAs: 'string' }, instance.defaultTextParser);
 
-          instance.post('', (request, reply) => this.requestHandler(request, reply));
-        };
+      instance.post('', (request, reply) => this.requestHandler(request, reply));
+    };
 
-        this.fastify.register(slackPlugin, { prefix: this.path });
-        resolve(void 0);
-      } catch (error) {
-        reject(error);
-      }
-    });
+    this.fastify.register(slackPlugin, { prefix: this.path });
   }
 
-  stop() {
-    logger.info("Stopping Slack receiver")
-
-    return new Promise((resolve, reject) => {
-      this.fastify.server.close((err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(void 0);
-      })
+  async stop() {
+    this.fastify.server.close((err) => {
+      if (err) {
+        logger.error("Failed to stop Slack receiver gracefully", {
+          error: err,
+        })
+      }
     })
   }
 
-  async requestHandler(request: any, response: any) {
+  async requestHandler(request: FastifyRequest, reply: FastifyReply) {
+
     const req = request.raw;
-    const res = response.raw;
+    const res = reply.raw;
+
     try {
       // Verify authenticity
       let bufferedReq: BufferedIncomingMessage;
       try {
-        const bodyString = typeof request.body === "string"
-            ? request.body
-            : JSON.stringify(request.body);
-
+        if (typeof request.body !== "string") {
+          throw new Error("Expected Slack request body to be a string");
+        }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (req as any).rawBody = Buffer.from(bodyString);
+        (req as any).rawBody = Buffer.from(request.body);
 
         bufferedReq = await boltHelpers.parseAndVerifyHTTPRequest(
           {
@@ -151,18 +143,10 @@ export class FastifySlackReceiver implements Receiver {
         retryReason: boltHelpers.extractRetryReasonFromHTTPRequest(req),
       };
 
-      try {
-        logger.info("Processing Slack request", {
-          event,
-        });
-        await this.app?.processEvent(event);
-      } catch (error) {
-        logger.error("Failed to process Slack request", {
-          error,
-        })
-      }
+      await this.app?.processEvent(event);
+
     } catch (error) {
-      logger.error("Failed to process Slack request", {
+      logger.error("Failed to handle Slack request", {
         error,
       })
     }
