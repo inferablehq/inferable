@@ -3,10 +3,8 @@ import { env } from "../../utilities/env";
 import { BaseMessage, baseMessageSchema, sqs, withObservability } from "../sqs";
 import { z } from "zod";
 import { logger } from "../observability/logger";
-import { handleCall } from "../integrations/toolhouse";
 import { getJob } from "./jobs";
-
-export const externalServices = ["ToolHouse"];
+import { externalServices } from "../integrations/integrations";
 
 const externalCallConsumer = env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL
   ? Consumer.create({
@@ -46,7 +44,11 @@ async function handleExternalCall(message: BaseMessage) {
     return;
   }
 
-  if (!externalServices.includes(zodResult.data.service)) {
+  const service = externalServices.find(
+    (service) => service.name === zodResult.data.service,
+  );
+
+  if (!service) {
     logger.error("Unknown external service", {
       service: zodResult.data.service,
     });
@@ -67,8 +69,7 @@ async function handleExternalCall(message: BaseMessage) {
     return;
   }
 
-  //Currently only toolhouse is supported
-  await handleCall({
+  await service.handleCall({
     call,
     clusterId: zodResult.data.clusterId,
   });

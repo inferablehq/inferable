@@ -41,7 +41,7 @@ export const validateConfig = async (
   await toolhouse.getTools();
 };
 
-export const handleCall = async ({
+const handleCall = async ({
   call,
   clusterId,
 }: {
@@ -224,6 +224,7 @@ const toToolHouseName = (input: string) => {
 };
 
 export const toolhouse = {
+  name: "ToolHouse",
   onActivate: async (clusterId: string) => {
     return syncToolHouseService({
       clusterId,
@@ -235,4 +236,5 @@ export const toolhouse = {
   onDeactivate: async (clusterId: string) => {
     // TODO: (good-first-issue) Delete the service definition
   },
+  handleCall,
 };

@@ -2,6 +2,8 @@ import { z } from "zod";
 import { getIntegrations } from "./integrations";
 import { upsertServiceDefinition } from "../service-definitions";
 import { logger } from "../observability/logger";
+import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
+import { packer } from "../packer";
 
 const TavilySearchParamsSchema = z.object({
   query: z.string(),
@@ -15,32 +17,7 @@ const TavilySearchParamsSchema = z.object({
   includeDomains: z.array(z.string()).optional(),
 });
 
-const TavilySearchResponseSchema = z.object({
-  query: z.string(),
-  answer: z.string().optional(),
-  response_time: z.number(),
-  images: z
-    .array(
-      z.object({
-        url: z.string().url(),
-        description: z.string().optional(),
-      }),
-    )
-    .optional(),
-  results: z.array(
-    z.object({
-      title: z.string(),
-      url: z.string().url(),
-      content: z.string(),
-      raw_content: z.string().optional(),
-      score: z.number(),
-      published_date: z.string().optional(),
-    }),
-  ),
-});
-
 export type TavilySearchParams = z.infer<typeof TavilySearchParamsSchema>;
-export type TavilySearchResponse = z.infer<typeof TavilySearchResponseSchema>;
 
 const tavilyApiKeyForCluster = async (clusterId: string) => {
   const integrations = await getIntegrations({ clusterId });
@@ -60,50 +37,38 @@ export async function searchTavily({
 }: {
   params: TavilySearchParams;
   apiKey: string;
-}): Promise<TavilySearchResponse> {
-  try {
-    // Validate parameters
-    TavilySearchParamsSchema.parse(params);
+}) {
+  // Validate parameters
+  TavilySearchParamsSchema.parse(params);
 
-    const response = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query: params.query,
-        search_depth: params.searchDepth,
-        topic: params.topic,
-        days: params.days,
-        max_results: params.maxResults,
-        include_images: params.includeImages,
-        include_image_descriptions: params.includeImageDescriptions,
-        include_answer: params.includeAnswer,
-        api_key: apiKey,
-      }),
-    });
+  const response = await fetch("https://api.tavily.com/search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: params.query,
+      search_depth: params.searchDepth,
+      topic: params.topic,
+      days: params.days,
+      max_results: params.maxResults,
+      include_images: params.includeImages,
+      include_image_descriptions: params.includeImageDescriptions,
+      include_answer: params.includeAnswer,
+      api_key: apiKey,
+    }),
+  });
 
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ message: response.statusText }));
-      throw new Error(errorData.message || "Failed to perform search");
-    }
-
-    const rawData = await response.json();
-
-    // Validate response data
-    return TavilySearchResponseSchema.parse(rawData);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new Error(
-        error.issues[0].path.length > 0
-          ? `Invalid ${error.issues[0].path.join(".")} in ${error.issues[0].message}`
-          : error.message,
-      );
-    }
-    throw error;
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: response.statusText }));
+    throw new Error(errorData.message || "Failed to perform search");
   }
+
+  const rawData = await response.json();
+
+  return rawData;
 }
 
 const syncTavilyService = async ({
@@ -170,7 +135,45 @@ const syncTavilyService = async ({
   });
 };
 
+const handleCall = async ({
+  call,
+  clusterId,
+}: {
+  call: NonNullable<Awaited<ReturnType<typeof getJob>>>;
+  clusterId: string;
+}) => {
+  await acknowledgeJob({
+    jobId: call.id,
+    clusterId,
+    machineId: "TAVILY",
+  });
+
+  const apiKey = await tavilyApiKeyForCluster(clusterId);
+  if (!apiKey) {
+    logger.warn("No Tavily API key found for integration", { clusterId });
+    return;
+  }
+
+  const result = await searchTavily({
+    params: packer.unpack(call.targetArgs),
+    apiKey,
+  });
+
+  await persistJobResult({
+    result: packer.pack(result),
+    resultType: "resolution",
+    jobId: call.id,
+    owner: {
+      clusterId,
+    },
+    machineId: "TAVILY",
+  });
+
+  return result;
+};
+
 export const tavily = {
+  name: "Tavily",
   onActivate: async (clusterId: string) => {
     return syncTavilyService({
       clusterId,
@@ -180,4 +183,5 @@ export const tavily = {
   onDeactivate: async (clusterId: string) => {
     // TODO: (good-first-issue) Delete the service definition
   },
+  handleCall,
 };

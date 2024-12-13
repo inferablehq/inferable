@@ -7,7 +7,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Trash2 } from "lucide-react";
+import {
+  ArrowRight,
+  BarChartHorizontal,
+  Search,
+  Trash2,
+  Wrench,
+  Zap,
+} from "lucide-react";
 import { client } from "@/client/client";
 import { auth } from "@clerk/nextjs";
 import ErrorDisplay from "@/components/error-display";
@@ -18,14 +25,26 @@ const config = {
     name: "Toolhouse",
     description:
       "Connect your toolhouse.ai tools directly to your Inferable Runs",
-    icon: "🛠️",
+    icon: Wrench,
     slug: "toolhouse",
   },
   langfuse: {
     name: "Langfuse",
     description: "Send LLM telemetry to Langfuse for monitoring and analytics",
-    icon: "📊",
+    icon: BarChartHorizontal,
     slug: "langfuse",
+  },
+  tavily: {
+    name: "Tavily",
+    description: "Use Tavily to search the web for information",
+    icon: Search,
+    slug: "tavily",
+  },
+  zapier: {
+    name: "Zapier",
+    description: "Integrate your Inferable Runs with Zapier",
+    icon: Zap,
+    slug: "zapier",
   },
 };
 
@@ -78,66 +97,52 @@ export default async function IntegrationsPage({
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Object.entries(response.body).map(([key, integration]) => (
-            <Card className="flex flex-col" key={key}>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>{key}</CardTitle>
-                </div>
-                <CardDescription>
-                  {config[key as keyof typeof config]?.description ?? "Unknown"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow flex items-end">
-                <div className="w-full flex gap-2">
-                  <Link
-                    href={`/clusters/${clusterId}/integrations/${key}`}
-                    className="flex-grow"
-                  >
-                    <Button className="w-full" variant="outline">
-                      {integration !== null ? "Configure" : "Install"}
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </Link>
-                  {integration !== null && (
-                    <form action={handleUninstall}>
-                      <input type="hidden" name="name" value={key} />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        type="submit"
-                        title="Uninstall integration"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </form>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {Object.entries(response.body)
+            .concat([["zapier", null]])
+            .map(([key, integration]) => {
+              const c = config[key as keyof typeof config];
+              const Icon = c?.icon;
 
-          <Card className="flex flex-col" key="zapier">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <CardTitle>Zapier</CardTitle>
-              </div>
-              <CardDescription>
-                Integrate your Inferable Runs with Zapier
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow flex items-end">
-              <Link
-                href={`https://docs.inferable.ai/pages/zapier`}
-                className="flex-grow"
-              >
-                <Button className="w-full" variant="outline">
-                  Learn more
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+              return (
+                <Card className="flex flex-col" key={key}>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-4 h-4" />
+                      <CardTitle>{c?.name}</CardTitle>
+                    </div>
+                    <CardDescription>
+                      {c?.description ?? "Unknown"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow flex items-end">
+                    <div className="w-full flex gap-2">
+                      <Link
+                        href={`/clusters/${clusterId}/integrations/${key}`}
+                        className="flex-grow"
+                      >
+                        <Button className="w-full" variant="outline">
+                          {integration !== null ? "Configure" : "Install"}
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </Link>
+                      {integration !== null && (
+                        <form action={handleUninstall}>
+                          <input type="hidden" name="name" value={key} />
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            type="submit"
+                            title="Uninstall integration"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </form>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
         </div>
       </div>
     </div>

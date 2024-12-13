@@ -14,6 +14,13 @@ export const allowedIntegrations = [
   tavilyIntegration,
 ] as const;
 
+export const externalServices = [toolhouse, tavily];
+
+export const integrationsLibs = {
+  [toolhouseIntegration]: toolhouse,
+  [tavilyIntegration]: tavily,
+};
+
 export const integrationSchema = z.object({
   [toolhouseIntegration]: z
     .object({
@@ -37,11 +44,6 @@ export const integrationSchema = z.object({
     .optional()
     .nullable(),
 });
-
-export const integrationsLibs = {
-  [toolhouseIntegration]: toolhouse,
-  [tavilyIntegration]: tavily,
-};
 
 export const getIntegrations = async ({
   clusterId,
@@ -93,6 +95,10 @@ export const upsertIntegrations = async ({
     Object.entries(config).map(([key, value]) => {
       if (value) {
         integrationsLibs[key as keyof typeof integrationsLibs]?.onActivate?.(
+          clusterId,
+        );
+      } else if (value === null) {
+        integrationsLibs[key as keyof typeof integrationsLibs]?.onDeactivate?.(
           clusterId,
         );
       }
