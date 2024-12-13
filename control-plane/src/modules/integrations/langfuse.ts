@@ -1,14 +1,13 @@
 import Langfuse from "langfuse";
 import NodeCache from "node-cache";
-import { logger } from "../observability/logger";
-import { getIntegrations } from "./integrations";
 import { z } from "zod";
+import { createCache } from "../../utilities/cache";
 import {
   modelCallEventSchema,
   runFeedbackEventSchema,
   toolCallEventSchema,
 } from "./integration-events";
-import { createCache } from "../../utilities/cache";
+import { getIntegrations } from "./integrations";
 import { integrationSchema } from "./schema";
 
 const langfuseCache = new NodeCache({

@@ -9,16 +9,15 @@ import {
   AgentError,
   InvalidJobArgumentsError,
 } from "../../../../utilities/errors";
-import { customerTelemetry } from "../../../customer-telemetry";
 import * as events from "../../../observability/events";
 import { logger } from "../../../observability/logger";
 import { addAttributes, withSpan } from "../../../observability/tracer";
+import { trackCustomerTelemetry } from "../../../track-customer-telemetry";
 import { AgentMessage, assertAgentMessage } from "../../workflow-messages";
 import { Run } from "../../workflows";
 import { ToolFetcher } from "../agent";
 import { WorkflowAgentState } from "../state";
 import { SpecialResultTypes, parseFunctionResponse } from "../tools/functions";
-import { trackCustomerTelemetry } from "../../../track-customer-telemetry";
 
 export const TOOL_CALL_NODE_NAME = "action";
 

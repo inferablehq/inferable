@@ -7,10 +7,18 @@ import { tavily } from "./tavily";
 import { toolhouseIntegration } from "./constants";
 import { toolhouse } from "./toolhouse";
 
-export const integrationsLibs = {
+const toolProviders = {
   [toolhouseIntegration]: toolhouse,
   [tavilyIntegration]: tavily,
 };
+
+export function getToolProvider(tool: string) {
+  if (!toolProviders[tool as keyof typeof toolProviders]) {
+    throw new Error(`Unknown tool provider integration requested: ${tool}`);
+  }
+
+  return toolProviders[tool as keyof typeof toolProviders];
+}
 
 export const getIntegrations = async ({
   clusterId,
@@ -61,13 +69,9 @@ export const upsertIntegrations = async ({
   await Promise.all(
     Object.entries(config).map(([key, value]) => {
       if (value) {
-        integrationsLibs[key as keyof typeof integrationsLibs]?.onActivate?.(
-          clusterId,
-        );
+        getToolProvider(key)?.onActivate?.(clusterId);
       } else if (value === null) {
-        integrationsLibs[key as keyof typeof integrationsLibs]?.onDeactivate?.(
-          clusterId,
-        );
+        getToolProvider(key)?.onDeactivate?.(clusterId);
       }
     }),
   );

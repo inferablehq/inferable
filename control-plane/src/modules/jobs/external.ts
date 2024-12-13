@@ -4,7 +4,8 @@ import { BaseMessage, baseMessageSchema, sqs, withObservability } from "../sqs";
 import { z } from "zod";
 import { logger } from "../observability/logger";
 import { getJob } from "./jobs";
-import { externalServices } from "../integrations/integrations";
+import { externalServices } from "../integrations/constants";
+import { getToolProvider } from "../integrations/integrations";
 
 const externalCallConsumer = env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL
   ? Consumer.create({
@@ -44,9 +45,7 @@ async function handleExternalCall(message: BaseMessage) {
     return;
   }
 
-  const service = externalServices.find(
-    (service) => service.name === zodResult.data.service,
-  );
+  const service = externalServices.includes(zodResult.data.service);
 
   if (!service) {
     logger.error("Unknown external service", {
@@ -69,7 +68,7 @@ async function handleExternalCall(message: BaseMessage) {
     return;
   }
 
-  await service.handleCall({
+  await getToolProvider(zodResult.data.service).handleCall({
     call,
     clusterId: zodResult.data.clusterId,
   });

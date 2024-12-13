@@ -1,22 +1,21 @@
 import {
-  InferSelectModel,
   and,
   countDistinct,
   desc,
   eq,
   inArray,
+  InferSelectModel,
   isNull,
-  ne,
   or,
   sql,
 } from "drizzle-orm";
 import { ulid } from "ulid";
+import { env } from "../../utilities/env";
 import {
   BadRequestError,
   NotFoundError,
   RunBusyError,
 } from "../../utilities/errors";
-import { logger } from "../observability/logger";
 import { Auth } from "../auth/auth";
 import {
   clusters,
@@ -27,6 +26,12 @@ import {
   workflowMetadata,
   workflows,
 } from "../data";
+import { ChatIdentifiers } from "../models/routing";
+import { logger } from "../observability/logger";
+import { injectTraceContext } from "../observability/tracer";
+import { sqs } from "../sqs";
+import { trackCustomerTelemetry } from "../track-customer-telemetry";
+import { getWorkflowMetadata } from "./metadata";
 import {
   getWorkflowMessages,
   hasInvocations,
@@ -34,12 +39,6 @@ import {
   prepMessagesForRetry,
   upsertRunMessage,
 } from "./workflow-messages";
-import { env } from "../../utilities/env";
-import { injectTraceContext } from "../observability/tracer";
-import { getWorkflowMetadata } from "./metadata";
-import { sqs } from "../sqs";
-import { ChatIdentifiers } from "../models/routing";
-import { customerTelemetry } from "../customer-telemetry";
 
 export { start, stop } from "./queues";
 
@@ -232,7 +231,7 @@ export const updateWorkflow = async (workflow: Run): Promise<Run> => {
 
   // Send telemetry event if feedback was updated
   if (workflow.feedbackScore !== undefined && workflow.feedbackScore !== null) {
-    customerTelemetry.track({
+    trackCustomerTelemetry({
       type: "runFeedback",
       runId: workflow.id,
       clusterId: workflow.clusterId,
@@ -623,10 +622,7 @@ export const getWaitingJobIds = async ({
         eq(jobs.cluster_id, clusterId),
         or(
           inArray(jobs.status, ["pending", "running"]),
-          and(
-            eq(jobs.approval_requested, true),
-            isNull(jobs.approved)
-          ),
+          and(eq(jobs.approval_requested, true), isNull(jobs.approved)),
         ),
       ),
     );
