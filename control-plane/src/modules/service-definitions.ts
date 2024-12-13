@@ -99,6 +99,28 @@ export async function recordServicePoll({
   );
 }
 
+export async function deleteServiceDefinition({
+  service,
+  owner,
+}: {
+  service: string;
+  owner: { clusterId: string };
+}) {
+  await data.db
+    .delete(data.services)
+    .where(
+      and(
+        eq(data.services.cluster_id, owner.clusterId),
+        eq(data.services.service, service),
+      ),
+    );
+
+  await deleteServiceEmbeddings({
+    serviceName: service,
+    clusterId: owner.clusterId,
+  });
+}
+
 export async function upsertServiceDefinition({
   service,
   definition,
@@ -415,19 +437,22 @@ export const validateServiceRegistration = ({
       } catch {
         throw new InvalidServiceRegistrationError(
           `${fn.name} cache.keyPath is invalid`,
-          "https://docs.inferable.ai/pages/functions#config-cache"
-        )
+          "https://docs.inferable.ai/pages/functions#config-cache",
+        );
       }
     }
 
     // Checks for customer auth handler
     const VERIFY_FUNCTION_NAME = "handleCustomAuth";
     const VERIFY_FUNCTION_SERVICE = "default";
-    if (service === VERIFY_FUNCTION_SERVICE && fn.name === VERIFY_FUNCTION_NAME) {
+    if (
+      service === VERIFY_FUNCTION_SERVICE &&
+      fn.name === VERIFY_FUNCTION_NAME
+    ) {
       if (!fn.schema) {
         throw new InvalidServiceRegistrationError(
           `${fn.name} must have a valid schema`,
-          "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+          "https://docs.inferable.ai/pages/auth#handlecustomerauth",
         );
       }
 
@@ -437,7 +462,7 @@ export const validateServiceRegistration = ({
       if (!schema.success) {
         throw new InvalidServiceRegistrationError(
           `${fn.name} schema is not valid`,
-          "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+          "https://docs.inferable.ai/pages/auth#handlecustomerauth",
         );
       }
     }

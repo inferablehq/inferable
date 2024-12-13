@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { getIntegrations } from "./integrations";
-import { upsertServiceDefinition } from "../service-definitions";
+import {
+  deleteServiceDefinition,
+  upsertServiceDefinition,
+} from "../service-definitions";
 import { logger } from "../observability/logger";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { packer } from "../packer";
@@ -71,6 +74,50 @@ export async function searchTavily({
   return rawData;
 }
 
+const definition = {
+  name: "Tavily",
+  functions: [
+    {
+      name: "search",
+      description: "Perform a web search using Tavily's AI-powered search API",
+      schema: JSON.stringify({
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The search query" },
+          searchDepth: {
+            type: "string",
+            enum: ["basic", "advanced"],
+            description:
+              "The depth of the search. 'basic' is faster, 'advanced' is more thorough",
+          },
+          topic: {
+            type: "string",
+            enum: ["general", "news"],
+            description: "The type of content to search for",
+          },
+          days: {
+            type: "number",
+            description: "Number of days to look back for results",
+          },
+          maxResults: {
+            type: "number",
+            description: "Maximum number of results to return",
+          },
+          includeImages: {
+            type: "boolean",
+            description: "Whether to include images in the results",
+          },
+          includeAnswer: {
+            type: "boolean",
+            description: "Whether to include an AI-generated answer",
+          },
+        },
+        required: ["query"],
+      }),
+    },
+  ],
+};
+
 const syncTavilyService = async ({
   clusterId,
   apiKey,
@@ -86,51 +133,16 @@ const syncTavilyService = async ({
   }
 
   await upsertServiceDefinition({
+    type: "permanent",
     service: "Tavily",
-    definition: {
-      name: "Tavily",
-      functions: [
-        {
-          name: "search",
-          description:
-            "Perform a web search using Tavily's AI-powered search API",
-          schema: JSON.stringify({
-            type: "object",
-            properties: {
-              query: { type: "string", description: "The search query" },
-              searchDepth: {
-                type: "string",
-                enum: ["basic", "advanced"],
-                description:
-                  "The depth of the search. 'basic' is faster, 'advanced' is more thorough",
-              },
-              topic: {
-                type: "string",
-                enum: ["general", "news"],
-                description: "The type of content to search for",
-              },
-              days: {
-                type: "number",
-                description: "Number of days to look back for results",
-              },
-              maxResults: {
-                type: "number",
-                description: "Maximum number of results to return",
-              },
-              includeImages: {
-                type: "boolean",
-                description: "Whether to include images in the results",
-              },
-              includeAnswer: {
-                type: "boolean",
-                description: "Whether to include an AI-generated answer",
-              },
-            },
-            required: ["query"],
-          }),
-        },
-      ],
-    },
+    definition,
+    owner: { clusterId },
+  });
+};
+
+const unsyncTavilyService = async ({ clusterId }: { clusterId: string }) => {
+  await deleteServiceDefinition({
+    service: "Tavily",
     owner: { clusterId },
   });
 };
@@ -175,13 +187,13 @@ const handleCall = async ({
 export const tavily = {
   name: "Tavily",
   onActivate: async (clusterId: string) => {
-    return syncTavilyService({
+    await syncTavilyService({
       clusterId,
       apiKey: await tavilyApiKeyForCluster(clusterId),
     });
   },
   onDeactivate: async (clusterId: string) => {
-    // TODO: (good-first-issue) Delete the service definition
+    await unsyncTavilyService({ clusterId });
   },
   handleCall,
 };
