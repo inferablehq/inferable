@@ -1,7 +1,7 @@
 import { and, eq, desc } from "drizzle-orm";
 import { db, workflowMetadata, workflows } from "../data";
 
-export const getWorkflowsByMetadata = async ({
+export const getRunsByMetadata = async ({
   clusterId,
   key,
   value,
