@@ -23,42 +23,44 @@ export type FunctionInput<T extends z.ZodTypeAny | JsonSchemaInput> =
 /**
  * Schema for onStatusChange functions
  *
+ * @see {@link https://docs.inferable.ai/pages/runs#onstatuschange}
  * @example
  * ```ts
  * inferable.default.register({
  *   name: "onStatusChangeFn",
- *   schema: statusChangeSchema,
+ *   schema: {
+ *    input: onStatusChangeInput
+ *   },
  *   func: (_input) => {},
  * });
  * ```
  */
-export const statusChangeSchema = {
-  input: z.object({
-    runId: z.string(),
-    status: z.enum(["pending", "running", "paused", "done", "failed"]),
-    result: z.object({}).passthrough().nullable().optional(),
-    summary: z.string().nullable().optional(),
-    metadata: z.record(z.string()).nullable().optional(),
-  }),
-};
+export const onStatusChangeInput = z.object({
+  runId: z.string(),
+  status: z.enum(["pending", "running", "paused", "done", "failed"]),
+  result: z.object({}).passthrough().nullable().optional(),
+  summary: z.string().nullable().optional(),
+  metadata: z.record(z.string()).nullable().optional(),
+});
 
 /**
- * Schema for handleCustomerAuth functions
+ * Schema for handleCustomAuth functions
  *
+ * @see {@link https://docs.inferable.ai/pages/custom-auth}
  * @example
  * ```ts
  * inferable.default.register({
- *   name: "handleCustomerAuth",
- *   schema: handleCustomerAuthSchema,
+ *   name: "handleCustomAuth",
+ *   schema: {
+ *    input: handleCustomAuthInput
+ *   },
  *   func: (_input) => {},
  * });
  * ```
  */
-export const handleCustomerAuthSchema = {
-  input: z.object({
-    token: z.string(),
-  }),
-};
+export const handleCustomAuthInput = z.object({
+  token: z.string(),
+});
 
 
 import type { JSONSchema4Type } from "json-schema";

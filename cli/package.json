@@ -1,6 +1,6 @@
 {
   "name": "@inferable/cli",
-  "version": "0.24.8",
+  "version": "0.24.9",
   "description": "CLI for inferable.ai",
   "bin": {
     "inf": "bin/index.js"

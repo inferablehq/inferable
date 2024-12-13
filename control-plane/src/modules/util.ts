@@ -2,7 +2,7 @@ import jsonpath from "jsonpath";
 import { NotFoundError } from "../utilities/errors";
 import { redisClient } from "./redis";
 
-export const extractWithPath = (path: string, args: unknown) => {
+export const extractWithJsonPath = (path: string, args: unknown) => {
   const result = jsonpath.query(args, path);
   if (!result || result.length === 0) {
     throw new NotFoundError(`Path ${path} not found within input`);

@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import NodeCache from "node-cache";
 import { redisClient } from "../modules/redis";
 
@@ -37,3 +38,8 @@ export const createCache = <T>(namespace: symbol) => {
 // const cache = createCache(Symbol("cache"));
 // cache.set("key", "value");
 // const value = cache.get("key");
+
+export const hashFromSecret = (secret: string): string => {
+  return createHash("sha256").update(secret).digest("hex");
+};
+

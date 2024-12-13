@@ -251,7 +251,6 @@ export const getRunMessagesForDisplay = async ({
         gt(workflowMessages.id, after),
         ne(workflowMessages.type, "agent-invalid"),
         ne(workflowMessages.type, "supervisor"),
-        ne(workflowMessages.type, "invocation-result"),
         ne(workflowMessages.type, "result" as any),
       ),
     )

@@ -7,6 +7,9 @@ on:
     types:
       - completed
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 jobs:
   check_changes:
     runs-on: ubuntu-latest
@@ -37,7 +40,7 @@ jobs:
             sdk_react:
               - 'sdk-react/**'
             assistant_ui:
-              - 'assistant-ui/**'
+              - 'adapters/assistant-ui/**'
             sdk_dotnet:
               - 'sdk-dotnet/**'
             sdk_go:
@@ -173,7 +176,7 @@ jobs:
       packages: write
     defaults:
       run:
-        working-directory: assistant-ui
+        working-directory: adapters/assistant-ui
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -185,7 +188,7 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
-          cache-dependency-path: assistant-ui/package-lock.json
+          cache-dependency-path: adapters/assistant-ui/package-lock.json
       - name: Install dependencies
         run: npm ci
       - name: Build package

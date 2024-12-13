@@ -1,0 +1,1 @@
+ALTER TABLE "workflows" RENAME COLUMN "customer_auth_token" TO "custom_auth_token";

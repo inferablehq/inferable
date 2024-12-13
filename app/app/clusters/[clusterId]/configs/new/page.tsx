@@ -21,7 +21,6 @@ export default function NewPromptTemplate({
     name: string;
     initialPrompt?: string;
     systemPrompt?: string;
-    public: boolean;
     attachedFunctions: string;
     resultSchema?: string;
     inputSchema?: string;
@@ -41,7 +40,6 @@ export default function NewPromptTemplate({
             formData.initialPrompt === "" ? undefined : formData.initialPrompt,
           systemPrompt:
             formData.systemPrompt === "" ? undefined : formData.systemPrompt,
-          public: formData.public,
           resultSchema: formData.resultSchema
             ? JSON.parse(formData.resultSchema)
             : undefined,
@@ -94,7 +92,6 @@ export default function NewPromptTemplate({
         initialData={{
           name: "",
           initialPrompt: "",
-          public: false,
           attachedFunctions: [],
         }}
         onSubmit={handleSubmit}

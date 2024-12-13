@@ -1,0 +1,1 @@
+ALTER TABLE "clusters" RENAME COLUMN "enable_customer_auth" TO "enable_custom_auth";

@@ -19,6 +19,7 @@ import { embeddableEntitiy } from "./embeddings/embeddings";
 import { logger } from "./observability/logger";
 import { packer } from "./packer";
 import { withThrottle } from "./util";
+import jsonpath from "jsonpath";
 
 // The time without a ping before a service is considered expired
 const SERVICE_LIVE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
@@ -378,7 +379,7 @@ export const updateServiceEmbeddings = async ({
   );
 };
 
-const validateServiceRegistration = ({
+export const validateServiceRegistration = ({
   service,
   definition,
 }: {
@@ -404,6 +405,39 @@ const validateServiceRegistration = ({
       if (errors.length > 0) {
         throw new InvalidServiceRegistrationError(
           `${fn.name} schema invalid: ${JSON.stringify(errors)}`,
+        );
+      }
+    }
+
+    if (fn.config?.cache) {
+      try {
+        jsonpath.parse(fn.config.cache.keyPath);
+      } catch {
+        throw new InvalidServiceRegistrationError(
+          `${fn.name} cache.keyPath is invalid`,
+          "https://docs.inferable.ai/pages/functions#config-cache"
+        )
+      }
+    }
+
+    // Checks for customer auth handler
+    const VERIFY_FUNCTION_NAME = "handleCustomAuth";
+    const VERIFY_FUNCTION_SERVICE = "default";
+    if (service === VERIFY_FUNCTION_SERVICE && fn.name === VERIFY_FUNCTION_NAME) {
+      if (!fn.schema) {
+        throw new InvalidServiceRegistrationError(
+          `${fn.name} must have a valid schema`,
+          "https://docs.inferable.ai/pages/auth#handlecustomerauth"
+        );
+      }
+
+      // Check that the schema accepts and expected value
+      const zodSchema = deserializeFunctionSchema(fn.schema);
+      const schema = zodSchema.safeParse({ token: "test" });
+      if (!schema.success) {
+        throw new InvalidServiceRegistrationError(
+          `${fn.name} schema is not valid`,
+          "https://docs.inferable.ai/pages/auth#handlecustomerauth"
         );
       }
     }

@@ -340,7 +340,7 @@ export const definition = {
         .describe(
           "Enable additional logging (Including prompts and results) for use by Inferable support",
         ),
-      enableCustomerAuth: z.boolean().optional(),
+      enableCustomAuth: z.boolean().optional(),
       enableRunConfigs: z.boolean().optional(),
       enableKnowledgebase: z.boolean().optional(),
     }),
@@ -359,7 +359,7 @@ export const definition = {
         additionalContext: VersionedTextsSchema.nullable(),
         createdAt: z.date(),
         debug: z.boolean(),
-        enableCustomerAuth: z.boolean(),
+        enableCustomAuth: z.boolean(),
         enableRunConfigs: z.boolean(),
         enableKnowledgebase: z.boolean(),
         lastPingAt: z.date().nullable(),
@@ -1092,7 +1092,6 @@ export const definition = {
         attachedFunctions: z.array(z.string()),
         resultSchema: anyObject.nullable(),
         inputSchema: anyObject.nullable(),
-        public: z.boolean(),
         createdAt: z.date(),
         updatedAt: z.date(),
         versions: z.array(
@@ -1104,7 +1103,6 @@ export const definition = {
             attachedFunctions: z.array(z.string()),
             resultSchema: anyObject.nullable(),
             inputSchema: anyObject.nullable(),
-            public: z.boolean(),
           }),
         ),
       }),
@@ -1133,7 +1131,6 @@ export const definition = {
       attachedFunctions: z.array(z.string()).optional(),
       resultSchema: anyObject.optional(),
       inputSchema: z.object({}).passthrough().optional().nullable(),
-      public: z.boolean(),
     }),
     responses: {
       201: z.object({ id: z.string() }),
@@ -1161,7 +1158,6 @@ export const definition = {
       attachedFunctions: z.array(z.string()).optional(),
       resultSchema: z.object({}).passthrough().optional().nullable(),
       inputSchema: z.object({}).passthrough().optional().nullable(),
-      public: z.boolean(),
     }),
     responses: {
       200: z.object({

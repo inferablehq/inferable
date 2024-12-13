@@ -13,16 +13,19 @@ type RuntimeOptions = {
   clusterId: string;
 
   /**
-   * The API secret to use for authentication.
+   * The cluster API secret to use for authentication.
+   * This is not recommended as the key will be available in the browser.
+   *
+   * @see https://docs.inferable.ai/pages/auth
    */
-  apiSecret: string;
+  apiSecret?: string;
 
   /**
-   * The authentication mode to use.
-   * @default "cluster"
-   * @see http://docs.inferable.ai/pages/auth
+   * A custom auth token to use for authentication.
+   *
+   * @see https://docs.inferable.ai/pages/custom-auth
    */
-  authType?: "customer" | "cluster";
+  customAuthToken?: string;
 
   /**
    * Optional, provided if you want to resume an existing run.
@@ -39,7 +42,7 @@ type RuntimeOptions = {
 export function useInferableRuntime({
   clusterId,
   apiSecret,
-  authType,
+  customAuthToken,
   runId,
   onError
 }: RuntimeOptions) {
@@ -47,7 +50,7 @@ export function useInferableRuntime({
   const { messages, run, createMessage, start } = useRun({
     clusterId,
     apiSecret,
-    authType,
+    customAuthToken,
     onError,
   });
 
@@ -81,7 +84,7 @@ export function useInferableRuntime({
     runtime: useExternalStoreRuntime({
       isRunning,
       messages,
-      convertMessage,
+      convertMessage: (message) => convertMessage(message, messages),
       onNew,
     }),
     run,
@@ -89,7 +92,7 @@ export function useInferableRuntime({
 
 }
 
-const convertMessage = (message: any): ThreadMessageLike => {
+const convertMessage = (message: any, allMessages: any): ThreadMessageLike => {
   switch (message.type) {
     case "human": {
       const parsedData = genericMessageDataSchema.parse(message.data);
@@ -114,31 +117,49 @@ const convertMessage = (message: any): ThreadMessageLike => {
         });
       }
 
+      if (parsedData.invocations) {
+
+        parsedData.invocations.forEach((invocation) => {
+
+          // Attempt to find corresponding `invocation-result` message
+          let result = null;
+          allMessages.forEach((message: any) => {
+            if ('type' in message && message.type !== "invocation-result") {
+              return false
+            }
+
+            const parsedResult = resultDataSchema.parse(message.data);
+
+            if (parsedResult.id === invocation.id) {
+              result = parsedResult.result;
+              return true;
+            }
+          });
+
+          content.push({
+            type: "tool-call",
+            toolName: invocation.toolName,
+            args: invocation.input,
+            toolCallId: invocation.id,
+            result
+          });
+        })
+      }
+
+      if (content.length === 0) {
+        return {
+          id: message.id,
+          role: "system",
+          content: "MESSAGE HAS NO CONTENT"
+        }
+      }
+
       return {
         id: message.id,
         role: "assistant",
         content: content
       }
     }
-    case "invocation-result": {
-      const parsedData = resultDataSchema.parse(message.data);
-
-      // TODO: Search chat history for the corresponding invocation mesasge (With args)
-
-      return {
-        id: message.id,
-        role: "assistant",
-        content: [{
-          type: "tool-call",
-          toolName: "inferable",
-          args: {},
-          toolCallId: parsedData.id,
-          result: parsedData.result,
-        }]
-      }
-
-    }
-
   }
 
   return {
@@ -146,7 +167,7 @@ const convertMessage = (message: any): ThreadMessageLike => {
     role: "system",
     content: [{
       type: "text",
-      text: ""
+      text: `UNKNON MESSAGE TYPE: ${message.type}`
     }],
   };
 }

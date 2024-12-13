@@ -6,8 +6,8 @@ import { ClientInferRequest, ClientInferResponseBody } from '@ts-rest/core';
 
 type UseRunOptions = {
   clusterId: string;
-  apiSecret: string;
-  authType?: 'customer' | 'cluster';
+  apiSecret?: string;
+  customAuthToken?: string;
   baseUrl?: string;
   pollInterval?: number;
   onError?: (error: Error) => void;
@@ -32,9 +32,12 @@ interface UseRunReturn {
 }
 
 export function useRun(options: UseRunOptions): UseRunReturn {
+  const authType = options.customAuthToken ? 'custom' : 'cluster';
+  const apiSecret = options.customAuthToken ?? options.apiSecret;
+
   const [client] = useState(() => createApiClient({
-    apiSecret: options.apiSecret,
-    authType: options.authType,
+    apiSecret,
+    authType,
     baseUrl: options.baseUrl
   }));
 

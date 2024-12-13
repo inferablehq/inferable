@@ -13,7 +13,7 @@ import (
 )
 
 // Version of the inferable package
-const Version = "0.1.29"
+const Version = "0.1.31"
 
 const (
 	DefaultAPIEndpoint = "https://api.inferable.ai"
@@ -65,12 +65,19 @@ type InferableOptions struct {
 	MachineID   string
 }
 
-// Struct type that will be returned to a Run's OnStatusChange Function
+// Input object for onStatusChange functions
+// https://docs.inferable.ai/pages/runs#onstatuschange
 type OnStatusChangeInput struct {
 	Status   string      `json:"status"`
 	RunId    string      `json:"runId"`
 	Result   interface{} `json:"result"`
 	Metadata interface{} `json:"metadata"`
+}
+
+// Input object for handleCustomAuth functions
+// https://docs.inferable.ai/pages/custom-auth
+type HandleCustomAuthInput struct {
+	Token string `json:"token"`
 }
 
 type runResult = OnStatusChangeInput

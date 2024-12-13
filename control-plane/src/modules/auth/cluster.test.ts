@@ -1,8 +1,8 @@
 import { redisClient } from "../redis";
 import { createOwner } from "../test/util";
-import * as apiSecret from "./api-secret";
+import * as clusterAuth from "./cluster";
 
-describe("verifyApiKey", () => {
+describe("verify", () => {
   beforeAll(async () => {
     // Ensure Redis client is connected
     await redisClient?.connect();
@@ -20,13 +20,13 @@ describe("verifyApiKey", () => {
 
   it("should verify an api secret when the key exists", async () => {
     const owner = await createOwner();
-    const key = await apiSecret.createApiKey({
+    const key = await clusterAuth.createApiKey({
       clusterId: owner.clusterId,
       createdBy: owner.userId,
       name: "test key",
     });
 
-    const result = await apiSecret.verifyApiKey(key.key);
+    const result = await clusterAuth.verify(key.key);
 
     expect(result).toEqual({
       organizationId: owner.organizationId,
@@ -36,25 +36,25 @@ describe("verifyApiKey", () => {
   });
 
   it("should return null when the key does not exist", async () => {
-    const result = await apiSecret.verifyApiKey("invalid-token");
+    const result = await clusterAuth.verify("invalid-token");
     expect(result).toBeUndefined();
   });
 
   it("should return null when the key is revoked", async () => {
     const owner = await createOwner();
 
-    const key = await apiSecret.createApiKey({
+    const key = await clusterAuth.createApiKey({
       clusterId: owner.clusterId,
       createdBy: owner.userId,
       name: "test key",
     });
 
-    await apiSecret.revokeApiKey({
+    await clusterAuth.revokeApiKey({
       clusterId: owner.clusterId,
       keyId: key.id,
     });
 
-    const result = await apiSecret.verifyApiKey(key.key);
+    const result = await clusterAuth.verify(key.key);
 
     expect(result).toBeUndefined();
   });

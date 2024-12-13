@@ -136,7 +136,7 @@ export const clusters = pgTable(
     id: varchar("id", { length: 1024 }).primaryKey(),
     name: varchar("name", { length: 1024 }).notNull(),
     debug: boolean("debug").notNull().default(false),
-    enable_customer_auth: boolean("enable_customer_auth").notNull().default(false),
+    enable_custom_auth: boolean("enable_custom_auth").notNull().default(false),
     enable_run_configs: boolean("enable_run_configs").notNull().default(false),
     enable_knowledgebase: boolean("enable_knowledgebase")
       .notNull()
@@ -300,7 +300,7 @@ export const workflows = pgTable(
     enable_summarization: boolean("enable_summarization")
       .default(false)
       .notNull(),
-    customer_auth_token: text("customer_auth_token"),
+    custom_auth_token: text("custom_auth_token"),
     auth_context: json("auth_context"),
     context: json("context"),
   },
@@ -523,7 +523,6 @@ export const promptTemplates = pgTable(
     // TODO: Rename this to result_schema
     result_schema: json("structured_output"),
     input_schema: json("input_schema"),
-    public: boolean("public").notNull().default(false),
     created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

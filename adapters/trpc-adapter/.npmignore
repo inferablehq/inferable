@@ -1,0 +1,10 @@
+src/
+tests/
+.eslintrc.json
+.gitignore
+tsconfig.json
+jest.config.js
+*.log
+.DS_Store
+coverage/
+.env

@@ -269,7 +269,9 @@ export function Run({
     })) || [];
 
   const eventElements =
-    runTimeline?.messages.map((m) => ({
+    runTimeline?.messages
+      .filter((m) => ["human", "agent", "template"].includes(m.type))
+      .map((m) => ({
       element: (
         <ElementWrapper
           mutableId={mutableId}

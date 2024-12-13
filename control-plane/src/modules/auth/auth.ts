@@ -2,17 +2,17 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import { fastifyPlugin } from "fastify-plugin";
 import { AuthenticationError } from "../../utilities/errors";
 import { clusterExists, getClusterDetails } from "../cluster";
-import * as apiSecret from "./api-secret";
-import * as jwt from "./clerk-token";
-import { getRunCustomerAuthToken, getWorkflow } from "../workflows/workflows";
+import * as clusterAuth from "./cluster";
+import * as clerkAuth from "./clerk";
+import * as customAuth from "./custom";
+import { getRunCustomAuthToken, getWorkflow } from "../workflows/workflows";
 import { logger } from "../observability/logger";
-import { verifyCustomerProvidedAuth } from "./customer-auth";
 import { env } from "../../utilities/env";
 
 const CLERK_ADMIN_ROLE = "org:admin";
 
 export type Auth = {
-  type: "clerk" | "api" | "customer-provided";
+  type: "clerk" | "api" | "custom";
   entityId: string;
   organizationId: string;
   canAccess(opts: {
@@ -46,7 +46,7 @@ export type Auth = {
   isMachine(): ApiKeyAuth;
   isClerk(): ClerkAuth;
   isAdmin(): Auth;
-  isCustomerProvided(): CustomerProvidedAuth;
+  isCustomAuth(): CustomAuth;
 };
 
 export type ClerkAuth = Auth & {
@@ -59,8 +59,8 @@ export type ApiKeyAuth = Auth & {
   clusterId: string;
 };
 
-export type CustomerProvidedAuth = Auth & {
-  type: "customer-provided";
+export type CustomAuth = Auth & {
+  type: "custom";
   clusterId: string;
   token: string;
   context: unknown;
@@ -92,17 +92,17 @@ export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {
       token = authorization;
     }
 
-    if (token && scheme?.toLowerCase() === "customer") {
+    if (token && scheme?.toLowerCase() === "custom") {
       // @typescript-eslint/no-explicit-any
       const clusterId = (request as any).params["clusterId"];
 
       if (!clusterId) {
         throw new AuthenticationError(
-          "Customer provided auth can only be used with /clusters/:clusterId paths",
+          "Custom auth can only be used with /clusters/:clusterId paths",
         );
       }
 
-      request.auth = await extractCustomerAuthState(token, clusterId);
+      request.auth = await extractCustomAuthState(token, clusterId);
     } else if (token) {
       const auth = await extractAuthState(token);
       request.auth = auth;
@@ -139,9 +139,9 @@ export const extractAuthState = async (
       isClerk: function () {
         throw new AuthenticationError("Management API secret auth is not clerk");
       },
-      isCustomerProvided: function () {
+      isCustomAuth: function () {
         throw new AuthenticationError(
-          "Management API secret auth is not customer provided",
+          "Management API secret auth is not custom auth",
         );
       },
       isAdmin: function () {
@@ -151,15 +151,15 @@ export const extractAuthState = async (
   }
 
   // Check if the token is an API secret and validate it
-  if (apiSecret.isApiSecret(token)) {
-    const machineAuth = await apiSecret.verifyApiKey(token);
+  if (clusterAuth.isApiSecret(token)) {
+    const clusterAuthDetails = await clusterAuth.verify(token);
 
-    if (machineAuth) {
+    if (clusterAuthDetails) {
       return {
         type: "api",
-        entityId: machineAuth.id,
-        clusterId: machineAuth.clusterId,
-        organizationId: machineAuth.organizationId,
+        entityId: clusterAuthDetails.id,
+        clusterId: clusterAuthDetails.clusterId,
+        organizationId: clusterAuthDetails.organizationId,
         canAccess: async function (opts) {
           if (!opts.cluster && !opts.run) {
             throw new AuthenticationError("Invalid assertion");
@@ -230,24 +230,24 @@ export const extractAuthState = async (
         isClerk: function () {
           throw new AuthenticationError("API key is not user");
         },
-        isCustomerProvided: function () {
-          throw new AuthenticationError("API key is not customer provided");
+        isCustomAuth: function () {
+          throw new AuthenticationError("API key is not custom auth");
         },
       } as ApiKeyAuth;
     }
   }
 
   // Check if the token is a Clerk-provided JWT token and validate it.
-  const clerkAuth = env.JWKS_URL
-    ? await jwt.verifyClerkToken(token)
+  const clerkAuthDetails = env.JWKS_URL
+    ? await clerkAuth.verify(token)
     : undefined;
 
-  if (clerkAuth) {
+  if (clerkAuthDetails) {
     return {
       type: "clerk",
-      entityId: clerkAuth.userId,
-      organizationId: clerkAuth.orgId,
-      organizationRole: clerkAuth.orgRole,
+      entityId: clerkAuthDetails.userId,
+      organizationId: clerkAuthDetails.orgId,
+      organizationRole: clerkAuthDetails.orgRole,
       canAccess: async function (opts) {
         if (!opts.cluster && !opts.run) {
           throw new AuthenticationError("Invalid assertion");
@@ -259,7 +259,7 @@ export const extractAuthState = async (
         // First check the cluster
         if (
           !(await clusterExists({
-            organizationId: clerkAuth.orgId,
+            organizationId: clerkAuthDetails.orgId,
             clusterId,
           }))
         ) {
@@ -343,17 +343,17 @@ export const extractAuthState = async (
       isClerk: function () {
         return this;
       },
-      isCustomerProvided: function () {
-        throw new AuthenticationError("User is not customer provided auth");
+      isCustomAuth: function () {
+        throw new AuthenticationError("User is not custom auth");
       },
     } as ClerkAuth;
   }
 };
 
-export const extractCustomerAuthState = async (
+export const extractCustomAuthState = async (
   token: string,
   clusterId: string,
-): Promise<CustomerProvidedAuth | undefined> => {
+): Promise<CustomAuth | undefined> => {
   const cluster = await getClusterDetails(clusterId);
 
   if (!!cluster.deleted_at) {
@@ -362,7 +362,7 @@ export const extractCustomerAuthState = async (
 
   if (!cluster.organization_id) {
     logger.warn(
-      "Recieved customer provided auth for cluster without organization",
+      "Recieved custom auth for cluster without organization",
       {
         clusterId,
       },
@@ -370,20 +370,21 @@ export const extractCustomerAuthState = async (
     return undefined;
   }
 
-  if (!cluster.enable_customer_auth) {
+  if (!cluster.enable_custom_auth) {
     throw new AuthenticationError(
-      "Customer auth is not enabled for this cluster",
+      "Custom auth is not enabled for this cluster",
+      "https://docs.inferable.ai/pages/custom-auth"
     );
   }
 
-  const context = await verifyCustomerProvidedAuth({
+  const context = await customAuth.verify({
     token: token,
     clusterId: clusterId,
   });
 
   return {
-    type: "customer-provided",
-    entityId: "CUSTOMER_PROVIDED_AUTH",
+    type: "custom",
+    entityId: "CUSTOM_AUTH",
     clusterId,
     organizationId: cluster.organization_id,
     token,
@@ -395,31 +396,31 @@ export const extractCustomerAuthState = async (
 
       if (opts.cluster && opts.cluster.clusterId !== clusterId) {
         throw new AuthenticationError(
-          "Customer provided auth does not have access to this cluster",
+          "Custom auth does not have access to this cluster",
         );
       }
 
       if (opts.run && opts.run.clusterId !== clusterId) {
         throw new AuthenticationError(
-          "Customer provided auth does not have access to this run",
+          "Custom auth does not have access to this run",
         );
       }
 
       if (opts.run) {
-        const customerAuthToken = await getRunCustomerAuthToken({
+        const existingToken = await getRunCustomAuthToken({
           clusterId: opts.run.clusterId,
           runId: opts.run.runId,
         });
 
-        if (!customerAuthToken) {
+        if (!existingToken) {
           throw new AuthenticationError(
-            "Customer provided auth can only access runs created by customer provided auth",
+            "Custom auth can only access runs created by custom auth",
           );
         }
 
-        if (customerAuthToken !== this.token) {
+        if (existingToken !== this.token) {
           throw new AuthenticationError(
-            "Customer Auth does not have access to this run",
+            "Custom auth does not have access to this run",
           );
         }
       }
@@ -433,42 +434,42 @@ export const extractCustomerAuthState = async (
 
       if (opts.cluster) {
         throw new AuthenticationError(
-          "Customer provided auth can not manage clusters",
+          "Custom auth can not manage clusters",
         );
       }
 
       if (opts.config) {
         throw new AuthenticationError(
-          "Customer provided auth can not manage templates",
+          "Custom auth can not manage templates",
         );
       }
 
       if (opts.run && opts.run.clusterId !== clusterId) {
         throw new AuthenticationError(
-          "Customer Auth does not have access to this run",
+          "Custom auth does not have access to this run",
         );
       }
 
       if (!opts.run) {
         throw new AuthenticationError(
-          "Customer provided auth can only manage runs",
+          "Custom auth can only manage runs",
         );
       }
 
-      const customerAuthToken = await getRunCustomerAuthToken({
+      const existingToken = await getRunCustomAuthToken({
         clusterId: opts.run.clusterId,
         runId: opts.run.runId,
       });
 
-      if (!customerAuthToken) {
+      if (!existingToken) {
         throw new AuthenticationError(
-          "Customer provided auth can only access runs created by customer provided auth",
+          "Custom auth can only access runs created by custom auth",
         );
       }
 
-      if (customerAuthToken !== this.token) {
+      if (existingToken !== this.token) {
         throw new AuthenticationError(
-          "Customer Auth does not have access to this run",
+          "Custom auth does not have access to this run",
         );
       }
 
@@ -481,19 +482,19 @@ export const extractCustomerAuthState = async (
 
       if (opts.cluster) {
         throw new AuthenticationError(
-          "Customer provided auth can not create clusters",
+          "Custom auth can not create clusters",
         );
       }
 
       if (opts.config) {
         throw new AuthenticationError(
-          "Customer provided auth can not create templates",
+          "Custom auth can not create templates",
         );
       }
 
       if (opts.call) {
         throw new AuthenticationError(
-          "Customer provided auth can not create calls",
+          "Custom auth can not create calls",
         );
       }
 
@@ -501,16 +502,16 @@ export const extractCustomerAuthState = async (
       return this;
     },
     isAdmin: function () {
-      throw new AuthenticationError("Customer provided auth is not admin");
+      throw new AuthenticationError("Custom auth is not admin");
     },
     isMachine: function () {
-      throw new AuthenticationError("Customer provided auth is not machine");
+      throw new AuthenticationError("Custom auth is not machine");
     },
     isClerk: function () {
-      throw new AuthenticationError("Customer provided auth is not clerk");
+      throw new AuthenticationError("Custom auth is not clerk");
     },
-    isCustomerProvided: function () {
+    isCustomAuth: function () {
       return this;
     },
-  } as CustomerProvidedAuth;
+  } as CustomAuth;
 };

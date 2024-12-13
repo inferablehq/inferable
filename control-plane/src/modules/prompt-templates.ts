@@ -2,7 +2,7 @@ import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import assert from "assert";
 import { and, eq, inArray } from "drizzle-orm";
-import { nullable, z } from "zod";
+import { z } from "zod";
 import { BadRequestError, NotFoundError } from "../utilities/errors";
 import { RunMessageMetadata, db, promptTemplates } from "./data";
 import { embeddableEntitiy } from "./embeddings/embeddings";
@@ -25,7 +25,6 @@ export const versionedRunConfig = new VersionedEntity(
     attachedFunctions: z.array(z.string()),
     resultSchema: z.unknown().optional(),
     inputSchema: z.unknown().optional(),
-    public: z.boolean().optional(),
   }),
   "prompt_template",
 );
@@ -39,7 +38,6 @@ export async function upsertRunConfig({
   attachedFunctions,
   resultSchema,
   inputSchema,
-  isPublic = false,
 }: {
   id: string;
   clusterId: string;
@@ -49,7 +47,6 @@ export async function upsertRunConfig({
   resultSchema?: unknown | null;
   inputSchema?: unknown | null;
   attachedFunctions?: string[];
-  isPublic?: boolean;
 }) {
   const [existing] = await db
     .select()
@@ -93,7 +90,6 @@ export async function upsertRunConfig({
       attached_functions: attachedFunctions,
       result_schema: resultSchema,
       input_schema: inputSchema,
-      public: isPublic,
     })
     .onConflictDoUpdate({
       target: [promptTemplates.id, promptTemplates.cluster_id],
@@ -104,7 +100,6 @@ export async function upsertRunConfig({
         attached_functions: attachedFunctions,
         result_schema: resultSchema,
         input_schema: inputSchema,
-        public: isPublic,
         updated_at: new Date(),
       },
     })
@@ -117,7 +112,6 @@ export async function upsertRunConfig({
       attachedFunctions: promptTemplates.attached_functions,
       resultSchema: promptTemplates.result_schema,
       inputSchema: promptTemplates.input_schema,
-      public: promptTemplates.public,
       createdAt: promptTemplates.created_at,
       updatedAt: promptTemplates.updated_at,
     });
@@ -132,7 +126,6 @@ export async function upsertRunConfig({
       attachedFunctions: existing.attached_functions,
       resultSchema: existing.result_schema,
       inputSchema: existing.input_schema,
-      public: existing.public,
     });
   }
 
@@ -168,7 +161,6 @@ export async function getRunConfig({
       attachedFunctions: promptTemplates.attached_functions,
       resultSchema: promptTemplates.result_schema,
       inputSchema: promptTemplates.input_schema,
-      public: promptTemplates.public,
       createdAt: promptTemplates.created_at,
       updatedAt: promptTemplates.updated_at,
       clusterId: promptTemplates.cluster_id,
@@ -201,7 +193,6 @@ export async function getRunConfig({
       attachedFunctions: v.entity.attachedFunctions,
       resultSchema: v.entity.resultSchema as any,
       inputSchema: v.entity.inputSchema as any,
-      public: v.entity.public ?? false,
     })),
   };
 }

@@ -23,8 +23,8 @@ export const masked = () => {
 };
 
 export {
-  statusChangeSchema,
-  handleCustomerAuthSchema,
+  onStatusChangeInput,
+  handleCustomAuthInput,
   ContextInput,
 } from "./types";
 

@@ -3,7 +3,7 @@ import * as data from "../data";
 export const createOwner = async (params?: {
   clusterId?: string;
   organizationId?: string;
-  enableCustomerAuth?: boolean;
+  enableCustomAuth?: boolean;
 }) => {
   const clusterId = params?.clusterId || `test-cluster-${Math.random()}`;
 
@@ -16,7 +16,7 @@ export const createOwner = async (params?: {
       id: clusterId,
       name: clusterId,
       organization_id: organizationId,
-      enable_customer_auth: params?.enableCustomerAuth ?? false,
+      enable_custom_auth: params?.enableCustomAuth ?? false,
     })
     .execute();
 

@@ -1,6 +1,6 @@
 {
   "name": "@inferable/assistant-ui",
-  "version": "0.0.0",
+  "version": "0.0.5",
   "description": "Assistant UI Inferable runtime provider",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -31,6 +31,6 @@
     "vite": "^6.0.3"
   },
   "dependencies": {
-    "@inferable/react": "^0.0.6"
+    "@inferable/react": "^0.0.8"
   }
 }
