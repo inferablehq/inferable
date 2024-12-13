@@ -929,6 +929,7 @@ export const definition = {
               }),
             )
             .optional(),
+          timestamp: z.date(),
         }),
       ),
     },

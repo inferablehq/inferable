@@ -23,6 +23,7 @@ export type Service = {
     description?: string;
     schema?: string;
   }[];
+  timestamp: string;
 };
 
 function toServiceName(name: string) {
@@ -68,6 +69,7 @@ function ServiceCard({
           <TableRow>
             <TableHead className="w-1/3">Function</TableHead>
             <TableHead className="w-2/3">Description</TableHead>
+            <TableHead className="w-1/3">Last Ping</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -89,6 +91,9 @@ function ServiceCard({
                 </TableCell>
                 <TableCell className="w-2/3">
                   {func.description || "No description"}
+                </TableCell>
+                <TableCell className="w-1/3">
+                  {service.timestamp || "No description"}
                 </TableCell>
               </TableRow>
             ))}
