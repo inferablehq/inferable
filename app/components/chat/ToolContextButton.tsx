@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { SquareFunction } from "lucide-react";
+import { client } from "@/client/client";
 import {
   Sheet,
   SheetContent,
@@ -8,21 +7,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
-import { client } from "@/client/client";
 import { useAuth } from "@clerk/nextjs";
+import { SquareFunction } from "lucide-react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Label } from "../ui/label";
-import { Input } from "../ui/input";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
 import { ReadOnlyJSON } from "../read-only-json";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
 
 interface ToolContextButtonProps {
   clusterId: string;
@@ -160,30 +154,6 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
           </SheetDescription>
         </SheetHeader>
         <div className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Context</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="context">Context</Label>
-                <p className="text-sm text-muted-foreground">
-                  This context is used to guide the tools action globally.
-                </p>
-                <Textarea
-                  id="context"
-                  value={context}
-                  onChange={(e) => setContext(e.target.value)}
-                  placeholder="Enter function context here..."
-                  rows={10}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={updateContext}>Save Context</Button>
-            </CardFooter>
-          </Card>
-
           {functionDetails && (
             <Card>
               <CardHeader>
