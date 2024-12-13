@@ -15,6 +15,7 @@ import * as externalCalls from "./modules/jobs/external";
 import * as models from "./modules/models/routing";
 import { logContext, logger } from "./modules/observability/logger";
 import * as workflows from "./modules/workflows/workflows";
+import * as slack from "./modules/slack";
 import { hdx } from "./modules/observability/hyperdx";
 import { pg } from "./modules/data";
 import { addAttributes } from "./modules/observability/tracer";
@@ -22,7 +23,7 @@ import { flagsmith } from "./modules/flagsmith";
 import { runMigrations } from "./utilities/migrate";
 import { customerTelemetry } from "./modules/customer-telemetry";
 
-const app = fastify({
+export const app = fastify({
   logger: env.ENABLE_FASTIFY_LOGGER,
 });
 
@@ -148,6 +149,7 @@ const startTime = Date.now();
     customerTelemetry.start(),
     toolhouse.start(),
     externalCalls.start(),
+    slack.start(app),
     ...(env.EE_DEPLOYMENT
       ? [
           flagsmith?.getEnvironmentFlags(),
@@ -192,6 +194,7 @@ process.on("SIGTERM", async () => {
     redis.stop(),
     customerTelemetry.stop(),
     externalCalls.stop(),
+    slack.stop(),
   ]);
 
   logger.info("Shutdown complete");

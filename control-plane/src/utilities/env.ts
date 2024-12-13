@@ -41,6 +41,9 @@ const envSchema = z
     ANTHROPIC_API_KEY: z.string().optional(),
     COHERE_API_KEY: z.string().optional(),
 
+    SLACK_BOT_TOKEN: z.string(),
+    SLACK_SIGNING_SECRET: z.string(),
+
     SQS_RUN_PROCESS_QUEUE_URL: z.string(),
     SQS_RUN_GENERATE_NAME_QUEUE_URL: z.string(),
     SQS_CUSTOMER_TELEMETRY_QUEUE_URL: z.string(),
