@@ -33,17 +33,6 @@ import ErrorDisplay from "./error-display";
 import { EventsOverlayButton } from "./events-overlay";
 import { ServerConnectionStatus } from "./server-connection-pane";
 
-export type Service = {
-  name: string;
-  description?: string;
-  functions?: {
-    name: string;
-    description?: string;
-    schema?: string;
-  }[];
-  timestamp: string;
-};
-
 function toServiceName(name: string) {
   return <span>{name}</span>;
 }
@@ -60,7 +49,7 @@ function ServiceCard({
   service,
   clusterId,
 }: {
-  service: Service;
+  service: ClientInferResponseBody<typeof contract.listServices, 200>[number];
   clusterId: string;
 }) {
   return (
