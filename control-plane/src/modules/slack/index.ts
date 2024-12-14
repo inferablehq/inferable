@@ -7,16 +7,49 @@ import { getRunsByMetadata } from '../workflows/metadata';
 import { addMessageAndResume, createRunWithMessage, Run } from '../workflows/workflows';
 import { AuthenticationError } from '../../utilities/errors';
 import { ulid } from 'ulid';
+import { InferSelectModel } from 'drizzle-orm';
+import { workflowMessages } from '../data';
 
 let app: App | undefined;
 
-const THREAD_META_KEY = "stripeThreadTs";
-const CHANNEL_META_KEY = "stripeChannel";
+const THREAD_META_KEY = "slackThreadTs";
+const CHANNEL_META_KEY = "slackChannel";
 
 type MessageEvent = {
   event: KnownEventFromType<'message'>,
   client: webApi.WebClient
   clusterId: string
+}
+
+export const handleNewRunMessage = async ({ message, metadata, client = app?.client }: {
+  message: {
+    id: string;
+    clusterId: string;
+    runId: string;
+    type: InferSelectModel<typeof workflowMessages>["type"];
+    data: InferSelectModel<typeof workflowMessages>["data"];
+  },
+  metadata?: Record<string, string>;
+  client?: webApi.WebClient
+}) => {
+  if (message.type !== "agent") {
+    return
+  }
+
+  if (!metadata?.[THREAD_META_KEY] || !metadata?.[CHANNEL_META_KEY]) {
+    return
+  }
+
+  if ('message' in message.data && message.data.message) {
+    client?.chat.postMessage({
+      thread_ts: metadata[THREAD_META_KEY],
+      channel: metadata[CHANNEL_META_KEY],
+      mrkdwn: true,
+      text: message.data.message
+    });
+  } else {
+    logger.warn("Slack initialted message does not have content");
+  }
 }
 
 export const start = async (fastify: FastifyInstance) => {
@@ -42,6 +75,18 @@ export const start = async (fastify: FastifyInstance) => {
     })
   });
 
+  // Event listener for mentions
+  app.event('app_mention', async ({ event, client }) => {
+    logger.info("Received mention event. Responding.", event);
+
+    client.chat.postMessage({
+      thread_ts: event.ts,
+      channel: event.channel,
+      mrkdwn: true,
+      text: 'Hey! Currently, I can only respond to direct messages.'
+    })
+  })
+
   // Event listener for direct messages
   app.event('message', async ({ event, client }) => {
     logger.info("Received message event. Responding.", event);
@@ -57,32 +102,24 @@ export const start = async (fastify: FastifyInstance) => {
     }
 
     try {
-      await authenticateUser(event, client);
+      await authenticateUser({
+        event,
+        client
+      });
 
       if (hasThread(event)) {
-        const [run] = await getRunsByMetadata({
-          clusterId: SLACK_CLUSTER_ID,
-          key: THREAD_META_KEY,
-          value: event.thread_ts,
-          limit: 1,
+        await handleExistingThread({
+          event,
+          client,
+          clusterId: SLACK_CLUSTER_ID
         });
-
-        if (run)  {
-          await handleExistingThread({
-            event,
-            client,
-            run,
-            clusterId: SLACK_CLUSTER_ID
-          });
-          return
-        }
+      } else {
+        await handleNewThread({
+          event,
+          client,
+          clusterId: SLACK_CLUSTER_ID
+        });
       }
-
-      await handleNewThread({
-        event,
-        client,
-        clusterId: SLACK_CLUSTER_ID
-      });
 
     } catch (error) {
 
@@ -90,7 +127,7 @@ export const start = async (fastify: FastifyInstance) => {
         client.chat.postMessage({
           thread_ts: event.ts,
           channel: event.channel,
-          text: "Sorry, I couldn't authenticate you. Please ensure you have an Inferable account with the same email as your Slack account."
+          text: `Sorry, I am having trouble authenticating you.\n\nPlease ensure your Inferable account has access to cluster <${env.APP_ORIGIN}/clusters/${SLACK_CLUSTER_ID}|${SLACK_CLUSTER_ID}>.`
         })
         return
       }
@@ -127,23 +164,30 @@ const handleNewThread = async ({
   clusterId
 }: MessageEvent) => {
 
+  let thread = event.ts;
+  // If this message is part of a thread, associate the run with the thread rather than the message
+  if (hasThread(event)) {
+    thread = event.thread_ts;
+  }
+
   if ('text' in event && event.text) {
     const run = await createRunWithMessage({
       clusterId,
       message: event.text,
       type: "human",
       metadata: {
-        [THREAD_META_KEY]: event.ts,
+        [THREAD_META_KEY]: thread,
         [CHANNEL_META_KEY]: event.channel
       },
     });
 
     client.chat.postMessage({
-      thread_ts: event.ts,
+      thread_ts: thread,
       channel: event.channel,
       mrkdwn: true,
       text: `On it. I will get back to you soon.\nRun ID: <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${run.id}|${run.id}>`,
     });
+
     return;
   }
 
@@ -152,23 +196,56 @@ const handleNewThread = async ({
 
 const handleExistingThread = async ({
   event,
-  run,
-} : MessageEvent & { run: Run }) => {
+  client,
+  clusterId
+} : MessageEvent ) => {
   if ('text' in event && event.text) {
-    await addMessageAndResume({
-      id: ulid(),
-      clusterId: run.clusterId,
-      runId: run.id,
-      message: event.text,
-      type: "human",
-    })
+
+    if (!hasThread(event)) {
+      throw new Error("Event had no thread_ts");
+    }
+
+    const [run] = await getRunsByMetadata({
+      clusterId,
+      key: THREAD_META_KEY,
+      value: event.thread_ts,
+      limit: 1,
+    });
+
+    // Message is within a thread which already has a Run, continue
+    if (run) {
+      await addMessageAndResume({
+        id: ulid(),
+        clusterId: run.clusterId,
+        runId: run.id,
+        message: event.text,
+        type: "human",
+      })
+    } else {
+      // Message is in a thread, but does't have a Run, start a new one
+      // TODO: Inferable doesn't have context for the original message, we should include this
+      await handleNewThread({
+        event,
+        client,
+        clusterId
+      })
+    }
+
     return
   }
 
   throw new Error("Event had no text")
 }
 
-const authenticateUser = async (event: KnownEventFromType<'message'>, client: webApi.WebClient) => {
+export const authenticateUser = async ({
+  event,
+  client,
+  authorizedUsers = env.SLACK_AUTHORIZED_USER_EMAILS ?? []
+}: {
+    event: KnownEventFromType<'message'>,
+    client: webApi.WebClient
+    authorizedUsers?: string[]
+  }) => {
   if (hasUser(event)) {
     const user = await client.users.info({
       user: event.user,
@@ -178,12 +255,13 @@ const authenticateUser = async (event: KnownEventFromType<'message'>, client: we
     const confirmed = user.user?.is_email_confirmed
     const email = user.user?.profile?.email
 
-    if (!confirmed || !email) {
+    logger.info('Authenticated Slack user', { email, authorizedUsers })
+    // TODO: Verify user in Clerk, for now check env
+    if (!confirmed || !email || !authorizedUsers.includes(email)) {
       throw new AuthenticationError('Could not authenticate Slack user')
     }
 
-    // TODO: Verify user in Clerk
-    return
+    return true
   }
 
   throw new Error("Event had no user")

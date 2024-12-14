@@ -12,7 +12,7 @@ import {
   serviceFunctionEmbeddingId,
 } from "../../service-definitions";
 import { getToolMetadata } from "../../tool-metadata";
-import { notifyRunHandler } from "../notify";
+import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { getWorkflowMessages, insertRunMessage } from "../workflow-messages";
 import { Run, getWaitingJobIds, updateWorkflow } from "../workflows";
 import { createWorkflowAgent } from "./agent";
@@ -36,7 +36,7 @@ import { events } from "../../observability/events";
 /**
  * Run a workflow from the most recent saved state
  **/
-export const run = async (run: Run) => {
+export const processRun = async (run: Run, metadata?: Record<string, string>) => {
   logger.info("Running workflow");
 
   // Parallelize fetching additional context and service definitions
@@ -165,7 +165,10 @@ export const run = async (run: Run) => {
 
       // Insert messages in a loop to ensure they are created with differing timestamps
       for (const message of state.messages.filter((m) => !m.persisted)) {
-        await insertRunMessage(message);
+        await Promise.all([
+          insertRunMessage(message),
+          notifyNewMessage({message, metadata}),
+        ])
         message.persisted = true;
       }
     },
@@ -219,7 +222,7 @@ export const run = async (run: Run) => {
 
     const waitingJobs = parsedOutput.data.waitingJobs;
 
-    await notifyRunHandler({
+    await notifyStatusChange({
       run,
       status: parsedOutput.data.status,
       result: parsedOutput.data.result,
@@ -327,12 +330,12 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
   return selectedTools;
 }
 
-const buildAdditionalContext = async (workflow: Run) => {
+const buildAdditionalContext = async (run: Run) => {
   let context = "";
 
-  context += await getClusterContextText(workflow.clusterId);
-  context += `\nCurrent workflow URL: https://app.inferable.ai/clusters/${workflow.clusterId}/workflows/${workflow.id}`;
-  workflow.systemPrompt && (context += `\n${workflow.systemPrompt}`);
+  context += await getClusterContextText(run.clusterId);
+  context += `\nCurrent workflow URL: https://app.inferable.ai/clusters/${run.clusterId}/workflows/${run.id}`;
+  run.systemPrompt && (context += `\n${run.systemPrompt}`);
 
   return context;
 };

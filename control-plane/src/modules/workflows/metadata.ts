@@ -43,7 +43,7 @@ export const getRunsByMetadata = async ({
     .limit(limit);
 };
 
-export const getWorkflowMetadata = async ({
+export const getRunMetadata = async ({
   clusterId,
   runId,
 }: {
