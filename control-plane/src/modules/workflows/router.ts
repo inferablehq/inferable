@@ -3,7 +3,7 @@ import { JsonSchemaInput } from "inferable/bin/types";
 import { contract } from "../contract";
 import { getJobReferences, getJobsForWorkflow } from "../jobs/jobs";
 import * as events from "../observability/events";
-import { getWorkflowsByMetadata } from "./metadata";
+import { getRunsByMetadata } from "./metadata";
 import { getRunMessagesForDisplay } from "./workflow-messages";
 import {
   createRetry,
@@ -11,7 +11,7 @@ import {
   deleteRun,
   getClusterWorkflows,
   getRunConfigMetrics,
-  getWorkflow,
+  getRun,
   getWorkflowDetail,
   updateWorkflow,
 } from "./workflows";
@@ -320,7 +320,7 @@ export const runsRouter = initServer().router(
           };
         }
 
-        const result = await getWorkflowsByMetadata({
+        const result = await getRunsByMetadata({
           clusterId,
           key,
           value,
@@ -370,7 +370,7 @@ export const runsRouter = initServer().router(
           runId,
           after: jobsAfter,
         }),
-        getWorkflow({
+        getRun({
           clusterId,
           runId,
         }),

@@ -1,5 +1,5 @@
 import { createOwner } from "../test/util";
-import { getWorkflowsByMetadata } from "./metadata";
+import { getRunsByMetadata } from "./metadata";
 import { createRun } from "./workflows";
 
 describe("getWorkflowsByMetadata", () => {
@@ -24,7 +24,7 @@ describe("getWorkflowsByMetadata", () => {
       },
     });
 
-    const result = await getWorkflowsByMetadata({
+    const result = await getRunsByMetadata({
       clusterId: owner.clusterId,
       key: "foo",
       value: "bar",

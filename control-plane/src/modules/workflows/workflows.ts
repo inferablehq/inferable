@@ -31,7 +31,6 @@ import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
 import { sqs } from "../sqs";
 import { trackCustomerTelemetry } from "../track-customer-telemetry";
-import { getWorkflowMetadata } from "./metadata";
 import {
   getWorkflowMessages,
   hasInvocations,
@@ -39,6 +38,7 @@ import {
   prepMessagesForRetry,
   upsertRunMessage,
 } from "./workflow-messages";
+import { getRunMetadata } from "./metadata";
 
 export { start, stop } from "./queues";
 
@@ -243,7 +243,7 @@ export const updateWorkflow = async (workflow: Run): Promise<Run> => {
   return updated;
 };
 
-export const getWorkflow = async ({
+export const getRun = async ({
   clusterId,
   runId,
 }: {
@@ -357,7 +357,7 @@ export const getWorkflowDetail = async ({
       .from(workflows)
       .where(and(eq(workflows.cluster_id, clusterId), eq(workflows.id, runId))),
     lastAgentMessage({ clusterId, runId }),
-    getWorkflowMetadata({ clusterId, runId }),
+    getRunMetadata({ clusterId, runId }),
   ]);
 
   return {
@@ -552,7 +552,7 @@ export const assertRunReady = async (input: {
   runId: string;
   clusterId: string;
 }) => {
-  const run = await getWorkflow(input);
+  const run = await getRun(input);
   if (!run) {
     throw new NotFoundError("Run not found");
   }
