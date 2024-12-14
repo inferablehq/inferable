@@ -4,7 +4,7 @@ import * as HyperDX from "@hyperdx/node-opentelemetry";
 
 export const hdx = env.HYPERDX_API_KEY ? HyperDX : null;
 
-if (!hdx) {
+if (!hdx && env.NODE_ENV === "production") {
   // eslint-disable-next-line no-console
   console.log("HyperDX is not configured");
 }

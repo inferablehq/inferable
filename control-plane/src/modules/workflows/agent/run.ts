@@ -36,7 +36,10 @@ import { events } from "../../observability/events";
 /**
  * Run a workflow from the most recent saved state
  **/
-export const processRun = async (run: Run, metadata?: Record<string, string>) => {
+export const processRun = async (
+  run: Run,
+  metadata?: Record<string, string>,
+) => {
   logger.info("Running workflow");
 
   // Parallelize fetching additional context and service definitions
@@ -64,7 +67,7 @@ export const processRun = async (run: Run, metadata?: Record<string, string>) =>
   allAvailableTools.push(...attachedFunctions);
 
   serviceDefinitions.flatMap((service) =>
-    (service.functions ?? []).forEach((f) => {
+    (service.definition.functions ?? []).forEach((f) => {
       // Do not attach additional tools if `attachedFunctions` is provided
       if (attachedFunctions.length > 0 || f.config?.private) {
         return;
@@ -72,7 +75,7 @@ export const processRun = async (run: Run, metadata?: Record<string, string>) =>
 
       allAvailableTools.push(
         serviceFunctionEmbeddingId({
-          serviceName: service.name,
+          serviceName: service.definition.name,
           functionName: f.name,
         }),
       );
@@ -167,8 +170,8 @@ export const processRun = async (run: Run, metadata?: Record<string, string>) =>
       for (const message of state.messages.filter((m) => !m.persisted)) {
         await Promise.all([
           insertRunMessage(message),
-          notifyNewMessage({message, metadata}),
-        ])
+          notifyNewMessage({ message, metadata }),
+        ]);
         message.persisted = true;
       }
     },
@@ -447,7 +450,7 @@ export const buildMockTools = async (workflow: Run) => {
     }
 
     const serviceDefinition = serviceDefinitions.find(
-      (sd) => sd.name === serviceName,
+      (sd) => sd.service === serviceName,
     );
 
     if (!serviceDefinition) {
@@ -461,7 +464,7 @@ export const buildMockTools = async (workflow: Run) => {
       continue;
     }
 
-    const functionDefinition = serviceDefinition.functions?.find(
+    const functionDefinition = serviceDefinition.definition.functions?.find(
       (f) => f.name === functionName,
     );
 

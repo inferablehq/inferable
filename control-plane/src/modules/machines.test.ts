@@ -1,11 +1,10 @@
 import { upsertMachine } from "./machines";
-import {
-  createCluster,
-  getClusterMachines,
-  getClusterServices,
-} from "./management";
+import { createCluster, getClusterMachines } from "./management";
 import * as redis from "./redis";
-import { upsertServiceDefinition } from "./service-definitions";
+import {
+  getServiceDefinitions,
+  upsertServiceDefinition,
+} from "./service-definitions";
 
 describe("machines", () => {
   beforeAll(async () => {
@@ -60,10 +59,10 @@ describe("machines", () => {
       );
 
       expect(
-        await getClusterServices({
+        await getServiceDefinitions({
           clusterId: id,
-        }),
-      ).toHaveLength(2);
+        }).then((services) => services.map((s) => s.service)),
+      ).toEqual(services);
     });
   });
 });

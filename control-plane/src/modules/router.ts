@@ -44,7 +44,10 @@ import {
 } from "./knowledge/knowledgebase";
 import { callsRouter } from "./calls/router";
 import { buildModel } from "./models";
-import { deserializeFunctionSchema } from "./service-definitions";
+import {
+  deserializeFunctionSchema,
+  getServiceDefinitions,
+} from "./service-definitions";
 import { integrationsRouter } from "./integrations/router";
 import { getServerStats } from "./server-stats";
 
@@ -439,13 +442,25 @@ export const router = initServer().router(contract, {
     const user = request.request.getAuth();
     await user.canAccess({ cluster: { clusterId } });
 
-    const services = await management.getClusterServices({
+    const services = await getServiceDefinitions({
       clusterId,
     });
 
+    const transformedServices = services.map((service) => ({
+      name: service.service,
+      timestamp: service.timestamp ?? new Date(),
+      description: service.definition.description,
+      functions: service.definition.functions?.map((fn) => ({
+        name: fn.name,
+        description: fn.description,
+        schema: fn.schema,
+        config: fn.config,
+      })),
+    }));
+
     return {
       status: 200,
-      body: services,
+      body: transformedServices,
     };
   },
   getBlobData: async (request) => {

@@ -187,29 +187,6 @@ export const getClusterDetails = async ({
   };
 };
 
-export const getClusterServices = async ({
-  clusterId,
-}: {
-  clusterId: string;
-}) => {
-  const services = await data.db
-    .select({
-      definition: data.services.definition,
-      timestamp: data.services.timestamp,
-    })
-    .from(data.services)
-    .where(eq(data.services.cluster_id, clusterId));
-
-  const serviceDefinitions = storedServiceDefinitionSchema.parse(
-    services.map((s) => ({
-      ...(s.definition as object),
-      timestamp: s.timestamp,
-    })),
-  );
-
-  return serviceDefinitions;
-};
-
 export const getClusterMachines = async ({
   clusterId,
 }: {

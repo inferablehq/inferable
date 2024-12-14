@@ -87,7 +87,7 @@ export async function upsertRunConfig({
       name,
       initial_prompt: initialPrompt,
       system_prompt: systemPrompt,
-      attached_functions: attachedFunctions,
+      attached_functions: attachedFunctions ?? [],
       result_schema: resultSchema,
       input_schema: inputSchema,
     })

@@ -43,7 +43,6 @@ export const storedServiceDefinitionSchema = z.array(
   z.object({
     name: z.string(),
     description: z.string().optional(),
-    timestamp: z.date(),
     functions: z
       .array(
         z.object({
@@ -194,10 +193,18 @@ export const getServiceDefinition = async ({
 
 export const getServiceDefinitions = async (owner: {
   clusterId: string;
-}): Promise<ServiceDefinition[]> => {
+}): Promise<
+  {
+    service: string;
+    definition: ServiceDefinition;
+    timestamp: Date | null;
+  }[]
+> => {
   const serviceDefinitions = await data.db
     .select({
+      service: data.services.service,
       definition: data.services.definition,
+      timestamp: data.services.timestamp,
     })
     .from(data.services)
     .where(eq(data.services.cluster_id, owner.clusterId));
@@ -210,11 +217,11 @@ export const getServiceDefinitions = async (owner: {
     return [];
   }
 
-  const retrieved = parseServiceDefinition(
-    serviceDefinitions.map((d) => d.definition),
-  );
-
-  return retrieved;
+  return serviceDefinitions.map((r) => ({
+    service: r.service,
+    definition: parseServiceDefinition([r.definition])[0],
+    timestamp: r.timestamp,
+  }));
 };
 
 export const parseServiceDefinition = (
