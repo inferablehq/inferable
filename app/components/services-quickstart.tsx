@@ -16,9 +16,9 @@ export function ServicesQuickstart({ clusterId }: { clusterId: string }) {
 inf auth login`;
 
     const languageSpecificCommands = {
-      node: `inf bootstrap node --dir=inferable-app-${clusterId} --no-cluster=true`,
-      golang: `inf bootstrap go --dir=inferable-app-${clusterId} --no-cluster=true`,
-      dotnet: `inf bootstrap dotnet --dir=inferable-app-${clusterId} --no-cluster=true`,
+      node: `inf bootstrap node --dir=inferable-app-${clusterId}`,
+      golang: `inf bootstrap go --dir=inferable-app-${clusterId}`,
+      dotnet: `inf bootstrap dotnet --dir=inferable-app-${clusterId}`,
     };
 
     return `${baseCommands} && \\
