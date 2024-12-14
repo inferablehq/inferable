@@ -336,14 +336,17 @@ jobs:
 
       - name: Archive bootstrap-node
         run: |
+          rm archives/bootstrap-node.zip
           zip -r "archives/bootstrap-node.zip" "bootstrap-node/"
 
       - name: Archive bootstrap-dotnet
         run: |
+          rm archives/bootstrap-dotnet.zip
           zip -r "archives/bootstrap-dotnet.zip" "bootstrap-dotnet/"
 
       - name: Archive bootstrap-go
         run: |
+          rm archives/bootstrap-go.zip
           zip -r "archives/bootstrap-go.zip" "bootstrap-go/"
 
       - name: Commit archives
