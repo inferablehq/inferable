@@ -68,6 +68,12 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
+  tavily: z
+    .object({
+      apiKey: z.string(),
+    })
+    .optional()
+    .nullable(),
 });
 
 export const genericMessageDataSchema = z

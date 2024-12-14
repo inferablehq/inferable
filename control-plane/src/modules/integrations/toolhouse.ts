@@ -1,14 +1,15 @@
-import Anthropic, { BadRequestError } from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import { Toolhouse } from "@toolhouseai/sdk";
+import { eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
+import { integrationSchema } from "../contract";
 import * as cron from "../cron";
 import * as data from "../data";
-import { eq, isNotNull } from "drizzle-orm";
-import { logger } from "../observability/logger";
-import { upsertServiceDefinition } from "../service-definitions";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
+import { logger } from "../observability/logger";
 import { packer } from "../packer";
-import { integrationSchema } from "../contract";
+import { upsertServiceDefinition } from "../service-definitions";
+import { getIntegrations } from "./integrations";
 
 const ToolHouseResultSchema = z.array(
   z.object({
@@ -40,7 +41,7 @@ export const validateConfig = async (
   await toolhouse.getTools();
 };
 
-export const handleCall = async ({
+const handleCall = async ({
   call,
   clusterId,
 }: {
@@ -220,4 +221,20 @@ const toInferableName = (input: string) => {
 // Convert camelCase to snake_case
 const toToolHouseName = (input: string) => {
   return input.replace(/([A-Z])/g, "_$1").toLowerCase();
+};
+
+export const toolhouse = {
+  name: "ToolHouse",
+  onActivate: async (clusterId: string) => {
+    return syncToolHouseService({
+      clusterId,
+      apiKey: await getIntegrations({ clusterId }).then(
+        (integrations) => integrations.toolhouse?.apiKey,
+      ),
+    });
+  },
+  onDeactivate: async (clusterId: string) => {
+    // TODO: (good-first-issue) Delete the service definition
+  },
+  handleCall,
 };

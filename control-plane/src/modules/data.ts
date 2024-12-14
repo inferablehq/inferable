@@ -206,6 +206,9 @@ export const integrations = pgTable(
       baseUrl: string;
       sendMessagePayloads: boolean;
     }>(),
+    tavily: json("tavily").$type<{
+      apiKey: string;
+    }>(),
     created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

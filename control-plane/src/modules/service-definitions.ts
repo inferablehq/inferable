@@ -100,6 +100,28 @@ export async function recordServicePoll({
   );
 }
 
+export async function deleteServiceDefinition({
+  service,
+  owner,
+}: {
+  service: string;
+  owner: { clusterId: string };
+}) {
+  await data.db
+    .delete(data.services)
+    .where(
+      and(
+        eq(data.services.cluster_id, owner.clusterId),
+        eq(data.services.service, service),
+      ),
+    );
+
+  await deleteServiceEmbeddings({
+    serviceName: service,
+    clusterId: owner.clusterId,
+  });
+}
+
 export async function upsertServiceDefinition({
   service,
   definition,

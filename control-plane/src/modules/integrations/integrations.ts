@@ -1,32 +1,24 @@
 import { eq, sql } from "drizzle-orm";
-import { db, integrations } from "../data";
 import { z } from "zod";
+import { db, integrations } from "../data";
+import { integrationSchema } from "./schema";
+import { tavilyIntegration } from "./constants";
+import { tavily } from "./tavily";
+import { toolhouseIntegration } from "./constants";
+import { toolhouse } from "./toolhouse";
 
-const toolhouseIntegration = "toolhouse";
-const langfuseIntegration = "langfuse";
+const toolProviders = {
+  [toolhouseIntegration]: toolhouse,
+  [tavilyIntegration]: tavily,
+};
 
-export const allowedIntegrations = [
-  toolhouseIntegration,
-  langfuseIntegration,
-] as const;
+export function getToolProvider(tool: string) {
+  if (!toolProviders[tool as keyof typeof toolProviders]) {
+    throw new Error(`Unknown tool provider integration requested: ${tool}`);
+  }
 
-export const integrationSchema = z.object({
-  [toolhouseIntegration]: z
-    .object({
-      apiKey: z.string(),
-    })
-    .optional()
-    .nullable(),
-  [langfuseIntegration]: z
-    .object({
-      publicKey: z.string(),
-      secretKey: z.string(),
-      baseUrl: z.string(),
-      sendMessagePayloads: z.boolean(),
-    })
-    .optional()
-    .nullable(),
-});
+  return toolProviders[tool as keyof typeof toolProviders];
+}
 
 export const getIntegrations = async ({
   clusterId,
@@ -37,6 +29,7 @@ export const getIntegrations = async ({
     .select({
       toolhouse: integrations.toolhouse,
       langfuse: integrations.langfuse,
+      tavily: integrations.tavily,
     })
     .from(integrations)
     .where(eq(integrations.cluster_id, clusterId))
@@ -45,6 +38,7 @@ export const getIntegrations = async ({
         integration ?? {
           toolhouse: null,
           langfuse: null,
+          tavily: null,
         },
     );
 };
@@ -71,4 +65,14 @@ export const upsertIntegrations = async ({
         updated_at: sql`now()`,
       },
     });
+
+  await Promise.all(
+    Object.entries(config).map(([key, value]) => {
+      if (value) {
+        getToolProvider(key)?.onActivate?.(clusterId);
+      } else if (value === null) {
+        getToolProvider(key)?.onDeactivate?.(clusterId);
+      }
+    }),
+  );
 };

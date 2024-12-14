@@ -12,11 +12,11 @@ import {
   parseJobArgs,
 } from "../service-definitions";
 import { extractWithJsonPath } from "../util";
-import { externalServices } from "./external";
 import { env } from "../../utilities/env";
 import { injectTraceContext } from "../observability/tracer";
 import { logger } from "../observability/logger";
 import { sqs } from "../sqs";
+import { externalServices } from "../integrations/constants";
 
 type CreateJobParams = {
   jobId: string;
@@ -41,7 +41,7 @@ const extractCacheKeyFromJsonPath = (path: string, args: unknown) => {
     if (error instanceof NotFoundError) {
       throw new InvalidJobArgumentsError(
         `Failed to extract cache key from arguments: ${error.message}`,
-        "https://docs.inferable.ai/pages/functions#config-cache"
+        "https://docs.inferable.ai/pages/functions#config-cache",
       );
     }
     throw error;

@@ -1,4 +1,4 @@
-import { and, eq, gt, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { env } from "../../utilities/env";
 import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
@@ -6,8 +6,8 @@ import * as cron from "../cron";
 import * as data from "../data";
 import * as events from "../observability/events";
 import { packer } from "../packer";
-import { selfHealJobs as selfHealCalls } from "./persist-result";
 import { resumeRun } from "../workflows/workflows";
+import { selfHealJobs as selfHealCalls } from "./persist-result";
 
 export { createJob } from "./create-job";
 export { acknowledgeJob, persistJobResult } from "./persist-result";
@@ -402,12 +402,12 @@ export async function submitApproval({
       })
       .where(
         and(
-        eq(data.jobs.id, call.id),
-        eq(data.jobs.cluster_id, clusterId),
-        // Do not allow denying a job that has already been approved
-        isNull(data.jobs.approved),
-        eq(data.jobs.approval_requested, true),
-      ),
+          eq(data.jobs.id, call.id),
+          eq(data.jobs.cluster_id, clusterId),
+          // Do not allow denying a job that has already been approved
+          isNull(data.jobs.approved),
+          eq(data.jobs.approval_requested, true),
+        ),
       );
 
     if (call.runId) {

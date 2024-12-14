@@ -1,17 +1,22 @@
 import Langfuse from "langfuse";
 import NodeCache from "node-cache";
-import { logger } from "../observability/logger";
-import { getIntegrations } from "./integrations";
 import { z } from "zod";
+import { createCache } from "../../utilities/cache";
 import {
   modelCallEventSchema,
   runFeedbackEventSchema,
   toolCallEventSchema,
 } from "./integration-events";
+import { getIntegrations } from "./integrations";
+import { integrationSchema } from "./schema";
 
 const langfuseCache = new NodeCache({
   maxKeys: 100,
 });
+
+const integrationsCache = createCache<z.infer<typeof integrationSchema>>(
+  Symbol("langfuseIntegrations"),
+);
 
 export async function getLangfuseClient(clusterId: string) {
   const cachedClient = langfuseCache.get<{
@@ -22,12 +27,17 @@ export async function getLangfuseClient(clusterId: string) {
     return cachedClient;
   }
 
-  const integrations = await getIntegrations({
-    clusterId,
-  });
+  let integrations = await integrationsCache.get(clusterId);
+
+  if (!integrations) {
+    integrations = await getIntegrations({
+      clusterId,
+    });
+
+    integrationsCache.set(clusterId, integrations, 60);
+  }
 
   if (!integrations.langfuse) {
-    logger.error("No Langfuse integration found", { clusterId });
     return;
   }
 
@@ -66,18 +76,13 @@ export async function processModelCall(
   event: z.infer<typeof modelCallEventSchema>,
 ) {
   const langfuse = await getLangfuseClient(event.clusterId);
-  if (!langfuse) {
-    logger.error("No Langfuse client found", { event });
 
-    return;
-  }
-
-  const trace = langfuse.client.trace({
+  const trace = langfuse?.client.trace({
     id: event.runId,
     name: `run:${event.runId}`,
   });
 
-  trace.generation({
+  trace?.generation({
     name: event.purpose ?? "model_call.generic",
     startTime: new Date(event.startedAt),
     endTime: new Date(event.completedAt),
@@ -85,8 +90,8 @@ export async function processModelCall(
     modelParameters: {
       temperature: event.temperature,
     },
-    input: langfuse.sendMessagePayloads ? event.input : undefined,
-    output: langfuse.sendMessagePayloads ? event.output : undefined,
+    input: langfuse?.sendMessagePayloads ? event.input : undefined,
+    output: langfuse?.sendMessagePayloads ? event.output : undefined,
     usage: {
       promptTokens: event.inputTokens,
       completionTokens: event.outputTokens,
@@ -98,13 +103,8 @@ export async function processRunFeedback(
   event: z.infer<typeof runFeedbackEventSchema>,
 ) {
   const langfuse = await getLangfuseClient(event.clusterId);
-  if (!langfuse) {
-    logger.error("No Langfuse client found", { event });
 
-    return;
-  }
-
-  langfuse.client.score({
+  langfuse?.client.score({
     traceId: event.runId,
     name: "user_feedback",
     value: event.score,
@@ -117,13 +117,7 @@ export async function processToolCall(
 ) {
   const langfuse = await getLangfuseClient(event.clusterId);
 
-  if (!langfuse) {
-    logger.error("No Langfuse client found", { event });
-
-    return;
-  }
-
-  langfuse.client.span({
+  langfuse?.client.span({
     name: `${event.toolName}()`,
     startTime: new Date(event.startedAt),
     endTime: new Date(event.completedAt),

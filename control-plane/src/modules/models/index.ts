@@ -16,7 +16,8 @@ import { logger } from "../observability/logger";
 import * as events from "../observability/events";
 import { rateLimiter } from "../rate-limiter";
 import { addAttributes } from "../observability/tracer";
-import { customerTelemetry } from "../customer-telemetry";
+import { trackCustomerTelemetry } from "../track-customer-telemetry";
+
 type TrackingOptions = {
   clusterId?: string;
   runId?: string;
@@ -439,7 +440,7 @@ const trackModelUsage = async ({
   });
 
   if (runId) {
-    customerTelemetry.track({
+    trackCustomerTelemetry({
       type: "modelCall",
       clusterId,
       runId,

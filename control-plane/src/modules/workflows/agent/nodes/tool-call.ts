@@ -9,10 +9,10 @@ import {
   AgentError,
   InvalidJobArgumentsError,
 } from "../../../../utilities/errors";
-import { customerTelemetry } from "../../../customer-telemetry";
 import * as events from "../../../observability/events";
 import { logger } from "../../../observability/logger";
 import { addAttributes, withSpan } from "../../../observability/tracer";
+import { trackCustomerTelemetry } from "../../../track-customer-telemetry";
 import { AgentMessage, assertAgentMessage } from "../../workflow-messages";
 import { Run } from "../../workflows";
 import { ToolFetcher } from "../agent";
@@ -146,7 +146,7 @@ const _handleToolCall = async (
   try {
     tool = await getTool(toolCall);
   } catch (error) {
-    await customerTelemetry.track({
+    await trackCustomerTelemetry({
       type: "toolCall",
       toolName,
       clusterId: workflow.clusterId,
@@ -226,7 +226,7 @@ const _handleToolCall = async (
         },
       });
 
-      customerTelemetry.track({
+      trackCustomerTelemetry({
         type: "toolCall",
         toolName,
         clusterId: workflow.clusterId,
@@ -255,7 +255,7 @@ const _handleToolCall = async (
     }
 
     if (response.resultType === "resolution") {
-      customerTelemetry.track({
+      trackCustomerTelemetry({
         type: "toolCall",
         toolName,
         clusterId: workflow.clusterId,
@@ -316,7 +316,7 @@ const _handleToolCall = async (
         );
       }
 
-      customerTelemetry.track({
+      trackCustomerTelemetry({
         type: "toolCall",
         toolName,
         clusterId: workflow.clusterId,
@@ -363,7 +363,7 @@ const _handleToolCall = async (
       toolName,
     });
 
-    await customerTelemetry.track({
+    await trackCustomerTelemetry({
       type: "toolCall",
       toolName,
       clusterId: workflow.clusterId,
