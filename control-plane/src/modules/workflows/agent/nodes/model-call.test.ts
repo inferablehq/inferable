@@ -69,12 +69,9 @@ describe("handleModelCall", () => {
       raw: {
         content: [],
       },
-      parsed: {
-        success: true,
-        data: {
-          done: true,
-          result: { reason: "nothing to do" },
-        },
+      structured: {
+        done: true,
+        message: "nothing to do"
       },
     });
 
@@ -95,19 +92,16 @@ describe("handleModelCall", () => {
       raw: {
         content: [],
       },
-      parsed: {
-        success: true,
-        data: {
-          done: true,
-          result: { reason: "nothing to do" },
-          invocations: [
-            {
-              toolName: "notify",
-              input: { message: "A message" },
-              reasoning: "notify the system",
-            },
-          ],
-        },
+      structured: {
+        done: true,
+        message: "nothing to do",
+        invocations: [
+          {
+            toolName: "notify",
+            input: { message: "A message" },
+            reasoning: "notify the system",
+          },
+        ],
       },
     });
 
@@ -139,11 +133,8 @@ describe("handleModelCall", () => {
       raw: {
         content: [],
       },
-      parsed: {
-        success: true,
-        data: {
-          result: { reason: "nothing to do" },
-        },
+      structured: {
+        message: "nothing to do",
       },
     });
 
@@ -159,7 +150,7 @@ describe("handleModelCall", () => {
     expect(result.messages![0].data).toHaveProperty(
       "details",
       expect.objectContaining({
-        result: { reason: "nothing to do" },
+        message: "nothing to do",
       }),
     );
 
@@ -177,11 +168,8 @@ describe("handleModelCall", () => {
       raw: {
         content: [],
       },
-      parsed: {
-        success: true,
-        data: {
-          done: true,
-        },
+      structured: {
+        done: true,
       },
     });
 
@@ -258,16 +246,8 @@ describe("handleModelCall", () => {
       raw: {
         content: [],
       },
-      parsed: {
-        success: false,
-        error: {
-          errors: [
-            {
-              path: [""],
-              message: "Test error",
-            },
-          ],
-        },
+      structured: {
+        randomStuff: "123",
       },
     });
 
@@ -295,11 +275,8 @@ describe("handleModelCall", () => {
   describe("additional tool calls", () => {
     it("should add call to empty invocations array", async () => {
       mockWithStructuredOutput.mockReturnValueOnce({
-        parsed: {
-          success: true,
-          data: {
-            done: false,
-          },
+        structured: {
+          done: false,
         },
         raw: {
           content: [
@@ -344,20 +321,17 @@ describe("handleModelCall", () => {
 
     it("should add to existing invocations array", async () => {
       mockWithStructuredOutput.mockReturnValueOnce({
-        parsed: {
-          success: true,
-          data: {
-            done: false,
-            invocations: [
-              {
-                toolName: "notify",
-                reasoning: "notify the system",
-                input: {
-                  message: "the first notification",
-                },
+        structured: {
+          done: false,
+          invocations: [
+            {
+              toolName: "notify",
+              reasoning: "notify the system",
+              input: {
+                message: "the first notification",
               },
-            ],
-          },
+            },
+          ],
         },
         raw: {
           content: [

@@ -1,7 +1,6 @@
 import { AgentError } from "../../../../utilities/errors";
 import { logger } from "../../../observability/logger";
 import {
-  deserializeFunctionSchema,
   serviceFunctionEmbeddingId,
 } from "../../../service-definitions";
 import { AgentTool } from "../tool";
@@ -20,31 +19,17 @@ export const buildMockFunctionTool = ({
   functionName: string;
   serviceName: string;
   description?: string;
-  schema: unknown;
+  schema?: string;
   mockResult: unknown;
 }): AgentTool => {
   const toolName = serviceFunctionEmbeddingId({ serviceName, functionName });
-
-  let deserialized = null;
-
-  try {
-    deserialized = deserializeFunctionSchema(schema);
-  } catch (e) {
-    logger.error(
-      `Failed to deserialize schema for ${toolName} (${serviceName}.${functionName})`,
-      { schema, error: e },
-    );
-    throw new AgentError(
-      `Failed to deserialize schema for ${toolName} (${serviceName}.${functionName})`,
-    );
-  }
 
   return new AgentTool({
     name: toolName,
     description: (
       description ?? `${serviceName}-${functionName} function`
     ).substring(0, 1024),
-    schema: deserialized,
+    schema,
     func: async (input: unknown) => {
       logger.info("Mock tool call", { toolName, input });
 

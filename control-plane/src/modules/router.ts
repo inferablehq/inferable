@@ -45,7 +45,6 @@ import {
 import { callsRouter } from "./calls/router";
 import { buildModel } from "./models";
 import {
-  deserializeFunctionSchema,
   getServiceDefinitions,
 } from "./service-definitions";
 import { integrationsRouter } from "./integrations/router";
@@ -906,12 +905,12 @@ export const router = initServer().router(contract, {
 
     const result = await model.structured({
       messages: [{ role: "user", content: prompt }],
-      schema: deserializeFunctionSchema(resultSchema),
+      schema: resultSchema,
     });
 
     return {
       status: 200,
-      body: result.parsed,
+      body: result.structured,
     };
   },
   getServerStats: async () => {

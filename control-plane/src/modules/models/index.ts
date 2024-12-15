@@ -1,7 +1,6 @@
 import AsyncRetry from "async-retry";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { JsonSchema7Type } from "zod-to-json-schema";
 import Anthropic from "@anthropic-ai/sdk";
-import { ZodError, z } from "zod";
 import { ToolUseBlock } from "@anthropic-ai/sdk/resources";
 import {
   ChatIdentifiers,
@@ -33,27 +32,20 @@ type CallOutput = {
   raw: Anthropic.Message;
 };
 
+
 type StructuredCallInput = CallInput & {
-  schema: z.ZodType;
+  schema: JsonSchema7Type;
 };
 
-type StructuredCallOutput<T extends StructuredCallInput> = CallOutput & {
-  parsed:
-    | {
-        success: true;
-        data: z.infer<T["schema"]>;
-      }
-    | {
-        success: false;
-        error: ZodError<T["schema"]>;
-      };
+type StructuredCallOutput = CallOutput & {
+  structured: unknown
 };
 
 export type Model = {
   call: (options: CallInput) => Promise<CallOutput>;
   structured: <T extends StructuredCallInput>(
     options: T,
-  ) => Promise<StructuredCallOutput<T>>;
+  ) => Promise<StructuredCallOutput>;
   identifier: ChatIdentifiers | EmbeddingIdentifiers;
   embedQuery: (input: string) => Promise<number[]>;
 };
@@ -219,9 +211,7 @@ export const buildModel = ({
                 // This is enforced above
                 ...(tools as Anthropic.Tool[]),
                 {
-                  input_schema: zodToJsonSchema(
-                    options.schema,
-                  ) as Anthropic.Tool.InputSchema,
+                  input_schema: options.schema as Anthropic.Tool.InputSchema,
                   name: "extract",
                 },
               ],
@@ -259,7 +249,7 @@ export const buildModel = ({
         throw new Error("Model did not return output");
       }
 
-      return parseStructuredResponse({ response, options });
+      return parseStructuredResponse({ response });
     },
   };
 };
@@ -297,10 +287,8 @@ const handleErrror = async ({
 
 const parseStructuredResponse = ({
   response,
-  options,
 }: {
   response: Anthropic.Message;
-  options: StructuredCallInput;
 }): Awaited<ReturnType<Model["structured"]>> => {
   const toolCalls = response.content.filter((m) => m.type === "tool_use");
 
@@ -311,29 +299,9 @@ const parseStructuredResponse = ({
     throw new Error("Model did not return structured output");
   }
 
-  const extractToolResult = options.schema.safeParse(extractResult.input);
-
-  const returnVal = {
-    raw: response,
-    parsed: {},
-  };
-
-  if (extractToolResult.success) {
-    return {
-      ...returnVal,
-      parsed: {
-        success: true,
-        data: extractToolResult.data,
-      },
-    };
-  }
-
   return {
-    ...returnVal,
-    parsed: {
-      success: false,
-      error: extractToolResult.error,
-    },
+    raw: response,
+    structured: extractResult.input,
   };
 };
 
@@ -353,36 +321,21 @@ export const buildMockModel = ({
     call: async () => {
       throw new Error("Not implemented");
     },
-    structured: async (options) => {
+    structured: async () => {
       if (responseCount >= mockResponses.length) {
         throw new Error("Mock model ran out of responses");
       }
 
-      const parsed = options.schema.safeParse(
-        JSON.parse(mockResponses[responseCount]),
-      );
+      const data = JSON.parse(mockResponses[responseCount]);
 
       // Sleep for between 500 and 1500 ms
       await new Promise((resolve) =>
         setTimeout(resolve, Math.random() * 1000 + 500),
       );
 
-      if (!parsed.success) {
-        return {
-          raw: { content: [] } as unknown as Anthropic.Message,
-          parsed: {
-            success: false,
-            error: parsed.error,
-          },
-        };
-      }
-
       return {
         raw: { content: [] } as unknown as Anthropic.Message,
-        parsed: {
-          success: true,
-          data: parsed.data,
-        },
+        structured: data,
       };
     },
   };

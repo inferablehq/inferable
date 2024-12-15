@@ -42,10 +42,11 @@ export const generateTitle = async (
     schema,
   });
 
-  const parsed = response.parsed;
+  const parsed = schema.safeParse(response.structured);
+
   if (!parsed.success) {
     logger.error("Model did not return valid output", {
-      errors: parsed.error.errors,
+      errors: parsed.error.issues,
     });
 
     throw new RetryableError("Invalid title output from model");

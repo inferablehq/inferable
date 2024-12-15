@@ -16,6 +16,8 @@ import { JsonSchemaInput } from "inferable/bin/types";
 import { Model } from "../../../models";
 import { ToolUseBlock } from "@anthropic-ai/sdk/resources";
 
+import { zodToJsonSchema } from "zod-to-json-schema";
+
 type WorkflowStateUpdate = Partial<WorkflowAgentState>;
 
 export const MODEL_CALL_NODE_NAME = "model";
@@ -154,7 +156,7 @@ const _handleModelCall = async (
   const response = await model.structured({
     messages: renderedMessages,
     system: systemPrompt,
-    schema: modelSchema,
+    schema: zodToJsonSchema(modelSchema),
   });
 
   if (!response) {
@@ -165,7 +167,7 @@ const _handleModelCall = async (
     .filter((m) => m.type === "tool_use" && m.name !== "extract")
     .map((m) => m as ToolUseBlock);
 
-  const parsed = response.parsed;
+  const parsed = modelSchema.safeParse(response.structured);
 
   if (!parsed.success) {
     logger.info("Model provided invalid response object", {
