@@ -190,6 +190,56 @@ describe("Agent", () => {
     });
   });
 
+  describe("result schema", () => {
+    jest.setTimeout(120000);
+
+    it("should result result schema", async () => {
+
+      const app = await createWorkflowAgent({
+        workflow: {
+          ...workflow,
+          resultSchema: {
+            type: "object",
+            properties: {
+              word: {
+                type: "string"
+              }
+            }
+          }
+        },
+        findRelevantTools: async () => tools,
+        getTool: async () => tools[0],
+        postStepSave: async () => {},
+      });
+
+      const messages = [
+        {
+          type: "human",
+          data: {
+            message: "Return the word 'hello'",
+          },
+        },
+      ];
+
+      const outputState = await app.invoke({
+        workflow,
+        messages,
+      });
+
+      expect(outputState.messages).toHaveLength(2);
+      expect(outputState.messages[0]).toHaveProperty("type", "human");
+      expect(outputState.messages[1]).toHaveProperty("type", "agent");
+      expect(outputState.messages[1].data.result).toHaveProperty(
+        "word",
+        "hello",
+      );
+
+      expect(outputState.result).toEqual({
+        word: "hello"
+      });
+    });
+  });
+
   describe("early exit", () => {
     jest.setTimeout(120000);
 
