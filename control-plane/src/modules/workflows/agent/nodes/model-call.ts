@@ -7,21 +7,21 @@ import {
   withSpan,
 } from "../../../observability/tracer";
 import { AgentError } from "../../../../utilities/errors";
-import { z } from "zod";
 import { ulid } from "ulid";
 
-import { deserializeFunctionSchema } from "../../../service-definitions";
 import { validateFunctionSchema } from "inferable";
 import { JsonSchemaInput } from "inferable/bin/types";
 import { Model } from "../../../models";
 import { ToolUseBlock } from "@anthropic-ai/sdk/resources";
 
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { Schema, Validator } from "jsonschema";
+import { buildModelSchema, ModelOutput } from "./model-output";
 
 type WorkflowStateUpdate = Partial<WorkflowAgentState>;
 
 export const MODEL_CALL_NODE_NAME = "model";
 
+const validator = new Validator();
 export const handleModelCall = (
   state: WorkflowAgentState,
   model: Model,
@@ -56,64 +56,11 @@ const _handleModelCall = async (
     }
   }
 
-  const resultSchema = state.workflow.resultSchema
-    ? deserializeFunctionSchema(state.workflow.resultSchema)
-    : null;
-
-  const modelSchema = z
-    .object({
-      done: z
-        .boolean()
-        .describe(
-          "Whether the workflow is done. All tasks have been completed or you can not progress further.",
-        )
-        .optional(),
-
-      // If we have a result schema, specify it as the result output
-      ...(!!resultSchema
-        ? {
-            result: resultSchema
-              .optional()
-              .describe(
-                "Structrued object describing The final result of the workflow, only provided once all tasks have been completed.",
-              ),
-          }
-        : {}),
-
-      // Otherwise request a string message
-      ...(!resultSchema
-        ? {
-            message: z.string().optional(),
-          }
-        : {}),
-
-      issue: z
-        .string()
-        .describe(
-          "Describe any issues you have encountered in this step. Specifically related to the tools you are using.",
-        )
-        .optional(),
-
-      invocations: z
-        .array(
-          z.object({
-            // @ts-expect-error: We don't care about the type information here, but we want to constrain the model's `toolName` choices.
-            toolName: z.enum([
-              ...relevantSchemas.map((tool) => tool.name),
-              ...state.allAvailableTools,
-            ] as string[] as const),
-            ...(state.workflow.reasoningTraces
-              ? { reasoning: z.string() }
-              : {}),
-            input: z.object({}).passthrough(),
-          }),
-        )
-        .optional()
-        .describe(
-          "Any tools calls you need to make. If multiple are provided, they will be executed in parallel (Do this where possible). DO NOT describe previous tool calls.",
-        ),
-    })
-    .strict();
+  const schema = buildModelSchema({
+    state,
+    relevantSchemas,
+    resultSchema: state.workflow.resultSchema as JsonSchemaInput,
+  });
 
   const schemaString = relevantSchemas.map((tool) => {
     return `${tool.name} - ${tool.description} ${tool.schema}`;
@@ -156,7 +103,7 @@ const _handleModelCall = async (
   const response = await model.structured({
     messages: renderedMessages,
     system: systemPrompt,
-    schema: zodToJsonSchema(modelSchema),
+    schema,
   });
 
   if (!response) {
@@ -167,11 +114,12 @@ const _handleModelCall = async (
     .filter((m) => m.type === "tool_use" && m.name !== "extract")
     .map((m) => m as ToolUseBlock);
 
-  const parsed = modelSchema.safeParse(response.structured);
+  const validation = validator.validate(response.structured, schema as Schema);
+  const data = response.structured as ModelOutput;
 
-  if (!parsed.success) {
+  if (!validation.valid) {
     logger.info("Model provided invalid response object", {
-      error: parsed.error,
+      errors: validation.errors,
     });
     return {
       messages: [
@@ -191,7 +139,7 @@ const _handleModelCall = async (
           type: "supervisor",
           data: {
             message: "Provided object was invalid, check your input",
-            details: { errors: parsed.error.errors },
+            details: { errors: validation.errors },
           },
           runId: state.workflow.id,
           clusterId: state.workflow.clusterId,
@@ -216,12 +164,12 @@ const _handleModelCall = async (
       .filter(Boolean);
 
     if (invocations && invocations.length > 0) {
-      if (!parsed.data.invocations || !Array.isArray(parsed.data.invocations)) {
-        parsed.data.invocations = [];
+      if (!data.invocations || !Array.isArray(data.invocations)) {
+        data.invocations = [];
       }
 
       // Add them to the invocation array to be handled as if they were provided correctly
-      parsed.data.invocations.push(
+      data.invocations.push(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...(invocations as any),
       );
@@ -238,12 +186,11 @@ const _handleModelCall = async (
     });
   }
 
-  const data = parsed.data;
   const hasInvocations = data.invocations && data.invocations.length > 0;
 
   if (state.workflow.debug && hasInvocations) {
     addAttributes({
-      "model.invocations": data.invocations?.map((invoc) =>
+      "model.invocations": data.invocations?.map((invoc: any) =>
         JSON.stringify(invoc),
       ),
     });
@@ -323,7 +270,7 @@ const _handleModelCall = async (
         id: ulid(),
         type: "agent",
         data: {
-          invocations: data.invocations?.map((invocation) => ({
+          invocations: data.invocations?.map((invocation: any) => ({
             ...invocation,
             id: ulid(),
             reasoning: invocation.reasoning as string | undefined,
