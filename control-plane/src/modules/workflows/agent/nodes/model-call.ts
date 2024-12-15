@@ -13,7 +13,6 @@ import { ulid } from "ulid";
 import { deserializeFunctionSchema } from "../../../service-definitions";
 import { validateFunctionSchema } from "inferable";
 import { JsonSchemaInput } from "inferable/bin/types";
-import { toolSchema } from "./tool-parser";
 import { Model } from "../../../models";
 import { ToolUseBlock } from "@anthropic-ai/sdk/resources";
 
@@ -114,7 +113,9 @@ const _handleModelCall = async (
     })
     .strict();
 
-  const schemaString = toolSchema(relevantSchemas).join("\n");
+  const schemaString = relevantSchemas.map((tool) => {
+    return `${tool.name} - ${tool.description} ${tool.schema}`;
+  });
 
   const systemPrompt = [
     "You are a helpful assistant with access to a set of tools designed to assist in completing tasks.",

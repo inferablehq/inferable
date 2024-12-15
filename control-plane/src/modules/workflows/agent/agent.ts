@@ -1,4 +1,3 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import { START, StateGraph } from "@langchain/langgraph";
 import { type Run } from "../workflows";
 import { MODEL_CALL_NODE_NAME, handleModelCall } from "./nodes/model-call";
@@ -12,14 +11,15 @@ import {
 } from "./nodes/edges";
 import { AgentMessage } from "../workflow-messages";
 import { buildMockModel, buildModel } from "../../models";
+import { AgentTool } from "./tool";
 
 export type ReleventToolLookup = (
   state: WorkflowAgentState,
-) => Promise<DynamicStructuredTool[]>;
+) => Promise<AgentTool[]>;
 
 export type ToolFetcher = (
   toolCall: Required<AgentMessage["data"]>["invocations"][number],
-) => Promise<DynamicStructuredTool>;
+) => Promise<AgentTool>;
 
 export const createWorkflowAgent = async ({
   workflow,

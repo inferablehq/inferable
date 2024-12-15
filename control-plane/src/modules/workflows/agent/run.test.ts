@@ -129,7 +129,8 @@ describe("buildMockTools", () => {
     expect(Object.keys(tools)).toEqual(["testService_someFunction"]);
 
     const result = await tools["testService_someFunction"].func({ test: "" });
-    expect(JSON.parse(result)).toEqual({
+    expect(result).toBeDefined();
+    expect(JSON.parse(result!)).toEqual({
       result: {
         foo: "bar",
       },

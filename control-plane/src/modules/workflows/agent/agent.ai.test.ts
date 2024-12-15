@@ -1,8 +1,8 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import { createWorkflowAgent } from "./agent";
 import { z } from "zod";
 import { assertResultMessage } from "../workflow-messages";
 import { redisClient } from "../../redis";
+import { AgentTool } from "./tool";
 
 if (process.env.CI) {
   jest.retryTimes(3);
@@ -20,7 +20,7 @@ describe("Agent", () => {
   };
 
   const tools = [
-    new DynamicStructuredTool<any>({
+    new AgentTool({
       name: "echo",
       description: "Echoes the input",
       schema: z.object({
@@ -349,7 +349,7 @@ describe("Agent", () => {
 
     it("should respect mock responses", async () => {
       const tools = [
-        new DynamicStructuredTool<any>({
+        new AgentTool({
           name: "searchHaystack",
           description: "Search haystack",
           schema: z.object({

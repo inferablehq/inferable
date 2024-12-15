@@ -1,5 +1,4 @@
 import { handleToolCalls } from "./tool-call";
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { SpecialResultTypes } from "../tools/functions";
 import { NotFoundError } from "../../../../utilities/errors";
@@ -7,6 +6,7 @@ import { ulid } from "ulid";
 import { WorkflowAgentState } from "../state";
 import { assertResultMessage } from "../../workflow-messages";
 import { redisClient } from "../../../redis";
+import { AgentTool } from "../tool";
 
 describe("handleToolCalls", () => {
   const workflow = {
@@ -17,7 +17,7 @@ describe("handleToolCalls", () => {
   const toolHandler = jest.fn();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tool = new DynamicStructuredTool<any>({
+  const tool = new AgentTool({
     description: "Echoes the input",
     func: toolHandler,
     name: "console_echo",
@@ -181,20 +181,12 @@ describe("handleToolCalls", () => {
         message: expect.stringContaining(
           `Provided input did not match schema for ${tool.name}`,
         ),
-        parseResult: expect.objectContaining({
-          success: false,
-          error: expect.objectContaining({
-            issues: expect.arrayContaining([
-              expect.objectContaining({
-                code: "invalid_type",
-                expected: "string",
-                received: "undefined",
-                path: ["input"],
-                message: "Required",
-              }),
-            ]),
-          }),
-        }),
+        parseResult: expect.arrayContaining([
+          expect.objectContaining({
+            message: "is not allowed to have the additional property \"wrongKey\""
+          }
+        )
+        ]),
       }),
     );
   });

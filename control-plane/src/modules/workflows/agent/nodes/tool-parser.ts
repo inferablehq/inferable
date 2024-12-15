@@ -1,16 +1,4 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import skmeans from "skmeans";
-
-export function toolSchema(tools: DynamicStructuredTool<any>[]) {
-  return tools.map((tool) => {
-    const jsonSchema = zodToJsonSchema(tool.schema);
-
-    delete jsonSchema.$schema;
-
-    return `${tool.name} - ${tool.description} ${JSON.stringify(jsonSchema)}`;
-  });
-}
 
 export function mostRelevantKMeansCluster<T extends { similarity: number }>(
   tools: T[],

@@ -1,4 +1,3 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import { Run } from "../../workflows";
 import {
   buildAccessKnowledgeArtifacts,
@@ -10,6 +9,7 @@ import {
   buildCurrentDateTimeTool,
   CURRENT_DATE_TIME_TOOL_NAME,
 } from "./date-time";
+import { AgentTool } from "../tool";
 
 const clusterSettingsCache = createCache<{
   enableKnowledgebase: boolean;
@@ -20,7 +20,7 @@ const CACHE_TTL = 60 * 2; // 2 minutes
 export type InternalToolBuilder = (
   workflow: Run,
   toolCallId: string
-) => DynamicStructuredTool | Promise<DynamicStructuredTool>;
+) => AgentTool | Promise<AgentTool>;
 
 export const getClusterInternalTools = async (
   clusterId: string

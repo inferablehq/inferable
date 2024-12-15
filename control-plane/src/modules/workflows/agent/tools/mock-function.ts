@@ -1,10 +1,10 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import { AgentError } from "../../../../utilities/errors";
 import { logger } from "../../../observability/logger";
 import {
   deserializeFunctionSchema,
   serviceFunctionEmbeddingId,
 } from "../../../service-definitions";
+import { AgentTool } from "../tool";
 
 /**
  * Build a tool from a service function with a handler that immediately returns a mock result
@@ -22,7 +22,7 @@ export const buildMockFunctionTool = ({
   description?: string;
   schema: unknown;
   mockResult: unknown;
-}): DynamicStructuredTool => {
+}): AgentTool => {
   const toolName = serviceFunctionEmbeddingId({ serviceName, functionName });
 
   let deserialized = null;
@@ -39,7 +39,7 @@ export const buildMockFunctionTool = ({
     );
   }
 
-  return new DynamicStructuredTool({
+  return new AgentTool({
     name: toolName,
     description: (
       description ?? `${serviceName}-${functionName} function`

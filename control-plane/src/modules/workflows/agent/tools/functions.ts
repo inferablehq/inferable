@@ -1,4 +1,3 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import assert from "assert";
 import { z } from "zod";
 import { AgentError, JobPollTimeoutError } from "../../../../utilities/errors";
@@ -6,11 +5,11 @@ import * as jobs from "../../../jobs/jobs";
 import { logger } from "../../../observability/logger";
 import { packer } from "../../../packer";
 import {
-  deserializeFunctionSchema,
   getServiceDefinition,
   serviceFunctionEmbeddingId,
 } from "../../../service-definitions";
 import { summariseJobResultIfNecessary } from "../summarizer";
+import { AgentTool } from "../tool";
 
 export const SpecialResultTypes = {
   jobTimeout: "inferableJobTimeout",
@@ -30,31 +29,17 @@ export const buildAbstractServiceFunctionTool = ({
   functionName: string;
   serviceName: string;
   description?: string;
-  schema: unknown;
-}): DynamicStructuredTool => {
+  schema?: string;
+}): AgentTool => {
   const toolName = serviceFunctionEmbeddingId({ serviceName, functionName });
 
-  let deserialized = null;
-
-  try {
-    deserialized = deserializeFunctionSchema(schema);
-  } catch (e) {
-    logger.error(
-      `Failed to deserialize schema for ${toolName} (${serviceName}.${functionName})`,
-      { schema, error: e },
-    );
-    throw new AgentError(
-      `Failed to deserialize schema for ${toolName} (${serviceName}.${functionName})`,
-    );
-  }
-
-  return new DynamicStructuredTool({
+  return new AgentTool({
     name: toolName,
     description: (
       description ?? `${serviceName}-${functionName} function`
     ).substring(0, 1024),
-    schema: deserialized,
-    func: async () => {},
+    schema,
+    func: async () => undefined,
   });
 };
 
@@ -75,7 +60,7 @@ export const buildServiceFunctionTool = ({
   toolCallId: string;
   description?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  schema: any;
+  schema?: string;
   workflow: {
     clusterId: string;
     id: string;
@@ -83,7 +68,7 @@ export const buildServiceFunctionTool = ({
     authContext?: unknown;
     context?: unknown;
   };
-}): DynamicStructuredTool => {
+}): AgentTool => {
   const tool = buildAbstractServiceFunctionTool({
     functionName,
     serviceName,

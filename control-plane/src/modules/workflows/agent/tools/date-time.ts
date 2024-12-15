@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { DynamicStructuredTool } from "@langchain/core/tools";
+import { AgentTool } from "../tool";
 
 export const CURRENT_DATE_TIME_TOOL_NAME = "currentDateTime";
 
-export const buildCurrentDateTimeTool = (): DynamicStructuredTool =>
-  new DynamicStructuredTool({
+export const buildCurrentDateTimeTool = (): AgentTool =>
+  new AgentTool({
     name: CURRENT_DATE_TIME_TOOL_NAME,
     description: "Retrieves the current date and time in ISO 8601 format.",
     schema: z.object({}),

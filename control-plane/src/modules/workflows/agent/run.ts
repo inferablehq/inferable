@@ -1,4 +1,3 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { NotFoundError } from "../../../utilities/errors";
 import { getClusterContextText } from "../../cluster";
@@ -32,6 +31,7 @@ import { buildCurrentDateTimeTool } from "./tools/date-time";
 import { CURRENT_DATE_TIME_TOOL_NAME } from "./tools/date-time";
 import { env } from "../../../utilities/env";
 import { events } from "../../observability/events";
+import { AgentTool } from "./tool";
 
 /**
  * Run a workflow from the most recent saved state
@@ -82,7 +82,7 @@ export const processRun = async (
     }),
   );
 
-  const mockToolsMap: Record<string, DynamicStructuredTool> =
+  const mockToolsMap: Record<string, AgentTool> =
     await buildMockTools(run);
 
   let mockModelResponses;
@@ -347,7 +347,7 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
   const start = Date.now();
   const workflow = state.workflow;
 
-  const tools: DynamicStructuredTool[] = [];
+  const tools: AgentTool[] = [];
   const attachedFunctions = workflow.attachedFunctions ?? [];
 
   // If functions are explicitly attached, skip relevant tools search
@@ -415,7 +415,7 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
 };
 
 export const buildMockTools = async (workflow: Run) => {
-  const mocks: Record<string, DynamicStructuredTool> = {};
+  const mocks: Record<string, AgentTool> = {};
   if (!workflow.testMocks || Object.keys(workflow.testMocks).length === 0) {
     return mocks;
   }

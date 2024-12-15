@@ -1,9 +1,3 @@
-import {
-  DynamicStructuredTool,
-  ToolInputParsingException,
-} from "@langchain/core/tools";
-import { ToolExecutor } from "@langchain/langgraph/prebuilt";
-import { AgentAction } from "langchain/agents";
 import { ulid } from "ulid";
 import {
   AgentError,
@@ -18,6 +12,7 @@ import { Run } from "../../workflows";
 import { ToolFetcher } from "../agent";
 import { WorkflowAgentState } from "../state";
 import { SpecialResultTypes, parseFunctionResponse } from "../tools/functions";
+import { AgentTool, AgentToolInputError } from "../tool";
 
 export const TOOL_CALL_NODE_NAME = "action";
 
@@ -125,7 +120,7 @@ const _handleToolCall = async (
 ): Promise<Partial<WorkflowAgentState>> => {
   logger.info("Executing tool call");
 
-  let tool: DynamicStructuredTool | undefined;
+  let tool: AgentTool | undefined;
 
   const toolName = toolCall.toolName;
   const toolInput = toolCall.input;
@@ -177,14 +172,6 @@ const _handleToolCall = async (
     };
   }
 
-  const executor = new ToolExecutor({ tools: [tool] });
-
-  const action: AgentAction = {
-    tool: toolName,
-    toolInput: toolInput,
-    log: `Invoking ${toolName} with input: ${toolInput}`,
-  };
-
   events.write({
     type: "callingFunction",
     clusterId: workflow.clusterId,
@@ -196,7 +183,7 @@ const _handleToolCall = async (
   });
 
   try {
-    const rawResponse = await executor.invoke(action);
+    const rawResponse = await tool.execute(toolInput);
     if (!rawResponse) {
       throw new AgentError("Received empty response from tool executor");
     }
@@ -289,7 +276,7 @@ const _handleToolCall = async (
 
     throw new AgentError("Unknown result type encountered");
   } catch (error) {
-    if (error instanceof ToolInputParsingException) {
+    if (error instanceof AgentToolInputError) {
       events.write({
         type: "functionErrored",
         clusterId: workflow.clusterId,
@@ -304,25 +291,12 @@ const _handleToolCall = async (
         toolName,
       });
 
-      const parseResult = tool.schema.safeParse(action.toolInput);
-
-      if (parseResult.success) {
-        logger.warn(
-          "Tool invocation failed with ToolInputParsingException, but the input was parsed successfully",
-          {
-            toolName,
-            toolCallId,
-          },
-        );
-      }
-
       trackCustomerTelemetry({
         type: "toolCall",
         toolName,
         clusterId: workflow.clusterId,
         runId: workflow.id,
         input: toolInput,
-        output: parseResult,
         startedAt,
         completedAt: Date.now(),
         level: "ERROR",
@@ -336,7 +310,7 @@ const _handleToolCall = async (
             data: {
               result: {
                 message: `Provided input did not match schema for ${toolName}, check your input`,
-                parseResult,
+                parseResult: error.validatorResult.errors
               },
               id: toolCallId,
             },

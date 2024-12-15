@@ -1,4 +1,3 @@
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import { ReleventToolLookup } from "../agent";
 import { handleModelCall } from "./model-call";
 import { z } from "zod";
@@ -9,6 +8,7 @@ import {
   assertGenericMessage,
 } from "../../workflow-messages";
 import { Model } from "../../../models";
+import { AgentTool } from "../tool";
 
 describe("handleModelCall", () => {
   const workflow = {
@@ -49,13 +49,13 @@ describe("handleModelCall", () => {
   const findRelevantTools: ReleventToolLookup = async () => {
     return [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      new DynamicStructuredTool<any>({
+      new AgentTool({
         name: "testTool",
         description: "A test tool",
         func: functionHandler,
         schema: z.object({}),
       }),
-      new DynamicStructuredTool<any>({
+      new AgentTool({
         name: "notify",
         description: "Send a message",
         func: functionHandler,

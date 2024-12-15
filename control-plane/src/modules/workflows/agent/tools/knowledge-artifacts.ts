@@ -1,24 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { logger } from "../../../observability/logger";
 import { getKnowledge } from "../../../knowledge/knowledgebase";
 import { Run } from "../../workflows";
 import * as events from "../../../observability/events";
 import { getAllUniqueTags } from "../../../embeddings/embeddings";
+import { AgentTool } from "../tool";
 
 export const ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME = "accessKnowledgeArtifacts";
 
 export const buildAccessKnowledgeArtifacts = async (
   workflow: Run,
-): Promise<DynamicStructuredTool<any>> => {
+): Promise<AgentTool> => {
   const tags = await getAllUniqueTags(
     workflow.clusterId,
     "knowledgebase-artifact",
   );
 
-  return new DynamicStructuredTool({
+  return new AgentTool({
     name: ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME,
     description:
       "Retrieves relevant knowledge artifacts based on a given query.",
@@ -44,7 +42,7 @@ export const buildAccessKnowledgeArtifacts = async (
           tag: input.tag,
         });
 
-        await events.write({
+        events.write({
           type: "knowledgeArtifactsAccessed",
           clusterId: workflow.clusterId,
           workflowId: workflow.id,
