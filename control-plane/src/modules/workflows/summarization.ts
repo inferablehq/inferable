@@ -3,6 +3,7 @@ import { Run } from "./workflows";
 import { logger } from "../observability/logger";
 import { RetryableError } from "../../utilities/errors";
 import { buildModel } from "../models";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 export const generateTitle = async (
   message: string,
@@ -39,7 +40,7 @@ export const generateTitle = async (
         content: message,
       },
     ],
-    schema,
+    schema: zodToJsonSchema(schema),
   });
 
   const parsed = schema.safeParse(response.structured);
