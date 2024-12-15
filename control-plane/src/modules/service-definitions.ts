@@ -5,7 +5,6 @@ import {
   validateFunctionSchema,
   validateServiceName,
 } from "inferable";
-import jsonSchemaToZod, { JsonSchema } from "json-schema-to-zod";
 import { Validator } from "jsonschema";
 import { z } from "zod";
 import {
@@ -465,9 +464,8 @@ export const validateServiceRegistration = ({
       }
 
       // Check that the schema accepts and expected value
-      const zodSchema = deserializeFunctionSchema(fn.schema);
-      const schema = zodSchema.safeParse({ token: "test" });
-      if (!schema.success) {
+      const result = validator.validate({ token: "test" }, JSON.parse(fn.schema));
+      if (!result.valid) {
         throw new InvalidServiceRegistrationError(
           `${fn.name} schema is not valid`,
           "https://docs.inferable.ai/pages/auth#handlecustomerauth",
@@ -485,53 +483,6 @@ export const start = () =>
       interval: 1000 * 10,
     },
   ); // 10 seconds
-
-/**
- * Convert a JSON schema (Object or String) to a Zod schema object
- */
-export const deserializeFunctionSchema = (schema: unknown) => {
-  if (typeof schema === "object") {
-    let zodSchema;
-
-    try {
-      zodSchema = jsonSchemaToZod(schema as JsonSchema);
-    } catch (e) {
-      logger.error("Failed to convert schema to Zod", { schema, error: e });
-      throw new Error("Failed to load the tool definition");
-    }
-
-    return eval(`
-const { z } = require("zod");
-${zodSchema}
-`);
-  } else if (typeof schema === "string") {
-    let parsed;
-
-    try {
-      parsed = JSON.parse(schema);
-    } catch (e) {
-      logger.error("Failed to parse schema", { schema, error: e });
-      throw new Error("Failed to parse the tool definition");
-    }
-
-    let zodSchema;
-
-    try {
-      zodSchema = jsonSchemaToZod(parsed);
-    } catch (e) {
-      logger.error("Failed to convert schema to Zod", { schema, error: e });
-      throw new Error("Failed to load the tool definition");
-    }
-
-    return eval(`
-const { z } = require("zod");
-${zodSchema}
-`);
-  } else {
-    logger.error("Invalid schema", { schema });
-    throw new Error("Invalid schema");
-  }
-};
 
 export const normalizeFunctionReference = (
   fn: string | { service: string; function: string },

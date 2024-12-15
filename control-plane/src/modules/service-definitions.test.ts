@@ -1,8 +1,6 @@
-import { dereferenceSync, JSONSchema } from "dereference-json-schema";
 import { InvalidJobArgumentsError, InvalidServiceRegistrationError } from "../utilities/errors";
 import { packer } from "./packer";
 import {
-  deserializeFunctionSchema,
   embeddableServiceFunction,
   parseJobArgs,
   serviceFunctionEmbeddingId,
@@ -210,76 +208,6 @@ describe("parseJobArgs", () => {
           someNumber: 1,
         },
       }),
-    });
-  });
-});
-
-describe("deserializeFunctionSchema", () => {
-  const jsonSchema = {
-    $schema: "http://json-schema.org/draft-04/schema#",
-    title: "ExtractResult",
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      posts: {
-        type: "array",
-        items: {
-          $ref: "#/definitions/Post",
-        },
-      },
-    },
-    definitions: {
-      Post: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          id: {
-            type: "string",
-          },
-          title: {
-            type: "string",
-          },
-          points: {
-            type: "string",
-          },
-          comments_url: {
-            type: "string",
-          },
-        },
-      },
-    },
-  };
-
-  it("should convert a JSON schema to a Zod schema", () => {
-    const zodSchema = deserializeFunctionSchema(
-      dereferenceSync(jsonSchema as any),
-    );
-    const jsonSchema2 = zodToJsonSchema(zodSchema);
-    const dereferenced = dereferenceSync(jsonSchema2 as JSONSchema);
-    expect(dereferenced).toMatchObject({
-      properties: {
-        posts: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              id: {
-                type: "string",
-              },
-              title: {
-                type: "string",
-              },
-              points: {
-                type: "string",
-              },
-              comments_url: {
-                type: "string",
-              },
-            },
-          },
-        },
-      },
     });
   });
 });
