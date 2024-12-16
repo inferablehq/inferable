@@ -10,8 +10,13 @@ export const buildCurrentDateTimeTool = (): AgentTool =>
     schema: z.object({}),
     func: async () => {
       return JSON.stringify({
-        iso8601: new Date().toISOString(),
-        unix: new Date().getTime()
-      })
+        result: {
+
+          iso8601: new Date().toISOString(),
+          unix: new Date().getTime()
+        },
+        resultType: "resolution",
+        status: "success",
+      });
     },
   });
