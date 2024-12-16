@@ -397,8 +397,11 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
     const accessKnowledgeArtifactsTool =
       await buildAccessKnowledgeArtifacts(workflow);
 
+    const currentDateTimeTool = buildCurrentDateTimeTool();
+
     // When tools are not specified, attach all internalTools
     tools.push(accessKnowledgeArtifactsTool);
+    tools.push(currentDateTimeTool);
 
     events.write({
       type: "functionRegistrySearchCompleted",
