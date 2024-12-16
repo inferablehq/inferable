@@ -199,6 +199,7 @@ func TestGetSchema(t *testing.T) {
         "TestFunc": {
             "name": "TestFunc",
             "input": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "type": "object",
                 "properties": {
                     "a": {"type": "integer"},
@@ -210,6 +211,7 @@ func TestGetSchema(t *testing.T) {
         "TestFunc2": {
             "name": "TestFunc2",
             "input": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "type": "object",
                 "properties": {
                     "c": {

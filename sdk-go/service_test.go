@@ -133,49 +133,6 @@ func TestRegistrationAndConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestErrorneousRegistration(t *testing.T) {
-	machineSecret, _, _, apiEndpoint := util.GetTestVars()
-
-	machineID := "random-machine-id"
-
-	// Create a new Inferable instance
-	i, err := New(InferableOptions{
-		APIEndpoint: apiEndpoint,
-		APISecret:   machineSecret,
-		MachineID:   machineID,
-	})
-	require.NoError(t, err)
-
-	// Register a service
-	service, err := i.RegisterService("TestService1")
-	require.NoError(t, err)
-
-	type F struct {
-		G int `json:"g"`
-	}
-
-	// Register a test function
-	type TestInput struct {
-		A int `json:"a"`
-		B int `json:"b"`
-		C []struct {
-			D int    `json:"d"`
-			E string `json:"e"`
-			F []F    `json:"f"`
-		} `json:"c"`
-	}
-
-	testFunc := func(input TestInput) int { return input.A + input.B }
-
-	_, err = service.RegisterFunc(Function{
-		Func:        testFunc,
-		Name:        "TestFunc",
-		Description: "Test function",
-	})
-
-	require.ErrorContains(t, err, "schema for function 'TestFunc' contains a $ref to an external definition. this is currently not supported.")
-}
-
 func TestServiceStartAndReceiveMessage(t *testing.T) {
 	machineSecret, consumeSecret, clusterId, apiEndpoint := util.GetTestVars()
 

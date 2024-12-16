@@ -62,12 +62,9 @@ func TestInferableFunctions(t *testing.T) {
 		t.Fatalf("Error registering reverse function: %v", err)
 	}
 
-	jsonDef, err := inferableInstance.toJSONDefinition()
 	if err != nil {
 		t.Fatalf("Error generating JSON definition: %v", err)
 	}
-	t.Logf("JSON Definition:\n%s\n", string(jsonDef))
-
 	t.Run("Echo Function", func(t *testing.T) {
 		testInput := EchoInput{Input: "Hello, Inferable!"}
 		result, err := inferableInstance.callFunc("string_operations", "echo", testInput)

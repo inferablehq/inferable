@@ -106,18 +106,18 @@ func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 	}
 	argType := fnType.In(0)
 
-  // Set the argument type to the referenced type
-  if argType.Kind() == reflect.Ptr {
-    argType = argType.Elem()
-  }
+	// Set the argument type to the referenced type
+	if argType.Kind() == reflect.Ptr {
+		argType = argType.Elem()
+	}
 
-  if argType.Kind() != reflect.Struct {
-    return nil, fmt.Errorf("function '%s' first argument must be a struct or a pointer to a struct", fn.Name)
-  }
+	if argType.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("function '%s' first argument must be a struct or a pointer to a struct", fn.Name)
+	}
 
-  // Get the schema for the input struct
-  reflector := jsonschema.Reflector{DoNotReference: true}
-  schema := reflector.Reflect(reflect.New(argType).Interface())
+	// Get the schema for the input struct
+	reflector := jsonschema.Reflector{DoNotReference: true, Anonymous: true}
+	schema := reflector.Reflect(reflect.New(argType).Interface())
 
 	if schema == nil {
 		return nil, fmt.Errorf("failed to get schema for function '%s'", fn.Name)
