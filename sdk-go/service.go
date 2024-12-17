@@ -116,7 +116,7 @@ func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 	}
 
 	// Get the schema for the input struct
-	reflector := jsonschema.Reflector{DoNotReference: true, Anonymous: true}
+	reflector := jsonschema.Reflector{DoNotReference: true, Anonymous: true, AllowAdditionalProperties: false}
 	schema := reflector.Reflect(reflect.New(argType).Interface())
 
 	if schema == nil {
@@ -142,7 +142,7 @@ func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 		return nil, fmt.Errorf("schema for function '%s' contains a $ref to an external definition. this is currently not supported. see https://go.inferable.ai/go-schema-limitation for details", fn.Name)
 	}
 
-	defs.AdditionalProperties = nil
+	defs.AdditionalProperties = jsonschema.FalseSchema
 	fn.schema = defs
 
 	s.Functions[fn.Name] = fn
