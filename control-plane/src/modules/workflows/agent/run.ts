@@ -278,7 +278,7 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
 
   let relatedTools = relatedToolsSearchResults;
 
-  if (useKmeans && relatedToolsSearchResults?.length > 1) {
+  if (useKmeans && relatedToolsSearchResults?.length > 30) {
     logger.info("Using kmeans clustering for related tool search");
     relatedTools = mostRelevantKMeansCluster(relatedToolsSearchResults);
   }
