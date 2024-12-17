@@ -7,7 +7,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Blocks, Cpu } from "lucide-react";
+import { Blocks, Cpu, Network } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { SmallDeadRedCircle, SmallLiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
@@ -32,6 +32,7 @@ import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle } from "./circles";
 import ErrorDisplay from "./error-display";
 import { EventsOverlayButton } from "./events-overlay";
 import { ServerConnectionStatus } from "./server-connection-pane";
+import { cn } from "@/lib/utils";
 
 function toServiceName(name: string) {
   return <span>{name}</span>;
@@ -45,73 +46,110 @@ function toFunctionName(name: string, serviceName: string) {
   return <span>{name}</span>;
 }
 
-function ServiceCard({
-  service,
-  clusterId,
-}: {
-  service: ClientInferResponseBody<typeof contract.listServices, 200>[number];
-  clusterId: string;
-}) {
+function ControlPlaneBox() {
   return (
-    <div className="rounded-xl bg-secondary/30 p-4 shadow-sm border border-border/50 text-sm">
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
-        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-          {service.name === "InferableApplications" ? (
-            <AppWindowIcon className="w-4 h-4 text-primary" />
-          ) : (
-            <Layers className="w-4 h-4 text-primary" />
-          )}
+    <div className="rounded-none bg-black p-4 shadow-sm border border-border/50 text-sm w-[250px] mb-8 relative">
+      <div className="absolute -top-1 right-0"></div>
+      <div className="flex items-center gap-3">
+        <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+          <Cpu className="w-8 h-8 text-gray-400" />
         </div>
-        <div>
-          <div className="text-sm font-medium">
-            {toServiceName(service.name)}
+        <div className="flex-1">
+          <div className="text-md font-medium text-white flex items-center gap-2">
+            <span className="font-mono">Control Plane</span>
+            <SmallLiveGreenCircle />
           </div>
-          <div className="text-xs text-muted-foreground font-mono">
-            {service.functions?.length || 0} Functions
+          <div className="text-xs text-gray-400 font-mono">
+            api.inferable.ai
           </div>
         </div>
       </div>
-      <Table className="text-sm">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-1/4">Function</TableHead>
-            <TableHead className="w-2/4">Description</TableHead>
-            <TableHead className="w-1/4">Last Ping</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {service.functions
-            ?.sort((a, b) => a.name.localeCompare(b.name))
-            .map((func) => (
-              <TableRow key={func.name}>
-                <TableCell className="w-1/4">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-semibold text-sm">
-                      {toFunctionName(func.name, service.name)}
-                    </span>
-                    <ToolContextButton
-                      clusterId={clusterId}
-                      service={service.name}
-                      functionName={func.name}
-                    />
-                  </div>
-                </TableCell>
-                <TableCell className="w-1/4">
-                  {func.description || "No description"}
-                </TableCell>
-                <TableCell className="w-2/4 text-muted-foreground">
-                  {new Date(service.timestamp) > new Date() ? (
-                    <p className="text-sm text-muted-foreground">
-                      Permanent Sync
-                    </p>
-                  ) : (
-                    formatDistance(new Date(service.timestamp), new Date())
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-        </TableBody>
-      </Table>
+    </div>
+  );
+}
+
+function ServiceCard({
+  service,
+  clusterId,
+  index,
+  total,
+}: {
+  service: ClientInferResponseBody<typeof contract.listServices, 200>[number];
+  clusterId: string;
+  index: number;
+  total: number;
+}) {
+  return (
+    <div className="relative pl-8">
+      <div className="absolute left-0 top-[1.5rem] w-8 h-[2px] bg-border" />
+      <div
+        className={cn(
+          "absolute left-0 top-0 w-[2px] bg-border",
+          index === 0 ? "h-[1.5rem]" : "h-full",
+          index === total - 1 ? "h-[1.5rem]" : ""
+        )}
+      />
+
+      <div className="rounded-xl bg-secondary/30 p-4 shadow-sm border border-border/50 text-sm">
+        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            {service.name === "InferableApplications" ? (
+              <AppWindowIcon className="w-4 h-4 text-primary" />
+            ) : (
+              <Layers className="w-4 h-4 text-primary" />
+            )}
+          </div>
+          <div>
+            <div className="text-sm font-medium">
+              {toServiceName(service.name)}
+            </div>
+            <div className="text-xs text-muted-foreground font-mono">
+              {service.functions?.length || 0} Functions
+            </div>
+          </div>
+        </div>
+        <Table className="text-sm">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-1/4 text-sm">Function</TableHead>
+              <TableHead className="w-2/4 text-sm">Description</TableHead>
+              <TableHead className="w-1/4 text-sm">Last Ping</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {service.functions
+              ?.sort((a, b) => a.name.localeCompare(b.name))
+              .map((func) => (
+                <TableRow key={func.name}>
+                  <TableCell className="w-1/4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-semibold text-sm">
+                        {toFunctionName(func.name, service.name)}
+                      </span>
+                      <ToolContextButton
+                        clusterId={clusterId}
+                        service={service.name}
+                        functionName={func.name}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell className="w-1/4 text-sm">
+                    {func.description || "No description"}
+                  </TableCell>
+                  <TableCell className="w-2/4 text-muted-foreground text-sm">
+                    {new Date(service.timestamp) > new Date() ? (
+                      <p className="text-sm text-muted-foreground">
+                        Permanent Sync
+                      </p>
+                    ) : (
+                      formatDistance(new Date(service.timestamp), new Date())
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
@@ -143,18 +181,25 @@ export default function ServicesOverview({ clusterId }: { clusterId: string }) {
     getClusterServices();
   }, [getClusterServices]);
 
+  const sortedServices = services.sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <div>
-      <div className="grid grid-cols-1 gap-4">
-        {services
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((service) => (
-            <ServiceCard
-              key={service.name}
-              service={service}
-              clusterId={clusterId}
-            />
-          ))}
+      <ControlPlaneBox />
+      <div className="relative grid grid-cols-1 gap-4">
+        {sortedServices.length > 0 && (
+          <div className="absolute left-0 top-[-2rem] w-[2px] h-8 bg-border" />
+        )}
+
+        {sortedServices.map((service, index) => (
+          <ServiceCard
+            key={service.name}
+            service={service}
+            clusterId={clusterId}
+            index={index}
+            total={sortedServices.length}
+          />
+        ))}
       </div>
     </div>
   );
