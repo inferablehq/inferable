@@ -7,7 +7,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Blocks, Cpu, Network } from "lucide-react";
+import { Blocks, Cpu } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { SmallDeadRedCircle, SmallLiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
