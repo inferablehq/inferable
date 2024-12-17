@@ -82,8 +82,7 @@ export const processRun = async (
     }),
   );
 
-  const mockToolsMap: Record<string, AgentTool> =
-    await buildMockTools(run);
+  const mockToolsMap: Record<string, AgentTool> = await buildMockTools(run);
 
   let mockModelResponses;
   if (
@@ -272,7 +271,7 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
         workflow.clusterId,
         "service-function",
         search,
-        30,
+        50, // limit to 50 results
       )
     : [];
 
