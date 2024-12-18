@@ -33,6 +33,7 @@ import { env } from "../../../utilities/env";
 import { events } from "../../observability/events";
 import { AgentTool } from "./tool";
 import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
+import { truncate } from "lodash";
 
 /**
  * Run a workflow from the most recent saved state
@@ -260,6 +261,28 @@ export const processRun = async (
   }
 };
 
+const formatJobsContext = (
+  jobs: { targetArgs: string; result: string | null }[],
+  status: "success" | "failed",
+) => {
+  if (jobs.length === 0) return "";
+
+  const arbitraryLength = 500;
+
+  const jobEntries = jobs
+    .map(
+      (job) => `
+    <input>${truncate(job.targetArgs, { length: arbitraryLength })}</input>
+    <output>${truncate(job.result ?? "", { length: arbitraryLength })}</output>
+  `,
+    )
+    .join("\n");
+
+  return `<jobs status="${status}">
+    ${jobEntries}
+  </jobs>`;
+};
+
 async function findRelatedFunctionTools(workflow: Run, search: string) {
   const flags = await flagsmith?.getIdentityFlags(workflow.clusterId, {
     clusterId: workflow.clusterId,
@@ -309,26 +332,14 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
 
       const contextArr = [];
 
-      if (resolvedJobs.length > 0) {
-        contextArr.push(
-          `<jobs status="success">${resolvedJobs
-            .map(
-              (j) =>
-                `<input>${j.targetArgs}</input><output>${j.result}</output>`,
-            )
-            .join("\n")}</jobs>`,
-        );
+      const successJobsContext = formatJobsContext(resolvedJobs, "success");
+      if (successJobsContext) {
+        contextArr.push(successJobsContext);
       }
 
-      if (rejectedJobs.length > 0) {
-        contextArr.push(
-          `<jobs status="failed">${rejectedJobs
-            .map(
-              (j) =>
-                `<input>${j.targetArgs}</input><output>${j.result}</output>`,
-            )
-            .join("\n")}</jobs>`,
-        );
+      const failedJobsContext = formatJobsContext(rejectedJobs, "failed");
+      if (failedJobsContext) {
+        contextArr.push(failedJobsContext);
       }
 
       if (metadata?.additionalContext) {
