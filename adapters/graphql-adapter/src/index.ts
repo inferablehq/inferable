@@ -89,21 +89,19 @@ export function inferableAdapter<TContext extends InferableGraphQLContext>(
                   args,
                   graphqlQuery: {
                     type: "string",
-                    description: `This is the graphql query for the ${fieldName} field. Constructed from the schema. If there are any arguments, they are passed in as variables under $args.`,
+                    description: `This is the graphql query for the ${fieldName} field. Constructed from the schema. `,
                   },
                 },
                 required: ["args", "graphqlQuery"],
               },
             },
-            func: async (args, context) => {
+            func: async (input, context) => {
               try {
                 const result = await apolloServer
                   .executeOperation(
                     {
-                      query: args.graphqlQuery,
-                      variables: {
-                        args: args.args,
-                      },
+                      query: input.graphqlQuery,
+                      variables: input.args,
                     },
                     { contextValue: { inferable: context } as TContext }
                   )
@@ -112,7 +110,7 @@ export function inferableAdapter<TContext extends InferableGraphQLContext>(
                 return JSON.stringify(result);
               } catch (e) {
                 throw new Error(
-                  `Error executing operation: ${e}. The query was: ${args.graphqlQuery}`
+                  `Error executing operation: ${e}. The query was: ${input.graphqlQuery}`
                 );
               }
             },
@@ -129,8 +127,6 @@ export function inferableAdapter<TContext extends InferableGraphQLContext>(
 
           const args = fieldSchema?.properties?.arguments;
 
-          console.log(args.properties);
-
           service.register({
             name: `mutation${fieldName}`,
             schema: {
@@ -141,7 +137,7 @@ export function inferableAdapter<TContext extends InferableGraphQLContext>(
                   args,
                   graphqlQuery: {
                     type: "string",
-                    description: `This is the graphql mutation for the ${fieldName} field. Constructed from the schema. If there are any arguments, they are passed in as variables under $args.`,
+                    description: `This is the graphql mutation for the ${fieldName} field. Constructed from the schema.`,
                   },
                 },
                 required: ["args", "graphqlQuery"],
