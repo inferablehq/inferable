@@ -32,6 +32,7 @@ import { CURRENT_DATE_TIME_TOOL_NAME } from "./tools/date-time";
 import { env } from "../../../utilities/env";
 import { events } from "../../observability/events";
 import { AgentTool } from "./tool";
+import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
 
 /**
  * Run a workflow from the most recent saved state
@@ -284,13 +285,51 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
 
   const toolContexts = await Promise.all(
     relatedTools.map(async (toolDetails) => {
-      const metadata = await getToolMetadata(
-        workflow.clusterId,
-        toolDetails.serviceName,
-        toolDetails.functionName,
-      );
+      const [metadata, resolvedJobs, rejectedJobs] = await Promise.all([
+        getToolMetadata(
+          workflow.clusterId,
+          toolDetails.serviceName,
+          toolDetails.functionName,
+        ),
+        getLatestJobsResultedByFunctionName({
+          clusterId: workflow.clusterId,
+          service: toolDetails.serviceName,
+          functionName: toolDetails.functionName,
+          limit: 3,
+          resultType: "resolution",
+        }),
+        getLatestJobsResultedByFunctionName({
+          clusterId: workflow.clusterId,
+          service: toolDetails.serviceName,
+          functionName: toolDetails.functionName,
+          limit: 3,
+          resultType: "rejection",
+        }),
+      ]);
 
       const contextArr = [];
+
+      if (resolvedJobs.length > 0) {
+        contextArr.push(
+          `<jobs status="success">${resolvedJobs
+            .map(
+              (j) =>
+                `<input>${j.targetArgs}</input><output>${j.result}</output>`,
+            )
+            .join("\n")}</jobs>`,
+        );
+      }
+
+      if (rejectedJobs.length > 0) {
+        contextArr.push(
+          `<jobs status="failed">${rejectedJobs
+            .map(
+              (j) =>
+                `<input>${j.targetArgs}</input><output>${j.result}</output>`,
+            )
+            .join("\n")}</jobs>`,
+        );
+      }
 
       if (metadata?.additionalContext) {
         contextArr.push(`<context>${metadata.additionalContext}</context>`);
