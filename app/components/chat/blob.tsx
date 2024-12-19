@@ -4,7 +4,13 @@ import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
 import { ReadOnlyJSON } from "../read-only-json";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { formatRelative } from "date-fns";
 import { FileWarningIcon } from "lucide-react";
 
@@ -58,7 +64,6 @@ export function Blob({
     a.click();
 
     document.body.removeChild(a);
-
   }, [data, blob.name, blob.type]);
 
   useEffect(() => {
@@ -72,7 +77,7 @@ export function Blob({
   return (
     <Card className="ml-4 mb-4 mr-4">
       <CardHeader>
-        <CardTitle className="flex items-center font-semibold text-md">
+        <CardTitle className="flex items-center font-semibold text-sm">
           <div className="flex flex-row space-x-2">
             <p>Blob</p>
             <p className="text-muted-foreground font-normal">
@@ -82,7 +87,15 @@ export function Blob({
         </CardTitle>
         <CardDescription>
           <p>
-            This result was returned as a <a href="https://docs.inferable.ai/pages/blobs" className="underline">Blob</a>. The model did not recieve this data and can not make inferences about it.
+            This result was returned as a{" "}
+            <a
+              href="https://docs.inferable.ai/pages/blobs"
+              className="underline"
+            >
+              Blob
+            </a>
+            . The model did not recieve this data and can not make inferences
+            about it.
           </p>
         </CardDescription>
       </CardHeader>
@@ -100,7 +113,7 @@ export function Blob({
               json={JSON.stringify(
                 JSON.parse(Buffer.from(data, "base64").toString()),
                 null,
-                2,
+                2
               )}
             />
           </div>
@@ -120,7 +133,7 @@ export function Blob({
             downloadBlob();
           }}
         >
-          Download { blob.name } ({blob.type})
+          Download {blob.name} ({blob.type})
         </Button>
       )}
     </Card>
