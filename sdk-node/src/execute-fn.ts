@@ -32,6 +32,14 @@ export const executeFn = async (
       functionExecutionTime: Date.now() - start,
     };
   } catch (e) {
+    const interupt = extractInterrupt(e);
+    if (interupt) {
+      return {
+        content: interupt,
+        type: "interrupt",
+        functionExecutionTime: Date.now() - start,
+      };
+    }
     const functionExecutionTime = Date.now() - start;
     if (e instanceof Error) {
       return {

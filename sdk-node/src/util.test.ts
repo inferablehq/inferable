@@ -2,6 +2,8 @@ import {
   ajvErrorToFailures,
   blob,
   extractBlobs,
+  extractInterrupt,
+  Interrupt,
   validateFunctionSchema,
 } from "./util";
 
@@ -62,6 +64,21 @@ describe("ajvErrorToFailures", () => {
       },
     ]);
   });
+});
+
+describe("extractInterrupt", () => {
+  it("should extract extract interrupt", () => {
+    const interrupt = extractInterrupt(Interrupt.approval());
+    expect(interrupt).toEqual({
+      type: "approval",
+    })
+  })
+
+  it("should not extract interrupt from non-interrupt", () => {
+    const interrupt = extractInterrupt({ foo: "bar" });
+    expect(interrupt).toBeUndefined();
+  })
+
 });
 
 describe("extractBlobs", () => {

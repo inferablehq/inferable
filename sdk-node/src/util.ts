@@ -279,6 +279,7 @@ export const blob = ({
 
 
 export const INTERRUPT_KEY = "__inferable_interrupt";
+type VALID_INTERRUPT_TYPES = "approval";
 const interruptResultSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("approval"),
@@ -297,6 +298,25 @@ export const extractInterrupt = (input: unknown): z.infer<typeof interruptResult
   }
 }
 
+export class Interrupt {
+  [INTERRUPT_KEY]: {
+    type: VALID_INTERRUPT_TYPES
+  }
+
+  constructor(type: VALID_INTERRUPT_TYPES) {
+    this[INTERRUPT_KEY] = {
+      type
+    }
+  }
+
+  static approval() {
+    return new Interrupt("approval");
+  }
+}
+
+/**
+ * @deprecated Use Interrupt.approval() instea
+  */
 export const approvalRequest = () => {
   return {
     [INTERRUPT_KEY]: {
