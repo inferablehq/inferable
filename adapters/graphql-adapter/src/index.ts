@@ -1,33 +1,7 @@
-import $RefParser from "@apidevtools/json-schema-ref-parser";
 import { ApolloServer, ApolloServerPlugin } from "@apollo/server";
-import { getIntrospectionQuery, graphqlSync } from "graphql";
-import { fromIntrospectionQuery } from "graphql-2-json-schema";
+import { printSchema } from "graphql";
 import { ContextInput, Inferable } from "inferable";
-
-interface JSONSchemaWithProperties {
-  properties?: {
-    Query?: {
-      properties?: {
-        [key: string]: {
-          properties?: {
-            return?: any;
-            arguments?: any;
-          };
-        };
-      };
-    };
-    Mutation?: {
-      properties?: {
-        [key: string]: {
-          properties?: {
-            return?: any;
-            arguments?: any;
-          };
-        };
-      };
-    };
-  };
-}
+import { parseGraphQLSchema } from "./parser";
 
 export type InferableGraphQLContext = { inferable?: ContextInput };
 
@@ -52,119 +26,159 @@ export function inferableAdapter<TContext extends InferableGraphQLContext>(
         name: "graphql",
       });
 
-      const introspection = graphqlSync({
-        schema: opts.schema,
-        source: getIntrospectionQuery(),
+      const schemaString = printSchema(opts.schema);
+
+      const { queries, mutations, types } = parseGraphQLSchema(schemaString);
+
+      for (const operation of [...queries, ...mutations]) {
+        service.register({
+          name: operation.functionName,
+          schema: {
+            input: {
+              $schema: "http://json-schema.org/draft-07/schema#",
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description: `This is the graphql query or the mutation for the ${operation.name} field. `,
+                },
+                args: {
+                  type: "object",
+                  description: `This is the arguments for the ${operation.name} field. Empty if no arguments are required.`,
+                },
+              },
+              required: ["query", "args"],
+            },
+          },
+          description: `
+            <query>
+              ${operation.definition}
+            </query>
+            <relatedTypes>
+              ${operation.relatedTypes
+                .map(
+                  (type) =>
+                    `<type name="${type.name}">${type.definition}</type>`
+                )
+                .join("")}
+            </relatedTypes>
+          `,
+          func: async (input, context) => {
+            return apolloServer
+              .executeOperation(
+                {
+                  query: input.query,
+                  variables: input.args,
+                },
+                { contextValue: { inferable: context } as TContext }
+              )
+              .then((res) => ({
+                ...res.body,
+                input,
+              }));
+          },
+        });
+      }
+
+      service.register({
+        name: "lookupGraphQLTypes",
+        schema: {
+          input: {
+            $schema: "http://json-schema.org/draft-07/schema#",
+            type: "object",
+            properties: {
+              type: {
+                type: "string",
+                description: "The type to lookup.",
+              },
+            },
+            required: ["type"],
+          },
+        },
+        description: `
+          This is a function that will lookup the graphql types in the schema. Supports partial matches.
+        `,
+        func: async (input) => {
+          return types.find((type) =>
+            type.name.toLowerCase().includes(input.type.toLowerCase())
+          );
+        },
       });
 
-      if (!introspection.data) {
-        throw new Error("No introspection data");
-      }
-
-      const introspectedSchema = fromIntrospectionQuery(
-        introspection.data as any,
-        {}
-      );
-
-      const jsonSchema = (await $RefParser.dereference(
-        introspectedSchema
-      )) as JSONSchemaWithProperties;
-
-      // Handle Query fields
-      const queryFields = opts.schema.getQueryType()?.getFields();
-      if (queryFields) {
-        for (const fieldName in queryFields) {
-          const fieldSchema =
-            jsonSchema.properties?.Query?.properties?.[fieldName];
-
-          const args = fieldSchema?.properties?.arguments;
-
-          service.register({
-            name: `query${fieldName}`,
-            schema: {
-              input: {
-                $schema: "http://json-schema.org/draft-07/schema#",
-                type: "object",
-                properties: {
-                  args,
-                  graphqlQuery: {
-                    type: "string",
-                    description: `This is the graphql query for the ${fieldName} field. Constructed from the schema. `,
-                  },
-                },
-                required: ["args", "graphqlQuery"],
+      service.register({
+        name: "peekGraphQLSchemaAtString",
+        schema: {
+          input: {
+            $schema: "http://json-schema.org/draft-07/schema#",
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description:
+                  "The string to peek at. Could be any string. Returns all matches. Use peekGraphQLSchemaAtLocation if you want to peek at a specific location.",
               },
             },
-            func: async (input, context) => {
-              try {
-                const result = await apolloServer
-                  .executeOperation(
-                    {
-                      query: input.graphqlQuery,
-                      variables: input.args,
-                    },
-                    { contextValue: { inferable: context } as TContext }
-                  )
-                  .then((res) => res.body);
+            required: ["query"],
+          },
+        },
+        description: `
+          This is a function that will peek at the graphql schema.
+        `,
+        func: async (input) => {
+          const lowerSchema = schemaString.toLowerCase();
+          const lowerQuery = input.query.toLowerCase();
 
-                return JSON.stringify(result);
-              } catch (e) {
-                throw new Error(
-                  `Error executing operation: ${e}. The query was: ${input.graphqlQuery}`
-                );
-              }
-            },
-          });
-        }
-      }
+          // Find all occurrences
+          const matches = [];
+          let currentIndex = 0;
 
-      // Handle Mutation fields
-      const mutationFields = opts.schema.getMutationType()?.getFields();
-      if (mutationFields) {
-        for (const fieldName in mutationFields) {
-          const fieldSchema =
-            jsonSchema.properties?.Mutation?.properties?.[fieldName];
+          while (true) {
+            const index = lowerSchema.indexOf(lowerQuery, currentIndex);
+            if (index === -1) break;
 
-          const args = fieldSchema?.properties?.arguments;
+            matches.push({
+              index,
+              text: schemaString.slice(Math.max(0, index - 100), index + 100),
+              start: Math.max(0, index - 100),
+              end: index + 100,
+            });
 
-          service.register({
-            name: `mutation${fieldName}`,
-            schema: {
-              input: {
-                $schema: "http://json-schema.org/draft-07/schema#",
-                type: "object",
-                properties: {
-                  args,
-                  graphqlQuery: {
-                    type: "string",
-                    description: `This is the graphql mutation for the ${fieldName} field. Constructed from the schema.`,
-                  },
-                },
-                required: ["args", "graphqlQuery"],
+            currentIndex = index + 1;
+          }
+
+          return matches;
+        },
+      });
+
+      service.register({
+        name: "peekGraphQLSchemaAtLocation",
+        schema: {
+          input: {
+            $schema: "http://json-schema.org/draft-07/schema#",
+            type: "object",
+            properties: {
+              start: {
+                type: "number",
+                description: "The start location.",
+              },
+              end: {
+                type: "number",
+                description: "The end location. Defaults to start + 100.",
               },
             },
-            func: async (input, context) => {
-              try {
-                const result = await apolloServer
-                  .executeOperation(
-                    {
-                      query: input.graphqlQuery,
-                      variables: input.args,
-                    },
-                    { contextValue: { inferable: context } as TContext }
-                  )
-                  .then((res) => res.body);
-
-                return JSON.stringify(result);
-              } catch (e) {
-                throw new Error(
-                  `Error executing operation: ${e}. The mutation was: ${input.graphqlQuery}`
-                );
-              }
-            },
-          });
-        }
-      }
+            required: ["start"],
+          },
+        },
+        description: `
+          This is a function that will peek at the graphql schema at a specific location.
+        `,
+        func: async (input) => {
+          return schemaString.slice(
+            input.start,
+            input.end ?? input.start + 100
+          );
+        },
+      });
 
       await service.start();
     },
