@@ -16,13 +16,14 @@ import { TemplateSearch } from "./template-search";
 
 export type RunConfiguration = {
   attachedFunctions: string[];
-  structuredOutput: string | null;
+  resultSchema: string | null;
   reasoningTraces: boolean;
   prompt: string;
   template?: {
     id: string;
     input: Record<string, string>;
   };
+  runContext: string | null;
 };
 
 export function PromptTextarea({ clusterId }: { clusterId: string }) {
@@ -48,14 +49,16 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
 
   const [runConfig, setRunConfig] = useState({
     attachedFunctions: [] as string[],
-    structuredOutput: null as string | null,
+    resultSchema: null as string | null,
     reasoningTraces: true,
+    runContext: null as string | null,
   });
 
   const handleConfigChange = (newConfig: {
     attachedFunctions: string[];
-    structuredOutput: string | null;
+    resultSchema: string | null;
     reasoningTraces: boolean;
+    runContext: string | null;
   }) => {
     setRunConfig(newConfig);
   };
@@ -80,8 +83,12 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         body.initialPrompt = config.prompt.replace(/{{.*?}}/g, "");
       }
 
-      if (config.structuredOutput) {
-        body.resultSchema = JSON.parse(config.structuredOutput);
+      if(config.runContext) {
+        body.context = JSON.parse(config.runContext);
+      }
+
+      if (config.resultSchema) {
+        body.resultSchema = JSON.parse(config.resultSchema);
       }
 
       if (config.attachedFunctions && config.attachedFunctions.length > 0) {
@@ -119,8 +126,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         setStoredInputs({});
         setRunConfig({
           attachedFunctions: [],
-          structuredOutput: null,
+          resultSchema: null,
           reasoningTraces: true,
+          runContext: null
         });
       }
 
@@ -149,9 +157,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
 
     onSubmit({
       attachedFunctions: runConfig.attachedFunctions,
-      structuredOutput: runConfig.structuredOutput,
+      resultSchema: runConfig.resultSchema,
       reasoningTraces: runConfig.reasoningTraces,
       prompt: updatedPrompt,
+      runContext: runConfig.runContext,
       template: selectedTemplate
         ? {
             id: selectedTemplate.id,
@@ -177,9 +186,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   }) => {
     setRunConfig({
       attachedFunctions: template.attachedFunctions,
-      structuredOutput: template.structuredOutput
+      resultSchema: template.structuredOutput
         ? JSON.stringify(template.structuredOutput)
         : null,
+      runContext: null,
       reasoningTraces: true,
     });
     template.initialPrompt && setPrompt(template.initialPrompt);
@@ -249,7 +259,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             clusterId={clusterId}
             config={{
               attachedFunctions: runConfig.attachedFunctions,
-              structuredOutput: runConfig.structuredOutput,
+              resultSchema: runConfig.resultSchema,
               prompt,
             }}
           />

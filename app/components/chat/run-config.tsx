@@ -11,13 +11,15 @@ import { Checkbox } from "../ui/checkbox";
 type RunConfigProps = {
   config: {
     attachedFunctions: string[];
-    structuredOutput: string | null;
+    resultSchema: string | null;
     reasoningTraces: boolean;
+    runContext: string | null;
   };
   onConfigChange: (newConfig: {
     attachedFunctions: string[];
-    structuredOutput: string | null;
+    resultSchema: string | null;
     reasoningTraces: boolean;
+    runContext: string | null;
   }) => void;
 };
 
@@ -27,36 +29,53 @@ const RunConfig: React.FC<RunConfigProps> = ({ config, onConfigChange }) => {
     config.attachedFunctions.filter(Boolean),
   );
 
-  const [structuredOutput, setStructuredOutput] = useState<string | null>(
-    config.structuredOutput,
+
+  const [runContext, setRunContext] = useState<string | null>(
+    config.runContext ? JSON.stringify(config.runContext) : null,
+  );
+
+  const [resultSchema, setResultSchema] = useState<string | null>(
+    config.resultSchema,
   );
 
   const [reasoningTraces, setReasoningTraces] = useState(
     config.reasoningTraces,
   );
 
-  const hasConfig = attachedFunctions.length > 0 || !!structuredOutput;
+  const hasConfig = attachedFunctions.length > 0 || !!resultSchema;
 
   const handleApplyConfig = () => {
-    if (structuredOutput) {
+    if (resultSchema) {
       try {
-        JSON.parse(structuredOutput);
-        setJsonInvalid(false);
+        JSON.parse(resultSchema);
+        setResultSchemaJsonInvalid(false);
       } catch (e) {
-        toast.error("Invalid JSON in structured output");
+        toast.error("Invalid JSON in result schema");
+        return;
+      }
+    }
+
+    if (runContext) {
+      try {
+        JSON.parse(runContext);
+        setRunContextJsonInvalid(false);
+      } catch (e) {
+        toast.error("Invalid JSON in run context");
         return;
       }
     }
 
     onConfigChange({
       attachedFunctions,
-      structuredOutput,
+      resultSchema,
       reasoningTraces,
+      runContext,
     });
     setIsOpen(false);
   };
 
-  const [jsonInvalid, setJsonInvalid] = useState(false);
+  const [resultSchemaJsonInvalid, setResultSchemaJsonInvalid] = useState(false);
+  const [runContextJsonInvalid, setRunContextJsonInvalid] = useState(false);
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -72,6 +91,11 @@ const RunConfig: React.FC<RunConfigProps> = ({ config, onConfigChange }) => {
       <PopoverContent className="w-[400px]">
         <div className="space-y-4">
           <h3 className="font-semibold">Run Configuration</h3>
+          <p className="text-xs text-gray-500">
+            <a href="https://docs.inferable.ai/pages/runs#options" className="underline">
+              Options
+            </a> to invoke the run with
+          </p>
           <div className="space-x-2 flex flex-row items-center">
             <Checkbox
               checked={reasoningTraces}
@@ -91,34 +115,68 @@ const RunConfig: React.FC<RunConfigProps> = ({ config, onConfigChange }) => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="input-structured-output">
-              Structured Output (JSON Schema)
+            <Label htmlFor="input-result-schema">
+              Result Schema (JSON Schema)
             </Label>
             <p className="text-xs text-gray-500">
               A{" "}
-              <a href="https://json-schema.org/" className="underline">
-                JSON Schema
+              <a href="https://docs.inferable.ai/pages/runs#resultschema" className="underline">
+                 Result Schema
               </a>{" "}
-              that describes the structured output the run must return.
+              that the run must return
             </p>
             <Textarea
-              id="input-structured-output"
-              value={structuredOutput ?? ""}
-              onChange={(e) => setStructuredOutput(e.target.value || null)}
+              id="input-result-schema"
+              value={resultSchema ?? ""}
+              onChange={(e) => setResultSchema(e.target.value || null)}
               onBlur={() => {
-                if (structuredOutput) {
+                if (resultSchema) {
                   try {
-                    JSON.parse(structuredOutput);
-                    setJsonInvalid(false);
+                    JSON.parse(resultSchema);
+                    setResultSchemaJsonInvalid(false);
                   } catch (e) {
-                    setJsonInvalid(true);
+                    setResultSchemaJsonInvalid(true);
                   }
                 } else {
-                  setJsonInvalid(false);
+                  setResultSchemaJsonInvalid(false);
                 }
               }}
             />
-            {jsonInvalid && (
+            {resultSchemaJsonInvalid && (
+              <p className="text-xs text-red-500">Invalid JSON</p>
+            )}
+
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="input-run-context">
+              Run Context
+            </Label>
+            <p className="text-xs text-gray-500">
+              A{" "}
+              <a href="https://docs.inferable.ai/pages/runs#context" className="underline">
+                Run Context
+              </a>{" "}
+              object which is passed to all calls
+            </p>
+            <Textarea
+              id="input-run-context"
+              value={runContext ?? ""}
+              onChange={(e) => setRunContext(e.target.value || null)}
+              onBlur={() => {
+                if (runContext) {
+                  try {
+                    JSON.parse(runContext);
+                    setRunContextJsonInvalid(false);
+                  } catch (e) {
+                    setRunContextJsonInvalid(true);
+                  }
+                } else {
+                  setRunContextJsonInvalid(false);
+                }
+              }}
+            />
+            {runContextJsonInvalid && (
               <p className="text-xs text-red-500">Invalid JSON</p>
             )}
           </div>

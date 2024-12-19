@@ -10,7 +10,7 @@ type SDKCommandsProps = {
   clusterId: string;
   config: {
     attachedFunctions: string[];
-    structuredOutput: string | null;
+    resultSchema: string | null;
     prompt: string;
   };
 };
@@ -30,9 +30,9 @@ const SDKCommands: React.FC<SDKCommandsProps> = ({ clusterId, config }) => {
       message: config.prompt,
     };
 
-    if (config.structuredOutput) {
+    if (config.resultSchema) {
       body.result = {
-        schema: config.structuredOutput,
+        schema: config.resultSchema,
       };
     }
 
@@ -54,8 +54,8 @@ const SDKCommands: React.FC<SDKCommandsProps> = ({ clusterId, config }) => {
       command += `\\\n  --attachedFunctions '${config.attachedFunctions.join(",")}' `;
     }
 
-    if (config.structuredOutput) {
-      command += `\\\n  --resultSchema '${JSON.stringify(JSON.parse(config.structuredOutput), null, 2)}' `;
+    if (config.resultSchema) {
+      command += `\\\n  --resultSchema '${JSON.stringify(JSON.parse(config.resultSchema), null, 2)}' `;
     }
 
     command += `"${config.prompt}" `;
