@@ -32,8 +32,6 @@ import { CURRENT_DATE_TIME_TOOL_NAME } from "./tools/date-time";
 import { env } from "../../../utilities/env";
 import { events } from "../../observability/events";
 import { AgentTool } from "./tool";
-import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
-import { truncate } from "lodash";
 
 /**
  * Run a workflow from the most recent saved state
@@ -261,28 +259,6 @@ export const processRun = async (
   }
 };
 
-const formatJobsContext = (
-  jobs: { targetArgs: string; result: string | null }[],
-  status: "success" | "failed",
-) => {
-  if (jobs.length === 0) return "";
-
-  const arbitraryLength = 500;
-
-  const jobEntries = jobs
-    .map(
-      (job) => `
-    <input>${truncate(job.targetArgs, { length: arbitraryLength })}</input>
-    <output>${truncate(job.result ?? "", { length: arbitraryLength })}</output>
-  `,
-    )
-    .join("\n");
-
-  return `<jobs status="${status}">
-    ${jobEntries}
-  </jobs>`;
-};
-
 async function findRelatedFunctionTools(workflow: Run, search: string) {
   const flags = await flagsmith?.getIdentityFlags(workflow.clusterId, {
     clusterId: workflow.clusterId,
@@ -308,39 +284,13 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
 
   const toolContexts = await Promise.all(
     relatedTools.map(async (toolDetails) => {
-      const [metadata, resolvedJobs, rejectedJobs] = await Promise.all([
-        getToolMetadata(
-          workflow.clusterId,
-          toolDetails.serviceName,
-          toolDetails.functionName,
-        ),
-        getLatestJobsResultedByFunctionName({
-          clusterId: workflow.clusterId,
-          service: toolDetails.serviceName,
-          functionName: toolDetails.functionName,
-          limit: 3,
-          resultType: "resolution",
-        }),
-        getLatestJobsResultedByFunctionName({
-          clusterId: workflow.clusterId,
-          service: toolDetails.serviceName,
-          functionName: toolDetails.functionName,
-          limit: 3,
-          resultType: "rejection",
-        }),
-      ]);
+      const metadata = await getToolMetadata(
+        workflow.clusterId,
+        toolDetails.serviceName,
+        toolDetails.functionName,
+      );
 
       const contextArr = [];
-
-      const successJobsContext = formatJobsContext(resolvedJobs, "success");
-      if (successJobsContext) {
-        contextArr.push(successJobsContext);
-      }
-
-      const failedJobsContext = formatJobsContext(rejectedJobs, "failed");
-      if (failedJobsContext) {
-        contextArr.push(failedJobsContext);
-      }
 
       if (metadata?.additionalContext) {
         contextArr.push(`<context>${metadata.additionalContext}</context>`);

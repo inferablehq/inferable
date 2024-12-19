@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { env } from "../../utilities/env";
 import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
@@ -135,38 +135,6 @@ export const getJob = async ({
     ...job,
     blobs,
   };
-};
-
-export const getLatestJobsResultedByFunctionName = async ({
-  clusterId,
-  service,
-  functionName,
-  limit,
-  resultType,
-}: {
-  clusterId: string;
-  service: string;
-  functionName: string;
-  limit: number;
-  resultType: ResultType;
-}) => {
-  return data.db
-    .select({
-      result: data.jobs.result,
-      resultType: data.jobs.result_type,
-      targetArgs: data.jobs.target_args,
-    })
-    .from(data.jobs)
-    .where(
-      and(
-        eq(data.jobs.cluster_id, clusterId),
-        eq(data.jobs.target_fn, functionName),
-        eq(data.jobs.service, service),
-        eq(data.jobs.result_type, resultType),
-      ),
-    )
-    .orderBy(desc(data.jobs.created_at))
-    .limit(limit);
 };
 
 export const getJobsForWorkflow = async ({

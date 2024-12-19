@@ -2,7 +2,10 @@ import { ReleventToolLookup } from "../agent";
 import { toAnthropicMessages } from "../../workflow-messages";
 import { logger } from "../../../observability/logger";
 import { WorkflowAgentState, WorkflowAgentStateMessage } from "../state";
-import { addAttributes, withSpan } from "../../../observability/tracer";
+import {
+  addAttributes,
+  withSpan,
+} from "../../../observability/tracer";
 import { AgentError } from "../../../../utilities/errors";
 import { ulid } from "ulid";
 
@@ -71,7 +74,8 @@ const _handleModelCall = async (
     "If there is nothing left to do, return 'done' and provide the final result.",
     "If you encounter invocation errors (e.g., incorrect tool name, missing input), retry based on the error message.",
     "When possible, return multiple invocations to trigger them in parallel.",
-    "Provide concise and clear responses.",
+    "Once all tasks have been completed, return the final result as a structured object.",
+    "Provide concise and clear responses. Use **bold** to highlight important words.",
     state.additionalContext,
     "<TOOLS_SCHEMAS>",
     schemaString,
@@ -258,6 +262,7 @@ const _handleModelCall = async (
       status: "running",
     };
   }
+
 
   return {
     messages: [
