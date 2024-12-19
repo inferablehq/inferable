@@ -22,9 +22,7 @@
   },
   "dependencies": {
     "@apollo/server": "^4.11.2",
-    "@apidevtools/json-schema-ref-parser": "^9.0.0",
     "graphql": "^16.0.0",
-    "graphql-2-json-schema": "^0.10.0",
     "inferable": "^0.30.0"
   },
   "devDependencies": {
