@@ -514,25 +514,6 @@ export class Inferable {
     this.functionRegistry[registration.name] = registration;
   }
 
-  public get api() {
-    return {
-      createStructuredOutput: async <T>(
-        input: Parameters<typeof this.client.createStructuredOutput>[0]["body"],
-      ) =>
-        this.client
-          .createStructuredOutput({
-            params: {
-              clusterId: await this.getClusterId(),
-            },
-            body: input,
-          })
-          .then((r) => r.body) as Promise<{
-          success: boolean;
-          data?: T;
-        }>,
-    };
-  }
-
   public async getClusterId() {
     if (!this.clusterId) {
       // Call register machine without any services to test API key and get clusterId
