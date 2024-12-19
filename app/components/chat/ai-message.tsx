@@ -24,9 +24,9 @@ interface DataSectionProps {
 
 const DataSection = ({ title, icon: Icon, content }: DataSectionProps) => (
   <div className="mb-4 last:mb-0">
-    <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-2">
+    <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium mb-2">
       <Icon size={16} className="text-primary/70" />
-      <span>{title}</span>
+      <span className="text-sm">{title}</span>
     </div>
     <div className="ml-6">{content}</div>
   </div>

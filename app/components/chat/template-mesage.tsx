@@ -40,7 +40,7 @@ export function TemplateMessage({
   const handleRetry = async () => {
     if (
       window.confirm(
-        "Are you sure you want to retry? This will delete the current result.",
+        "Are you sure you want to retry? This will delete the current result."
       )
     ) {
       setIsRetrying(true);
@@ -69,7 +69,7 @@ export function TemplateMessage({
   return (
     <Card className="w-full rounded-none border-none shadow-md">
       <CardHeader>
-        <CardTitle className="flex items-center text-md font-semibold">
+        <CardTitle className="flex items-center text-sm font-semibold">
           <Workflow className="w-5 h-5 mr-2" />
           <div className="flex flex-row space-x-2">
             {templateId && templateName ? (
@@ -132,7 +132,7 @@ export function TemplateMessage({
               </>
             )}
           </CardContent>
-        ),
+        )
       )}
     </Card>
   );

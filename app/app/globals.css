@@ -135,3 +135,24 @@ input[cmdk-input]:focus-visible {
   outline: none;
   border: 0 !important;
 }
+
+.text-sm {
+  font-size: 12px !important;
+  line-height: 1.1rem;
+}
+
+.text-md {
+  font-size: 12px !important;
+  line-height: 1.25rem;
+}
+
+.text-xs {
+  font-size: 11px !important;
+  line-height: 1rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
