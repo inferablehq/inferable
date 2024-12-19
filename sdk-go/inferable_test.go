@@ -58,13 +58,15 @@ func TestCallFunc(t *testing.T) {
 		B int `json:"b"`
 	}
 
-	testFunc := func(input TestInput) int { return input.A + input.B }
-	i.Default.RegisterFunc(Function{
+	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
+	_, err := i.Default.RegisterFunc(Function{
 		Func: testFunc,
 		Name: "TestFunc",
 	})
 
-	result, err := i.callFunc("default", "TestFunc", TestInput{A: 2, B: 3})
+	assert.NoError(t, err)
+
+	result, err := i.callFunc("default", "TestFunc", TestInput{A: 2, B: 3}, ContextInput{})
 	require.NoError(t, err)
 	assert.Equal(t, 5, result[0].Interface())
 
@@ -85,12 +87,14 @@ func TestToJSONDefinition(t *testing.T) {
 		B int `json:"b"`
 	}
 
-	testFunc := func(input TestInput) int { return input.A + input.B }
-	service.RegisterFunc(Function{
+	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
+	_, err := service.RegisterFunc(Function{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
 	})
+
+	assert.NoError(t, err)
 
 	jsonDef, err := i.toJSONDefinition()
 	require.NoError(t, err)
@@ -166,11 +170,13 @@ func TestGetSchema(t *testing.T) {
 		B int `json:"b"`
 	}
 
-	testFunc := func(input TestInput) int { return input.A + input.B }
-	service.RegisterFunc(Function{
+	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
+	_, err := service.RegisterFunc(Function{
 		Func: testFunc,
 		Name: "TestFunc",
 	})
+
+	assert.NoError(t, err)
 
 	type TestInput2 struct {
 		C struct {
@@ -179,11 +185,13 @@ func TestGetSchema(t *testing.T) {
 		} `json:"c"`
 	}
 
-	testFunc2 := func(input TestInput2) int { return input.C.D * 2 }
-	service.RegisterFunc(Function{
+	testFunc2 := func(input TestInput2, ctx ContextInput) int { return input.C.D * 2 }
+	_, err = service.RegisterFunc(Function{
 		Func: testFunc2,
 		Name: "TestFunc2",
 	})
+
+	assert.NoError(t, err)
 
 	schema, err := service.getSchema()
 	require.NoError(t, err)

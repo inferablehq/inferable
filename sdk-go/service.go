@@ -28,6 +28,12 @@ type Function struct {
 	Func        interface{}
 }
 
+type ContextInput struct {
+	AuthContext interface{} `json:"authContext,omitempty"`
+	RunContext  interface{} `json:"runContext,omitempty"`
+	approved    bool        `json:"approved"`
+}
+
 type service struct {
 	Name       string
 	Functions  map[string]Function
@@ -38,9 +44,12 @@ type service struct {
 }
 
 type callMessage struct {
-	Id       string      `json:"id"`
-	Function string      `json:"function"`
-	Input    interface{} `json:"input"`
+	Id          string      `json:"id"`
+	Function    string      `json:"function"`
+	Input       interface{} `json:"input"`
+	AuthContext interface{} `json:"authContext,omitempty"`
+	RunContext  interface{} `json:"runContext,omitempty"`
+	Approved    bool        `json:"approved"`
 }
 
 type callResultMeta struct {
@@ -101,30 +110,35 @@ func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 
 	// Validate that the function has exactly one argument and it's a struct
 	fnType := reflect.TypeOf(fn.Func)
-	if fnType.NumIn() != 1 {
-		return nil, fmt.Errorf("function '%s' must have exactly one argument", fn.Name)
+	if fnType.NumIn() != 2 {
+		return nil, fmt.Errorf("function '%s' must have exactly two arguments", fn.Name)
 	}
-	argType := fnType.In(0)
+	arg1Type := fnType.In(0)
+	arg2Type := fnType.In(1)
+
+	if arg2Type.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("function '%s' second argument must be a struct (ContextInput)", fn.Name)
+	}
 
 	// Set the argument type to the referenced type
-	if argType.Kind() == reflect.Ptr {
-		argType = argType.Elem()
+	if arg1Type.Kind() == reflect.Ptr {
+		arg1Type = arg1Type.Elem()
 	}
 
-	if argType.Kind() != reflect.Struct {
+	if arg1Type.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("function '%s' first argument must be a struct or a pointer to a struct", fn.Name)
 	}
 
 	// Get the schema for the input struct
 	reflector := jsonschema.Reflector{DoNotReference: true, Anonymous: true, AllowAdditionalProperties: false}
-	schema := reflector.Reflect(reflect.New(argType).Interface())
+	schema := reflector.Reflect(reflect.New(arg1Type).Interface())
 
 	if schema == nil {
 		return nil, fmt.Errorf("failed to get schema for function '%s'", fn.Name)
 	}
 
 	// Extract the relevant part of the schema
-	defs, ok := schema.Definitions[argType.Name()]
+	defs, ok := schema.Definitions[arg1Type.Name()]
 
 	// If the definition is not found, use the whole schema.
 	// This tends to happen for inline structs.
@@ -279,10 +293,16 @@ func (s *service) handleMessage(msg callMessage) error {
 		return fmt.Errorf("failed to unmarshal input: %v", err)
 	}
 
+	context := ContextInput{
+		AuthContext: msg.AuthContext,
+		RunContext:  msg.RunContext,
+		approved:    msg.Approved,
+	}
+
 	start := time.Now()
 	// Call the function with the unmarshaled argument
 	fnValue := reflect.ValueOf(fn.Func)
-	returnValues := fnValue.Call([]reflect.Value{argPtr.Elem()})
+	returnValues := fnValue.Call([]reflect.Value{argPtr.Elem(), reflect.ValueOf(context)})
 
 	resultType := "resolution"
 	resultValue := returnValues[0].Interface()

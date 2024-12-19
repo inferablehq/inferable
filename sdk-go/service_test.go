@@ -28,7 +28,7 @@ func TestRegisterFunc(t *testing.T) {
 		B int `json:"b"`
 	}
 
-	testFunc := func(input TestInput) int { return input.A + input.B }
+	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
 	_, err := service.RegisterFunc(Function{
 		Func:        testFunc,
 		Name:        "TestFunc",
@@ -64,7 +64,7 @@ func TestRegisterFuncWithInlineStruct(t *testing.T) {
 	testFunc := func(input struct {
 		A int `json:"a"`
 		B int `json:"b"`
-	}) int {
+	}, ctx ContextInput) int {
 		return input.A + input.B
 	}
 	_, err := service.RegisterFunc(Function{
@@ -118,7 +118,7 @@ func TestRegistrationAndConfig(t *testing.T) {
 		} `json:"c"`
 	}
 
-	testFunc := func(input TestInput) int { return input.A + input.B }
+	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
 
 	_, err = service.RegisterFunc(Function{
 		Func:        testFunc,
@@ -155,7 +155,7 @@ func TestServiceStartAndReceiveMessage(t *testing.T) {
 		Message string `json:"message"`
 	}
 
-	testFunc := func(input TestInput) string { return "Received: " + input.Message }
+	testFunc := func(input TestInput, ctx ContextInput) string { return "Received: " + input.Message }
 
 	_, err = service.RegisterFunc(Function{
 		Func:        testFunc,
@@ -231,7 +231,7 @@ func TestServiceStartAndReceiveFailingMessage(t *testing.T) {
 	}
 
 	// Purposfuly failing function
-	testFailingFunc := func(input TestInput) (*string, error) { return nil, fmt.Errorf("test error") }
+	testFailingFunc := func(input TestInput, ctx ContextInput) (*string, error) { return nil, fmt.Errorf("test error") }
 
 	_, err = service.RegisterFunc(Function{
 		Func:        testFailingFunc,

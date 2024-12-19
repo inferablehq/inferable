@@ -84,7 +84,7 @@ type UserInput struct {
     Tags      []string  `json:"tags" jsonschema:"uniqueItems=true"`
 }
 
-func createUser(input UserInput) string {
+func createUser(input UserInput, ctx inferable.ContextInput) string {
     // Function implementation
 }
 

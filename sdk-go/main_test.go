@@ -12,7 +12,7 @@ type EchoInput struct {
 	Input string
 }
 
-func echo(input EchoInput) string {
+func echo(input EchoInput, ctx ContextInput) string {
 	return input.Input
 }
 
@@ -20,7 +20,7 @@ type ReverseInput struct {
 	Input string
 }
 
-func reverse(input ReverseInput) string {
+func reverse(input ReverseInput, ctx ContextInput) string {
 	runes := []rune(input.Input)
 	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
 		runes[i], runes[j] = runes[j], runes[i]
@@ -67,7 +67,7 @@ func TestInferableFunctions(t *testing.T) {
 	}
 	t.Run("Echo Function", func(t *testing.T) {
 		testInput := EchoInput{Input: "Hello, Inferable!"}
-		result, err := inferableInstance.callFunc("string_operations", "echo", testInput)
+		result, err := inferableInstance.callFunc("string_operations", "echo", testInput, ContextInput{})
 		if err != nil {
 			t.Fatalf("Error calling echo function: %v", err)
 		}
@@ -84,7 +84,7 @@ func TestInferableFunctions(t *testing.T) {
 
 	t.Run("Reverse Function", func(t *testing.T) {
 		testInput := ReverseInput{Input: "Hello, Inferable!"}
-		result, err := inferableInstance.callFunc("string_operations", "reverse", testInput)
+		result, err := inferableInstance.callFunc("string_operations", "reverse", testInput, ContextInput{})
 		if err != nil {
 			t.Fatalf("Error calling reverse function: %v", err)
 		}
@@ -161,7 +161,7 @@ func TestInferableE2E(t *testing.T) {
 	didCallResultHandler := false
 
 	sayHello, err := client.Default.RegisterFunc(Function{
-		Func: func(input EchoInput) string {
+		Func: func(input EchoInput, ctx ContextInput) string {
 			didCallSayHello = true
 			return "Hello " + input.Input
 		},
@@ -174,7 +174,7 @@ func TestInferableE2E(t *testing.T) {
 	}
 
 	resultHandler, err := client.Default.RegisterFunc(Function{
-		Func: func(input OnStatusChangeInput) string {
+		Func: func(input OnStatusChangeInput, ctx ContextInput) string {
 			didCallResultHandler = true
 			fmt.Println("OnStatusChange: ", input)
 			return ""
