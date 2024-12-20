@@ -24,6 +24,7 @@ import { DebugEvent } from "./debug-event";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "react-hot-toast";
 import { Blob } from "./chat/blob";
+import { Strait } from "next/font/google";
 
 const messageSkeleton = (
   <div className="flex flex-col items-start space-y-4 p-4" key="skeleton-0">
@@ -93,7 +94,7 @@ export function Run({
     200
   > | null>(null);
 
-  const [runMetadata, setRunMetadata] = useState<ClientInferResponseBody<
+  const [run, setRun] = useState<ClientInferResponseBody<
     typeof contract.getRun,
     200
   > | null>(null);
@@ -111,7 +112,7 @@ export function Run({
       });
 
       if (result.status === 200) {
-        setRunMetadata(result.body);
+        setRun(result.body);
       }
     }
 
@@ -346,13 +347,13 @@ export function Run({
         timestamp: new Date(a.createdAt).getTime(),
       })) || [];
 
-  const metadataHeader = runMetadata
+  const metadataOptionsHeader = run
     ? {
         element: (
           <div className="bg-white border-b px-4 py-2 mb-4">
             <div className="flex flex-col space-y-2">
               <div className="flex items-center space-x-2">
-                {runMetadata.test ? (
+                {run.test ? (
                   <div className="bg-purple-50 p-1.5 rounded">
                     <TestTube2Icon className="h-4 w-4 text-purple-500" />
                   </div>
@@ -362,32 +363,62 @@ export function Run({
                   </div>
                 )}
                 <span className="text-sm font-medium">
-                  {runMetadata.test ? "Test Run" : "Run"}
+                  {run.test ? "Test Run" : "Run"}
                 </span>
               </div>
 
-              {runMetadata.metadata &&
-                Object.entries(runMetadata.metadata).length > 0 && (
-                  <div className="flex flex-col space-y-1">
-                    {Object.entries(runMetadata.metadata).map(
-                      ([key, value]) => (
-                        <div
-                          key={key}
-                          className="bg-gray-100 px-2 py-0.5 rounded text-xs w-fit"
-                        >
-                          {key}: {value}
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
+            {run.metadata && (
+              <div className="flex items-center space-x-2">
+                {
+                  Object.entries(run.metadata).length > 0 && (
+                    <div className="flex flex-col space-y-1">
+                      {Object.entries(run.metadata).map(
+                        ([key, value]) => (
+                          <div
+                            key={key}
+                            className="bg-gray-100 px-2 py-0.5 rounded text-xs w-fit"
+                          >
+                            {key}: {value}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )
+                }
+              </div>
+            )}
+
+            {run.context && (
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">Context</p>
+                {
+                  Object.entries(run.context).length > 0 && (
+                    <div className="flex flex-col space-y-1">
+                      {Object.entries(run.context)
+                        .map(([key, value]) => [key, JSON.stringify(value, null, 2)])
+                        .map(([key, value]) => [key, value.length > 50 ? value.slice(0, 50) + "..." : value])
+                        .map(
+                        ([key, value]) => (
+                          <div
+                            key={key}
+                            className="bg-gray-100 px-2 py-0.5 rounded text-xs w-fit"
+                          >
+                            {key}: {value}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )
+                }
+              </div>
+            )}
 
               <div className="text-xs text-gray-500">
                 <span className="font-medium">Functions:</span>{" "}
-                {runMetadata.attachedFunctions &&
-                runMetadata.attachedFunctions.length > 0 ? (
+                {run.attachedFunctions &&
+                run.attachedFunctions.length > 0 ? (
                   <span className="font-mono">
-                    {runMetadata.attachedFunctions.join(", ")}
+                    {run.attachedFunctions.join(", ")}
                   </span>
                 ) : (
                   <span>
@@ -402,12 +433,12 @@ export function Run({
                 )}
               </div>
 
-              {runMetadata.userId && (
+              {run.userId && (
                 <div className="text-xs text-gray-500">
-                  <span className="font-medium">User Context:</span>{" "}
+                  <span className="font-medium">User Id:</span>{" "}
                   <span
                     className="font-mono"
-                    title={runMetadata.userId}
+                    title={run.userId}
                     style={{
                       maxWidth: "100px",
                       overflow: "hidden",
@@ -415,18 +446,18 @@ export function Run({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {runMetadata.userId}
+                    {run.userId}
                   </span>
                 </div>
               )}
 
-              {runMetadata.status === "failed" && (
+              {run.status === "failed" && (
                 <div className="flex items-center space-x-2 ml-auto">
                   <div className="bg-red-50 p-1.5 rounded">
                     <MessageCircleWarning className="h-4 w-4 text-red-500" />
                   </div>
                   <span className="text-sm text-red-600">
-                    Failed: {runMetadata.failureReason}
+                    Failed: {run.failureReason}
                   </span>
                   <Button
                     size="sm"
@@ -510,7 +541,7 @@ export function Run({
       })) || [];
 
   const elements = [
-    metadataHeader,
+    metadataOptionsHeader,
     ...jobElements,
     ...eventElements,
     ...activityElements,

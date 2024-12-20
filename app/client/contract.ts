@@ -48,7 +48,7 @@ export const VersionedTextsSchema = z.object({
     z.object({
       version: z.string(),
       content: z.string(),
-    })
+    }),
   ),
 });
 
@@ -94,7 +94,7 @@ export const learningSchema = z.object({
   summary: z
     .string()
     .describe(
-      "The new information that was learned. Be generic, do not refer to the entities."
+      "The new information that was learned. Be generic, do not refer to the entities.",
     ),
   entities: z
     .array(
@@ -103,7 +103,7 @@ export const learningSchema = z.object({
           .string()
           .describe("The name of the entity this learning relates to."),
         type: z.enum(["tool"]),
-      })
+      }),
     )
     .describe("The entities this learning relates to."),
   relevance: z.object({
@@ -127,7 +127,7 @@ export const agentDataSchema = z
           toolName: z.string(),
           reasoning: z.string().optional(),
           input: z.object({}).passthrough(),
-        })
+        }),
       )
       .optional(),
   })
@@ -168,7 +168,7 @@ export const definition = {
             description: z.string().optional(),
             schema: z.string().optional(),
             config: FunctionConfigSchema.optional(),
-          })
+          }),
         )
         .optional(),
     }),
@@ -237,7 +237,7 @@ export const definition = {
       .and(
         z.object({
           data: z.string(),
-        })
+        }),
       ),
   },
   getContract: {
@@ -262,7 +262,7 @@ export const definition = {
           name: z.string(),
           createdAt: z.date(),
           description: z.string().nullable(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -338,13 +338,13 @@ export const definition = {
       name: z.string().optional(),
       description: z.string().optional(),
       additionalContext: VersionedTextsSchema.optional().describe(
-        "Additional cluster context which is included in all runs"
+        "Additional cluster context which is included in all runs",
       ),
       debug: z
         .boolean()
         .optional()
         .describe(
-          "Enable additional logging (Including prompts and results) for use by Inferable support"
+          "Enable additional logging (Including prompts and results) for use by Inferable support",
         ),
       enableCustomAuth: z.boolean().optional(),
       enableRunConfigs: z.boolean().optional(),
@@ -397,7 +397,7 @@ export const definition = {
           workflowId: z.string().nullable(),
           meta: z.any().nullable(),
           id: z.string(),
-        })
+        }),
       ),
       401: z.undefined(),
       404: z.undefined(),
@@ -426,13 +426,13 @@ export const definition = {
             totalInputTokens: z.number(),
             totalOutputTokens: z.number(),
             totalModelInvocations: z.number(),
-          })
+          }),
         ),
         agentRuns: z.array(
           z.object({
             date: z.string(),
             totalAgentRuns: z.number(),
-          })
+          }),
         ),
       }),
     },
@@ -489,23 +489,23 @@ export const definition = {
       resultSchema: anyObject
         .optional()
         .describe(
-          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
+          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema",
         ),
       attachedFunctions: z
         .array(functionReference)
         .optional()
         .describe(
-          "An array of functions to make available to the run. By default all functions in the cluster will be available"
+          "An array of functions to make available to the run. By default all functions in the cluster will be available",
         ),
       onStatusChange: z
         .object({
           function: functionReference.describe(
-            "A function to call when the run status changes"
+            "A function to call when the run status changes",
           ),
         })
         .optional()
         .describe(
-          "Mechanism for receiving notifications when the run status changes"
+          "Mechanism for receiving notifications when the run status changes",
         ),
       metadata: z
         .record(z.string())
@@ -521,16 +521,16 @@ export const definition = {
                   .object({})
                   .passthrough()
                   .describe("The mock output of the function"),
-              })
+              }),
             )
             .optional()
             .describe(
-              "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)"
+              "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)",
             ),
         })
         .optional()
         .describe(
-          "When provided, the run will be marked as as a test / evaluation"
+          "When provided, the run will be marked as as a test / evaluation",
         ),
       configId: z
         .string()
@@ -540,26 +540,12 @@ export const definition = {
         .object({})
         .passthrough()
         .describe(
-          "Structured input arguments to merge with the initial prompt. The schema must match the run configuration input schema if defined"
+          "Structured input arguments to merge with the initial prompt. The schema must match the run configuration input schema if defined",
         )
-        .optional(),
-      config: z
-        .object({
-          id: z.string().describe("DEPRECATED"),
-          input: z.object({}).passthrough().describe("DEPRECATED").optional(),
-        })
-        .describe("DEPRECATED")
         .optional(),
       context: anyObject
         .optional()
         .describe("Additional context to propogate to all calls in the run"),
-      template: z
-        .object({
-          id: z.string().describe("DEPRECATED"),
-          input: z.object({}).passthrough().optional().describe("DEPRECATED"),
-        })
-        .optional()
-        .describe("DEPRECATED"),
       reasoningTraces: z
         .boolean()
         .default(true)
@@ -574,7 +560,7 @@ export const definition = {
         .boolean()
         .default(true)
         .describe(
-          "Allow the run to be continued with follow-up messages / message edits"
+          "Allow the run to be continued with follow-up messages / message edits",
         ),
     }),
     responses: {
@@ -652,7 +638,7 @@ export const definition = {
           createdAt: z.date(),
           pending: z.boolean().default(false),
           displayableContext: z.record(z.string()).nullable(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -690,7 +676,7 @@ export const definition = {
           configId: z.string().nullable(),
           configVersion: z.number().nullable(),
           feedbackScore: z.number().nullable(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -712,6 +698,8 @@ export const definition = {
         test: z.boolean(),
         feedbackComment: z.string().nullable(),
         feedbackScore: z.number().nullable(),
+        context: z.any().nullable(),
+        authContext: z.any().nullable(),
         result: anyObject.nullable(),
         metadata: z.record(z.string()).nullable(),
         attachedFunctions: z.array(z.string()).nullable(),
@@ -837,7 +825,7 @@ export const definition = {
           targetFn: z.string(),
           service: z.string(),
           executingMachineId: z.string().nullable(),
-        })
+        }),
       ),
     },
   },
@@ -873,7 +861,7 @@ export const definition = {
           createdAt: z.date(),
           createdBy: z.string(),
           revokedAt: z.date().nullable(),
-        })
+        }),
       ),
     },
   },
@@ -906,7 +894,7 @@ export const definition = {
           id: z.string(),
           lastPingAt: z.date(),
           ip: z.string(),
-        })
+        }),
       ),
     },
     pathParams: z.object({
@@ -932,11 +920,11 @@ export const definition = {
                 description: z.string().optional(),
                 schema: z.string().optional(),
                 config: FunctionConfigSchema.optional(),
-              })
+              }),
             )
             .optional(),
           timestamp: z.date(),
-        })
+        }),
       ),
     },
     pathParams: z.object({
@@ -975,7 +963,7 @@ export const definition = {
             createdAt: z.date(),
             pending: z.boolean().default(false),
             displayableContext: z.record(z.string()).nullable(),
-          })
+          }),
         ),
         activity: z.array(
           z.object({
@@ -986,7 +974,7 @@ export const definition = {
             createdAt: z.date(),
             jobId: z.string().nullable(),
             targetFn: z.string().nullable(),
-          })
+          }),
         ),
         jobs: z.array(
           z.object({
@@ -998,7 +986,7 @@ export const definition = {
             createdAt: z.date(),
             approved: z.boolean().nullable(),
             approvalRequested: z.boolean().nullable(),
-          })
+          }),
         ),
         run: z.object({
           id: z.string(),
@@ -1008,6 +996,8 @@ export const definition = {
             .nullable(),
           failureReason: z.string().nullable(),
           test: z.boolean(),
+          context: z.any().nullable(),
+          authContext: z.any().nullable(),
           feedbackComment: z.string().nullable(),
           feedbackScore: z.number().nullable(),
           attachedFunctions: z.array(z.string()).nullable(),
@@ -1110,7 +1100,7 @@ export const definition = {
             attachedFunctions: z.array(z.string()),
             resultSchema: anyObject.nullable(),
             inputSchema: anyObject.nullable(),
-          })
+          }),
         ),
       }),
       401: z.undefined(),
@@ -1213,7 +1203,7 @@ export const definition = {
           resultSchema: z.unknown().nullable(),
           createdAt: z.date(),
           updatedAt: z.date(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -1240,7 +1230,7 @@ export const definition = {
           createdAt: z.date(),
           updatedAt: z.date(),
           similarity: z.number(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -1260,7 +1250,7 @@ export const definition = {
           jobFailureCount: z.number(),
           timeToCompletion: z.number(),
           jobCount: z.number(),
-        })
+        }),
       ),
     },
     pathParams: z.object({
@@ -1281,7 +1271,7 @@ export const definition = {
             .array(z.string())
             .transform((tags) => tags.map((tag) => tag.toLowerCase().trim())),
           title: z.string(),
-        })
+        }),
       ),
     }),
     responses: {
@@ -1309,7 +1299,7 @@ export const definition = {
           tags: z.array(z.string()),
           title: z.string(),
           similarity: z.number(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -1360,7 +1350,7 @@ export const definition = {
           data: z.string(),
           tags: z.array(z.string()),
           title: z.string(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -1390,7 +1380,7 @@ export const definition = {
         .max(20)
         .default(0)
         .describe(
-          "Time in seconds to keep the request open waiting for a response"
+          "Time in seconds to keep the request open waiting for a response",
         ),
     }),
     headers: z.object({
@@ -1468,7 +1458,7 @@ export const definition = {
           authContext: z.any().nullable(),
           runContext: z.any().nullable(),
           approved: z.boolean(),
-        })
+        }),
       ),
     },
   },
@@ -1500,7 +1490,7 @@ export const definition = {
       resultSchema: anyObject
         .optional()
         .describe(
-          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
+          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema",
         ),
       modelId: z.enum(["claude-3-5-sonnet", "claude-3-haiku"]),
       temperature: z

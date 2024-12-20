@@ -26,7 +26,6 @@ import { NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
 import { normalizeFunctionReference } from "../service-definitions";
 import { dereferenceSync } from "dereference-json-schema";
-import { logger } from "../observability/logger";
 
 export const runsRouter = initServer().router(
   {
