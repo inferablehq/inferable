@@ -393,6 +393,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           <p className="text-xs text-muted-foreground mt-1 mb-2">
             Define a JSON schema to get structured output from the AI. The agent
             will format its response to match your specified schema.
+            See the <a
+                        className="text-blue-500 hover:underline"
+                        href="https://docs.inferable.ai/pages/runs#resultschema"
+                      > Docs</a> for details.
           </p>
           <div
             className={cn(
@@ -444,9 +448,13 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             <span className="font-medium">Run Context</span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Provide additional context as JSON that the AI can reference during
-            execution. This helps inform the agent&apos;s decision-making
-            process.
+
+            Provide additional context as JSON that will be passed into all function calls.
+            It is <span className="font-bold">not</span> visible to the agent.
+            See the <a
+                        className="text-blue-500 hover:underline"
+                        href="https://docs.inferable.ai/pages/runs#context"
+                      > Docs</a> for details.
           </p>
           <div
             className={cn(
