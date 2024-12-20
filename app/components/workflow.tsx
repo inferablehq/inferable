@@ -354,100 +354,115 @@ export function Run({
             <div className="flex flex-col space-y-2">
               <div className="flex items-center space-x-2">
                 {run.test ? (
-                  <div className="bg-purple-50 p-1.5 rounded">
+                  <div className="bg-purple-50 p-2 rounded">
                     <TestTube2Icon className="h-4 w-4 text-purple-500" />
                   </div>
                 ) : (
-                  <div className="bg-blue-50 p-1.5 rounded">
+                  <div className="bg-blue-50 p-2 rounded">
                     <WorkflowIcon className="h-4 w-4 text-blue-500" />
                   </div>
                 )}
-                <span className="text-sm font-medium">
-                  {run.test ? "Test Run" : "Run"}
-                </span>
-              </div>
-
-            {run.metadata && (
-              <div className="flex items-center space-x-2">
-                {
-                  Object.entries(run.metadata).length > 0 && (
-                    <div className="flex flex-col space-y-1">
-                      {Object.entries(run.metadata).map(
-                        ([key, value]) => (
-                          <div
-                            key={key}
-                            className="bg-gray-100 px-2 py-0.5 rounded text-xs w-fit"
-                          >
-                            {key}: {value}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )
-                }
-              </div>
-            )}
-
-            {run.context && (
-              <div className="flex items-center space-x-2">
-                <p className="text-sm font-medium">Context</p>
-                {
-                  Object.entries(run.context).length > 0 && (
-                    <div className="flex flex-col space-y-1">
-                      {Object.entries(run.context)
-                        .map(([key, value]) => [key, JSON.stringify(value, null, 2)])
-                        .map(([key, value]) => [key, value.length > 50 ? value.slice(0, 50) + "..." : value])
-                        .map(
-                        ([key, value]) => (
-                          <div
-                            key={key}
-                            className="bg-gray-100 px-2 py-0.5 rounded text-xs w-fit"
-                          >
-                            {key}: {value}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )
-                }
-              </div>
-            )}
-
-              <div className="text-xs text-gray-500">
-                <span className="font-medium">Functions:</span>{" "}
-                {run.attachedFunctions &&
-                run.attachedFunctions.length > 0 ? (
-                  <span className="font-mono">
-                    {run.attachedFunctions.join(", ")}
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">
+                    {run.test ? "Test Run" : "Run"}
                   </span>
-                ) : (
-                  <span>
-                    Full access including{" "}
-                    <a
-                      className="text-blue-500 hover:underline"
-                      href="https://docs.inferable.ai/pages/standard-lib"
-                    >
-                      Standard Library
-                    </a>
-                  </span>
-                )}
+                  <p className="text-xs text-gray-400">{run.id}</p>
+                </div>
               </div>
+
+              {run.metadata && Object.keys(run.metadata).length > 0 && (
+                <div className="flex flex-col space-y-1">
+                  <span className="text-xs font-medium text-gray-500">
+                    Metadata
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(run.metadata).map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="bg-gray-100 px-2 py-0.5 rounded text-xs"
+                        title={`${key}: ${value}`}
+                      >
+                        {key}: {value}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {run.context && Object.keys(run.context).length > 0 && (
+                <div className="flex flex-col space-y-1">
+                  <span className="text-xs font-medium text-gray-500">
+                    Context
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(run.context).map(([key, value]) => {
+                      const displayValue =
+                        typeof value === "string" && value.length > 50
+                          ? value.slice(0, 47) + "..."
+                          : JSON.stringify(value);
+                      return (
+                        <div
+                          key={key}
+                          className="bg-gray-100 px-2 py-0.5 rounded text-xs"
+                          title={`${key}: ${JSON.stringify(value)}`}
+                        >
+                          {key}: {displayValue}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {run.attachedFunctions && run.attachedFunctions.length > 0 ? (
+                <div className="flex flex-col space-y-1">
+                  <span className="text-xs font-medium text-gray-500">
+                    Functions
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {run.attachedFunctions.map((fn) => (
+                      <div
+                        key={fn}
+                        className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono"
+                        title={fn}
+                      >
+                        {fn}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col space-y-1">
+                  <span className="text-xs font-medium text-gray-500">
+                    Functions
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    <div className="py-0.5 rounded text-xs text-gray-500">
+                      Full access including{" "}
+                      <a
+                        className="text-blue-500 hover:underline"
+                        href="https://docs.inferable.ai/pages/standard-lib"
+                      >
+                        Standard Library
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {run.userId && (
-                <div className="text-xs text-gray-500">
-                  <span className="font-medium">User Id:</span>{" "}
-                  <span
-                    className="font-mono"
-                    title={run.userId}
-                    style={{
-                      maxWidth: "100px",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {run.userId}
+                <div className="flex flex-col space-y-1">
+                  <span className="text-xs font-medium text-gray-500">
+                    User Context
                   </span>
+                  <div className="flex flex-wrap gap-1">
+                    <div
+                      className="bg-gray-100 px-2 py-0.5 rounded text-xs"
+                      title={`Id: ${run.userId}`}
+                    >
+                      Id: <span className="font-mono">{run.userId}</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
