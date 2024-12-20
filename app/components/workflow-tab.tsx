@@ -77,11 +77,11 @@ export function RunTab({
         }
       }
     },
-    [onRefetchWorkflows, onGoToCluster, runId, getToken],
+    [onRefetchWorkflows, onGoToCluster, runId, getToken]
   );
 
   const [templates, setTemplates] = useState<{ id: string; name: string }[]>(
-    [],
+    []
   );
 
   useEffect(() => {
@@ -170,11 +170,11 @@ function RunPill({
       </div>
       <div>
         <span className="flex space-x-2 items-center">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground font-mono tracking-tighter">
             Created {userId === workflow.userId && "by you "}
             {formatRelative(
               new Date(workflow.createdAt).getTime(),
-              new Date().getTime(),
+              new Date().getTime()
             )}
           </p>
         </span>
@@ -196,8 +196,8 @@ function RunPill({
                       `/clusters/${clusterId}/runs?filters=${encodeURIComponent(
                         JSON.stringify({
                           test: true,
-                        }),
-                      )}`,
+                        })
+                      )}`
                     );
                   }}
                 />
@@ -211,8 +211,8 @@ function RunPill({
                       `/clusters/${clusterId}/runs?filters=${encodeURIComponent(
                         JSON.stringify({
                           configId: workflow.configId,
-                        }),
-                      )}`,
+                        })
+                      )}`
                     );
                   }}
                   value={
@@ -268,7 +268,9 @@ function Tag({
       onClick={onClick}
     >
       <div
-        className={`flex space-x-1 bg-white border mt-1 py-1 px-2 rounded-sm text-gray-600 mr-1 mb-1 items-center h-8 ${onClick ? "hover:bg-gray-100" : ""}`}
+        className={`flex space-x-1 bg-white border mt-1 py-1 px-2 rounded-sm text-gray-600 mr-1 mb-1 items-center h-8 ${
+          onClick ? "hover:bg-gray-100" : ""
+        }`}
       >
         <span className="text-gray-400 flex items-center h-full">{label}</span>
         {value && <span className="truncate text-ellipsis">{value}</span>}

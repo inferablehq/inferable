@@ -12,10 +12,10 @@ import { PlayIcon, PlusIcon, UserIcon, XIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
-import { PromptTextarea } from "./chat/prompt-textarea";
 import { Badge } from "./ui/badge";
 import { RunTab } from "./workflow-tab";
 import { ServerConnectionStatus } from "./server-connection-pane";
+import Link from "next/link";
 
 type WorkflowListProps = {
   clusterId: string;
@@ -36,19 +36,18 @@ export function RunList({ clusterId }: WorkflowListProps) {
   const [workflows, setWorkflows] = useState<
     ClientInferResponseBody<typeof contract.listRuns, 200>
   >([]);
-  const [showNewRn, setShowNewRun] = useState(false);
   const goToCluster = useCallback(
     (c: string) => {
       router.push(`/clusters/${c}/runs`);
     },
-    [router],
+    [router]
   );
 
   const goToWorkflow = useCallback(
     (c: string, w: string) => {
       router.push(`/clusters/${c}/runs/${w}`);
     },
-    [router],
+    [router]
   );
 
   const searchParams = useSearchParams();
@@ -65,7 +64,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
     }
 
     const parsedFilters = runFiltersSchema.safeParse(
-      JSON.parse(runFiltersQuery),
+      JSON.parse(runFiltersQuery)
     );
     if (parsedFilters.success) {
       setRunFilters(parsedFilters.data);
@@ -135,12 +134,12 @@ export function RunList({ clusterId }: WorkflowListProps) {
 
   return (
     <div className="w-3/12 flex flex-col">
-      <ScrollArea className="border-b-2 border p-2 h-full rounded-md overflow-y-auto h-[calc(100vh-16rem)]">
+      <ScrollArea className="rounded-md bg-white shadow-sm hover:shadow-lg transition-all duration-200 overflow-y-auto h-[calc(100vh-16rem)] p-2 border border-border/50">
         {(!!runFilters.configId || !!runFilters.test) && (
-          <div className="flex flex-row space-x-2 mb-2 items-center justify-between">
+          <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
             {runFilters.configId && (
               <Badge
-                className="p-1 px-4 cursor-pointer"
+                className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
                 onClick={() => {
                   setRunFilters({});
                   if (path) {
@@ -149,12 +148,12 @@ export function RunList({ clusterId }: WorkflowListProps) {
                 }}
               >
                 Filtering by Prompt
-                <XIcon className="ml-2 h-4 w-4" />
+                <XIcon className="h-4 w-4" />
               </Badge>
             )}
             {runFilters.test && (
               <Badge
-                className="p-1 px-4 cursor-pointer"
+                className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
                 onClick={() => {
                   setRunFilters({});
                   if (path) {
@@ -163,71 +162,70 @@ export function RunList({ clusterId }: WorkflowListProps) {
                 }}
               >
                 Filtering By Test Runs
-                <XIcon className="ml-2 h-4 w-4" />
+                <XIcon className="h-4 w-4" />
               </Badge>
             )}
           </div>
         )}
-        <div className="flex">
+        <div className="flex items-center gap-2">
           <ToggleGroup
             type="single"
             value={runToggle}
             onValueChange={(value) => {
               if (value) setRunToggle(value);
-              setShowNewRun(false);
             }}
             variant="outline"
             size="sm"
+            className="flex-1"
           >
-            <ToggleGroupItem value="all" aria-label="Toggle all runs">
+            <ToggleGroupItem
+              value="all"
+              aria-label="Toggle all runs"
+              className="flex-1"
+            >
               <PlayIcon className="mr-2 h-4 w-4" />
               All Runs
             </ToggleGroupItem>
-            <ToggleGroupItem value="mine" aria-label="Toggle my Runs">
+            <ToggleGroupItem
+              value="mine"
+              aria-label="Toggle my Runs"
+              className="flex-1"
+            >
               <UserIcon className="mr-2 h-4 w-4" />
               My Runs
             </ToggleGroupItem>
           </ToggleGroup>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowNewRun(true)}
-            className="ml-2"
-          >
-            <PlusIcon className="h-4 w-4" />
+          <Button variant="outline" size="sm" className="shrink-0" asChild>
+            <Link href={`/clusters/${clusterId}/runs`}>
+              <PlusIcon className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
-
-        {showNewRn ? (
-          <div className="mb-4 space-y-2 mt-2">
-            <PromptTextarea clusterId={clusterId} />
-          </div>
-        ) : (
-          <>
-            <RunTab
-              workflows={workflows}
-              onGoToWorkflow={goToWorkflow}
-              onRefetchWorkflows={fetchWorkflows}
-              onGoToCluster={goToCluster}
-              clusterId={clusterId}
-            />
-            {hasMore && (
-              <Button
-                onClick={loadMore}
-                className="w-full mt-4"
-                variant="outline"
-              >
-                Load More
-              </Button>
-            )}
-            {!hasMore && limit >= 50 && (
-              <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
-                Maximum number of runs loaded. Delete some runs to load older
-                ones.
-              </p>
-            )}
-          </>
-        )}
+        <div className="rounded-none">
+          <RunTab
+            workflows={workflows}
+            onGoToWorkflow={goToWorkflow}
+            onRefetchWorkflows={fetchWorkflows}
+            onGoToCluster={goToCluster}
+            clusterId={clusterId}
+          />
+          {hasMore && (
+            <Button
+              onClick={loadMore}
+              className="w-full mt-4"
+              variant="outline"
+              size="sm"
+            >
+              Load More
+            </Button>
+          )}
+          {!hasMore && limit >= 50 && (
+            <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
+              Maximum number of runs loaded. Delete some runs to load older
+              ones.
+            </p>
+          )}
+        </div>
       </ScrollArea>
     </div>
   );

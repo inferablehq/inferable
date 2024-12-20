@@ -15,6 +15,12 @@ import ReactMarkdown from "react-markdown";
 import { z } from "zod";
 import { JSONDisplay } from "../JSONDisplay";
 import { MessageContainerProps } from "./workflow-event";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 
 interface DataSectionProps {
   title: string;
@@ -73,7 +79,7 @@ export const AiMessage = ({ data, createdAt }: MessageContainerProps) => {
 
   return (
     <div className="mx-4">
-      <div className="rounded-xl bg-secondary/30 p-4 shadow-sm border border-border/50 backdrop-blur-sm">
+      <div className="rounded-xl bg-white p-4 shadow-sm border border-border/50 hover:shadow-md transition-all duration-200">
         <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
             <Brain size={18} className="text-primary" />
@@ -88,63 +94,69 @@ export const AiMessage = ({ data, createdAt }: MessageContainerProps) => {
 
         <div className="space-y-4">
           {message && (
-            <DataSection
-              title="Message"
-              icon={MessageCircleReply}
-              content={
-                <ReactMarkdown className="text-sm text-muted-foreground prose-sm prose-p:leading-relaxed prose-p:my-1.5 prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md">
-                  {message}
-                </ReactMarkdown>
-              }
-            />
+            <div className="bg-secondary/10 rounded-lg p-4">
+              <ReactMarkdown className="text-sm text-foreground prose-sm prose-p:leading-relaxed prose-p:my-1.5 prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md">
+                {message}
+              </ReactMarkdown>
+            </div>
           )}
-          {result && <ResultSection result={result} />}
+
+          {result && (
+            <div className="bg-secondary/5 rounded-lg p-4 border border-border/50">
+              <div className="text-sm font-medium mb-2 text-muted-foreground">
+                Results
+              </div>
+              <ResultSection result={result} />
+            </div>
+          )}
+
+          {(hasReasoning || learnings) && (
+            <div className="border-t border-border/50 pt-4 ">
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                  <Brain className="h-4 w-4" />
+                  Agent Reasoning
+                  <ChevronDown className="h-4 w-4" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-4 space-y-4">
+                  {hasReasoning &&
+                    invocations?.map((invocation, index) => (
+                      <div
+                        key={index}
+                        className="bg-muted/30 rounded-md p-3 text-xs text-muted-foreground"
+                      >
+                        <span className="font-medium">
+                          Invoking {invocation.toolName}:
+                        </span>{" "}
+                        {invocation.reasoning}
+                      </div>
+                    ))}
+
+                  {learnings?.map((learning, index) => (
+                    <div
+                      key={index}
+                      className="bg-muted/30 rounded-md p-3 text-xs"
+                    >
+                      <div className="text-muted-foreground">
+                        {learning.summary}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground/70 mt-1">
+                        Entities:{" "}
+                        {learning.entities.map((e: any) => e.name).join(", ")}
+                      </div>
+                    </div>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          )}
+
           {issue && (
-            <DataSection
-              title="Issue"
-              icon={AlertTriangle}
-              content={
-                <p className="text-sm text-red-500/80 bg-red-500/5 rounded-md p-3">
-                  {issue}
-                </p>
-              }
-            />
+            <div className="bg-red-50 text-red-900/80 rounded-lg p-4 text-sm border border-red-100">
+              <AlertTriangle className="h-4 w-4 inline-block mr-2 text-red-500" />
+              {issue}
+            </div>
           )}
-          {hasReasoning &&
-            invocations?.map((invocation, index) => (
-              <DataSection
-                key={index}
-                title="Reasoning"
-                icon={Brain}
-                content={
-                  <div className="">
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-medium">
-                        Invoking {invocation.toolName}:
-                      </span>{" "}
-                      {invocation.reasoning}
-                    </p>
-                  </div>
-                }
-              />
-            ))}
-          {learnings?.map((learning, index) => (
-            <DataSection
-              key={index}
-              title="Learning"
-              icon={Brain}
-              content={
-                <div className="bg-primary/5 rounded-md p-3">
-                  <p className="text-sm text-muted-foreground">
-                    {learning.summary}
-                    <span className="text-xs ml-2 text-muted-foreground/70">
-                      ({learning.entities.map((e: any) => e.name).join(", ")})
-                    </span>
-                  </p>
-                </div>
-              }
-            />
-          ))}
         </div>
       </div>
     </div>

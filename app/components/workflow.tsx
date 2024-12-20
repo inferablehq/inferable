@@ -6,7 +6,7 @@ import FunctionCall from "@/components/chat/function-call";
 import RunEvent from "@/components/chat/workflow-event";
 import { Button } from "@/components/ui/button";
 import { ClientInferResponseBody } from "@ts-rest/core";
-import { FunctionSquareIcon, RefreshCcw, TestTube2Icon } from "lucide-react";
+import { RefreshCcw, TestTube2Icon, WorkflowIcon } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -14,19 +14,16 @@ import { useRouter } from "next/navigation";
 import { ulid } from "ulid";
 import { Textarea } from "./ui/textarea";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth, useOrganization, useUser } from "@clerk/nextjs";
 import { useQueue } from "@uidotdev/usehooks";
 import { MessageCircleWarning } from "lucide-react";
 import { FeedbackDialog } from "./bug-report-dialog";
 import { DebugEvent } from "./debug-event";
-import { ThinkingIndicator } from "./ThinkingIndicator";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "react-hot-toast";
 import { Blob } from "./chat/blob";
-import { ServerConnectionStatus } from "./server-connection-pane";
 
 const messageSkeleton = (
   <div className="flex flex-col items-start space-y-4 p-4" key="skeleton-0">
@@ -96,6 +93,31 @@ export function Run({
     200
   > | null>(null);
 
+  const [runMetadata, setRunMetadata] = useState<ClientInferResponseBody<
+    typeof contract.getRun,
+    200
+  > | null>(null);
+
+  useEffect(() => {
+    async function fetchRunMetadata() {
+      const result = await client.getRun({
+        headers: {
+          authorization: `Bearer ${await getToken()}`,
+        },
+        params: {
+          clusterId,
+          runId,
+        },
+      });
+
+      if (result.status === 200) {
+        setRunMetadata(result.body);
+      }
+    }
+
+    fetchRunMetadata();
+  }, [clusterId, runId, getToken]);
+
   const fetchRunTimeline = useCallback(async () => {
     const result = await client.getRunTimeline({
       headers: {
@@ -109,15 +131,7 @@ export function Run({
 
     if (result.status === 200) {
       setRunTimeline(result.body);
-      ServerConnectionStatus.addEvent({
-        type: "getRunTimeline",
-        success: true,
-      });
     } else {
-      ServerConnectionStatus.addEvent({
-        type: "getRunTimeline",
-        success: false,
-      });
       if (result.status === 404) {
         goToRun(clusterId, "");
       }
@@ -272,32 +286,32 @@ export function Run({
     runTimeline?.messages
       .filter((m) => ["human", "agent", "template"].includes(m.type))
       .map((m) => ({
-      element: (
-        <ElementWrapper
-          mutableId={mutableId}
-          id={m.id}
-          key={m.id}
-          human={m.type === "human"}
-        >
-          <RunEvent
-            key={m.id}
+        element: (
+          <ElementWrapper
+            mutableId={mutableId}
             id={m.id}
-            isEditable={isAdmin || isOwner}
-            createdAt={m.createdAt}
-            data={m.data}
-            displayableContext={m.displayableContext ?? undefined}
-            type={m.type}
-            showMeta={false}
-            clusterId={clusterId}
-            jobs={runTimeline?.jobs ?? []}
-            pending={"pending" in m && m.pending}
-            runId={runId}
-            onPreMutation={(ulid) => setMutableId(ulid)}
-          />
-        </ElementWrapper>
-      ),
-      timestamp: new Date(m.createdAt).getTime(),
-    })) || [];
+            key={m.id}
+            human={m.type === "human"}
+          >
+            <RunEvent
+              key={m.id}
+              id={m.id}
+              isEditable={isAdmin || isOwner}
+              createdAt={m.createdAt}
+              data={m.data}
+              displayableContext={m.displayableContext ?? undefined}
+              type={m.type}
+              showMeta={false}
+              clusterId={clusterId}
+              jobs={runTimeline?.jobs ?? []}
+              pending={"pending" in m && m.pending}
+              runId={runId}
+              onPreMutation={(ulid) => setMutableId(ulid)}
+            />
+          </ElementWrapper>
+        ),
+        timestamp: new Date(m.createdAt).getTime(),
+      })) || [];
 
   const blobElements =
     runTimeline?.blobs.map((a) => ({
@@ -332,91 +346,100 @@ export function Run({
         timestamp: new Date(a.createdAt).getTime(),
       })) || [];
 
-  const testHeader =
-    runTimeline?.run.test === true
-      ? {
-          element: (
-            <div className="bg-white border-b shadow-lg">
-              <Alert variant="default" className="bg-white border-0">
-                <TestTube2Icon className="h-4 w-4" />
-                <AlertTitle>Test Run</AlertTitle>
-                <AlertDescription>
-                  This run was part of a test.
-                </AlertDescription>
-              </Alert>
-            </div>
-          ),
-          timestamp: 0,
-        }
-      : null;
+  const metadataHeader = runMetadata
+    ? {
+        element: (
+          <div className="bg-white border-b px-4 py-2 mb-4">
+            <div className="flex flex-col space-y-2">
+              <div className="flex items-center space-x-2">
+                {runMetadata.test ? (
+                  <div className="bg-purple-50 p-1.5 rounded">
+                    <TestTube2Icon className="h-4 w-4 text-purple-500" />
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 p-1.5 rounded">
+                    <WorkflowIcon className="h-4 w-4 text-blue-500" />
+                  </div>
+                )}
+                <span className="text-sm font-medium">
+                  {runMetadata.test ? "Test Run" : "Run"}
+                </span>
+              </div>
 
-  const availableToolsHeader =
-    runTimeline?.run.attachedFunctions &&
-    runTimeline?.run.attachedFunctions.length > 0
-      ? {
-          element: (
-            <div className="bg-white border-b shadow-lg">
-              <Alert variant="default" className="bg-white border-0">
-                <FunctionSquareIcon className="h-4 w-4" />
-                <AlertTitle>Available Functions</AlertTitle>
-                <AlertDescription>
-                  This run is limited to calling the following functions:
-                </AlertDescription>
-                {runTimeline?.run.attachedFunctions.map((tool) => (
-                  <li key={tool}>{tool}</li>
-                ))}
-              </Alert>
-            </div>
-          ),
-          timestamp: 0,
-        }
-      : {
-          element: (
-            <div className="bg-white border-b shadow-lg">
-              <Alert variant="default" className="bg-white border-0">
-                <FunctionSquareIcon className="h-4 w-4" />
-                <AlertTitle>Available Tools</AlertTitle>
-                <AlertDescription>
-                  This run has access to all functions (Including the{" "}
-                  <a
-                    className="underline"
-                    href="https://docs.inferable.ai/pages/standard-lib"
-                  >
-                    Standard Library
-                  </a>
-                  ).
-                </AlertDescription>
-              </Alert>
-            </div>
-          ),
-          timestamp: 0,
-        };
-
-  const failedHeader =
-    runTimeline?.run.status === "failed"
-      ? {
-          element: (
-            <div className="bg-white border-b shadow-lg">
-              <Alert variant="destructive" className="bg-white border-0">
-                <MessageCircleWarning className="h-4 w-4" />
-                <AlertTitle>Run Failed</AlertTitle>
-                <AlertDescription>
-                  <p>The run failed with the following message.</p>
-                  <p>
-                    If the problem persists, please contact support at
-                    support@inferable.ai.
-                  </p>
-                  <pre className="text-red-500 my-2">
-                    {JSON.stringify(
-                      runTimeline?.run.failureReason ?? "Unknown failure",
-                      null,
-                      2
+              {runMetadata.metadata &&
+                Object.entries(runMetadata.metadata).length > 0 && (
+                  <div className="flex flex-col space-y-1">
+                    {Object.entries(runMetadata.metadata).map(
+                      ([key, value]) => (
+                        <div
+                          key={key}
+                          className="bg-gray-100 px-2 py-0.5 rounded text-xs w-fit"
+                        >
+                          {key}: {value}
+                        </div>
+                      )
                     )}
-                  </pre>
+                  </div>
+                )}
+
+              <div className="text-xs text-gray-500">
+                <span className="font-medium">Functions:</span>{" "}
+                {runMetadata.attachedFunctions &&
+                runMetadata.attachedFunctions.length > 0 ? (
+                  <span className="font-mono">
+                    {runMetadata.attachedFunctions.join(", ")}
+                  </span>
+                ) : (
+                  <span>
+                    Full access including{" "}
+                    <a
+                      className="text-blue-500 hover:underline"
+                      href="https://docs.inferable.ai/pages/standard-lib"
+                    >
+                      Standard Library
+                    </a>
+                  </span>
+                )}
+              </div>
+
+              {runMetadata.userId && (
+                <div className="text-xs text-gray-500">
+                  <span className="font-medium">User Context:</span>{" "}
+                  <span
+                    className="font-mono"
+                    title={runMetadata.userId}
+                    style={{
+                      maxWidth: "100px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {runMetadata.userId}
+                  </span>
+                </div>
+              )}
+
+              {runMetadata.status === "failed" && (
+                <div className="flex items-center space-x-2 ml-auto">
+                  <div className="bg-red-50 p-1.5 rounded">
+                    <MessageCircleWarning className="h-4 w-4 text-red-500" />
+                  </div>
+                  <span className="text-sm text-red-600">
+                    Failed: {runMetadata.failureReason}
+                  </span>
                   <Button
                     size="sm"
+                    variant="outline"
+                    className="h-7"
                     onClick={async () => {
                       const loading = toast.loading("Retrying run...");
+
+                      if (!runTimeline?.messages[0].id) {
+                        toast.error("No message ID found");
+                        return;
+                      }
+
                       await client
                         .createRunRetry({
                           headers: {
@@ -443,16 +466,17 @@ export function Run({
                         });
                     }}
                   >
-                    <RefreshCcw className="h-4 w-4 mr-2" />
+                    <RefreshCcw className="h-3 w-3 mr-1" />
                     Retry
                   </Button>
-                </AlertDescription>
-              </Alert>
+                </div>
+              )}
             </div>
-          ),
-          timestamp: 0,
-        }
-      : null;
+          </div>
+        ),
+        timestamp: 0,
+      }
+    : null;
 
   const pendingMessage =
     wipMessages.queue
@@ -486,9 +510,7 @@ export function Run({
       })) || [];
 
   const elements = [
-    failedHeader,
-    testHeader,
-    availableToolsHeader,
+    metadataHeader,
     ...jobElements,
     ...eventElements,
     ...activityElements,

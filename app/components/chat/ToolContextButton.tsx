@@ -30,7 +30,6 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
   functionName,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [context, setContext] = useState("");
   const { getToken } = useAuth();
   const [services, setServices] = useState<
     Array<{
@@ -86,47 +85,18 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
     }
   }, [services, service, functionName]);
 
-  const fetchContext = async () => {
-    const token = await getToken();
-    try {
-      const result = await client.getFunctionMetadata({
-        params: { clusterId, service, function: functionName },
-        headers: { authorization: `Bearer ${token}` },
-      });
-
-      if (result.status === 200) {
-        setContext(result.body?.additionalContext || "");
-      } else {
-        throw new Error("Failed to fetch tool context");
-      }
-    } catch (error) {
-      console.error("Error fetching tool context:", error);
-      toast.error("Failed to fetch tool context. Please try again.");
-    }
-  };
-
-  const updateContext = async () => {
-    const token = await getToken();
-    try {
-      const result = await client.upsertFunctionMetadata({
-        params: { clusterId, service, function: functionName },
-        headers: { authorization: `Bearer ${token}` },
-        body: {
-          additionalContext: context,
-        },
-      });
-
-      if (result.status === 204) {
-        toast.success("Tool context updated successfully.");
-        setIsOpen(false);
-      } else {
-        throw new Error("Failed to update tool context");
-      }
-    } catch (error) {
-      console.error("Error updating tool context:", error);
-      toast.error("Failed to update tool context. Please try again.");
-    }
-  };
+  // const fetchContext = async () => {
+  //   const token = await getToken();
+  //   try {
+  //     const result = await client.getFunctionMetadata({
+  //       params: { clusterId, service, function: functionName },
+  //       headers: { authorization: `Bearer ${token}` },
+  //     });
+  //   } catch (error) {
+  //     console.error("Error fetching tool context:", error);
+  //     toast.error("Failed to fetch tool context. Please try again.");
+  //   }
+  // };
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -136,7 +106,7 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
           variant="outline"
           className="px-2 py-1"
           onClick={() => {
-            fetchContext();
+            // fetchContext();
             setIsOpen(true);
           }}
         >

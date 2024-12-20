@@ -125,9 +125,9 @@ export function HumanMessage({
   }
 
   return (
-    <div className="mx-4 mt-4">
+    <div className="mx-4">
       <div
-        className={`rounded-xl bg-primary p-4 shadow-sm ${
+        className={`rounded-xl bg-primary p-4 shadow-sm hover:shadow-md transition-all duration-200 ${
           pending ? `animate-pulse` : ``
         }`}
       >
@@ -151,10 +151,8 @@ export function HumanMessage({
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+                className="h-7 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground transition-colors duration-200"
                 onClick={() => setEditing(true)}
-                onMouseEnter={() => onPreMutation(true)}
-                onMouseLeave={() => onPreMutation(false)}
               >
                 <PencilLineIcon className="h-3.5 w-3.5 mr-1" />
                 <span className="text-xs">Edit</span>
@@ -164,8 +162,6 @@ export function HumanMessage({
                 variant="secondary"
                 className="h-7 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
                 onClick={retryMessage}
-                onMouseEnter={() => onPreMutation(true)}
-                onMouseLeave={() => onPreMutation(false)}
               >
                 <RefreshCcw className="h-3.5 w-3.5 mr-1" />
                 <span className="text-xs">Retry</span>
@@ -174,7 +170,7 @@ export function HumanMessage({
           )}
         </div>
 
-        <div className="text-sm text-primary-foreground whitespace-pre-line leading-relaxed">
+        <div className="text-sm text-primary-foreground whitespace-pre-line leading-relaxed bg-primary-foreground/5 rounded-md p-3">
           {data.message}
         </div>
       </div>
