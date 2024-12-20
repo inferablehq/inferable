@@ -394,7 +394,7 @@ export function ClusterDetails({
                 <div className="space-y-1">
                   <div className="font-mono text-xl">Cluster Health</div>
                   <div className="text-sm text-muted-foreground">
-                    Monitor and manage your cluster's machines
+                    Monitor and manage your cluster&apos;s machines
                   </div>
                 </div>
               </div>

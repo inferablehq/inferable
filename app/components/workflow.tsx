@@ -198,7 +198,7 @@ export function Run({
         });
       }
     },
-    [clusterId, runId, getToken, setPrompt, goToRun, wipMessages]
+    [clusterId, runId, getToken, setPrompt, wipMessages]
   );
 
   const submitApproval = useCallback(
