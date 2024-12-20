@@ -77,15 +77,14 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       const body: ClientInferRequest<typeof contract.createRun>["body"] = {};
 
       if (config.template?.id) {
-        body.template = {
-          id: config.template.id,
-          input: Object.fromEntries(
-            Object.entries(config.template.input).map(([key, value]) => [
-              key.replaceAll("{{", "").replaceAll("}}", ""),
-              value,
-            ])
-          ),
-        };
+        body.configId = config.template.id,
+
+        body.input = Object.fromEntries(
+          Object.entries(config.template.input).map(([key, value]) => [
+            key.replaceAll("{{", "").replaceAll("}}", ""),
+            value,
+          ])
+        )
       } else {
         body.initialPrompt = config.prompt.replace(/{{.*?}}/g, "");
       }
