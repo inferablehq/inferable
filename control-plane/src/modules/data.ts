@@ -300,6 +300,9 @@ export const workflows = pgTable(
     enable_summarization: boolean("enable_summarization")
       .default(false)
       .notNull(),
+    enable_result_grounding: boolean("enable_result_grounding")
+      .default(false)
+      .notNull(),
     custom_auth_token: text("custom_auth_token"),
     auth_context: json("auth_context"),
     context: json("context"),

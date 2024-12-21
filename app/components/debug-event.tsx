@@ -80,13 +80,13 @@ export function DebugEvent({
   return (
     <div
       className={cn(
-        "ml-8 relative group -z-10",
+        "ml-8 relative group",
         getEventSpacing(msSincePreviousEvent)
       )}
     >
       <div
         className={cn(
-          "absolute left-1 top-0 bottom-0 w-[2px] -top-4 -bottom-4",
+          "absolute left-1 top-0 bottom-0 w-[2px] -top-4 -bottom-4 -z-10",
           msSincePreviousEvent < 60000
             ? "bg-border/50"
             : isSessionEnd

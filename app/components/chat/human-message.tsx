@@ -16,7 +16,6 @@ export function HumanMessage({
   runId,
   data,
   id: messageId,
-  onPreMutation,
   pending,
   createdAt,
 }: MessageContainerProps) {

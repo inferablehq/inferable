@@ -285,7 +285,9 @@ export function Run({
 
   const eventElements =
     runTimeline?.messages
-      .filter((m) => ["human", "agent", "template"].includes(m.type))
+      .filter((m) =>
+        ["human", "agent", "template", "invocation-result"].includes(m.type)
+      )
       .map((m) => ({
         element: (
           <ElementWrapper
@@ -307,6 +309,7 @@ export function Run({
               jobs={runTimeline?.jobs ?? []}
               pending={"pending" in m && m.pending}
               runId={runId}
+              messages={runTimeline?.messages ?? []}
               onPreMutation={(ulid) => setMutableId(ulid)}
             />
           </ElementWrapper>
@@ -548,6 +551,7 @@ export function Run({
               jobs={runTimeline?.jobs ?? []}
               pending={"pending" in m && m.pending}
               runId={runId}
+              messages={runTimeline?.messages ?? []}
               onPreMutation={(ulid) => setMutableId(ulid)}
             />
           </ElementWrapper>
