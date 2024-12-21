@@ -14,7 +14,9 @@
     "studio": "npx drizzle-kit studio",
     "build": "tsc",
     "start": "node dist/index.js",
-    "lint": "eslint src --ext .ts,.tsx,.js,.json --fix"
+    "lint": "eslint src --ext .ts,.tsx,.js,.json --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
   },
   "author": "Inferable, Inc.",
   "license": "MIT",
@@ -81,6 +83,7 @@
     "dotenv": "^16.3.1",
     "prettier-2": "npm:prettier@^2",
     "ts-node": "^10.9.2",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "prettier": "^3.2.5"
   }
 }
