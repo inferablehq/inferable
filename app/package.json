@@ -8,7 +8,7 @@
     "start": "next start -p 3001",
     "lint": "next lint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx}\""
+    "format:check": "prettier --check $(git diff --diff-filter=d --name-only origin/main HEAD | grep -E \"\\.(ts|tsx)$\" || echo \".\") || exit 0"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.4",

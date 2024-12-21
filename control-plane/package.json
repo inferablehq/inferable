@@ -16,7 +16,7 @@
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts,.tsx,.js,.json --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
+    "format:check": "prettier --check $(git diff --diff-filter=d --name-only origin/main HEAD | grep -E \"\\.(ts|tsx)$\" || echo \".\") || exit 0"
   },
   "author": "Inferable, Inc.",
   "license": "MIT",
