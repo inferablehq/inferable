@@ -1,4 +1,3 @@
-
 import { JsonSchema7ObjectType } from "zod-to-json-schema";
 import { AgentTool } from "../tool";
 import { workflows } from "../../../data";
@@ -8,8 +7,7 @@ import { WorkflowAgentState } from "../state";
 type ModelInvocationOutput = {
   toolName: string;
   input: unknown;
-
-}
+};
 
 export type ModelOutput = {
   invocations?: ModelInvocationOutput[];
@@ -18,18 +16,17 @@ export type ModelOutput = {
   message?: string;
   done?: boolean;
   issue?: string;
-}
+};
 
 export const buildModelSchema = ({
   state,
   relevantSchemas,
-  resultSchema
+  resultSchema,
 }: {
   state: WorkflowAgentState;
   relevantSchemas: AgentTool[];
   resultSchema?: InferSelectModel<typeof workflows>["result_schema"];
-  }) => {
-
+}) => {
   // Build the toolName enum
   const toolNameEnum = [
     ...relevantSchemas.map((tool) => tool.name),
@@ -48,7 +45,7 @@ export const buildModelSchema = ({
       issue: {
         type: "string",
         description:
-          "Describe any issues you have encountered in this step. Specifically related to the tools you are using.",
+          "Describe any issues you have encountered in this step. Specifically related to the tools you are using. If none, keep this field empty.",
       },
     },
   };

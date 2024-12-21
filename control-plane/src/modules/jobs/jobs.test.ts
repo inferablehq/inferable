@@ -2,7 +2,14 @@ import { ulid } from "ulid";
 import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
-import { createJob, pollJobs, getJob, requestApproval, submitApproval } from "./jobs";
+import {
+  createJob,
+  pollJobs,
+  getJob,
+  requestApproval,
+  submitApproval,
+  anonymizeJob,
+} from "./jobs";
 import {
   acknowledgeJob,
   persistJobResult,
@@ -443,10 +450,8 @@ describe("submitApproval", () => {
       },
       owner,
     });
-
-  })
+  });
   it("should mark job as approved", async () => {
-
     const result = await createJob({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
@@ -460,7 +465,7 @@ describe("submitApproval", () => {
     await requestApproval({
       clusterId: owner.clusterId,
       jobId: result.id,
-    })
+    });
 
     const retreivedJob1 = await getJob({
       jobId: result.id,
@@ -473,7 +478,7 @@ describe("submitApproval", () => {
       clusterId: owner.clusterId,
       call: retreivedJob1!,
       approved: true,
-    })
+    });
 
     const retreivedJob2 = await getJob({
       jobId: result.id,
@@ -489,7 +494,7 @@ describe("submitApproval", () => {
       clusterId: owner.clusterId,
       call: retreivedJob1!,
       approved: false,
-    })
+    });
 
     const retreivedJob3 = await getJob({
       jobId: result.id,
@@ -502,7 +507,6 @@ describe("submitApproval", () => {
   });
 
   it("should mark job as denied", async () => {
-
     const result = await createJob({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
@@ -516,7 +520,7 @@ describe("submitApproval", () => {
     await requestApproval({
       clusterId: owner.clusterId,
       jobId: result.id,
-    })
+    });
 
     const retreivedJob1 = await getJob({
       jobId: result.id,
@@ -529,7 +533,7 @@ describe("submitApproval", () => {
       clusterId: owner.clusterId,
       call: retreivedJob1!,
       approved: false,
-    })
+    });
 
     const retreivedJob2 = await getJob({
       jobId: result.id,
@@ -545,7 +549,7 @@ describe("submitApproval", () => {
       clusterId: owner.clusterId,
       call: retreivedJob1!,
       approved: true,
-    })
+    });
 
     const retreivedJob3 = await getJob({
       jobId: result.id,
@@ -555,6 +559,5 @@ describe("submitApproval", () => {
     expect(retreivedJob3!.approved).toBe(false);
     expect(retreivedJob3!.status).toBe("success");
     expect(retreivedJob3!.resultType).toBe("rejection");
-
   });
 });

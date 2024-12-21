@@ -75,7 +75,6 @@ export async function getToolMetadata(
   const [result] = await db
     .select({
       additionalContext: toolMetadata.user_defined_context,
-      resultKeys: toolMetadata.result_keys,
     })
     .from(toolMetadata)
     .where(

@@ -1,5 +1,5 @@
 import { Run } from "../workflows";
-import { buildMockTools, findRelevantTools } from "./run";
+import { buildMockTools, findRelevantTools, formatJobsContext } from "./run";
 import { upsertServiceDefinition } from "../../service-definitions";
 import { createOwner } from "../../test/util";
 import { ulid } from "ulid";
@@ -137,5 +137,67 @@ describe("buildMockTools", () => {
       resultType: "resolution",
       status: "success",
     });
+  });
+});
+
+describe("formatJobsContext", () => {
+  it("should return empty string for empty jobs array", () => {
+    const result = formatJobsContext([], "success");
+    expect(result).toBe("");
+  });
+
+  it("should format successful jobs correctly", () => {
+    const jobs = [
+      {
+        targetArgs: JSON.stringify({ param1: "test", param2: 123 }),
+        result: JSON.stringify({ status: "ok", data: "result" }),
+      },
+      {
+        targetArgs: JSON.stringify({ param3: true }),
+        result: JSON.stringify({ status: "ok", count: 42 }),
+      },
+    ];
+
+    const result = formatJobsContext(jobs, "success");
+
+    // Verify structure and anonymization
+    expect(result).toContain('<jobs status="success">');
+    expect(result).toContain("<input>");
+    expect(result).toContain("<output>");
+    expect(result).toContain('"param1":"<STRING>"');
+    expect(result).toContain('"param2":"<NUMBER>"');
+    expect(result).toContain('"param3":"<BOOLEAN>"');
+    expect(result).toContain('"status":"<STRING>"');
+    expect(result).toContain('"count":"<NUMBER>"');
+  });
+
+  it("should handle null results", () => {
+    const jobs = [
+      {
+        targetArgs: JSON.stringify({ test: "value" }),
+        result: null,
+      },
+    ];
+
+    const result = formatJobsContext(jobs, "failed");
+
+    expect(result).toContain('<jobs status="failed">');
+    expect(result).toContain("<input>");
+    expect(result).toContain("<output>");
+    expect(result).toContain('"test":"<STRING>"');
+  });
+
+  it("should anonymize arrays", () => {
+    const result = formatJobsContext(
+      [
+        {
+          targetArgs: JSON.stringify([1, 2, 3]),
+          result: JSON.stringify([4, 5, 6]),
+        },
+      ],
+      "success",
+    );
+    expect(result).toContain(`<input>[\"<NUMBER>\"]</input>`);
+    expect(result).toContain(`<output>[\"<NUMBER>\"]</output>`);
   });
 });
