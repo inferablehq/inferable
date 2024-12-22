@@ -1,23 +1,23 @@
-import { Run } from '../workflows';
-import { buildMockTools, findRelevantTools, formatJobsContext } from './run';
-import { upsertServiceDefinition } from '../../service-definitions';
-import { createOwner } from '../../test/util';
-import { ulid } from 'ulid';
+import { Run } from "../workflows";
+import { buildMockTools, findRelevantTools, formatJobsContext } from "./run";
+import { upsertServiceDefinition } from "../../service-definitions";
+import { createOwner } from "../../test/util";
+import { ulid } from "ulid";
 
-describe('findRelevantTools', () => {
-  it('should return explicitly attached tools', async () => {
+describe("findRelevantTools", () => {
+  it("should return explicitly attached tools", async () => {
     const owner = await createOwner();
     await upsertServiceDefinition({
-      service: 'testService',
+      service: "testService",
       definition: {
-        name: 'testService',
+        name: "testService",
         functions: [
           {
-            name: 'someFunction',
+            name: "someFunction",
             schema: mockTargetSchema,
           },
           {
-            name: 'someOtherFunction',
+            name: "someOtherFunction",
             schema: mockTargetSchema,
           },
         ],
@@ -28,8 +28,8 @@ describe('findRelevantTools', () => {
     const workflow = {
       id: Math.random().toString(36).substring(2),
       clusterId: owner.clusterId,
-      status: 'running' as const,
-      attachedFunctions: ['testService_someFunction'],
+      status: "running" as const,
+      attachedFunctions: ["testService_someFunction"],
     };
 
     const tools = await findRelevantTools({
@@ -37,37 +37,37 @@ describe('findRelevantTools', () => {
       messages: [
         {
           data: {
-            message: 'Call someFunction',
+            message: "Call someFunction",
           },
-          type: 'human' as const,
+          type: "human" as const,
           clusterId: owner.clusterId,
-          runId: 'test-workflow-id',
+          runId: "test-workflow-id",
           id: ulid(),
         },
       ],
-      status: 'running',
+      status: "running",
       waitingJobs: [],
       allAvailableTools: [],
     });
 
-    expect(tools.map(tool => tool.name)).toContain('testService_someFunction');
-    expect(tools.map(tool => tool.name)).not.toContain('testService_someOtherFunction');
+    expect(tools.map(tool => tool.name)).toContain("testService_someFunction");
+    expect(tools.map(tool => tool.name)).not.toContain("testService_someOtherFunction");
   });
 });
 
 const mockTargetSchema = JSON.stringify({
-  type: 'object',
+  type: "object",
   properties: {
     test: {
-      type: 'string',
+      type: "string",
     },
   },
 });
 
-describe('buildMockTools', () => {
+describe("buildMockTools", () => {
   let workflow: Run;
 
-  const service = 'testService';
+  const service = "testService";
   beforeAll(async () => {
     const owner = await createOwner();
     await upsertServiceDefinition({
@@ -76,7 +76,7 @@ describe('buildMockTools', () => {
         name: service,
         functions: [
           {
-            name: 'someFunction',
+            name: "someFunction",
             schema: mockTargetSchema,
           },
         ],
@@ -87,22 +87,22 @@ describe('buildMockTools', () => {
     workflow = {
       id: Math.random().toString(36).substring(2),
       clusterId: owner.clusterId,
-      status: 'running',
+      status: "running",
     };
   });
 
-  it('should return an empty object if no mocks are defined', async () => {
+  it("should return an empty object if no mocks are defined", async () => {
     const tools = await buildMockTools(workflow);
     expect(tools).toEqual({});
   });
 
-  it('should return an empty object if test is not enabled', async () => {
+  it("should return an empty object if test is not enabled", async () => {
     const tools = await buildMockTools({
       ...workflow,
       testMocks: {
         testService_someFunction: {
           output: {
-            foo: 'bar',
+            foo: "bar",
           },
         },
       },
@@ -110,56 +110,56 @@ describe('buildMockTools', () => {
     expect(tools).toEqual({});
   });
 
-  it('should return mock tools', async () => {
+  it("should return mock tools", async () => {
     const tools = await buildMockTools({
       ...workflow,
       test: true,
       testMocks: {
         testService_someFunction: {
           output: {
-            foo: 'bar',
+            foo: "bar",
           },
         },
       },
     });
-    expect(Object.keys(tools)).toEqual(['testService_someFunction']);
+    expect(Object.keys(tools)).toEqual(["testService_someFunction"]);
 
-    const result = await tools['testService_someFunction'].func({ test: '' });
+    const result = await tools["testService_someFunction"].func({ test: "" });
     expect(result).toBeDefined();
     expect(JSON.parse(result!)).toEqual({
       result: {
-        foo: 'bar',
+        foo: "bar",
       },
-      resultType: 'resolution',
-      status: 'success',
+      resultType: "resolution",
+      status: "success",
     });
   });
 });
 
-describe('formatJobsContext', () => {
-  it('should return empty string for empty jobs array', () => {
-    const result = formatJobsContext([], 'success');
-    expect(result).toBe('');
+describe("formatJobsContext", () => {
+  it("should return empty string for empty jobs array", () => {
+    const result = formatJobsContext([], "success");
+    expect(result).toBe("");
   });
 
-  it('should format successful jobs correctly', () => {
+  it("should format successful jobs correctly", () => {
     const jobs = [
       {
-        targetArgs: JSON.stringify({ param1: 'test', param2: 123 }),
-        result: JSON.stringify({ status: 'ok', data: 'result' }),
+        targetArgs: JSON.stringify({ param1: "test", param2: 123 }),
+        result: JSON.stringify({ status: "ok", data: "result" }),
       },
       {
         targetArgs: JSON.stringify({ param3: true }),
-        result: JSON.stringify({ status: 'ok', count: 42 }),
+        result: JSON.stringify({ status: "ok", count: 42 }),
       },
     ];
 
-    const result = formatJobsContext(jobs, 'success');
+    const result = formatJobsContext(jobs, "success");
 
     // Verify structure and anonymization
     expect(result).toContain('<previous_jobs status="success">');
-    expect(result).toContain('<input>');
-    expect(result).toContain('<output>');
+    expect(result).toContain("<input>");
+    expect(result).toContain("<output>");
     expect(result).toContain('"param1":"<string>"');
     expect(result).toContain('"param2":"<number>"');
     expect(result).toContain('"param3":"<boolean>"');
@@ -167,23 +167,23 @@ describe('formatJobsContext', () => {
     expect(result).toContain('"count":"<number>"');
   });
 
-  it('should handle null results', () => {
+  it("should handle null results", () => {
     const jobs = [
       {
-        targetArgs: JSON.stringify({ test: 'value' }),
+        targetArgs: JSON.stringify({ test: "value" }),
         result: null,
       },
     ];
 
-    const result = formatJobsContext(jobs, 'failed');
+    const result = formatJobsContext(jobs, "failed");
 
     expect(result).toContain('<previous_jobs status="failed">');
-    expect(result).toContain('<input>');
-    expect(result).toContain('<output>');
+    expect(result).toContain("<input>");
+    expect(result).toContain("<output>");
     expect(result).toContain('"test":"<string>"');
   });
 
-  it('should anonymize arrays', () => {
+  it("should anonymize arrays", () => {
     const result = formatJobsContext(
       [
         {
@@ -191,29 +191,29 @@ describe('formatJobsContext', () => {
           result: JSON.stringify([4, 5, 6]),
         },
       ],
-      'success'
+      "success"
     );
     expect(result).toContain(`<input>[\"<number>\"]</input>`);
     expect(result).toContain(`<output>[\"<number>\"]</output>`);
   });
 
-  it('should handle unparseable results', () => {
+  it("should handle unparseable results", () => {
     const result = formatJobsContext(
       [
         {
-          targetArgs: 'this is not json',
-          result: 'this is not json',
+          targetArgs: "this is not json",
+          result: "this is not json",
         },
         {
-          targetArgs: '<input>',
-          result: '<output>',
+          targetArgs: "<input>",
+          result: "<output>",
         },
         {
-          targetArgs: '123',
-          result: '456',
+          targetArgs: "123",
+          result: "456",
         },
       ],
-      'failed'
+      "failed"
     );
     expect(result).toMatchSnapshot();
   });
