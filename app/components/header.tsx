@@ -14,11 +14,10 @@ export function Header() {
   const clusterId = params?.clusterId as string;
 
   const navigationItems = NavigationItems({ clusterId });
-  if (!navigationItems) return null;
 
-  const navigationLinks = Array.isArray(navigationItems.props.children)
-    ? navigationItems.props.children
-    : [navigationItems.props.children];
+  const navigationLinks = Array.isArray(navigationItems?.props.children)
+    ? navigationItems?.props.children
+    : [navigationItems?.props.children];
 
   return (
     <header className="flex items-center justify-between w-full h-16 px-8">
