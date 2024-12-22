@@ -51,10 +51,10 @@ describe("findRelevantTools", () => {
     });
 
     expect(tools.map((tool) => tool.name)).toContain(
-      "testService_someFunction",
+      "testService_someFunction"
     );
     expect(tools.map((tool) => tool.name)).not.toContain(
-      "testService_someOtherFunction",
+      "testService_someOtherFunction"
     );
   });
 });
@@ -164,11 +164,11 @@ describe("formatJobsContext", () => {
     expect(result).toContain('<jobs status="success">');
     expect(result).toContain("<input>");
     expect(result).toContain("<output>");
-    expect(result).toContain('"param1":"<STRING>"');
-    expect(result).toContain('"param2":"<NUMBER>"');
-    expect(result).toContain('"param3":"<BOOLEAN>"');
-    expect(result).toContain('"status":"<STRING>"');
-    expect(result).toContain('"count":"<NUMBER>"');
+    expect(result).toContain('"param1":"<string>"');
+    expect(result).toContain('"param2":"<number>"');
+    expect(result).toContain('"param3":"<boolean>"');
+    expect(result).toContain('"status":"<string>"');
+    expect(result).toContain('"count":"<number>"');
   });
 
   it("should handle null results", () => {
@@ -195,7 +195,7 @@ describe("formatJobsContext", () => {
           result: JSON.stringify([4, 5, 6]),
         },
       ],
-      "success",
+      "success"
     );
     expect(result).toContain(`<input>[\"<NUMBER>\"]</input>`);
     expect(result).toContain(`<output>[\"<NUMBER>\"]</output>`);

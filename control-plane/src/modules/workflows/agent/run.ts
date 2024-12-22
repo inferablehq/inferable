@@ -264,13 +264,13 @@ export const processRun = async (
 
 function anonymize<T>(value: T): T {
   if (typeof value === "string") {
-    return "<STRING>" as T;
+    return "<string>" as T;
   } else if (value === null) {
-    return "<NULL>" as T;
+    return "<null>" as T;
   } else if (typeof value === "number") {
-    return "<NUMBER>" as T;
+    return "<number>" as T;
   } else if (typeof value === "boolean") {
-    return "<BOOLEAN>" as T;
+    return "<boolean>" as T;
   } else if (Array.isArray(value)) {
     return [anonymize(value[0])] as T;
   } else if (typeof value === "object") {
