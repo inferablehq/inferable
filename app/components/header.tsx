@@ -11,13 +11,13 @@ import { useParams } from 'next/navigation';
 
 export function Header() {
   const params = useParams();
-  const clusterId = params.clusterId as string;
+  const clusterId = params?.clusterId as string;
 
   const navigationItems = NavigationItems({ clusterId });
   if (!navigationItems) return null;
 
-  const navigationLinks = Array.isArray(navigationItems.props.children) 
-    ? navigationItems.props.children 
+  const navigationLinks = Array.isArray(navigationItems.props.children)
+    ? navigationItems.props.children
     : [navigationItems.props.children];
 
   return (
@@ -33,11 +33,42 @@ export function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[240px] flex flex-col gap-2 pt-8">
-                {navigationLinks.map((child, index) => (
-                  <SheetClose key={index} asChild>
-                    {child}
-                  </SheetClose>
-                ))}
+                {/* User profile section */}
+                <div className="mb-4 pb-4 border-b">
+                  <div className="flex justify-center mb-4">
+                    <UserButton
+                      appearance={{
+                        variables: {
+                          colorText: 'black',
+                        },
+                      }}
+                    />
+                  </div>
+                  <OrganizationSwitcher
+                    hidePersonal={true}
+                    appearance={{
+                      variables: {
+                        colorText: 'black',
+                      },
+                      elements: {
+                        rootBox: 'w-full',
+                        organizationSwitcherTrigger: 'w-full',
+                      },
+                    }}
+                    afterSelectOrganizationUrl="/switch-org"
+                  />
+                </div>
+                {/* Navigation section */}
+                <h2 className="font-medium mb-2 text-sm">Navigation</h2>
+                {navigationLinks.map(
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (child: any, index: any) =>
+                    child && (
+                      <SheetClose key={index} asChild>
+                        {child}
+                      </SheetClose>
+                    )
+                )}
               </SheetContent>
             </Sheet>
           </div>
@@ -49,7 +80,8 @@ export function Header() {
           </a>
         </div>
       </div>
-      <div className="flex items-center space-x-8">
+      {/* Desktop user controls */}
+      <div className="hidden md:flex items-center space-x-8">
         <UserButton
           appearance={{
             variables: {
