@@ -14,15 +14,10 @@ import { z } from "zod";
 import { ReadOnlyJSON } from "../read-only-json";
 import type { MessageContainerProps } from "./workflow-event";
 import ErrorDisplay from "../error-display";
-
-const invocationResultDataSchema = z.object({
-  id: z.string(),
-  result: z.unknown(),
-  createdAt: z.date(),
-});
+import { resultDataSchema } from "@/client/contract";
 
 export function InvocationResult(props: MessageContainerProps) {
-  const { success, data, error } = invocationResultDataSchema.safeParse(
+  const { success, data, error } = resultDataSchema.safeParse(
     props.data
   );
 
