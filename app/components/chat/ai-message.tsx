@@ -1,42 +1,16 @@
 import { agentDataSchema } from "@/client/contract";
-import { formatRelative } from "date-fns";
-import { startCase } from "lodash";
-import {
-  AlertTriangle,
-  Brain,
-  CheckCircleIcon,
-  MessageCircle,
-  MessageCircleReply,
-  Speaker,
-  Speech,
-} from "lucide-react";
-import { ReactNode } from "react";
-import ReactMarkdown from "react-markdown";
-import { z } from "zod";
-import { JSONDisplay } from "../JSONDisplay";
-import { MessageContainerProps } from "./workflow-event";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
-
-interface DataSectionProps {
-  title: string;
-  icon: React.ComponentType<any>;
-  content: ReactNode;
-}
-
-const DataSection = ({ title, icon: Icon, content }: DataSectionProps) => (
-  <div className="mb-4 last:mb-0">
-    <div className="flex items-center gap-2 text-muted-foreground text-xs font-medium mb-2">
-      <Icon size={16} className="text-primary/70" />
-      <span className="text-sm">{title}</span>
-    </div>
-    <div className="ml-6">{content}</div>
-  </div>
-);
+import { formatRelative } from "date-fns";
+import { startCase } from "lodash";
+import { AlertTriangle, Brain, ChevronDown } from "lucide-react";
+import { z } from "zod";
+import { JSONDisplay } from "../JSONDisplay";
+import { Markdown } from "./markdown";
+import { MessageContainerProps } from "./workflow-event";
 
 const basicResultSchema = z.record(z.string());
 
@@ -68,7 +42,11 @@ const ResultSection = ({ result }: { result: object }) => {
   return <JSONDisplay json={result} />;
 };
 
-export const AiMessage = ({ data, createdAt }: MessageContainerProps) => {
+export const AiMessage = ({
+  data,
+  createdAt,
+  messages,
+}: MessageContainerProps) => {
   const parsedData = agentDataSchema.parse(data);
   const { issue, result, message, invocations, learnings } = parsedData;
 
@@ -95,9 +73,7 @@ export const AiMessage = ({ data, createdAt }: MessageContainerProps) => {
         <div className="space-y-4">
           {message && (
             <div className="bg-secondary/10 rounded-lg p-4">
-              <ReactMarkdown className="text-sm text-foreground prose-sm prose-p:leading-relaxed prose-p:my-1.5 prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-md">
-                {message}
-              </ReactMarkdown>
+              <Markdown content={message} messages={messages} />
             </div>
           )}
 

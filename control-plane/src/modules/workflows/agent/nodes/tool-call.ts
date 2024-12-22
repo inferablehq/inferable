@@ -231,7 +231,9 @@ const _handleToolCall = async (
             id: ulid(),
             type: "invocation-result",
             data: {
-              result: response,
+              result: {
+                [toolCallId]: response,
+              },
               id: toolCallId,
             },
             runId: workflow.id,
@@ -260,7 +262,9 @@ const _handleToolCall = async (
             id: ulid(),
             type: "invocation-result",
             data: {
-              result: response,
+              result: {
+                [toolCallId]: response,
+              },
               id: toolCallId,
             },
             runId: workflow.id,
@@ -310,7 +314,7 @@ const _handleToolCall = async (
             data: {
               result: {
                 message: `Provided input did not match schema for ${toolName}, check your input`,
-                parseResult: error.validatorResult.errors
+                parseResult: error.validatorResult.errors,
               },
               id: toolCallId,
             },

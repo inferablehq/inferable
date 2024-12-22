@@ -3,8 +3,8 @@
 import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import { ReadOnlyJSON } from "@/components/read-only-json";
-import { Checkbox } from "@/components/ui/checkbox";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import { InputFields } from "./input-fields";
 import Commands from "./sdk-commands";
+import { isFeatureEnabled } from "@/lib/features";
 
 export type RunConfiguration = {
   attachedFunctions: string[];
@@ -31,6 +32,7 @@ export type RunConfiguration = {
     input: Record<string, string>;
   };
   runContext: string | null;
+  enableResultGrounding: boolean;
 };
 
 export function PromptTextarea({ clusterId }: { clusterId: string }) {
@@ -59,6 +61,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     resultSchema: null as string | null,
     reasoningTraces: true,
     runContext: null as string | null,
+    enableResultGrounding: false,
   });
 
   const handleConfigChange = (newConfig: {
@@ -66,6 +69,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     resultSchema: string | null;
     reasoningTraces: boolean;
     runContext: string | null;
+    enableResultGrounding: boolean;
   }) => {
     setRunConfig(newConfig);
   };
@@ -77,14 +81,14 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       const body: ClientInferRequest<typeof contract.createRun>["body"] = {};
 
       if (config.template?.id) {
-        body.configId = config.template.id,
+        body.configId = config.template.id;
 
         body.input = Object.fromEntries(
           Object.entries(config.template.input).map(([key, value]) => [
             key.replaceAll("{{", "").replaceAll("}}", ""),
             value,
           ])
-        )
+        );
       } else {
         body.initialPrompt = config.prompt.replace(/{{.*?}}/g, "");
       }
@@ -109,6 +113,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       }
 
       body.reasoningTraces = config.reasoningTraces;
+      body.enableResultGrounding = config.enableResultGrounding;
 
       body.interactive = true;
 
@@ -135,6 +140,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           resultSchema: null,
           reasoningTraces: true,
           runContext: null,
+          enableResultGrounding: false,
         });
       }
 
@@ -173,6 +179,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             input: storedInputs,
           }
         : undefined,
+      enableResultGrounding: runConfig.enableResultGrounding,
     });
   };
 
@@ -197,6 +204,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         : null,
       runContext: null,
       reasoningTraces: true,
+      enableResultGrounding: false,
     });
     template.initialPrompt && setPrompt(template.initialPrompt);
     setSelectedTemplate({
@@ -503,27 +511,50 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             ) : (
               <ChevronDown className="h-3.5 w-3.5" />
             )}
-            <span className="font-medium">Reasoning Traces</span>
+            <span className="font-medium">Options</span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Enable reasoning traces to see the agent&apos;s step-by-step thought
-            process as it works on your request.
+            Configure how the AI agent processes your request and interacts with
+            available tools.
           </p>
-          <div className={cn("mt-2", collapsedSections.options && "hidden")}>
+          <div
+            className={cn(
+              "mt-2 space-y-4",
+              collapsedSections.options && "hidden"
+            )}
+          >
             <div className="flex items-center space-x-2">
-              <Checkbox
+              <Switch
                 checked={runConfig.reasoningTraces}
                 onCheckedChange={(checked) =>
                   handleConfigChange({
                     ...runConfig,
-                    reasoningTraces: checked as boolean,
+                    reasoningTraces: checked,
                   })
                 }
+                className="scale-75 data-[state=checked]:bg-primary"
               />
               <label className="text-xs text-muted-foreground">
                 Enable reasoning traces
               </label>
             </div>
+            {isFeatureEnabled("feature.result_grounding") && (
+              <div className={"flex items-center space-x-2"}>
+                <Switch
+                  checked={runConfig.enableResultGrounding}
+                  onCheckedChange={(checked) =>
+                    handleConfigChange({
+                      ...runConfig,
+                      enableResultGrounding: checked,
+                    })
+                  }
+                  className="scale-75 data-[state=checked]:bg-primary"
+                />
+                <label className="text-xs text-muted-foreground">
+                  Enable result grounding
+                </label>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -384,6 +384,7 @@ export type RunOptions = {
   reasoningTraces?: boolean;
   callSummarization?: boolean;
   modelIdentifier?: ChatIdentifiers;
+  enableResultGrounding?: boolean;
 
   input?: Record<string, unknown>;
   messageMetadata?: RunMessageMetadata;
@@ -405,6 +406,7 @@ export const mergeRunConfigOptions = (
     reasoningTraces: options.reasoningTraces,
     callSummarization: options.callSummarization,
     modelIdentifier: options.modelIdentifier,
+    enableResultGrounding: options.enableResultGrounding,
     input: options.input,
   };
 

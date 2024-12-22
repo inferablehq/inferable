@@ -1359,6 +1359,13 @@
       "when": 1734080456384,
       "tag": "0194_tiny_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 195,
+      "version": "7",
+      "when": 1734816005235,
+      "tag": "0195_cultured_agent_brand",
+      "breakpoints": true
     }
   ]
 }

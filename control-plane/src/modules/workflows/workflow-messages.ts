@@ -13,6 +13,7 @@ import {
 } from "../contract";
 import { logger } from "../observability/logger";
 import Anthropic from "@anthropic-ai/sdk";
+import { get, reduce } from "lodash";
 
 export type MessageData = z.infer<typeof messageDataSchema>;
 
@@ -255,6 +256,28 @@ export const getRunMessagesForDisplay = async ({
       ),
     )
     .limit(last);
+
+  const results = messages
+    .filter((m) => m.type === "invocation-result")
+    .map((m: any) => m.data.result); // TODO: fix type
+
+  const allTokenized = results.reduce((acc, result) => {
+    return { ...acc, ...result };
+  }, {});
+
+  for (const message of messages) {
+    if (message.type === "agent") {
+      if ("message" in message.data) {
+        message.data.message = message.data.message?.replaceAll(
+          /{{[\w\d.\[\]]+?}}/g,
+          (match) => {
+            const id = match.replace("{{", "").replace("}}", "");
+            return `[${get(allTokenized, id)}](path://${id})`;
+          },
+        );
+      }
+    }
+  }
 
   return messages
     .map((message) => {

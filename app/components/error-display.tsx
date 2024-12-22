@@ -7,10 +7,12 @@ import {
   Zap,
   Binary,
 } from "lucide-react";
+import { ReadOnlyJSON } from "./read-only-json";
 
 interface ErrorDisplayProps {
   status?: number;
   error?: any;
+  meta?: Record<string, unknown>;
 }
 
 const getHumorousMessage = (
@@ -59,7 +61,11 @@ const getHumorousMessage = (
   }
 };
 
-export default function ErrorDisplay({ status, error }: ErrorDisplayProps) {
+export default function ErrorDisplay({
+  status,
+  error,
+  meta,
+}: ErrorDisplayProps) {
   const errorContent = getHumorousMessage(status);
 
   const message =
@@ -82,6 +88,11 @@ export default function ErrorDisplay({ status, error }: ErrorDisplayProps) {
             <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
               <p>{message || errorContent.message}</p>
             </div>
+            {meta && (
+              <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
+                <ReadOnlyJSON json={meta} />
+              </div>
+            )}
           </div>
         </div>
       </div>

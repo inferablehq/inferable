@@ -183,10 +183,14 @@ describe("Agent", () => {
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
 
       assertResultMessage(outputState.messages[2]);
-      expect(outputState.messages[2].data.result).toHaveProperty(
-        "result",
-        expect.stringContaining("Failed to echo the word 'hello'"),
-      );
+      const topLevelResult = outputState.messages[2].data.result;
+      Object.keys(topLevelResult).forEach((key) => {
+        expect(topLevelResult[key]).toEqual({
+          result: "Failed to echo the word 'hello'",
+          status: "success",
+          resultType: "rejection",
+        });
+      })
     });
   });
 

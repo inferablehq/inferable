@@ -562,6 +562,10 @@ export const definition = {
         .describe(
           "Allow the run to be continued with follow-up messages / message edits",
         ),
+      enableResultGrounding: z
+        .boolean()
+        .default(false)
+        .describe("Enable result grounding"),
     }),
     responses: {
       201: z.object({

@@ -64,6 +64,7 @@ export type Run = {
   modelIdentifier?: ChatIdentifiers | null;
   authContext?: unknown | null;
   context?: unknown | null;
+  enableResultGrounding?: boolean;
 };
 
 export const createRun = async ({
@@ -86,6 +87,7 @@ export const createRun = async ({
   customAuthToken,
   authContext,
   context,
+  enableResultGrounding,
 }: {
   user?: Auth;
   clusterId: string;
@@ -111,6 +113,7 @@ export const createRun = async ({
   customAuthToken?: string;
   authContext?: unknown;
   context?: unknown;
+  enableResultGrounding?: boolean;
 }): Promise<Run> => {
   let run: Run | undefined = undefined;
 
@@ -147,6 +150,7 @@ export const createRun = async ({
           custom_auth_token: customAuthToken,
           auth_context: authContext,
           context: context,
+          enable_result_grounding: enableResultGrounding,
         },
       ])
       .returning({
@@ -162,6 +166,7 @@ export const createRun = async ({
         authContext: workflows.auth_context,
         context: workflows.context,
         interactive: workflows.interactive,
+        enableResultGrounding: workflows.enable_result_grounding,
       });
 
     run = result[0];
@@ -274,6 +279,7 @@ export const getRun = async ({
       modelIdentifier: workflows.model_identifier,
       authContext: workflows.auth_context,
       context: workflows.context,
+      enableResultGrounding: workflows.enable_result_grounding,
     })
     .from(workflows)
     .where(and(eq(workflows.cluster_id, clusterId), eq(workflows.id, runId)));
@@ -312,6 +318,7 @@ export const getClusterWorkflows = async ({
       modelIdentifier: workflows.model_identifier,
       authContext: workflows.auth_context,
       context: workflows.context,
+      enableResultGrounding: workflows.enable_result_grounding,
     })
     .from(workflows)
     .where(
@@ -353,6 +360,7 @@ export const getWorkflowDetail = async ({
         modelIdentifier: workflows.model_identifier,
         authContext: workflows.auth_context,
         context: workflows.context,
+        enableResultGrounding: workflows.enable_result_grounding,
       })
       .from(workflows)
       .where(and(eq(workflows.cluster_id, clusterId), eq(workflows.id, runId))),
@@ -481,6 +489,7 @@ export const createRunWithMessage = async ({
   customAuthToken,
   authContext,
   context,
+  enableResultGrounding,
 }: {
   user?: Auth;
   clusterId: string;
@@ -509,6 +518,7 @@ export const createRunWithMessage = async ({
   customAuthToken?: string;
   authContext?: unknown;
   context?: unknown;
+  enableResultGrounding?: boolean;
 }) => {
   const workflow = await createRun({
     user,
@@ -530,6 +540,7 @@ export const createRunWithMessage = async ({
     customAuthToken,
     authContext,
     context,
+    enableResultGrounding,
   });
 
   await addMessageAndResume({

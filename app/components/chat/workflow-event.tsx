@@ -5,10 +5,12 @@ import { AiMessage } from "./ai-message";
 import { HumanMessage } from "./human-message";
 import { TemplateMessage } from "./template-mesage";
 import { WorkflowJob } from "@/lib/types";
+import { InvocationResult } from "./InvocationResult";
 
 export type MessageContainerProps = {
   id: string;
   createdAt: Date;
+  messages: ClientInferResponseBody<typeof contract.listMessages, 200>;
   data: ClientInferResponseBody<
     typeof contract.listMessages,
     200
@@ -24,7 +26,6 @@ export type MessageContainerProps = {
   jobs: WorkflowJob[];
   pending?: boolean;
   runId: string;
-  onPreMutation: (isHovering: boolean) => void;
 };
 
 const container: {
@@ -33,13 +34,14 @@ const container: {
   human: HumanMessage,
   agent: AiMessage,
   template: TemplateMessage,
-  default: ({ data }) => <p>{JSON.stringify(data)}</p>,
+  "invocation-result": InvocationResult,
+  default: (data) => <p>{JSON.stringify(data)}</p>,
 };
 
 function RunEvent(
   props: Omit<MessageContainerProps, "onPreMutation"> & {
     onPreMutation: (ulid: string) => void;
-  },
+  }
 ) {
   const Container = container[props.type] || container.default;
 
@@ -54,13 +56,9 @@ function RunEvent(
       id={props.id}
       displayableContext={props.displayableContext}
       showMeta={props.showMeta}
-      onPreMutation={(inside) =>
-        inside
-          ? props.onPreMutation(props.id)
-          : props.onPreMutation("7ZZZZZZZZZZZZZZZZZZZZZZZZZ")
-      }
       createdAt={props.createdAt}
       pending={props.pending ?? false}
+      messages={props.messages}
     />
   );
 }

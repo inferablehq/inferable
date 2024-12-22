@@ -75,6 +75,7 @@
     "react-virtuoso": "^4.12.3",
     "recharts": "^2.12.7",
     "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.0",
     "sanitize-html": "^2.13.1",
     "sharp": "^0.33.5",
     "tailwind-merge": "^2.3.0",

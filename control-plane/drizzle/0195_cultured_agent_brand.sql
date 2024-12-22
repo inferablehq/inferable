@@ -1,0 +1,1 @@
+ALTER TABLE "workflows" ADD COLUMN "enable_result_grounding" boolean DEFAULT false NOT NULL;

@@ -185,6 +185,7 @@ export const runsRouter = initServer().router(
         attachedFunctions: runOptions.attachedFunctions,
         messageMetadata: runOptions.messageMetadata,
         reasoningTraces: runOptions.reasoningTraces,
+        enableResultGrounding: runOptions.enableResultGrounding,
       });
 
       posthog?.capture({
