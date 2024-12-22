@@ -1,0 +1,12 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`formatJobsContext should handle unparseable results 1`] = `
+"<previous_jobs status="failed">
+    <input>"<string>"</input>
+    <output>"<string>"</output>
+<input>"<string>"</input>
+    <output>"<string>"</output>
+<input>"<number>"</input>
+    <output>"<number>"</output>
+  </previous_jobs>"
+`;

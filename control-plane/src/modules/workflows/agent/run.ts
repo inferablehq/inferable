@@ -1,49 +1,40 @@
-import { z } from "zod";
-import { env } from "../../../utilities/env";
-import { NotFoundError } from "../../../utilities/errors";
-import { getClusterContextText } from "../../cluster";
-import { workflows } from "../../data";
-import { embedSearchQuery } from "../../embeddings/embeddings";
-import { flagsmith } from "../../flagsmith";
-import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
-import { events } from "../../observability/events";
-import { logger } from "../../observability/logger";
+import { z } from 'zod';
+import { env } from '../../../utilities/env';
+import { NotFoundError } from '../../../utilities/errors';
+import { getClusterContextText } from '../../cluster';
+import { workflows } from '../../data';
+import { embedSearchQuery } from '../../embeddings/embeddings';
+import { flagsmith } from '../../flagsmith';
+import { getLatestJobsResultedByFunctionName } from '../../jobs/jobs';
+import { events } from '../../observability/events';
+import { logger } from '../../observability/logger';
 import {
   embeddableServiceFunction,
   getServiceDefinitions,
   serviceFunctionEmbeddingId,
-} from "../../service-definitions";
-import { getToolMetadata } from "../../tool-metadata";
-import { notifyNewMessage, notifyStatusChange } from "../notify";
-import { getWorkflowMessages, insertRunMessage } from "../workflow-messages";
-import { Run, getWaitingJobIds, updateWorkflow } from "../workflows";
-import { createWorkflowAgent } from "./agent";
-import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
-import { WorkflowAgentState } from "./state";
-import { AgentTool } from "./tool";
-import { getClusterInternalTools } from "./tools/cluster-internal-tools";
-import {
-  CURRENT_DATE_TIME_TOOL_NAME,
-  buildCurrentDateTimeTool,
-} from "./tools/date-time";
-import {
-  buildAbstractServiceFunctionTool,
-  buildServiceFunctionTool,
-} from "./tools/functions";
+} from '../../service-definitions';
+import { getToolMetadata } from '../../tool-metadata';
+import { notifyNewMessage, notifyStatusChange } from '../notify';
+import { getWorkflowMessages, insertRunMessage } from '../workflow-messages';
+import { Run, getWaitingJobIds, updateWorkflow } from '../workflows';
+import { createWorkflowAgent } from './agent';
+import { mostRelevantKMeansCluster } from './nodes/tool-parser';
+import { WorkflowAgentState } from './state';
+import { AgentTool } from './tool';
+import { getClusterInternalTools } from './tools/cluster-internal-tools';
+import { CURRENT_DATE_TIME_TOOL_NAME, buildCurrentDateTimeTool } from './tools/date-time';
+import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from './tools/functions';
 import {
   ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME,
   buildAccessKnowledgeArtifacts,
-} from "./tools/knowledge-artifacts";
-import { buildMockFunctionTool } from "./tools/mock-function";
+} from './tools/knowledge-artifacts';
+import { buildMockFunctionTool } from './tools/mock-function';
 
 /**
  * Run a workflow from the most recent saved state
  **/
-export const processRun = async (
-  run: Run,
-  metadata?: Record<string, string>
-) => {
-  logger.info("Running workflow");
+export const processRun = async (run: Run, metadata?: Record<string, string>) => {
+  logger.info('Running workflow');
 
   // Parallelize fetching additional context and service definitions
   const [
@@ -59,7 +50,7 @@ export const processRun = async (
     }),
     updateWorkflow({
       ...run,
-      status: "running",
+      status: 'running',
     }),
     getClusterInternalTools(run.clusterId),
   ]);
@@ -69,8 +60,8 @@ export const processRun = async (
 
   allAvailableTools.push(...attachedFunctions);
 
-  serviceDefinitions.flatMap((service) =>
-    (service.definition.functions ?? []).forEach((f) => {
+  serviceDefinitions.flatMap(service =>
+    (service.definition.functions ?? []).forEach(f => {
       // Do not attach additional tools if `attachedFunctions` is provided
       if (attachedFunctions.length > 0 || f.config?.private) {
         return;
@@ -88,11 +79,8 @@ export const processRun = async (
   const mockToolsMap: Record<string, AgentTool> = await buildMockTools(run);
 
   let mockModelResponses;
-  if (
-    !!env.LOAD_TEST_CLUSTER_ID &&
-    run.clusterId === env.LOAD_TEST_CLUSTER_ID
-  ) {
-    logger.info("Mocking model responses for load test");
+  if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
+    logger.info('Mocking model responses for load test');
 
     //https://github.com/inferablehq/inferable/blob/main/load-tests/script.js
     mockModelResponses = [
@@ -100,7 +88,7 @@ export const processRun = async (
         done: false,
         invocations: [
           {
-            toolName: "default_searchHaystack",
+            toolName: 'default_searchHaystack',
             input: {},
           },
         ],
@@ -108,7 +96,7 @@ export const processRun = async (
       JSON.stringify({
         done: true,
         result: {
-          word: "needle",
+          word: 'needle',
         },
       }),
     ];
@@ -119,9 +107,9 @@ export const processRun = async (
     mockModelResponses,
     allAvailableTools,
     additionalContext,
-    getTool: async (toolCall) => {
+    getTool: async toolCall => {
       if (!toolCall.id) {
-        throw new Error("Can not return tool without call ID");
+        throw new Error('Can not return tool without call ID');
       }
 
       const mockTool = mockToolsMap[toolCall.toolName];
@@ -138,7 +126,7 @@ export const processRun = async (
 
       const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
         run.clusterId,
-        "service-function",
+        'service-function',
         toolCall.toolName
       );
 
@@ -154,8 +142,8 @@ export const processRun = async (
       throw new NotFoundError(`Tool not found: ${toolCall.toolName}`);
     },
     findRelevantTools,
-    postStepSave: async (state) => {
-      logger.debug("Saving run state", {
+    postStepSave: async state => {
+      logger.debug('Saving run state', {
         runId: run.id,
         clusterId: run.clusterId,
       });
@@ -163,17 +151,12 @@ export const processRun = async (
       if (attachedFunctions.length == 0) {
         // optimistically embed the next search query
         // this is not critical to the workflow, so we can do it in the background
-        embedSearchQuery(
-          state.messages.map((m) => JSON.stringify(m.data)).join(" ")
-        );
+        embedSearchQuery(state.messages.map(m => JSON.stringify(m.data)).join(' '));
       }
 
       // Insert messages in a loop to ensure they are created with differing timestamps
-      for (const message of state.messages.filter((m) => !m.persisted)) {
-        await Promise.all([
-          insertRunMessage(message),
-          notifyNewMessage({ message, metadata }),
-        ]);
+      for (const message of state.messages.filter(m => !m.persisted)) {
+        await Promise.all([insertRunMessage(message), notifyNewMessage({ message, metadata })]);
         message.persisted = true;
       }
     },
@@ -193,7 +176,7 @@ export const processRun = async (
   try {
     const output = await app.invoke(
       {
-        messages: messages.map((m) => ({
+        messages: messages.map(m => ({
           ...m,
           persisted: true,
         })),
@@ -214,10 +197,10 @@ export const processRun = async (
       .safeParse(output);
 
     if (!parsedOutput.success) {
-      logger.error("Failed to parse workflow output", {
+      logger.error('Failed to parse workflow output', {
         parsedOutput,
       });
-      throw new Error("Received unexpected workflow output state");
+      throw new Error('Received unexpected workflow output state');
     }
 
     await updateWorkflow({
@@ -233,28 +216,28 @@ export const processRun = async (
       result: parsedOutput.data.result,
     });
 
-    if (parsedOutput.data.status === "paused") {
-      logger.info("Workflow paused", {
+    if (parsedOutput.data.status === 'paused') {
+      logger.info('Workflow paused', {
         waitingJobs,
       });
 
       return;
     }
 
-    logger.info("Processing workflow complete");
+    logger.info('Processing workflow complete');
   } catch (error) {
-    logger.warn("Processing workflow failed", {
+    logger.warn('Processing workflow failed', {
       error,
     });
 
-    let failureReason = "An unknown error occurred during workflow processing.";
+    let failureReason = 'An unknown error occurred during workflow processing.';
     if (error instanceof Error) {
       failureReason = error.message;
     }
 
     await updateWorkflow({
       ...run,
-      status: "failed",
+      status: 'failed',
       failureReason,
     });
 
@@ -263,17 +246,17 @@ export const processRun = async (
 };
 
 function anonymize<T>(value: T): T {
-  if (typeof value === "string") {
-    return "<string>" as T;
+  if (typeof value === 'string') {
+    return '<string>' as T;
   } else if (value === null) {
-    return "<null>" as T;
-  } else if (typeof value === "number") {
-    return "<number>" as T;
-  } else if (typeof value === "boolean") {
-    return "<boolean>" as T;
+    return '<null>' as T;
+  } else if (typeof value === 'number') {
+    return '<number>' as T;
+  } else if (typeof value === 'boolean') {
+    return '<boolean>' as T;
   } else if (Array.isArray(value)) {
     return [anonymize(value[0])] as T;
-  } else if (typeof value === "object") {
+  } else if (typeof value === 'object') {
     const result = {} as T;
     for (const key in value) {
       result[key] = anonymize(value[key]);
@@ -284,24 +267,30 @@ function anonymize<T>(value: T): T {
   return value;
 }
 
+const safeParse = (value: string | null) => {
+  if (value === null) return null;
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return value;
+  }
+};
+
 export const formatJobsContext = (
-  jobs: { targetArgs: string; result: string | null }[],
-  status: "success" | "failed"
+  jobs: { targetArgs: string | null; result: string | null }[],
+  status: 'success' | 'failed'
 ) => {
-  if (jobs.length === 0) return "";
+  if (jobs.length === 0) return '';
 
   const jobEntries = jobs
-    .map((job) =>
+    .map(job =>
       `
-    <input>${JSON.stringify(
-      anonymize(job.targetArgs ? JSON.parse(job.targetArgs) : job.targetArgs)
-    )}</input>
-    <output>${JSON.stringify(
-      anonymize(job.result ? JSON.parse(job.result) : job.result)
-    )}</output>
+    <input>${JSON.stringify(anonymize(safeParse(job.targetArgs)))}</input>
+    <output>${JSON.stringify(anonymize(safeParse(job.result)))}</output>
   `.trim()
     )
-    .join("\n");
+    .join('\n');
 
   return `<previous_jobs status="${status}">
     ${jobEntries}
@@ -313,12 +302,12 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
     clusterId: workflow.clusterId,
   });
 
-  const useKmeans = flags?.isFeatureEnabled("use_kmeans_clustering");
+  const useKmeans = flags?.isFeatureEnabled('use_kmeans_clustering');
 
   const relatedToolsSearchResults = search
     ? await embeddableServiceFunction.findSimilarEntities(
         workflow.clusterId,
-        "service-function",
+        'service-function',
         search,
         50 // limit to 50 results
       )
@@ -327,26 +316,22 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
   let relatedTools = relatedToolsSearchResults;
 
   if (useKmeans && relatedToolsSearchResults?.length > 30) {
-    logger.info("Using kmeans clustering for related tool search");
+    logger.info('Using kmeans clustering for related tool search');
     relatedTools = mostRelevantKMeansCluster(relatedToolsSearchResults);
   }
 
   const toolContexts = await Promise.all(
-    relatedTools.map(async (toolDetails) => {
+    relatedTools.map(async toolDetails => {
       const [metadata, resolvedJobs, rejectedJobs] = await Promise.all([
-        getToolMetadata(
-          workflow.clusterId,
-          toolDetails.serviceName,
-          toolDetails.functionName
-        ),
+        getToolMetadata(workflow.clusterId, toolDetails.serviceName, toolDetails.functionName),
         getLatestJobsResultedByFunctionName({
           clusterId: workflow.clusterId,
           service: toolDetails.serviceName,
           functionName: toolDetails.functionName,
           limit: 3,
-          resultType: "resolution",
-        }).then((jobs) => {
-          return jobs?.map((j) => ({
+          resultType: 'resolution',
+        }).then(jobs => {
+          return jobs?.map(j => ({
             targetArgs: anonymize(j.targetArgs),
             result: anonymize(j.result),
           }));
@@ -356,9 +341,9 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
           service: toolDetails.serviceName,
           functionName: toolDetails.functionName,
           limit: 3,
-          resultType: "rejection",
-        }).then((jobs) => {
-          return jobs?.map((j) => ({
+          resultType: 'rejection',
+        }).then(jobs => {
+          return jobs?.map(j => ({
             targetArgs: anonymize(j.targetArgs),
             result: anonymize(j.result),
           }));
@@ -367,12 +352,12 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
 
       const contextArr: string[] = [];
 
-      const successJobsContext = formatJobsContext(resolvedJobs, "success");
+      const successJobsContext = formatJobsContext(resolvedJobs, 'success');
       if (successJobsContext) {
         contextArr.push(successJobsContext);
       }
 
-      const failedJobsContext = formatJobsContext(rejectedJobs, "failed");
+      const failedJobsContext = formatJobsContext(rejectedJobs, 'failed');
       if (failedJobsContext) {
         contextArr.push(failedJobsContext);
       }
@@ -384,24 +369,24 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
       return {
         serviceName: toolDetails.serviceName,
         functionName: toolDetails.functionName,
-        toolContext: contextArr.map((c) => c.trim()).join("\n\n"),
+        toolContext: contextArr.map(c => c.trim()).join('\n\n'),
       };
     })
   );
 
-  const selectedTools = relatedTools.map((toolDetails) =>
+  const selectedTools = relatedTools.map(toolDetails =>
     buildAbstractServiceFunctionTool({
       ...toolDetails,
       description: [
         toolDetails.description,
         toolContexts.find(
-          (c) =>
+          c =>
             c?.serviceName === toolDetails.serviceName &&
             c?.functionName === toolDetails.functionName
         )?.toolContext,
       ]
         .filter(Boolean)
-        .join("\n\n"),
+        .join('\n\n'),
       schema: toolDetails.schema,
     })
   );
@@ -410,7 +395,7 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
 }
 
 const buildAdditionalContext = async (run: Run) => {
-  let context = "";
+  let context = '';
 
   context += await getClusterContextText(run.clusterId);
   context += `\nCurrent workflow URL: https://app.inferable.ai/clusters/${run.clusterId}/workflows/${run.id}`;
@@ -429,8 +414,8 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
   // If functions are explicitly attached, skip relevant tools search
   if (attachedFunctions.length > 0) {
     for (const tool of attachedFunctions) {
-      if (tool.toLowerCase().startsWith("inferable_")) {
-        const internalToolName = tool.split("_")[1];
+      if (tool.toLowerCase().startsWith('inferable_')) {
+        const internalToolName = tool.split('_')[1];
 
         if (internalToolName === ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME) {
           tools.push(await buildAccessKnowledgeArtifacts(workflow));
@@ -445,14 +430,12 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
 
       const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
         workflow.clusterId,
-        "service-function",
+        'service-function',
         tool
       );
 
       if (!serviceFunctionDetails) {
-        throw new Error(
-          `Tool ${tool} not found in cluster ${workflow.clusterId}`
-        );
+        throw new Error(`Tool ${tool} not found in cluster ${workflow.clusterId}`);
       }
 
       tools.push(
@@ -465,14 +448,12 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
   } else {
     const found = await findRelatedFunctionTools(
       workflow,
-      state.messages.map((m) => JSON.stringify(m.data)).join(" ")
+      state.messages.map(m => JSON.stringify(m.data)).join(' ')
     );
 
     tools.push(...found);
 
-    const accessKnowledgeArtifactsTool = await buildAccessKnowledgeArtifacts(
-      workflow
-    );
+    const accessKnowledgeArtifactsTool = await buildAccessKnowledgeArtifacts(workflow);
 
     const currentDateTimeTool = buildCurrentDateTimeTool();
 
@@ -481,12 +462,12 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
     tools.push(currentDateTimeTool);
 
     events.write({
-      type: "functionRegistrySearchCompleted",
+      type: 'functionRegistrySearchCompleted',
       workflowId: workflow.id,
       clusterId: workflow.clusterId,
       meta: {
         duration: Date.now() - start,
-        tools: tools.map((t) => t.name),
+        tools: tools.map(t => t.name),
       },
     });
   }
@@ -502,7 +483,7 @@ export const buildMockTools = async (workflow: Run) => {
 
   if (!workflow.test) {
     logger.warn(
-      "Workflow is not marked as test enabled but contains mocks. Mocks will be ignored."
+      'Workflow is not marked as test enabled but contains mocks. Mocks will be ignored.'
     );
     return mocks;
   }
@@ -512,9 +493,9 @@ export const buildMockTools = async (workflow: Run) => {
   });
 
   for (const [key, value] of Object.entries(workflow.testMocks)) {
-    const [serviceName, functionName] = key.split("_");
+    const [serviceName, functionName] = key.split('_');
     if (!serviceName || !functionName) {
-      logger.warn("Invalid mock key", {
+      logger.warn('Invalid mock key', {
         key,
       });
       continue;
@@ -522,35 +503,30 @@ export const buildMockTools = async (workflow: Run) => {
 
     const mockResult = value.output;
     if (!mockResult) {
-      logger.warn("Invalid mock output", {
+      logger.warn('Invalid mock output', {
         key,
         value,
       });
       continue;
     }
 
-    const serviceDefinition = serviceDefinitions.find(
-      (sd) => sd.service === serviceName
-    );
+    const serviceDefinition = serviceDefinitions.find(sd => sd.service === serviceName);
 
     if (!serviceDefinition) {
-      logger.warn(
-        "Service definition not found for mock. Mocks must refer to existing services.",
-        {
-          key,
-          serviceName,
-        }
-      );
+      logger.warn('Service definition not found for mock. Mocks must refer to existing services.', {
+        key,
+        serviceName,
+      });
       continue;
     }
 
     const functionDefinition = serviceDefinition.definition.functions?.find(
-      (f) => f.name === functionName
+      f => f.name === functionName
     );
 
     if (!functionDefinition) {
       logger.warn(
-        "Function definition not found for mock. Mocks must refer to existing functions.",
+        'Function definition not found for mock. Mocks must refer to existing functions.',
         {
           key,
           serviceName,
@@ -571,7 +547,7 @@ export const buildMockTools = async (workflow: Run) => {
 
   const mockKeys = Object.keys(mocks);
   if (mockKeys.length > 0) {
-    logger.info("Built mock tools", {
+    logger.info('Built mock tools', {
       mockKeys,
     });
   }
