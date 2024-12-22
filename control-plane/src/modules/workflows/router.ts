@@ -117,6 +117,7 @@ export const runsRouter = initServer().router(
         modelIdentifier: body.model,
         callSummarization: body.callSummarization,
         reasoningTraces: body.reasoningTraces,
+        enableResultGrounding: body.enableResultGrounding,
 
         input: body.input,
       };
