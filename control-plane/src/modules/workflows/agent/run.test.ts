@@ -161,7 +161,7 @@ describe("formatJobsContext", () => {
     const result = formatJobsContext(jobs, "success");
 
     // Verify structure and anonymization
-    expect(result).toContain('<jobs status="success">');
+    expect(result).toContain('<previous_jobs status="success">');
     expect(result).toContain("<input>");
     expect(result).toContain("<output>");
     expect(result).toContain('"param1":"<string>"');
@@ -181,7 +181,7 @@ describe("formatJobsContext", () => {
 
     const result = formatJobsContext(jobs, "failed");
 
-    expect(result).toContain('<jobs status="failed">');
+    expect(result).toContain('<previous_jobs status="failed">');
     expect(result).toContain("<input>");
     expect(result).toContain("<output>");
     expect(result).toContain('"test":"<STRING>"');
