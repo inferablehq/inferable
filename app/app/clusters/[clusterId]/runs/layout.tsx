@@ -1,11 +1,11 @@
-import { client } from "@/client/client";
-import { MachineList } from "@/components/MachineList";
-import { ServiceList } from "@/components/ServiceList";
-import { RunList } from "@/components/WorkflowList";
-import { auth } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Blocks, Cpu } from "lucide-react";
+import { client } from '@/client/client';
+import { MachineList } from '@/components/MachineList';
+import { ServiceList } from '@/components/ServiceList';
+import { RunList } from '@/components/WorkflowList';
+import { auth } from '@clerk/nextjs';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Blocks, Cpu } from 'lucide-react';
 
 export async function generateMetadata({
   params: { clusterId },
@@ -21,7 +21,7 @@ export async function generateMetadata({
   });
 
   if (cluster.status !== 200) {
-    return { title: "Inferable" };
+    return { title: 'Inferable' };
   }
 
   return { title: `${cluster.body?.name}` };
@@ -49,7 +49,7 @@ async function Home({
         <div className="md:hidden">
           <RunList clusterId={clusterId} />
         </div>
-        <span className="text-sm text-muted-foreground font-medium">
+        <span className="hidden md:block text-sm text-muted-foreground font-medium">
           {cluster.status === 200 ? cluster.body.name : clusterId}
         </span>
         <div className="flex items-center gap-2">
@@ -81,9 +81,7 @@ async function Home({
         <div className="hidden md:block">
           <RunList clusterId={clusterId} />
         </div>
-        <div className="flex-1 overflow-auto">
-          {children}
-        </div>
+        <div className="flex-1 overflow-auto">{children}</div>
       </div>
     </main>
   );
