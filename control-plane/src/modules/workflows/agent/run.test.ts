@@ -184,7 +184,7 @@ describe("formatJobsContext", () => {
     expect(result).toContain('<previous_jobs status="failed">');
     expect(result).toContain("<input>");
     expect(result).toContain("<output>");
-    expect(result).toContain('"test":"<STRING>"');
+    expect(result).toContain('"test":"<string>"');
   });
 
   it("should anonymize arrays", () => {
@@ -197,7 +197,7 @@ describe("formatJobsContext", () => {
       ],
       "success"
     );
-    expect(result).toContain(`<input>[\"<NUMBER>\"]</input>`);
-    expect(result).toContain(`<output>[\"<NUMBER>\"]</output>`);
+    expect(result).toContain(`<input>[\"<number>\"]</input>`);
+    expect(result).toContain(`<output>[\"<number>\"]</output>`);
   });
 });
