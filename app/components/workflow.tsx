@@ -24,7 +24,6 @@ import { DebugEvent } from "./debug-event";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "react-hot-toast";
 import { Blob } from "./chat/blob";
-import { Strait } from "next/font/google";
 
 const messageSkeleton = (
   <div className="flex flex-col items-start space-y-4 p-4" key="skeleton-0">
@@ -584,10 +583,10 @@ export function Run({
   }, [elements.length]);
 
   return (
-    <div className="h-[calc(100vh-16rem)] overflow-hidden rounded-sm">
+    <div className="h-full pl-2 pr-2 mr-2 ml-2 border rounded-xl ">
       <div
         ref={scrollContainerRef}
-        className="h-[calc(100vh-25rem)] border rounded-sm text-sm overflow-y-auto scroll-smooth"
+        className="h-[calc(100vh-25rem)] text-sm overflow-y-auto scroll-smooth"
       >
         {elements.length > 0 ? (
           <div className="flex flex-col">{elements}</div>
@@ -596,7 +595,7 @@ export function Run({
         )}
       </div>
       <div ref={messagesEndRef} />
-      <div className="flex flex-col space-y-2 p-2 bg-slate-50 border">
+      <div className="flex flex-col space-y-2 p-2 bg-slate-50 rounded-xl">
         {!!runTimeline && isEditable ? (
           <div className="flex flex-col space-y-2">
             <Textarea

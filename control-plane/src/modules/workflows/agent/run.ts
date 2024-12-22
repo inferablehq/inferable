@@ -1,9 +1,12 @@
 import { z } from "zod";
+import { env } from "../../../utilities/env";
 import { NotFoundError } from "../../../utilities/errors";
 import { getClusterContextText } from "../../cluster";
 import { workflows } from "../../data";
 import { embedSearchQuery } from "../../embeddings/embeddings";
 import { flagsmith } from "../../flagsmith";
+import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
+import { events } from "../../observability/events";
 import { logger } from "../../observability/logger";
 import {
   embeddableServiceFunction,
@@ -17,6 +20,12 @@ import { Run, getWaitingJobIds, updateWorkflow } from "../workflows";
 import { createWorkflowAgent } from "./agent";
 import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
 import { WorkflowAgentState } from "./state";
+import { AgentTool } from "./tool";
+import { getClusterInternalTools } from "./tools/cluster-internal-tools";
+import {
+  CURRENT_DATE_TIME_TOOL_NAME,
+  buildCurrentDateTimeTool,
+} from "./tools/date-time";
 import {
   buildAbstractServiceFunctionTool,
   buildServiceFunctionTool,
@@ -26,19 +35,13 @@ import {
   buildAccessKnowledgeArtifacts,
 } from "./tools/knowledge-artifacts";
 import { buildMockFunctionTool } from "./tools/mock-function";
-import { getClusterInternalTools } from "./tools/cluster-internal-tools";
-import { buildCurrentDateTimeTool } from "./tools/date-time";
-import { CURRENT_DATE_TIME_TOOL_NAME } from "./tools/date-time";
-import { env } from "../../../utilities/env";
-import { events } from "../../observability/events";
-import { AgentTool } from "./tool";
 
 /**
  * Run a workflow from the most recent saved state
  **/
 export const processRun = async (
   run: Run,
-  metadata?: Record<string, string>,
+  metadata?: Record<string, string>
 ) => {
   logger.info("Running workflow");
 
@@ -77,9 +80,9 @@ export const processRun = async (
         serviceFunctionEmbeddingId({
           serviceName: service.definition.name,
           functionName: f.name,
-        }),
+        })
       );
-    }),
+    })
   );
 
   const mockToolsMap: Record<string, AgentTool> = await buildMockTools(run);
@@ -136,7 +139,7 @@ export const processRun = async (
       const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
         run.clusterId,
         "service-function",
-        toolCall.toolName,
+        toolCall.toolName
       );
 
       if (serviceFunctionDetails) {
@@ -161,7 +164,7 @@ export const processRun = async (
         // optimistically embed the next search query
         // this is not critical to the workflow, so we can do it in the background
         embedSearchQuery(
-          state.messages.map((m) => JSON.stringify(m.data)).join(" "),
+          state.messages.map((m) => JSON.stringify(m.data)).join(" ")
         );
       }
 
@@ -199,7 +202,7 @@ export const processRun = async (
       },
       {
         recursionLimit: 100,
-      },
+      }
     );
 
     const parsedOutput = z
@@ -259,6 +262,52 @@ export const processRun = async (
   }
 };
 
+function anonymize<T>(value: T): T {
+  if (typeof value === "string") {
+    return "<string>" as T;
+  } else if (value === null) {
+    return "<null>" as T;
+  } else if (typeof value === "number") {
+    return "<number>" as T;
+  } else if (typeof value === "boolean") {
+    return "<boolean>" as T;
+  } else if (Array.isArray(value)) {
+    return [anonymize(value[0])] as T;
+  } else if (typeof value === "object") {
+    const result = {} as T;
+    for (const key in value) {
+      result[key] = anonymize(value[key]);
+    }
+    return result;
+  }
+
+  return value;
+}
+
+export const formatJobsContext = (
+  jobs: { targetArgs: string; result: string | null }[],
+  status: "success" | "failed"
+) => {
+  if (jobs.length === 0) return "";
+
+  const jobEntries = jobs
+    .map((job) =>
+      `
+    <input>${JSON.stringify(
+      anonymize(job.targetArgs ? JSON.parse(job.targetArgs) : job.targetArgs)
+    )}</input>
+    <output>${JSON.stringify(
+      anonymize(job.result ? JSON.parse(job.result) : job.result)
+    )}</output>
+  `.trim()
+    )
+    .join("\n");
+
+  return `<previous_jobs status="${status}">
+    ${jobEntries}
+  </previous_jobs>`;
+};
+
 async function findRelatedFunctionTools(workflow: Run, search: string) {
   const flags = await flagsmith?.getIdentityFlags(workflow.clusterId, {
     clusterId: workflow.clusterId,
@@ -271,7 +320,7 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
         workflow.clusterId,
         "service-function",
         search,
-        50, // limit to 50 results
+        50 // limit to 50 results
       )
     : [];
 
@@ -284,13 +333,49 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
 
   const toolContexts = await Promise.all(
     relatedTools.map(async (toolDetails) => {
-      const metadata = await getToolMetadata(
-        workflow.clusterId,
-        toolDetails.serviceName,
-        toolDetails.functionName,
-      );
+      const [metadata, resolvedJobs, rejectedJobs] = await Promise.all([
+        getToolMetadata(
+          workflow.clusterId,
+          toolDetails.serviceName,
+          toolDetails.functionName
+        ),
+        getLatestJobsResultedByFunctionName({
+          clusterId: workflow.clusterId,
+          service: toolDetails.serviceName,
+          functionName: toolDetails.functionName,
+          limit: 3,
+          resultType: "resolution",
+        }).then((jobs) => {
+          return jobs?.map((j) => ({
+            targetArgs: anonymize(j.targetArgs),
+            result: anonymize(j.result),
+          }));
+        }),
+        getLatestJobsResultedByFunctionName({
+          clusterId: workflow.clusterId,
+          service: toolDetails.serviceName,
+          functionName: toolDetails.functionName,
+          limit: 3,
+          resultType: "rejection",
+        }).then((jobs) => {
+          return jobs?.map((j) => ({
+            targetArgs: anonymize(j.targetArgs),
+            result: anonymize(j.result),
+          }));
+        }),
+      ]);
 
-      const contextArr = [];
+      const contextArr: string[] = [];
+
+      const successJobsContext = formatJobsContext(resolvedJobs, "success");
+      if (successJobsContext) {
+        contextArr.push(successJobsContext);
+      }
+
+      const failedJobsContext = formatJobsContext(rejectedJobs, "failed");
+      if (failedJobsContext) {
+        contextArr.push(failedJobsContext);
+      }
 
       if (metadata?.additionalContext) {
         contextArr.push(`<context>${metadata.additionalContext}</context>`);
@@ -299,9 +384,9 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
       return {
         serviceName: toolDetails.serviceName,
         functionName: toolDetails.functionName,
-        toolContext: contextArr.join("\n\n"),
+        toolContext: contextArr.map((c) => c.trim()).join("\n\n"),
       };
-    }),
+    })
   );
 
   const selectedTools = relatedTools.map((toolDetails) =>
@@ -312,13 +397,13 @@ async function findRelatedFunctionTools(workflow: Run, search: string) {
         toolContexts.find(
           (c) =>
             c?.serviceName === toolDetails.serviceName &&
-            c?.functionName === toolDetails.functionName,
+            c?.functionName === toolDetails.functionName
         )?.toolContext,
       ]
         .filter(Boolean)
         .join("\n\n"),
       schema: toolDetails.schema,
-    }),
+    })
   );
 
   return selectedTools;
@@ -361,12 +446,12 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
       const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
         workflow.clusterId,
         "service-function",
-        tool,
+        tool
       );
 
       if (!serviceFunctionDetails) {
         throw new Error(
-          `Tool ${tool} not found in cluster ${workflow.clusterId}`,
+          `Tool ${tool} not found in cluster ${workflow.clusterId}`
         );
       }
 
@@ -374,19 +459,20 @@ export const findRelevantTools = async (state: WorkflowAgentState) => {
         buildAbstractServiceFunctionTool({
           ...serviceFunctionDetails,
           schema: serviceFunctionDetails.schema,
-        }),
+        })
       );
     }
   } else {
     const found = await findRelatedFunctionTools(
       workflow,
-      state.messages.map((m) => JSON.stringify(m.data)).join(" "),
+      state.messages.map((m) => JSON.stringify(m.data)).join(" ")
     );
 
     tools.push(...found);
 
-    const accessKnowledgeArtifactsTool =
-      await buildAccessKnowledgeArtifacts(workflow);
+    const accessKnowledgeArtifactsTool = await buildAccessKnowledgeArtifacts(
+      workflow
+    );
 
     const currentDateTimeTool = buildCurrentDateTimeTool();
 
@@ -416,7 +502,7 @@ export const buildMockTools = async (workflow: Run) => {
 
   if (!workflow.test) {
     logger.warn(
-      "Workflow is not marked as test enabled but contains mocks. Mocks will be ignored.",
+      "Workflow is not marked as test enabled but contains mocks. Mocks will be ignored."
     );
     return mocks;
   }
@@ -444,7 +530,7 @@ export const buildMockTools = async (workflow: Run) => {
     }
 
     const serviceDefinition = serviceDefinitions.find(
-      (sd) => sd.service === serviceName,
+      (sd) => sd.service === serviceName
     );
 
     if (!serviceDefinition) {
@@ -453,13 +539,13 @@ export const buildMockTools = async (workflow: Run) => {
         {
           key,
           serviceName,
-        },
+        }
       );
       continue;
     }
 
     const functionDefinition = serviceDefinition.definition.functions?.find(
-      (f) => f.name === functionName,
+      (f) => f.name === functionName
     );
 
     if (!functionDefinition) {
@@ -469,7 +555,7 @@ export const buildMockTools = async (workflow: Run) => {
           key,
           serviceName,
           functionName,
-        },
+        }
       );
       continue;
     }

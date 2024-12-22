@@ -4,6 +4,7 @@ import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
@@ -26,6 +27,134 @@ const runFiltersSchema = z.object({
   test: z.boolean().optional(),
 });
 
+function RunListContent({
+  workflows,
+  runToggle,
+  setRunToggle,
+  runFilters,
+  setRunFilters,
+  path,
+  router,
+  clusterId,
+  goToWorkflow,
+  goToCluster,
+  fetchWorkflows,
+  hasMore,
+  loadMore,
+  limit,
+}: {
+  workflows: ClientInferResponseBody<typeof contract.listRuns, 200>;
+  runToggle: string;
+  setRunToggle: (value: string) => void;
+  runFilters: z.infer<typeof runFiltersSchema>;
+  setRunFilters: (filters: z.infer<typeof runFiltersSchema>) => void;
+  path: string | null;
+  router: any;
+  clusterId: string;
+  goToWorkflow: (c: string, w: string) => void;
+  goToCluster: (c: string) => void;
+  fetchWorkflows: () => Promise<void>;
+  hasMore: boolean;
+  loadMore: () => void;
+  limit: number;
+}) {
+  return (
+    <ScrollArea className="h-full">
+      {(!!runFilters.configId || !!runFilters.test) && (
+        <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
+          {runFilters.configId && (
+            <Badge
+              className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
+              onClick={() => {
+                setRunFilters({});
+                if (path) {
+                  router.push(path);
+                }
+              }}
+            >
+              Filtering by Prompt
+              <XIcon className="h-4 w-4" />
+            </Badge>
+          )}
+          {runFilters.test && (
+            <Badge
+              className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
+              onClick={() => {
+                setRunFilters({});
+                if (path) {
+                  router.push(path);
+                }
+              }}
+            >
+              Filtering By Test Runs
+              <XIcon className="h-4 w-4" />
+            </Badge>
+          )}
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <ToggleGroup
+          type="single"
+          value={runToggle}
+          onValueChange={(value) => {
+            if (value) setRunToggle(value);
+          }}
+          variant="outline"
+          size="sm"
+          className="flex-1"
+        >
+          <ToggleGroupItem
+            value="all"
+            aria-label="Toggle all runs"
+            className="flex-1"
+          >
+            <PlayIcon className="mr-2 h-4 w-4" />
+            All Runs
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value="mine"
+            aria-label="Toggle my Runs"
+            className="flex-1"
+          >
+            <UserIcon className="mr-2 h-4 w-4" />
+            My Runs
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <Button variant="outline" size="sm" className="shrink-0" asChild>
+          <Link href={`/clusters/${clusterId}/runs`}>
+            <PlusIcon className="h-4 w-4" />
+          </Link>
+        </Button>
+      </div>
+      <div className="rounded-none">
+        <RunTab
+          workflows={workflows}
+          onGoToWorkflow={goToWorkflow}
+          onRefetchWorkflows={fetchWorkflows}
+          onGoToCluster={goToCluster}
+          clusterId={clusterId}
+        />
+        {hasMore && (
+          <Button
+            onClick={loadMore}
+            className="w-full mt-4"
+            variant="outline"
+            size="sm"
+          >
+            Load More
+          </Button>
+        )}
+        {!hasMore && limit >= 50 && (
+          <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
+            Maximum number of runs loaded. Delete some runs to load older
+            ones.
+          </p>
+        )}
+      </div>
+    </ScrollArea>
+  );
+}
+
 export function RunList({ clusterId }: WorkflowListProps) {
   const router = useRouter();
   const { getToken, userId } = useAuth();
@@ -46,6 +175,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
   const goToWorkflow = useCallback(
     (c: string, w: string) => {
       router.push(`/clusters/${c}/runs/${w}`);
+      setIsOpen(false);
     },
     [router]
   );
@@ -132,101 +262,61 @@ export function RunList({ clusterId }: WorkflowListProps) {
     }
   };
 
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <div className="w-3/12 flex flex-col">
-      <ScrollArea className="rounded-md bg-white shadow-sm hover:shadow-lg transition-all duration-200 overflow-y-auto h-[calc(100vh-16rem)] p-2 border border-border/50">
-        {(!!runFilters.configId || !!runFilters.test) && (
-          <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
-            {runFilters.configId && (
-              <Badge
-                className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
-                onClick={() => {
-                  setRunFilters({});
-                  if (path) {
-                    router.push(path);
-                  }
-                }}
-              >
-                Filtering by Prompt
-                <XIcon className="h-4 w-4" />
-              </Badge>
-            )}
-            {runFilters.test && (
-              <Badge
-                className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
-                onClick={() => {
-                  setRunFilters({});
-                  if (path) {
-                    router.push(path);
-                  }
-                }}
-              >
-                Filtering By Test Runs
-                <XIcon className="h-4 w-4" />
-              </Badge>
-            )}
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            type="single"
-            value={runToggle}
-            onValueChange={(value) => {
-              if (value) setRunToggle(value);
-            }}
-            variant="outline"
-            size="sm"
-            className="flex-1"
-          >
-            <ToggleGroupItem
-              value="all"
-              aria-label="Toggle all runs"
-              className="flex-1"
-            >
-              <PlayIcon className="mr-2 h-4 w-4" />
-              All Runs
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="mine"
-              aria-label="Toggle my Runs"
-              className="flex-1"
-            >
-              <UserIcon className="mr-2 h-4 w-4" />
-              My Runs
-            </ToggleGroupItem>
-          </ToggleGroup>
-          <Button variant="outline" size="sm" className="shrink-0" asChild>
-            <Link href={`/clusters/${clusterId}/runs`}>
-              <PlusIcon className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-        <div className="rounded-none">
-          <RunTab
-            workflows={workflows}
-            onGoToWorkflow={goToWorkflow}
-            onRefetchWorkflows={fetchWorkflows}
-            onGoToCluster={goToCluster}
-            clusterId={clusterId}
-          />
-          {hasMore && (
-            <Button
-              onClick={loadMore}
-              className="w-full mt-4"
-              variant="outline"
-              size="sm"
-            >
-              Load More
+    <>
+      {/* Mobile view */}
+      <div className="md:hidden">
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8">
+              <PlayIcon className="h-4 w-4 mr-1.5" />
+              View Runs
             </Button>
-          )}
-          {!hasMore && limit >= 50 && (
-            <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
-              Maximum number of runs loaded. Delete some runs to load older
-              ones.
-            </p>
-          )}
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[85%] sm:w-[385px] pt-10">
+            <RunListContent
+              workflows={workflows}
+              runToggle={runToggle}
+              setRunToggle={setRunToggle}
+              runFilters={runFilters}
+              setRunFilters={setRunFilters}
+              path={path}
+              router={router}
+              clusterId={clusterId}
+              goToWorkflow={goToWorkflow}
+              goToCluster={goToCluster}
+              fetchWorkflows={fetchWorkflows}
+              hasMore={hasMore}
+              loadMore={loadMore}
+              limit={limit}
+            />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop view */}
+      <div className="hidden md:block w-[385px] h-full border border-gray-200 rounded-xl pr-2 bg-white shadow-sm transition-all duration-200">
+        <div className="h-full p-4">
+          <RunListContent
+            workflows={workflows}
+            runToggle={runToggle}
+            setRunToggle={setRunToggle}
+            runFilters={runFilters}
+            setRunFilters={setRunFilters}
+            path={path}
+            router={router}
+            clusterId={clusterId}
+            goToWorkflow={goToWorkflow}
+            goToCluster={goToCluster}
+            fetchWorkflows={fetchWorkflows}
+            hasMore={hasMore}
+            loadMore={loadMore}
+            limit={limit}
+          />
         </div>
-      </ScrollArea>
-    </div>
+      </div>
+    </>
   );
 }
