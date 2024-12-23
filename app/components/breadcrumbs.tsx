@@ -41,6 +41,11 @@ export async function ClusterBreadcrumbs({
 
   return (
     <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
+      <div className="flex items-center gap-2">
+        <h1 className="text-lg text-gray-400 mr-2 tracking-tight">
+          {clusterDetails.body.name}
+        </h1>
+      </div>
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
         <PlayCircle className="h-4 w-4" /> Runs
       </Link>

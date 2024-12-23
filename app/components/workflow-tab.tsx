@@ -106,7 +106,7 @@ export function RunTab({
   }, [clusterId, getToken]);
 
   return (
-    <div className="flex flex-col space-y-2 mt-4">
+    <div className="flex flex-col space-y-2">
       {workflows
         .sort((a, b) => (a.id > b.id ? -1 : 1))
         .map((workflow) => (
