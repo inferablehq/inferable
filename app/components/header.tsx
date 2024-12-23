@@ -1,90 +1,23 @@
-'use client';
-
-import { OrganizationSwitcher, UserButton } from '@clerk/nextjs';
-import Image from 'next/image';
-import logo from './logo.png';
-import { Menu } from 'lucide-react';
-import { Button } from './ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from './ui/sheet';
-import { NavigationItems } from './breadcrumbs';
-import { useParams } from 'next/navigation';
+import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
+import Image from "next/image";
+import logo from "./logo.png";
 
 export function Header() {
-  const params = useParams();
-  const clusterId = params?.clusterId as string;
-
-  const navigationItems = NavigationItems({ clusterId });
-
-  const navigationLinks = Array.isArray(navigationItems?.props.children)
-    ? navigationItems?.props.children
-    : [navigationItems?.props.children];
-
   return (
     <header className="flex items-center justify-between w-full h-16 px-8">
       <div className="flex items-center space-x-8">
-        <div className="flex items-center gap-4">
-          {/* Mobile menu */}
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[240px] flex flex-col gap-2 pt-8">
-                {/* User profile section */}
-                <div className="mb-4 pb-4 border-b">
-                  <div className="flex justify-center mb-4">
-                    <UserButton
-                      appearance={{
-                        variables: {
-                          colorText: 'black',
-                        },
-                      }}
-                    />
-                  </div>
-                  <OrganizationSwitcher
-                    hidePersonal={true}
-                    appearance={{
-                      variables: {
-                        colorText: 'black',
-                      },
-                      elements: {
-                        rootBox: 'w-full',
-                        organizationSwitcherTrigger: 'w-full',
-                      },
-                    }}
-                    afterSelectOrganizationUrl="/switch-org"
-                  />
-                </div>
-                {/* Navigation section */}
-                <h2 className="font-medium mb-2 text-sm">Navigation</h2>
-                {navigationLinks.map(
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (child: any, index: any) =>
-                    child && (
-                      <SheetClose key={index} asChild>
-                        {child}
-                      </SheetClose>
-                    )
-                )}
-              </SheetContent>
-            </Sheet>
+        <a href="/" className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 -ml-2">
+            <Image src={logo} width={40} height={40} alt={"logo"} />
+            <h1 className="text-2xl">Playground</h1>
           </div>
-          <a href="/" className="flex items-center space-x-4">
-            <div className="flex items-center space-x-4 -ml-2">
-              <Image className="hidden md:block" src={logo} width={40} height={40} alt={'logo'} />
-              <h1 className="text-2xl hidden md:block">Playground</h1>
-            </div>
-          </a>
-        </div>
+        </a>
       </div>
-      {/* Desktop user controls */}
-      <div className="hidden md:flex items-center space-x-8">
+      <div className="flex items-center space-x-8">
         <UserButton
           appearance={{
             variables: {
-              colorText: 'black',
+              colorText: "black",
             },
           }}
         />
@@ -93,7 +26,7 @@ export function Header() {
             hidePersonal={true}
             appearance={{
               variables: {
-                colorText: 'black',
+                colorText: "black",
               },
             }}
             afterSelectOrganizationUrl="/switch-org"

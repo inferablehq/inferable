@@ -56,13 +56,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <RollbarProvider config={rollbarConfig}>
-        <html lang="en" className="h-full">
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          </head>
+        <html lang="en">
           <body
             className={cn(
-              "h-full min-h-screen bg-background font-sans antialiased",
+              "min-h-screen bg-background font-sans antialiased",
               fontSans.variable,
             )}
           >

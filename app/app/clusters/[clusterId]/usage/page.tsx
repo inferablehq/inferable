@@ -1,5 +1,11 @@
-import { client } from '@/client/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { client } from "@/client/client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -8,10 +14,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { auth } from '@clerk/nextjs';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
+} from "@/components/ui/table";
+import { auth } from "@clerk/nextjs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 
 type BillableRate = {
   input: number;
@@ -20,21 +26,21 @@ type BillableRate = {
 
 const billable: [string, BillableRate][] = [
   [
-    'claude-3-5-sonnet',
+    "claude-3-5-sonnet",
     {
       input: 0.003,
       output: 0.015,
     },
   ],
   [
-    'claude-3-5-haiku',
+    "claude-3-5-haiku",
     {
       input: 0.001,
       output: 0.005,
     },
   ],
   [
-    'unknown',
+    "unknown",
     {
       input: 0.0,
       output: 0.0,
@@ -42,7 +48,11 @@ const billable: [string, BillableRate][] = [
   ],
 ];
 
-export default async function Page({ params: { clusterId } }: { params: { clusterId: string } }) {
+export default async function UsagePage({
+  params: { clusterId },
+}: {
+  params: { clusterId: string };
+}) {
   const { getToken } = auth();
 
   const result = await client.listUsageActivity({
@@ -51,7 +61,7 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
   });
 
   if (result.status !== 200) {
-    throw new Error('Failed to fetch usage data');
+    throw new Error("Failed to fetch usage data");
   }
 
   const { modelUsage, agentRuns } = result.body;
@@ -61,17 +71,21 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
     (acc, curr) => ({
       totalInputTokens: acc.totalInputTokens + curr.totalInputTokens,
       totalOutputTokens: acc.totalOutputTokens + curr.totalOutputTokens,
-      totalModelInvocations: acc.totalModelInvocations + curr.totalModelInvocations,
+      totalModelInvocations:
+        acc.totalModelInvocations + curr.totalModelInvocations,
     }),
     {
       totalInputTokens: 0,
       totalOutputTokens: 0,
       totalModelInvocations: 0,
-    }
+    },
   );
 
   // Calculate totals for agent runs
-  const predictionsTotal = agentRuns.reduce((acc, curr) => acc + curr.totalAgentRuns, 0);
+  const predictionsTotal = agentRuns.reduce(
+    (acc, curr) => acc + curr.totalAgentRuns,
+    0,
+  );
 
   // Calculate current billing cycle dates
   const today = new Date();
@@ -92,14 +106,14 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
   // Group model usage by model ID
   const modelGroups = modelUsage.reduce(
     (acc, curr) => {
-      const modelId = curr.modelId || 'Unknown';
+      const modelId = curr.modelId || "Unknown";
       if (!acc[modelId]) {
         acc[modelId] = [];
       }
       acc[modelId].push(curr);
       return acc;
     },
-    {} as Record<string, typeof modelUsage>
+    {} as Record<string, typeof modelUsage>,
   );
 
   // Calculate totals for each model
@@ -108,25 +122,27 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
       acc[modelId] = usage.reduce(
         (modelAcc, curr) => ({
           totalInputTokens: modelAcc.totalInputTokens + curr.totalInputTokens,
-          totalOutputTokens: modelAcc.totalOutputTokens + curr.totalOutputTokens,
-          totalModelInvocations: modelAcc.totalModelInvocations + curr.totalModelInvocations,
+          totalOutputTokens:
+            modelAcc.totalOutputTokens + curr.totalOutputTokens,
+          totalModelInvocations:
+            modelAcc.totalModelInvocations + curr.totalModelInvocations,
         }),
         {
           totalInputTokens: 0,
           totalOutputTokens: 0,
           totalModelInvocations: 0,
-        }
+        },
       );
       return acc;
     },
-    {} as Record<string, typeof modelTotals>
+    {} as Record<string, typeof modelTotals>,
   );
 
   // Calculate costs per model
   const modelCostsBreakdown = Object.entries(modelGroupTotals).reduce(
     (acc, [modelId, usage]) => {
       // Special case for unknown models
-      if (modelId.toLowerCase() === 'unknown') {
+      if (modelId.toLowerCase() === "unknown") {
         acc[modelId] = {
           inputCost: 0,
           outputCost: 0,
@@ -146,8 +162,10 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
       };
 
       // Round down to nearest 1000 tokens before calculating cost
-      const inputTokensRounded = Math.floor(usage.totalInputTokens / 1000) * 1000;
-      const outputTokensRounded = Math.floor(usage.totalOutputTokens / 1000) * 1000;
+      const inputTokensRounded =
+        Math.floor(usage.totalInputTokens / 1000) * 1000;
+      const outputTokensRounded =
+        Math.floor(usage.totalOutputTokens / 1000) * 1000;
 
       const inputTokenCost = (inputTokensRounded / 1000) * rate.input;
       const outputTokenCost = (outputTokensRounded / 1000) * rate.output;
@@ -168,7 +186,7 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
         totalCost: number;
         rate: BillableRate;
       }
-    >
+    >,
   );
 
   // Update calculateCosts to use the breakdown
@@ -178,7 +196,7 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
 
     const modelCosts = Object.values(modelCostsBreakdown).reduce(
       (acc, curr) => acc + curr.totalCost,
-      0
+      0,
     );
 
     const totalModelCost = Math.max(0, modelCosts - 5);
@@ -195,12 +213,12 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
   const costs = calculateCosts();
 
   return (
-    <div className="container p-6 max-w-6xl mx-auto space-y-6 text-sm">
+    <div className="p-6 max-w-6xl space-y-6 text-sm">
       <Card>
         <CardHeader>
           <CardTitle>Billing Cycle Information</CardTitle>
           <CardDescription>
-            Current billing period: {cycleStart.toLocaleDateString()} -{' '}
+            Current billing period: {cycleStart.toLocaleDateString()} -{" "}
             {cycleEnd.toLocaleDateString()}
           </CardDescription>
         </CardHeader>
@@ -209,17 +227,23 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
       <Card>
         <CardHeader>
           <CardTitle>Free Tier Status</CardTitle>
-          <CardDescription>Monthly free tier allowance and usage</CardDescription>
+          <CardDescription>
+            Monthly free tier allowance and usage
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="font-medium">Predictions Free Tier</span>
-              <span className="text-sm text-muted-foreground">{predictionsTotal} / 500 used</span>
+              <span className="text-sm text-muted-foreground">
+                {predictionsTotal} / 500 used
+              </span>
             </div>
             <Progress value={(predictionsTotal / 500) * 100} />
             {freeTierRemaining > 0 && (
-              <p className="text-sm text-green-600">{freeTierRemaining} predictions remaining</p>
+              <p className="text-sm text-green-600">
+                {freeTierRemaining} predictions remaining
+              </p>
             )}
           </div>
 
@@ -239,7 +263,8 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
           </div>
 
           <div className="text-sm text-muted-foreground mt-4">
-            Your free tier includes 500 predictions and $5 of model costs each billing cycle.
+            Your free tier includes 500 predictions and $5 of model costs each
+            billing cycle.
           </div>
         </CardContent>
       </Card>
@@ -247,14 +272,17 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
       <Card>
         <CardHeader>
           <CardTitle>Pay As You Go Usage</CardTitle>
-          <CardDescription>Billable usage beyond free tier allowance</CardDescription>
+          <CardDescription>
+            Billable usage beyond free tier allowance
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="font-medium">Platform Usage</span>
               <span>
-                {Math.max(0, predictionsTotal - 500).toLocaleString()} paid predictions
+                {Math.max(0, predictionsTotal - 500).toLocaleString()} paid
+                predictions
                 <span className="text-muted-foreground ml-2">
                   (${costs.platformCost.toFixed(2)})
                 </span>
@@ -277,8 +305,8 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
           </div>
 
           <div className="text-sm text-muted-foreground">
-            Platform fee: $0.50 per 100 predictions after free tier. Models token usage is billed at
-            cost.
+            Platform fee: $0.50 per 100 predictions after free tier. Models
+            token usage is billed at cost.
           </div>
         </CardContent>
       </Card>
@@ -286,14 +314,19 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
       <Card>
         <CardHeader>
           <CardTitle>Model Usage Statistics</CardTitle>
-          <CardDescription>Daily token usage and model invocations</CardDescription>
+          <CardDescription>
+            Daily token usage and model invocations
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue={Object.keys(modelGroups)[0] || 'all'} className="space-y-6">
-            <TabsList className="flex flex-wrap gap-2 h-auto p-2">
+          <Tabs
+            defaultValue={Object.keys(modelGroups)[0] || "all"}
+            className="space-y-4"
+          >
+            <TabsList>
               <TabsTrigger value="all">All Models</TabsTrigger>
-              {Object.keys(modelGroups).map(modelId => (
-                <TabsTrigger key={modelId} value={modelId} className="flex-shrink-0">
+              {Object.keys(modelGroups).map((modelId) => (
+                <TabsTrigger key={modelId} value={modelId}>
                   {modelId}
                 </TabsTrigger>
               ))}
@@ -311,10 +344,10 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {modelUsage.map(day => (
+                  {modelUsage.map((day) => (
                     <TableRow key={`${day.date}-${day.modelId}`}>
                       <TableCell>{day.date}</TableCell>
-                      <TableCell>{day.modelId || 'Unknown'}</TableCell>
+                      <TableCell>{day.modelId || "Unknown"}</TableCell>
                       <TableCell className="text-right">
                         {day.totalInputTokens?.toLocaleString()}
                       </TableCell>
@@ -353,7 +386,8 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
                       <span>
                         ${modelCostsBreakdown[modelId].inputCost.toFixed(2)}
                         <span className="text-muted-foreground ml-2">
-                          (${modelCostsBreakdown[modelId].rate.input.toFixed(3)} per 1K tokens)
+                          (${modelCostsBreakdown[modelId].rate.input.toFixed(3)}{" "}
+                          per 1K tokens)
                         </span>
                       </span>
                     </div>
@@ -363,7 +397,10 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
                         ${modelCostsBreakdown[modelId].outputCost.toFixed(2)}
                         <span className="text-muted-foreground ml-2">
                           ($
-                          {modelCostsBreakdown[modelId].rate.output.toFixed(3)} per 1K tokens)
+                          {modelCostsBreakdown[modelId].rate.output.toFixed(
+                            3,
+                          )}{" "}
+                          per 1K tokens)
                         </span>
                       </span>
                     </div>
@@ -379,13 +416,19 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Input Tokens</TableHead>
-                        <TableHead className="text-right">Output Tokens</TableHead>
-                        <TableHead className="text-right">Model Calls</TableHead>
+                        <TableHead className="text-right">
+                          Input Tokens
+                        </TableHead>
+                        <TableHead className="text-right">
+                          Output Tokens
+                        </TableHead>
+                        <TableHead className="text-right">
+                          Model Calls
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {usage.map(day => (
+                      {usage.map((day) => (
                         <TableRow key={day.date}>
                           <TableCell>{day.date}</TableCell>
                           <TableCell className="text-right">
@@ -404,13 +447,19 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
                       <TableRow>
                         <TableCell>Total</TableCell>
                         <TableCell className="text-right">
-                          {modelGroupTotals[modelId].totalInputTokens.toLocaleString()}
+                          {modelGroupTotals[
+                            modelId
+                          ].totalInputTokens.toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          {modelGroupTotals[modelId].totalOutputTokens.toLocaleString()}
+                          {modelGroupTotals[
+                            modelId
+                          ].totalOutputTokens.toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          {modelGroupTotals[modelId].totalModelInvocations.toLocaleString()}
+                          {modelGroupTotals[
+                            modelId
+                          ].totalModelInvocations.toLocaleString()}
                         </TableCell>
                       </TableRow>
                     </TableFooter>
@@ -436,7 +485,7 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
               </TableRow>
             </TableHeader>
             <TableBody>
-              {agentRuns.map(day => (
+              {agentRuns.map((day) => (
                 <TableRow key={day.date}>
                   <TableCell>{day.date}</TableCell>
                   <TableCell className="text-right">
@@ -448,7 +497,9 @@ export default async function Page({ params: { clusterId } }: { params: { cluste
             <TableFooter>
               <TableRow>
                 <TableCell>Total</TableCell>
-                <TableCell className="text-right">{predictionsTotal.toLocaleString()}</TableCell>
+                <TableCell className="text-right">
+                  {predictionsTotal.toLocaleString()}
+                </TableCell>
               </TableRow>
             </TableFooter>
           </Table>

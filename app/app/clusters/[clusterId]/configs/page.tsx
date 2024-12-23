@@ -21,15 +21,25 @@ type Prompt = ClientInferResponseBody<
 const columns: ColumnDef<Prompt>[] = [
   {
     accessorKey: "name",
-    header: "Name",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
     cell: ({ row }) => (
       <div className="space-y-2 max-w-[800px]">
         <p className="font-medium">{row.getValue("name")}</p>
-        <p className="text-sm text-gray-500 line-clamp-2 overflow-hidden text-ellipsis md:block hidden">
+        <p className="text-sm text-gray-500 line-clamp-2 overflow-hidden text-ellipsis">
           {row.original.initialPrompt}
         </p>
         {row.original.attachedFunctions.filter(Boolean).length > 0 && (
-          <div className="flex flex-wrap gap-1 hidden md:flex">
+          <div className="flex flex-wrap gap-1">
             {row.original.attachedFunctions.map((tool) => (
               <span
                 key={tool}
@@ -45,20 +55,16 @@ const columns: ColumnDef<Prompt>[] = [
   },
   {
     id: "id",
-    header: ({ column }) => (
-      <div className="hidden md:block">Configuration ID</div>
-    ),
+    header: "Configuration ID",
     cell: ({ row }) => (
-      <pre className="text-sm text-gray-500 hidden md:block">{row.original.id}</pre>
+      <pre className="text-sm text-gray-500">{row.original.id}</pre>
     ),
   },
   {
     id: "lastUpdated",
-    header: ({ column }) => (
-      <div className="hidden md:block">Last Updated</div>
-    ),
+    header: "Last Updated",
     cell: ({ row }) => (
-      <p className="text-sm text-gray-500 hidden md:block">
+      <p className="text-sm text-gray-500">
         {row.original.updatedAt
           ? formatDistanceToNow(new Date(row.original.updatedAt), {
               addSuffix: true,
@@ -69,7 +75,6 @@ const columns: ColumnDef<Prompt>[] = [
   },
   {
     id: "actions",
-    header: "Actions",
     cell: function Cell({ row }) {
       const [isDeleting, setIsDeleting] = useState(false);
       const { getToken } = useAuth();
@@ -128,7 +133,6 @@ const columns: ColumnDef<Prompt>[] = [
             size="sm"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="hidden md:inline-flex"
           >
             {isDeleting ? "Deleting..." : "Delete"}
           </Button>
@@ -184,19 +188,18 @@ export default function Page({ params }: { params: { clusterId: string } }) {
   }
 
   return (
-    <div className="container mx-auto px-4">
+    <div className="ml-0 max-w-[1200px]">
       <h1 className="text-xl">Saved Run Configurations</h1>
       <p className="text-sm text-gray-500 mb-4">
         Saved run configurations are reusable configurations that can be used in
         your next run.
       </p>
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
+      <div className="flex space-x-4 mb-4">
         <Button
           variant="secondary"
           onClick={() => {
             router.push(`/clusters/${params.clusterId}/configs/new`);
           }}
-          className="w-full md:w-auto"
         >
           <PlusIcon className="mr-2 h-4 w-4" />
           Create New Run Configuration
@@ -206,7 +209,6 @@ export default function Page({ params }: { params: { clusterId: string } }) {
           onClick={() => {
             router.push(`/clusters/${params.clusterId}/configs/global`);
           }}
-          className="w-full md:w-auto"
         >
           <Globe className="mr-2 h-4 w-4" />
           Global Context
