@@ -283,26 +283,14 @@ export const formatJobsContext = (
 ) => {
   if (jobs.length === 0) return "";
 
-  try {
-    const jobEntries = jobs
-      .map(job =>
-        `
-      <input>${JSON.stringify(anonymize(safeParse(job.targetArgs)))}</input>
-      <output>${JSON.stringify(anonymize(safeParse(job.result)))}</output>
-    `.trim()
-      )
-      .join("\n");
+  const jobEntries = jobs
+    .map(
+      job =>
+        `<input>${JSON.stringify(anonymize(safeParse(job.targetArgs)))}</input><output>${JSON.stringify(anonymize(safeParse(job.result)))}</output>`
+    )
+    .join("\n");
 
-  return `<previous_jobs status="${status}">
-    ${jobEntries}
-  </previous_jobs>`;
-  } catch (error) {
-    logger.error("Failed to format jobs context", {
-      error,
-    })
-
-    return "";
-  }
+  return `<previous_jobs status="${status}">\n${jobEntries}\n</previous_jobs>`;
 };
 
 async function findRelatedFunctionTools(workflow: Run, search: string) {

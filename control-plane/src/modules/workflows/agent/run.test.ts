@@ -215,6 +215,12 @@ describe("formatJobsContext", () => {
       ],
       "failed"
     );
-    expect(result).toMatchSnapshot();
+    expect(result).toBe(
+      `<previous_jobs status="failed">
+<input>"<string>"</input><output>"<string>"</output>
+<input>"<string>"</input><output>"<string>"</output>
+<input>"<number>"</input><output>"<number>"</output>
+</previous_jobs>`
+    );
   });
 });
