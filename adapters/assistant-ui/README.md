@@ -12,16 +12,18 @@ Inferable Runtime for [assistant-ui](https://github.com/Yonom/assistant-ui).
 
 ## Installation
 
+Install the package and its peer dependencies:
+
 ```bash
-npm install @inferable/assistant-ui
+npm install @inferable/assistant-ui @assistant-ui/react
 ```
 
 ```bash
-yarn add @inferable/assistant-ui
+yarn add @inferable/assistant-ui @assistant-ui/react
 ```
 
 ```bash
-pnpm add @inferable/assistant-ui
+pnpm add @inferable/assistant-ui @assistant-ui/react
 ```
 
 ## Quick Start
