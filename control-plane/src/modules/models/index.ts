@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { ToolUseBlock } from "@anthropic-ai/sdk/resources";
 import {
   ChatIdentifiers,
+  CONTEXT_WINDOW,
   EmbeddingIdentifiers,
   getEmbeddingRouting,
   getRouting,
@@ -47,6 +48,7 @@ export type Model = {
     options: T,
   ) => Promise<StructuredCallOutput>;
   identifier: ChatIdentifiers | EmbeddingIdentifiers;
+  contextWindow?: number;
   embedQuery: (input: string) => Promise<number[]>;
 };
 
@@ -72,6 +74,7 @@ export const buildModel = ({
 
   return {
     identifier,
+    contextWindow: CONTEXT_WINDOW[identifier],
     embedQuery: async (input: string) => {
       if (!isEmbeddingIdentifier(identifier)) {
         throw new Error(`${identifier} is not an embedding model`);

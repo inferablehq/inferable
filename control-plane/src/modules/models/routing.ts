@@ -5,6 +5,11 @@ import { logger } from "../observability/logger";
 import { BedrockCohereEmbeddings } from "../embeddings/bedrock-cohere-embeddings";
 import { CohereEmbeddings } from "@langchain/cohere";
 
+export const CONTEXT_WINDOW: Record<string, number> = {
+  "claude-3-5-sonnet": 1000,
+  "claude-3-haiku": 1000,
+};
+
 const routingOptions = {
   "claude-3-5-sonnet": [
     ...(env.BEDROCK_AVAILABLE

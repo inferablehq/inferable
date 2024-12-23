@@ -1,5 +1,5 @@
 import { ReleventToolLookup } from '../agent';
-import { toAnthropicMessages } from '../../workflow-messages';
+import { toAnthropicMessage, toAnthropicMessages } from '../../workflow-messages';
 import { logger } from '../../../observability/logger';
 import { WorkflowAgentState, WorkflowAgentStateMessage } from '../state';
 import { addAttributes, withSpan } from '../../../observability/tracer';
@@ -14,6 +14,7 @@ import { ToolUseBlock } from '@anthropic-ai/sdk/resources';
 import { Schema, Validator } from 'jsonschema';
 import { buildModelSchema, ModelOutput } from './model-output';
 import { getSystemPrompt } from './system-prompt';
+import { handleContextWindowOverflow } from '../overflow';
 
 type WorkflowStateUpdate = Partial<WorkflowAgentState>;
 
@@ -40,8 +41,6 @@ const _handleModelCall = async (
     'model.identifier': model.identifier,
   });
 
-  const renderedMessages = toAnthropicMessages(state.messages);
-
   if (!!state.workflow.resultSchema) {
     const resultSchemaErrors = validateFunctionSchema(
       state.workflow.resultSchema as JsonSchemaInput
@@ -62,6 +61,15 @@ const _handleModelCall = async (
   });
 
   const systemPrompt = getSystemPrompt(state, schemaString);
+
+  const trimmedMessages  = await handleContextWindowOverflow({
+    modelContextWindow: model.contextWindow ?? 0,
+    systemPrompt,
+    messages: state.messages,
+    render: toAnthropicMessage,
+  });
+
+  const renderedMessages = toAnthropicMessages(trimmedMessages);
 
   if (state.workflow.debug) {
     addAttributes({
@@ -257,6 +265,7 @@ const _handleModelCall = async (
     result: data.result,
   };
 };
+
 
 const detectCycle = (messages: WorkflowAgentStateMessage[]) => {
   if (messages.length >= 100) {
