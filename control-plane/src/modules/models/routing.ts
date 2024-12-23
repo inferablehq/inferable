@@ -6,8 +6,8 @@ import { BedrockCohereEmbeddings } from "../embeddings/bedrock-cohere-embeddings
 import { CohereEmbeddings } from "@langchain/cohere";
 
 export const CONTEXT_WINDOW: Record<string, number> = {
-  "claude-3-5-sonnet": 1000,
-  "claude-3-haiku": 1000,
+  "claude-3-5-sonnet": 200_000,
+  "claude-3-haiku": 200_000,
 };
 
 const routingOptions = {

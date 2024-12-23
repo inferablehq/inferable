@@ -244,7 +244,7 @@ export const getRunMessagesForDisplay = async ({
       displayableContext: workflowMessages.metadata,
     })
     .from(workflowMessages)
-    .orderBy(asc(workflowMessages.created_at))
+    .orderBy(desc(workflowMessages.created_at))
     .where(
       and(
         eq(workflowMessages.cluster_id, clusterId),

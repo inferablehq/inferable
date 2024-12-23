@@ -47,6 +47,8 @@ describe('handleContextWindowOverflow', () => {
       modelContextWindow,
     });
 
+    expect(estimateTokenCount).toHaveBeenCalledTimes(2);
+
     expect(result).toEqual(messages);
     expect(messages).toHaveLength(2);
   });
@@ -65,6 +67,8 @@ describe('handleContextWindowOverflow', () => {
       messages,
       modelContextWindow,
     });
+
+    expect(estimateTokenCount).toHaveBeenCalledTimes(2);
 
     expect(result).toEqual(messages);
     expect(messages).toHaveLength(0);
@@ -92,6 +96,8 @@ describe('handleContextWindowOverflow', () => {
         modelContextWindow,
       });
 
+      expect(estimateTokenCount).toHaveBeenCalledTimes(5);
+
       expect(result).toHaveLength(2);
     });
 
@@ -113,6 +119,8 @@ describe('handleContextWindowOverflow', () => {
           modelContextWindow,
         })
       ).rejects.toThrow(AgentError);
+
+      expect(estimateTokenCount).toHaveBeenCalledTimes(2)
     });
 
 
@@ -143,12 +151,17 @@ describe('handleContextWindowOverflow', () => {
         .mockResolvedValueOnce(200) // system prompt
         .mockResolvedValueOnce(1000) // initial messages
         .mockResolvedValueOnce(800) // after first removal
+        .mockResolvedValueOnce(600) // after second removal
+        .mockResolvedValueOnce(400) // after third removal
+        .mockResolvedValueOnce(200) // after fourth removal
 
       const result = await handleContextWindowOverflow({
         systemPrompt,
         messages,
         modelContextWindow,
       });
+
+      expect(estimateTokenCount).toHaveBeenCalledTimes(6);
 
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe('human');
@@ -181,6 +194,8 @@ describe('handleContextWindowOverflow', () => {
         modelContextWindow,
       });
 
+      expect(estimateTokenCount).toHaveBeenCalledTimes(4);
+
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe('human');
     })
@@ -211,6 +226,8 @@ describe('handleContextWindowOverflow', () => {
         messages,
         modelContextWindow,
       });
+
+      expect(estimateTokenCount).toHaveBeenCalledTimes(4);
 
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe('human');

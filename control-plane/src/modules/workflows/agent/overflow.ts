@@ -7,43 +7,68 @@ const TOTAL_CONTEXT_THRESHOLD = 0.95;
 const SYSTEM_PROMPT_THRESHOLD = 0.7;
 
 export const handleContextWindowOverflow = async ({
-  systemPrompt,
   messages,
+  systemPrompt,
   modelContextWindow,
   render = JSON.stringify
 }: {
-  systemPrompt: string
   messages: WorkflowAgentStateMessage[]
-  modelContextWindow: number
+  systemPrompt: string
+  modelContextWindow?: number
   render? (message: WorkflowAgentStateMessage): unknown
-  //strategy?: "truncate"
 }) => {
+  if (!modelContextWindow) {
+    logger.warn("Model context window not set, defaulting to 100_000");
+    modelContextWindow = 100_000;
+  }
+
   const systemPromptTokenCount = await estimateTokenCount(systemPrompt);
 
   if (systemPromptTokenCount > modelContextWindow * SYSTEM_PROMPT_THRESHOLD) {
     throw new AgentError(`System prompt can not exceed ${modelContextWindow * SYSTEM_PROMPT_THRESHOLD} tokens`);
   }
 
-  let messagesTokenCount = await estimateTokenCount(messages.map(render).join("\n"));
-  if (messagesTokenCount + systemPromptTokenCount < (modelContextWindow * TOTAL_CONTEXT_THRESHOLD)) {
-    return messages;
-  }
+  const inputTokenCount = await estimateTokenCount(messages.map(render).join("\n"));
+  let messagesTokenCount = inputTokenCount;
 
-  logger.info("Chat history exceeds context window, early messages will be dropped", {
-    systemPromptTokenCount,
-    messagesTokenCount,
-  })
+  const removedMessages: WorkflowAgentStateMessage[] = [];
 
-  do {
+  // Remove messages until total tokens are under threshold
+  while (messages.length && messagesTokenCount + systemPromptTokenCount > modelContextWindow * TOTAL_CONTEXT_THRESHOLD) {
     if (messages.length === 1) {
-      throw new AgentError("Single chat message exceeds context window");
+      logger.error("A single message exceeds context window", {
+        messageId: messages[0].id
+      });
+      throw new AgentError("Run state is invalid");
     }
 
-    messages.shift();
+    const removed = messages.shift()
+    removed && removedMessages.push(removed);
 
     messagesTokenCount = await estimateTokenCount(messages.map(render).join("\n"));
+  }
 
-  } while (messagesTokenCount + systemPromptTokenCount > modelContextWindow * TOTAL_CONTEXT_THRESHOLD || messages[0].type !== 'human');
+  // First message should always be human
+  while (messages.length && messages[0].type !== "human") {
+    if (messages.length === 1) {
+      logger.error("Only message in mesasge history is not human", {
+        messageId: messages[0].id
+      });
+      throw new AgentError("Run state is invalid");
+    }
+
+    const removed = messages.shift()
+    removed && removedMessages.push(removed);
+
+    messagesTokenCount = await estimateTokenCount(messages.map(render).join("\n"));
+  }
+
+  removedMessages.length && logger.info("Run history exceeds context window, early messages have been truncated", {
+    removedMessageIds: removedMessages.map(m => m.id),
+    systemPromptTokenCount,
+    outputTokenCount: messagesTokenCount,
+    inputTokenCount,
+  })
 
   return messages;
 };

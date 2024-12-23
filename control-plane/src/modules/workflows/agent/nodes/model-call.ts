@@ -33,10 +33,11 @@ const _handleModelCall = async (
   findRelevantTools: ReleventToolLookup
 ): Promise<WorkflowStateUpdate> => {
   detectCycle(state.messages);
-  const relevantSchemas = await findRelevantTools(state);
+
+  const relevantTools = await findRelevantTools(state);
 
   addAttributes({
-    'model.relevant_tools': relevantSchemas.map(tool => tool.name),
+    'model.relevant_tools': relevantTools.map(tool => tool.name),
     'model.available_tools': state.allAvailableTools,
     'model.identifier': model.identifier,
   });
@@ -52,40 +53,33 @@ const _handleModelCall = async (
 
   const schema = buildModelSchema({
     state,
-    relevantSchemas,
+    relevantSchemas: relevantTools,
     resultSchema: state.workflow.resultSchema as JsonSchemaInput,
   });
 
-  const schemaString = relevantSchemas.map(tool => {
-    return `${tool.name} - ${tool.description} ${tool.schema}`;
-  });
+  const systemPrompt = getSystemPrompt(state, relevantTools);
 
-  const systemPrompt = getSystemPrompt(state, schemaString);
-
-  const trimmedMessages  = await handleContextWindowOverflow({
-    modelContextWindow: model.contextWindow ?? 0,
-    systemPrompt,
+  const truncatedMessages  = await handleContextWindowOverflow({
     messages: state.messages,
-    render: toAnthropicMessage,
+    systemPrompt:  systemPrompt + JSON.stringify(schema),
+    modelContextWindow: model.contextWindow,
+    render: (m) => JSON.stringify(toAnthropicMessage(m)),
   });
-
-  const renderedMessages = toAnthropicMessages(trimmedMessages);
 
   if (state.workflow.debug) {
     addAttributes({
-      'model.input.additional_context': state.additionalContext,
+      'model.input.systemPrompt': systemPrompt,
       'model.input.messages': JSON.stringify(
-        state.messages.map(m => ({
+        truncatedMessages.map(m => ({
           id: m.id,
           type: m.type,
         }))
       ),
-      'model.input.rendered_messages': JSON.stringify(renderedMessages),
     });
   }
 
   const response = await model.structured({
-    messages: renderedMessages,
+    messages: toAnthropicMessages(truncatedMessages),
     system: systemPrompt,
     schema,
   });
