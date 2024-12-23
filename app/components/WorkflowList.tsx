@@ -133,8 +133,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
   };
 
   return (
-    <div className="w-3/12 flex flex-col">
-      <ScrollArea className="rounded-md bg-white shadow-sm hover:shadow-lg transition-all duration-200 overflow-y-auto h-[calc(100vh-16rem)] p-2 border border-border/50">
+      <ScrollArea className="rounded-md bg-white shadow-sm hover:shadow-lg transition-all duration-200 overflow-y-auto h-[300px] lg:h-[calc(100vh-16rem)] p-2 border border-border/50">
         {(!!runFilters.configId || !!runFilters.test) && (
           <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
             {runFilters.configId && (
@@ -168,38 +167,37 @@ export function RunList({ clusterId }: WorkflowListProps) {
           </div>
         )}
         <div className="flex items-center gap-2">
-          <ToggleGroup
-            type="single"
-            value={runToggle}
-            onValueChange={(value) => {
-              if (value) setRunToggle(value);
-            }}
-            variant="outline"
-            size="sm"
-            className="flex-1"
+          <div className="flex gap-1 bg-secondary/50 p-0.5 rounded-md">
+            <button
+              onClick={() => setRunToggle("all")}
+              className={`px-2.5 py-0.5 rounded text-xs flex items-center gap-1.5 transition-colors
+                ${runToggle === "all"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/50"
+                }`}
+            >
+              <PlayIcon className="h-3 w-3" />
+              <span className="text-xs hidden lg:block">All Runs</span>
+            </button>
+            <button
+              onClick={() => setRunToggle("mine")}
+              className={`px-2.5 py-0.5 rounded text-xs flex items-center gap-1.5 transition-colors
+                ${runToggle === "mine"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/50"
+                }`}
+            >
+              <UserIcon className="h-3 w-3" />
+              <span className="text-xs hidden lg:block">My Runs</span>
+            </button>
+          </div>
+          <button
+            onClick={() => router.push(`/clusters/${clusterId}/runs`)}
+            className="px-2 py-0.5 rounded text-xs flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >
-            <ToggleGroupItem
-              value="all"
-              aria-label="Toggle all runs"
-              className="flex-1"
-            >
-              <PlayIcon className="mr-2 h-4 w-4" />
-              All Runs
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="mine"
-              aria-label="Toggle my Runs"
-              className="flex-1"
-            >
-              <UserIcon className="mr-2 h-4 w-4" />
-              My Runs
-            </ToggleGroupItem>
-          </ToggleGroup>
-          <Button variant="outline" size="sm" className="shrink-0" asChild>
-            <Link href={`/clusters/${clusterId}/runs`}>
-              <PlusIcon className="h-4 w-4" />
-            </Link>
-          </Button>
+            <PlusIcon className="h-3 w-3" />
+            <span className="text-xs hidden lg:block">New</span>
+          </button>
         </div>
         <div className="rounded-none">
           <RunTab
@@ -227,6 +225,5 @@ export function RunList({ clusterId }: WorkflowListProps) {
           )}
         </div>
       </ScrollArea>
-    </div>
   );
 }

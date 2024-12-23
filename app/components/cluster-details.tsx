@@ -337,7 +337,7 @@ export function ClusterDetails({
   ).length;
 
   return (
-    <div className="flex flex-col space-y-3 w-[200px]">
+    <div className="flex flex-col space-y-3 w-full">
       <Sheet>
         <SheetTrigger asChild>
           <Button
@@ -355,16 +355,10 @@ export function ClusterDetails({
               ) : liveMachineCount > 0 ? (
                 <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-xs font-medium text-green-700">
-                    Live
-                  </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="text-xs font-medium text-red-700">
-                    Disconnected
-                  </span>
                 </div>
               )}
             </div>
@@ -429,16 +423,10 @@ export function ClusterDetails({
               ) : services.length > 0 ? (
                 <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-xs font-medium text-green-700">
-                    Live
-                  </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="text-xs font-medium text-red-700">
-                    Disconnected
-                  </span>
                 </div>
               )}
             </div>
@@ -447,7 +435,9 @@ export function ClusterDetails({
                 <Blocks className="w-5 h-5 text-gray-700" />
               </div>
               <div className="flex flex-col items-start gap-0.5">
-                <span className="font-semibold text-gray-900">Services</span>
+                <span className="font-semibold text-gray-900">
+                  Services
+                </span>
                 <span className="text-xs text-gray-500 font-mono">
                   {services.reduce(
                     (acc, service) => acc + (service.functions?.length || 0),

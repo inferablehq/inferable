@@ -23,7 +23,7 @@ export async function generateMetadata({
   return { title: `${cluster.body?.name}` };
 }
 
-function Home({
+export default function Home({
   params: { clusterId },
   children,
 }: {
@@ -33,18 +33,18 @@ function Home({
   children: React.ReactNode;
 }) {
   return (
-    <main className="flex-grow">
-      <div className="flex space-x-6 pt-6 pb-6 pl-6 pr-2">
+    <div className="flex flex-col lg:flex-row gap-6 p-6">
+      <div className="w-full lg:w-[300px] flex-shrink-0">
         <RunList clusterId={clusterId} />
-        <div className="w-7/12 flex flex-col space-y-2 overflow-auto">
-          {children}
-        </div>
-        <div className="w-1/12 flex flex-col">
-          <ClusterDetails clusterId={clusterId} />
-        </div>
       </div>
-    </main>
+      <div className="w-full max-w-[1024px]">
+        {children}
+      </div>
+      <div className="w-full lg:w-[200px] flex-shrink-0">
+        <ClusterDetails clusterId={clusterId} />
+      </div>
+    </div>
   );
 }
 
-export default Home;
+

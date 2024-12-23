@@ -74,7 +74,7 @@ export async function ClusterBreadcrumbs({
 
 export async function GlobalBreadcrumbs() {
   return (
-    <div className="px-4 py-2 flex gap-2 border-b bg-white">
+    <div className="px-6 py-2 flex gap-2 border-b bg-white">
       <Link href={`/clusters`} className={linkStyles}>
         <Network className="h-4 w-4" /> Clusters
       </Link>

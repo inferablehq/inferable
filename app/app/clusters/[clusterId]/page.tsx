@@ -458,8 +458,8 @@ export default function Page({ params }: { params: { clusterId: string } }) {
     <div className="max-w-6xl p-6 text-sm">
       <h2 className="text-2xl mb-6">Cluster Overview</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-        <Card className="transition-colors">
-          <CardHeader>
+        <Card className="transition-colors flex flex-col hover:bg-gray-50">
+          <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Go to my runs</CardTitle>
             <CardDescription>
               View and manage your existing runs or create new ones
@@ -475,8 +475,8 @@ export default function Page({ params }: { params: { clusterId: string } }) {
           </CardContent>
         </Card>
 
-        <Card className="transition-colors">
-          <CardHeader>
+        <Card className="transition-colors flex flex-col hover:bg-gray-50">
+          <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Configure cluster</CardTitle>
             <CardDescription>
               Manage API keys, services, and cluster settings
@@ -494,8 +494,8 @@ export default function Page({ params }: { params: { clusterId: string } }) {
           </CardContent>
         </Card>
 
-        <Card className="transition-colors">
-          <CardHeader>
+        <Card className="transition-colors flex flex-col hover:bg-gray-50">
+          <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Read the docs</CardTitle>
             <CardDescription>
               Learn more about how to use your cluster effectively

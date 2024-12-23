@@ -161,7 +161,7 @@ export default function DetailsPage({
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">
+                        <FormLabel className="text-sm">
                           Run Config UI
                         </FormLabel>
                         <FormDescription>
@@ -185,7 +185,7 @@ export default function DetailsPage({
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">
+                        <FormLabel className="text-sm">
                           Knowledgebase
                         </FormLabel>
                         <FormDescription>
@@ -214,7 +214,7 @@ export default function DetailsPage({
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">
+                      <FormLabel className="text-sm">
                         Custom Auth
                       </FormLabel>
                       <FormDescription>
@@ -236,7 +236,7 @@ export default function DetailsPage({
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Debug Logging</FormLabel>
+                      <FormLabel className="text-sm">Debug Logging</FormLabel>
                       <FormDescription>
                         Allow Inferable to capture additional debug logs for the purpose of troubleshooting.
                       </FormDescription>
