@@ -75,7 +75,8 @@ export const callsRouter = initServer().router(
     },
     createCallResult: async (request) => {
       const { clusterId, callId } = request.params;
-      let { result, resultType, meta } = request.body;
+      let { result, resultType } = request.body;
+      const { meta } = request.body;
 
       const machine = request.request.getAuth().isMachine();
       machine.canAccess({ cluster: { clusterId } });
@@ -112,38 +113,43 @@ export const callsRouter = initServer().router(
         }
       }
 
-      // Max result size 500kb
-      const data = Buffer.from(JSON.stringify(result));
-      if (result && Buffer.byteLength(data) > 500 * 1024) {
-        logger.info("Call result too large, persisting as blob", {
+      if (!!result) {
+        // Max result size 500kb
+        const data = Buffer.from(JSON.stringify(result));
+        if (Buffer.byteLength(data) > 500 * 1024) {
+          logger.info("Call result too large, persisting as blob", {
+            callId,
+          })
+
+          const call = await getJob({ clusterId, jobId: callId });
+
+          if (!call) {
+            throw new NotFoundError("Call not found");
+          }
+
+
+          await createBlob({
+            data: data.toString("base64"),
+            size: Buffer.byteLength(data),
+            encoding: "base64",
+            type: "application/json",
+            name: "Oversize call result",
+            clusterId,
+            runId: call.runId ?? undefined,
+            jobId: callId ?? undefined,
+          });
+
+          result = {
+            message: "The result was too large and was returned to the user directly",
+          };
+
+          resultType = "rejection";
+        }
+      } else {
+        logger.warn("Call result is empty", {
           callId,
         })
-
-        const call = await getJob({ clusterId, jobId: callId });
-
-        if (!call) {
-          throw new NotFoundError("Call not found");
-        }
-
-
-        await createBlob({
-          data: data.toString("base64"),
-          size: Buffer.byteLength(data),
-          encoding: "base64",
-          type: "application/json",
-          name: "Oversize call result",
-          clusterId,
-          runId: call.runId ?? undefined,
-          jobId: callId ?? undefined,
-        });
-
-        result = {
-          message: "The result was too large and was returned to the user directly",
-        };
-
-        resultType = "rejection";
       }
-
 
       await Promise.all([
         upsertMachine({
