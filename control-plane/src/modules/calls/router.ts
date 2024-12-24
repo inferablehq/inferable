@@ -3,11 +3,11 @@ import { initServer } from "@ts-rest/fastify";
 import * as jobs from "../jobs/jobs";
 import { packer } from "../packer";
 import { upsertMachine } from "../machines";
-import { BadRequestError, NotFoundError } from "../../utilities/errors";
+import { BadRequestError } from "../../utilities/errors";
 import { createBlob } from "../blobs";
 import { logger } from "../observability/logger";
 import { recordServicePoll } from "../service-definitions";
-import { getJob } from "../jobs/jobs";
+import { resumeRun } from "../workflows/workflows";
 
 export const callsRouter = initServer().router(
   {
@@ -75,7 +75,7 @@ export const callsRouter = initServer().router(
     },
     createCallResult: async (request) => {
       const { clusterId, callId } = request.params;
-      let { result, resultType, meta } = request.body;
+      const { result, resultType, meta } = request.body;
 
       const machine = request.request.getAuth().isMachine();
       machine.canAccess({ cluster: { clusterId } });
@@ -111,39 +111,6 @@ export const callsRouter = initServer().router(
           throw new BadRequestError("Unsupported interrupt type");
         }
       }
-
-      // Max result size 500kb
-      const data = Buffer.from(JSON.stringify(result));
-      if (result && Buffer.byteLength(data) > 500 * 1024) {
-        logger.info("Call result too large, persisting as blob", {
-          callId,
-        })
-
-        const call = await getJob({ clusterId, jobId: callId });
-
-        if (!call) {
-          throw new NotFoundError("Call not found");
-        }
-
-
-        await createBlob({
-          data: data.toString("base64"),
-          size: Buffer.byteLength(data),
-          encoding: "base64",
-          type: "application/json",
-          name: "Oversize call result",
-          clusterId,
-          runId: call.runId ?? undefined,
-          jobId: callId ?? undefined,
-        });
-
-        result = {
-          message: "The result was too large and was returned to the user directly",
-        };
-
-        resultType = "rejection";
-      }
-
 
       await Promise.all([
         upsertMachine({
