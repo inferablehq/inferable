@@ -10,6 +10,7 @@ const mockCreate = jest.fn(() => ({
 }));
 
 jest.mock("./routing", () => ({
+  ...jest.requireActual("./routing"),
   getRouting: jest.fn(() => ({
     buildClient: jest.fn(() => ({
       messages: {

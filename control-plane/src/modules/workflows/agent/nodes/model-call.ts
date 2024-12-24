@@ -1,5 +1,5 @@
 import { ReleventToolLookup } from '../agent';
-import { toAnthropicMessages } from '../../workflow-messages';
+import { toAnthropicMessage, toAnthropicMessages } from '../../workflow-messages';
 import { logger } from '../../../observability/logger';
 import { WorkflowAgentState, WorkflowAgentStateMessage } from '../state';
 import { addAttributes, withSpan } from '../../../observability/tracer';
@@ -14,6 +14,7 @@ import { ToolUseBlock } from '@anthropic-ai/sdk/resources';
 import { Schema, Validator } from 'jsonschema';
 import { buildModelSchema, ModelOutput } from './model-output';
 import { getSystemPrompt } from './system-prompt';
+import { handleContextWindowOverflow } from '../overflow';
 
 type WorkflowStateUpdate = Partial<WorkflowAgentState>;
 
@@ -32,15 +33,14 @@ const _handleModelCall = async (
   findRelevantTools: ReleventToolLookup
 ): Promise<WorkflowStateUpdate> => {
   detectCycle(state.messages);
-  const relevantSchemas = await findRelevantTools(state);
+
+  const relevantTools = await findRelevantTools(state);
 
   addAttributes({
-    'model.relevant_tools': relevantSchemas.map(tool => tool.name),
+    'model.relevant_tools': relevantTools.map(tool => tool.name),
     'model.available_tools': state.allAvailableTools,
     'model.identifier': model.identifier,
   });
-
-  const renderedMessages = toAnthropicMessages(state.messages);
 
   if (!!state.workflow.resultSchema) {
     const resultSchemaErrors = validateFunctionSchema(
@@ -53,31 +53,33 @@ const _handleModelCall = async (
 
   const schema = buildModelSchema({
     state,
-    relevantSchemas,
+    relevantSchemas: relevantTools,
     resultSchema: state.workflow.resultSchema as JsonSchemaInput,
   });
 
-  const schemaString = relevantSchemas.map(tool => {
-    return `${tool.name} - ${tool.description} ${tool.schema}`;
-  });
+  const systemPrompt = getSystemPrompt(state, relevantTools);
 
-  const systemPrompt = getSystemPrompt(state, schemaString);
+  const truncatedMessages  = await handleContextWindowOverflow({
+    messages: state.messages,
+    systemPrompt:  systemPrompt + JSON.stringify(schema),
+    modelContextWindow: model.contextWindow,
+    render: (m) => JSON.stringify(toAnthropicMessage(m)),
+  });
 
   if (state.workflow.debug) {
     addAttributes({
-      'model.input.additional_context': state.additionalContext,
+      'model.input.systemPrompt': systemPrompt,
       'model.input.messages': JSON.stringify(
-        state.messages.map(m => ({
+        truncatedMessages.map(m => ({
           id: m.id,
           type: m.type,
         }))
       ),
-      'model.input.rendered_messages': JSON.stringify(renderedMessages),
     });
   }
 
   const response = await model.structured({
-    messages: renderedMessages,
+    messages: toAnthropicMessages(truncatedMessages),
     system: systemPrompt,
     schema,
   });
@@ -257,6 +259,7 @@ const _handleModelCall = async (
     result: data.result,
   };
 };
+
 
 const detectCycle = (messages: WorkflowAgentStateMessage[]) => {
   if (messages.length >= 100) {

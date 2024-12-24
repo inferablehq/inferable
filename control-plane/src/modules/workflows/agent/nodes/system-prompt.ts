@@ -1,8 +1,9 @@
 import { WorkflowAgentState } from "../state";
+import { AgentTool } from "../tool";
 
 export const getSystemPrompt = (
   state: WorkflowAgentState,
-  schemaString: string[],
+  tools: AgentTool[],
 ): string => {
   const basePrompt = [
     "You are a helpful assistant with access to a set of tools designed to assist in completing tasks.",
@@ -36,16 +37,19 @@ export const getSystemPrompt = (
     basePrompt.push(state.additionalContext);
   }
 
+
   // Add tool schemas
   basePrompt.push("<TOOLS_SCHEMAS>");
-  basePrompt.push(...schemaString);
+  basePrompt.push(...tools.map(tool => {
+    return `${tool.name} - ${tool.description} ${tool.schema}`;
+  }));
   basePrompt.push("</TOOLS_SCHEMAS>");
 
   // Add other available tools
   basePrompt.push("<OTHER_AVAILABLE_TOOLS>");
   basePrompt.push(
     ...state.allAvailableTools.filter(
-      (t) => !schemaString.find((s) => s.includes(t)),
+      (t) => !tools.find((s) => s.name === t),
     ),
   );
   basePrompt.push("</OTHER_AVAILABLE_TOOLS>");
