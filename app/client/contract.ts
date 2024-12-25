@@ -74,6 +74,12 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
+  valTown: z
+    .object({
+      endpoint: z.string().url(),
+    })
+    .optional()
+    .nullable(),
 });
 
 export const genericMessageDataSchema = z
@@ -93,15 +99,11 @@ export const resultDataSchema = z
 export const learningSchema = z.object({
   summary: z
     .string()
-    .describe(
-      "The new information that was learned. Be generic, do not refer to the entities."
-    ),
+    .describe("The new information that was learned. Be generic, do not refer to the entities."),
   entities: z
     .array(
       z.object({
-        name: z
-          .string()
-          .describe("The name of the entity this learning relates to."),
+        name: z.string().describe("The name of the entity this learning relates to."),
         type: z.enum(["tool"]),
       })
     )
@@ -232,13 +234,11 @@ export const definition = {
         message: z.string(),
       }),
     },
-    body: blobSchema
-      .omit({ id: true, createdAt: true, jobId: true, workflowId: true })
-      .and(
-        z.object({
-          data: z.string(),
-        })
-      ),
+    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, workflowId: true }).and(
+      z.object({
+        data: z.string(),
+      })
+    ),
   },
   getContract: {
     method: "GET",
@@ -277,9 +277,7 @@ export const definition = {
       204: z.undefined(),
     },
     body: z.object({
-      description: z
-        .string()
-        .describe("Human readable description of the cluster"),
+      description: z.string().describe("Human readable description of the cluster"),
     }),
   },
   upsertIntegrations: {
@@ -366,6 +364,7 @@ export const definition = {
         createdAt: z.date(),
         debug: z.boolean(),
         enableCustomAuth: z.boolean(),
+        handleCustomAuthFunction: z.string(),
         enableRunConfigs: z.boolean(),
         enableKnowledgebase: z.boolean(),
         lastPingAt: z.date().nullable(),
@@ -474,10 +473,7 @@ export const definition = {
         .string()
         .optional()
         .describe("An initial 'human' message to trigger the run"),
-      systemPrompt: z
-        .string()
-        .optional()
-        .describe("A system prompt for the run."),
+      systemPrompt: z.string().optional().describe("A system prompt for the run."),
       name: z
         .string()
         .optional()
@@ -499,14 +495,10 @@ export const definition = {
         ),
       onStatusChange: z
         .object({
-          function: functionReference.describe(
-            "A function to call when the run status changes"
-          ),
+          function: functionReference.describe("A function to call when the run status changes"),
         })
         .optional()
-        .describe(
-          "Mechanism for receiving notifications when the run status changes"
-        ),
+        .describe("Mechanism for receiving notifications when the run status changes"),
       metadata: z
         .record(z.string())
         .optional()
@@ -517,10 +509,7 @@ export const definition = {
           mocks: z
             .record(
               z.object({
-                output: z
-                  .object({})
-                  .passthrough()
-                  .describe("The mock output of the function"),
+                output: z.object({}).passthrough().describe("The mock output of the function"),
               })
             )
             .optional()
@@ -529,13 +518,8 @@ export const definition = {
             ),
         })
         .optional()
-        .describe(
-          "When provided, the run will be marked as as a test / evaluation"
-        ),
-      configId: z
-        .string()
-        .optional()
-        .describe("The run configuration ID to use"),
+        .describe("When provided, the run will be marked as as a test / evaluation"),
+      configId: z.string().optional().describe("The run configuration ID to use"),
       input: z
         .object({})
         .passthrough()
@@ -546,11 +530,7 @@ export const definition = {
       context: anyObject
         .optional()
         .describe("Additional context to propogate to all calls in the run"),
-      reasoningTraces: z
-        .boolean()
-        .default(true)
-        .optional()
-        .describe("Enable reasoning traces"),
+      reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
       callSummarization: z
         .boolean()
         .default(false)
@@ -559,13 +539,8 @@ export const definition = {
       interactive: z
         .boolean()
         .default(true)
-        .describe(
-          "Allow the run to be continued with follow-up messages / message edits"
-        ),
-      enableResultGrounding: z
-        .boolean()
-        .default(false)
-        .describe("Enable result grounding"),
+        .describe("Allow the run to be continued with follow-up messages / message edits"),
+      enableResultGrounding: z.boolean().default(false).describe("Enable result grounding"),
     }),
     responses: {
       201: z.object({
@@ -657,13 +632,10 @@ export const definition = {
       userId: z.string().optional(),
       test: z.coerce
         .string()
-        .transform((value) => value === "true")
+        .transform(value => value === "true")
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
-      metadata: z
-        .string()
-        .optional()
-        .describe("Filter runs by a metadata value (value:key)"),
+      metadata: z.string().optional().describe("Filter runs by a metadata value (value:key)"),
       configId: z.string().optional(),
     }),
     responses: {
@@ -673,9 +645,7 @@ export const definition = {
           name: z.string(),
           userId: z.string().nullable(),
           createdAt: z.date(),
-          status: z
-            .enum(["pending", "running", "paused", "done", "failed"])
-            .nullable(),
+          status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
           test: z.boolean(),
           configId: z.string().nullable(),
           configVersion: z.number().nullable(),
@@ -695,9 +665,7 @@ export const definition = {
       200: z.object({
         id: z.string(),
         userId: z.string().nullable(),
-        status: z
-          .enum(["pending", "running", "paused", "done", "failed"])
-          .nullable(),
+        status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
         failureReason: z.string().nullable(),
         test: z.boolean(),
         feedbackComment: z.string().nullable(),
@@ -719,12 +687,7 @@ export const definition = {
     }),
     body: z.object({
       comment: z.string().describe("Feedback comment").nullable(),
-      score: z
-        .number()
-        .describe("Score between 0 and 1")
-        .min(0)
-        .max(1)
-        .nullable(),
+      score: z.number().describe("Score between 0 and 1").min(0).max(1).nullable(),
     }),
     responses: {
       204: z.undefined(),
@@ -995,9 +958,7 @@ export const definition = {
         run: z.object({
           id: z.string(),
           userId: z.string().nullable(),
-          status: z
-            .enum(["pending", "running", "paused", "done", "failed"])
-            .nullable(),
+          status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
           failureReason: z.string().nullable(),
           test: z.boolean(),
           context: z.any().nullable(),
@@ -1125,10 +1086,7 @@ export const definition = {
     body: z.object({
       name: z.string(),
       initialPrompt: z.string().optional(),
-      systemPrompt: z
-        .string()
-        .optional()
-        .describe("The initial system prompt for the run."),
+      systemPrompt: z.string().optional().describe("The initial system prompt for the run."),
       attachedFunctions: z.array(z.string()).optional(),
       resultSchema: anyObject.optional(),
       inputSchema: z.object({}).passthrough().optional().nullable(),
@@ -1152,10 +1110,7 @@ export const definition = {
     body: z.object({
       name: z.string().optional(),
       initialPrompt: z.string().optional(),
-      systemPrompt: z
-        .string()
-        .optional()
-        .describe("The initial system prompt for the run."),
+      systemPrompt: z.string().optional().describe("The initial system prompt for the run."),
       attachedFunctions: z.array(z.string()).optional(),
       resultSchema: z.object({}).passthrough().optional().nullable(),
       inputSchema: z.object({}).passthrough().optional().nullable(),
@@ -1271,9 +1226,7 @@ export const definition = {
         z.object({
           id: z.string(),
           data: z.string(),
-          tags: z
-            .array(z.string())
-            .transform((tags) => tags.map((tag) => tag.toLowerCase().trim())),
+          tags: z.array(z.string()).transform(tags => tags.map(tag => tag.toLowerCase().trim())),
           title: z.string(),
         })
       ),
@@ -1317,9 +1270,7 @@ export const definition = {
     headers: z.object({ authorization: z.string() }),
     body: z.object({
       data: z.string(),
-      tags: z
-        .array(z.string())
-        .transform((tags) => tags.map((tag) => tag.toLowerCase().trim())),
+      tags: z.array(z.string()).transform(tags => tags.map(tag => tag.toLowerCase().trim())),
       title: z.string(),
     }),
     responses: {
@@ -1383,9 +1334,7 @@ export const definition = {
         .min(0)
         .max(20)
         .default(0)
-        .describe(
-          "Time in seconds to keep the request open waiting for a response"
-        ),
+        .describe("Time in seconds to keep the request open waiting for a response"),
     }),
     headers: z.object({
       authorization: z.string(),
@@ -1433,14 +1382,9 @@ export const definition = {
     path: "/clusters/:clusterId/calls",
     query: z.object({
       service: z.string(),
-      status: z
-        .enum(["pending", "running", "paused", "done", "failed"])
-        .default("pending"),
+      status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
       limit: z.coerce.number().min(1).max(20).default(10),
-      acknowledge: z.coerce
-        .boolean()
-        .default(false)
-        .describe("Should calls be marked as running"),
+      acknowledge: z.coerce.boolean().default(false).describe("Should calls be marked as running"),
     }),
     pathParams: z.object({
       clusterId: z.string(),
