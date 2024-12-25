@@ -16,9 +16,9 @@ const ToolHouseResultSchema = z.array(
     content: z.array(
       z.object({
         content: z.string().optional(),
-      }),
+      })
     ),
-  }),
+  })
 );
 
 export const start = () =>
@@ -26,9 +26,7 @@ export const start = () =>
     interval: 1000 * 60 * 5,
   }); // every 5 minutes
 
-export const validateConfig = async (
-  config: z.infer<typeof integrationSchema>,
-) => {
+export const validateConfig = async (config: z.infer<typeof integrationSchema>) => {
   if (!config.toolhouse?.apiKey) {
     throw new Error("ToolHouse API key is required");
   }
@@ -67,26 +65,38 @@ const handleCall = async ({
     return;
   }
 
-  const result = await invokeToolHouse({
-    input: packer.unpack(call.targetArgs),
-    toolName: call.targetFn,
-    apiKey: toolHouseConfig.config.apiKey,
-    callId: call.id,
-    metadata: {
-      ...(call.authContext instanceof Object ? call.authContext : {}),
-      ...(call.runContext instanceof Object ? call.runContext : {}),
-    },
-  });
+  try {
+    const result = await invokeToolHouse({
+      input: packer.unpack(call.targetArgs),
+      toolName: call.targetFn,
+      apiKey: toolHouseConfig.config.apiKey,
+      callId: call.id,
+      metadata: {
+        ...(call.authContext instanceof Object ? call.authContext : {}),
+        ...(call.runContext instanceof Object ? call.runContext : {}),
+      },
+    });
 
-  await persistJobResult({
-    result: packer.pack(result),
-    resultType: "resolution",
-    jobId: call.id,
-    owner: {
-      clusterId,
-    },
-    machineId: "TOOLHOUSE",
-  });
+    await persistJobResult({
+      result: packer.pack(result),
+      resultType: "resolution",
+      jobId: call.id,
+      owner: {
+        clusterId,
+      },
+      machineId: "TOOLHOUSE",
+    });
+  } catch (error) {
+    await persistJobResult({
+      result: packer.pack(error),
+      resultType: "rejection",
+      jobId: call.id,
+      owner: {
+        clusterId,
+      },
+      machineId: "TOOLHOUSE",
+    });
+  }
 };
 
 const invokeToolHouse = async ({
@@ -165,7 +175,7 @@ const syncToolHouseService = async ({
     service: "ToolHouse",
     definition: {
       name: "ToolHouse",
-      functions: tools.map((tool) => {
+      functions: tools.map(tool => {
         return {
           name: toInferableName(tool.name),
           description: tool.description,
@@ -192,7 +202,7 @@ const syncToolHouse = async () => {
 
   await Promise.all(
     // TODO: We will need to shard this
-    toolHouseClusters.map(async (integration) => {
+    toolHouseClusters.map(async integration => {
       try {
         await syncToolHouseService({
           clusterId: integration.clusterId,
@@ -204,7 +214,7 @@ const syncToolHouse = async () => {
           error,
         });
       }
-    }),
+    })
   );
 };
 
@@ -212,7 +222,7 @@ const syncToolHouse = async () => {
 const toInferableName = (input: string) => {
   const transformed = input
     .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join("");
 
   return transformed.charAt(0).toLowerCase() + transformed.slice(1);
@@ -229,7 +239,7 @@ export const toolhouse = {
     return syncToolHouseService({
       clusterId,
       apiKey: await getIntegrations({ clusterId }).then(
-        (integrations) => integrations.toolhouse?.apiKey,
+        integrations => integrations.toolhouse?.apiKey
       ),
     });
   },

@@ -1,0 +1,1 @@
+ALTER TABLE "clusters" ADD COLUMN "handle_custom_auth_function" varchar(1024) DEFAULT 'default_handleCustomAuth' NOT NULL;

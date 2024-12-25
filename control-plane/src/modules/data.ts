@@ -33,7 +33,7 @@ export const pool = new Pool({
   max: env.DATABASE_MAX_CONNECTIONS,
 });
 
-pool.on("error", (err) => {
+pool.on("error", err => {
   logger.error("Database connection error on idle client", {
     error: err,
   });
@@ -71,18 +71,12 @@ export const jobs = pgTable(
     }),
     executing_machine_id: text("executing_machine_id"),
     remaining_attempts: integer("remaining_attempts").notNull(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updated_at: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     resulted_at: timestamp("resulted_at", { withTimezone: true }),
     last_retrieved_at: timestamp("last_retrieved_at", { withTimezone: true }),
     function_execution_time_ms: integer("function_execution_time_ms"),
-    timeout_interval_seconds: integer("timeout_interval_seconds")
-      .notNull()
-      .default(300),
+    timeout_interval_seconds: integer("timeout_interval_seconds").notNull().default(300),
     service: varchar("service", { length: 1024 }).notNull(),
     workflow_id: varchar("workflow_id", { length: 1024 }),
     auth_context: json("auth_context"),
@@ -90,7 +84,7 @@ export const jobs = pgTable(
     approval_requested: boolean("approval_requested").notNull().default(false),
     approved: boolean("approved"),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.id],
       name: "jobs_cluster_id_id",
@@ -98,15 +92,15 @@ export const jobs = pgTable(
     clusterServiceStatusIndex: index("clusterServiceStatusIndex").on(
       table.cluster_id,
       table.service,
-      table.status,
+      table.status
     ),
     clusterServiceStatusFnIndex: index("clusterServiceStatusFnIndex").on(
       table.cluster_id,
       table.service,
       table.target_fn,
-      table.status,
+      table.status
     ),
-  }),
+  })
 );
 
 export const machines = pgTable(
@@ -122,12 +116,12 @@ export const machines = pgTable(
       enum: ["active", "inactive"],
     }).default("active"),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.id, table.cluster_id],
       name: "machines_id_cluster_id",
     }),
-  }),
+  })
 );
 
 export const clusters = pgTable(
@@ -137,10 +131,11 @@ export const clusters = pgTable(
     name: varchar("name", { length: 1024 }).notNull(),
     debug: boolean("debug").notNull().default(false),
     enable_custom_auth: boolean("enable_custom_auth").notNull().default(false),
+    handle_custom_auth_function: varchar("handle_custom_auth_function", { length: 1024 })
+      .default("default_handleCustomAuth")
+      .notNull(),
     enable_run_configs: boolean("enable_run_configs").notNull().default(false),
-    enable_knowledgebase: boolean("enable_knowledgebase")
-      .notNull()
-      .default(false),
+    enable_knowledgebase: boolean("enable_knowledgebase").notNull().default(false),
     description: varchar("description", { length: 1024 }),
     organization_id: varchar("organization_id"),
     additional_context: json("additional_context").$type<{
@@ -164,12 +159,9 @@ export const clusters = pgTable(
       precision: 6,
     }),
   },
-  (table) => ({
-    idOrgIndex: index("clusters_id_org_index").on(
-      table.id,
-      table.organization_id,
-    ),
-  }),
+  table => ({
+    idOrgIndex: index("clusters_id_org_index").on(table.id, table.organization_id),
+  })
 );
 
 export const services = pgTable(
@@ -183,12 +175,12 @@ export const services = pgTable(
     definition: json("definition"), // this should be named the live definition
     timestamp: timestamp("timestamp", { withTimezone: true }),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.service],
       name: "services_cluster_id_service",
     }),
-  }),
+  })
 );
 
 export const integrations = pgTable(
@@ -209,19 +201,18 @@ export const integrations = pgTable(
     tavily: json("tavily").$type<{
       apiKey: string;
     }>(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updated_at: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    valTown: json("valTown").$type<{
+      endpoint: string;
+    }>(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id],
       name: "integrations_pkey",
     }),
-  }),
+  })
 );
 
 export const workflowMetadata = pgTable(
@@ -232,7 +223,7 @@ export const workflowMetadata = pgTable(
     key: varchar("key", { length: 1024 }).notNull(),
     value: text("value").notNull(),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.workflow_id, table.key],
       name: "workflow_metadata_cluster_id_workflow_id_key",
@@ -241,12 +232,8 @@ export const workflowMetadata = pgTable(
       columns: [table.workflow_id, table.cluster_id],
       foreignColumns: [workflows.id, workflows.cluster_id],
     }).onDelete("cascade"),
-    index: index("workflowMetadataIndex").on(
-      table.key,
-      table.value,
-      table.cluster_id,
-    ),
-  }),
+    index: index("workflowMetadataIndex").on(table.key, table.value, table.cluster_id),
+  })
 );
 
 export const workflows = pgTable(
@@ -276,10 +263,7 @@ export const workflows = pgTable(
     }).default("pending"),
     failure_reason: text("failure_reason"),
     debug: boolean("debug").notNull().default(false),
-    attached_functions: json("attached_functions")
-      .$type<string[]>()
-      .notNull()
-      .default([]),
+    attached_functions: json("attached_functions").$type<string[]>().notNull().default([]),
     test: boolean("test").notNull().default(false),
     test_mocks: json("test_mocks")
       .$type<
@@ -297,22 +281,18 @@ export const workflows = pgTable(
     config_version: integer("config_version"),
     reasoning_traces: boolean("reasoning_traces").default(true).notNull(),
     interactive: boolean("interactive").default(true).notNull(),
-    enable_summarization: boolean("enable_summarization")
-      .default(false)
-      .notNull(),
-    enable_result_grounding: boolean("enable_result_grounding")
-      .default(false)
-      .notNull(),
+    enable_summarization: boolean("enable_summarization").default(false).notNull(),
+    enable_result_grounding: boolean("enable_result_grounding").default(false).notNull(),
     custom_auth_token: text("custom_auth_token"),
     auth_context: json("auth_context"),
     context: json("context"),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.id],
       name: "workflows_cluster_id_id",
     }),
-  }),
+  })
 );
 
 export type RunMessageMetadata = {
@@ -338,18 +318,11 @@ export const workflowMessages = pgTable(
     }),
     data: json("data").$type<MessageData>().notNull(),
     type: text("type", {
-      enum: [
-        "human",
-        "invocation-result",
-        "template",
-        "agent",
-        "agent-invalid",
-        "supervisor",
-      ],
+      enum: ["human", "invocation-result", "template", "agent", "agent-invalid", "supervisor"],
     }).notNull(),
     metadata: json("metadata").$type<RunMessageMetadata>(),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.workflow_id, table.id],
       name: "workflow_messages_cluster_id_workflow_id_id",
@@ -358,7 +331,7 @@ export const workflowMessages = pgTable(
       columns: [table.workflow_id, table.cluster_id],
       foreignColumns: [workflows.id, workflows.cluster_id],
     }).onDelete("cascade"),
-  }),
+  })
 );
 
 export const embeddings = pgTable(
@@ -384,22 +357,22 @@ export const embeddings = pgTable(
     raw_data_hash: varchar("raw_data_hash", { length: 1024 }).notNull(),
     tags: json("tags").$type<string[]>(),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.id, table.type],
     }),
     embedding1024Index: index("embedding1024Index").using(
       "hnsw",
-      table.embedding_1024.op("vector_cosine_ops"),
+      table.embedding_1024.op("vector_cosine_ops")
     ),
     lookupIndex: index("embeddingsLookupIndex").on(
       table.cluster_id,
       table.type,
       table.group_id,
       table.id,
-      table.raw_data_hash,
+      table.raw_data_hash
     ),
-  }),
+  })
 );
 
 export const apiKeys = pgTable(
@@ -420,14 +393,12 @@ export const apiKeys = pgTable(
     created_at: timestamp("created_at").notNull().defaultNow(),
     revoked_at: timestamp("revoked_at"),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.id],
     }),
-    keyHashIndex: uniqueIndex("api_keys_secret_hash_index").on(
-      table.secret_hash,
-    ),
-  }),
+    keyHashIndex: uniqueIndex("api_keys_secret_hash_index").on(table.secret_hash),
+  })
 );
 
 export const blobs = pgTable(
@@ -439,9 +410,7 @@ export const blobs = pgTable(
     workflow_id: varchar("workflow_id", { length: 1024 }),
     job_id: varchar("job_id", { length: 1024 }),
     data: text("data").notNull(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     encoding: varchar("encoding", {
       length: 1024,
       enum: ["base64"],
@@ -452,7 +421,7 @@ export const blobs = pgTable(
     }).notNull(),
     size: integer("size").notNull(),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.id],
     }),
@@ -464,7 +433,7 @@ export const blobs = pgTable(
       columns: [table.cluster_id, table.workflow_id],
       foreignColumns: [workflows.cluster_id, workflows.id],
     }).onDelete("cascade"),
-  }),
+  })
 );
 
 export const toolMetadata = pgTable(
@@ -476,16 +445,14 @@ export const toolMetadata = pgTable(
     service: varchar("service", { length: 1024 }).notNull(),
     function_name: varchar("function_name", { length: 1024 }).notNull(),
     user_defined_context: text("user_defined_context"),
-    result_keys: json("result_keys")
-      .$type<{ key: string; last_seen: number }[]>()
-      .default([]),
+    result_keys: json("result_keys").$type<{ key: string; last_seen: number }[]>().default([]),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.service, table.function_name],
       name: "tool_metadata_pkey",
     }),
-  }),
+  })
 );
 
 export const versionedEntities = pgTable(
@@ -496,16 +463,14 @@ export const versionedEntities = pgTable(
     type: varchar("type", { length: 128 }).notNull(),
     version: integer("version").notNull(),
     entity: json("entity").notNull(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.id, table.type, table.version],
       name: "versioned_entities_pkey",
     }),
-  }),
+  })
 );
 
 export const promptTemplates = pgTable(
@@ -519,26 +484,19 @@ export const promptTemplates = pgTable(
     name: varchar("name", { length: 1024 }).notNull(),
     initial_prompt: text("initial_prompt"),
     system_prompt: varchar("system_prompt", { length: 1024 }),
-    attached_functions: json("attached_functions")
-      .$type<string[]>()
-      .notNull()
-      .default([]),
+    attached_functions: json("attached_functions").$type<string[]>().notNull().default([]),
     // TODO: Rename this to result_schema
     result_schema: json("structured_output"),
     input_schema: json("input_schema"),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updated_at: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.cluster_id, table.id],
       name: "prompt_templates_pkey",
     }),
-  }),
+  })
 );
 
 export const events = pgTable(
@@ -560,21 +518,15 @@ export const events = pgTable(
     token_usage_input: integer("token_usage_input"),
     token_usage_output: integer("token_usage_output"),
     attention_level: integer("attention_level"),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     meta: json("meta")
       .$type<Record<string, string | boolean | number | object>>()
       .notNull()
       .default({}),
   },
-  (table) => ({
-    index: index("timeline_index").on(
-      table.cluster_id,
-      table.run_id,
-      table.attention_level,
-    ),
-  }),
+  table => ({
+    index: index("timeline_index").on(table.cluster_id, table.run_id, table.attention_level),
+  })
 );
 
 export const analyticsSnapshots = pgTable(
@@ -583,12 +535,12 @@ export const analyticsSnapshots = pgTable(
     data: json("data").notNull(),
     timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
   },
-  (table) => ({
+  table => ({
     pk: primaryKey({
       columns: [table.timestamp],
       name: "analytics_snapshots_pkey",
     }),
-  }),
+  })
 );
 
 export const db = drizzle(pool, {
@@ -601,7 +553,7 @@ export const db = drizzle(pool, {
 });
 
 export const isAlive = async () => {
-  await db.execute(sql`select 1`).catch((e) => {
+  await db.execute(sql`select 1`).catch(e => {
     logger.error("Database connection is not alive", {
       error: e,
     });

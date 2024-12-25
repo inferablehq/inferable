@@ -60,7 +60,7 @@ export const createCluster = async ({
       name: data.clusters.name,
     })
     .execute()
-    .then((r) => r[0]);
+    .then(r => r[0]);
 };
 
 export const deleteCluster = async ({ clusterId }: { clusterId: string }) => {
@@ -102,12 +102,7 @@ export const editClusterDetails = async ({
       enable_run_configs: enableRunConfigs,
       enable_knowledgebase: enableKnowledgebase,
     })
-    .where(
-      and(
-        eq(data.clusters.id, clusterId),
-        eq(data.clusters.organization_id, organizationId),
-      ),
-    )
+    .where(and(eq(data.clusters.id, clusterId), eq(data.clusters.organization_id, organizationId)))
     .returning({
       id: data.clusters.id,
     })
@@ -131,6 +126,7 @@ export const getClusterDetails = async ({
   additionalContext: VersionedTexts | null;
   debug: boolean;
   enableCustomAuth: boolean;
+  handleCustomAuthFunction: string;
   enableRunConfigs: boolean;
   enableKnowledgebase: boolean;
 }> => {
@@ -144,6 +140,7 @@ export const getClusterDetails = async ({
         additionalContext: data.clusters.additional_context,
         debug: data.clusters.debug,
         enableCustomAuth: data.clusters.enable_custom_auth,
+        handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
         enableRunConfigs: data.clusters.enable_run_configs,
         enableKnowledgebase: data.clusters.enable_knowledgebase,
       })
@@ -158,11 +155,8 @@ export const getClusterDetails = async ({
       .where(
         and(
           eq(data.machines.cluster_id, clusterId),
-          gte(
-            data.machines.last_ping_at,
-            new Date(Date.now() - 1000 * 60 * 60 * 1),
-          ),
-        ),
+          gte(data.machines.last_ping_at, new Date(Date.now() - 1000 * 60 * 60 * 1))
+        )
       )
       .groupBy(data.machines.cluster_id),
   ]);
@@ -182,16 +176,13 @@ export const getClusterDetails = async ({
     additionalContext: cluster.additionalContext,
     lastPingAt: machines[0]?.maxLastPingAt,
     enableCustomAuth: cluster.enableCustomAuth,
+    handleCustomAuthFunction: cluster.handleCustomAuthFunction,
     enableRunConfigs: cluster.enableRunConfigs,
     enableKnowledgebase: cluster.enableKnowledgebase,
   };
 };
 
-export const getClusterMachines = async ({
-  clusterId,
-}: {
-  clusterId: string;
-}) => {
+export const getClusterMachines = async ({ clusterId }: { clusterId: string }) => {
   const machines = await data.db
     .select({
       id: data.machines.id,

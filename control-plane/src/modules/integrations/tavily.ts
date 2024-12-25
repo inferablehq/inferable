@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { getIntegrations } from "./integrations";
-import {
-  deleteServiceDefinition,
-  upsertServiceDefinition,
-} from "../service-definitions";
+import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { logger } from "../observability/logger";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { packer } from "../packer";
@@ -63,9 +60,7 @@ export async function searchTavily({
   });
 
   if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: response.statusText }));
+    const errorData = await response.json().catch(() => ({ message: response.statusText }));
     throw new Error(errorData.message || "Failed to perform search");
   }
 
@@ -87,8 +82,7 @@ const definition = {
           searchDepth: {
             type: "string",
             enum: ["basic", "advanced"],
-            description:
-              "The depth of the search. 'basic' is faster, 'advanced' is more thorough",
+            description: "The depth of the search. 'basic' is faster, 'advanced' is more thorough",
           },
           topic: {
             type: "string",
@@ -118,13 +112,7 @@ const definition = {
   ],
 };
 
-const syncTavilyService = async ({
-  clusterId,
-  apiKey,
-}: {
-  clusterId: string;
-  apiKey?: string;
-}) => {
+const syncTavilyService = async ({ clusterId, apiKey }: { clusterId: string; apiKey?: string }) => {
   logger.info("Syncing Tavily", { clusterId });
 
   if (!apiKey) {
@@ -166,22 +154,32 @@ const handleCall = async ({
     return;
   }
 
-  const result = await searchTavily({
-    params: packer.unpack(call.targetArgs),
-    apiKey,
-  });
+  try {
+    const result = await searchTavily({
+      params: packer.unpack(call.targetArgs),
+      apiKey,
+    });
 
-  await persistJobResult({
-    result: packer.pack(result),
-    resultType: "resolution",
-    jobId: call.id,
-    owner: {
-      clusterId,
-    },
-    machineId: "TAVILY",
-  });
-
-  return result;
+    await persistJobResult({
+      result: packer.pack(result),
+      resultType: "resolution",
+      jobId: call.id,
+      owner: {
+        clusterId,
+      },
+      machineId: "TAVILY",
+    });
+  } catch (error) {
+    await persistJobResult({
+      result: packer.pack(error),
+      resultType: "rejection",
+      jobId: call.id,
+      owner: {
+        clusterId,
+      },
+      machineId: "TAVILY",
+    });
+  }
 };
 
 export const tavily = {

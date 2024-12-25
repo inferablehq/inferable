@@ -5,21 +5,6 @@ import * as data from "./data";
 import { toModelInput } from "./prompts";
 import { getLatestVersionedText } from "./versioned-text";
 
-export const getCluster = async (clusterId: string) => {
-  const [cluster] = await data.db
-    .select({
-      id: data.clusters.id,
-    })
-    .from(data.clusters)
-    .where(eq(data.clusters.id, clusterId));
-
-  if (!cluster) {
-    throw new NotFoundError(`Cluster not found: ${clusterId}`);
-  }
-
-  return cluster;
-};
-
 export const getClusterDetails = async (clusterId: string) => {
   const [cluster] = await data.db
     .select({
@@ -27,6 +12,7 @@ export const getClusterDetails = async (clusterId: string) => {
       name: data.clusters.name,
       description: data.clusters.description,
       enable_custom_auth: data.clusters.enable_custom_auth,
+      handle_custom_auth_function: data.clusters.handle_custom_auth_function,
       additional_context: data.clusters.additional_context,
       organization_id: data.clusters.organization_id,
       deleted_at: data.clusters.deleted_at,
@@ -61,12 +47,7 @@ export const clusterExists = async ({
       count: count(),
     })
     .from(data.clusters)
-    .where(
-      and(
-        eq(data.clusters.id, clusterId),
-        eq(data.clusters.organization_id, organizationId),
-      ),
-    );
+    .where(and(eq(data.clusters.id, clusterId), eq(data.clusters.organization_id, organizationId)));
 
   const exists = cluster.count > 0;
   await cache.set(`${organizationId}:${clusterId}`, exists, 1000 * 60);

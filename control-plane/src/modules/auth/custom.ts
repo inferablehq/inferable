@@ -1,20 +1,12 @@
-import {
-  AuthenticationError,
-  JobPollTimeoutError,
-} from "../../utilities/errors";
+import { AuthenticationError, JobPollTimeoutError } from "../../utilities/errors";
 import { packer } from "../packer";
 import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
 import { getServiceDefinition } from "../service-definitions";
 import { createCache, hashFromSecret } from "../../utilities/cache";
+import { getClusterDetails } from "../management";
 
-export const VERIFY_FUNCTION_NAME = "handleCustomAuth";
-export const VERIFY_FUNCTION_SERVICE = "default";
-const VERIFY_FUNCTION_ID = `${VERIFY_FUNCTION_SERVICE}_${VERIFY_FUNCTION_NAME}`;
-
-const customAuthContextCache = createCache<unknown>(
-  Symbol("customAuthContextCache"),
-);
+const customAuthContextCache = createCache<unknown>(Symbol("customAuthContextCache"));
 
 /**
  * Calls the custom verify function and returns the result
@@ -26,43 +18,41 @@ export const verify = async ({
   token: string;
   clusterId: string;
 }): Promise<unknown> => {
-
   const secretHash = hashFromSecret(`${clusterId}:${token}`);
 
   const cached = await customAuthContextCache.get(secretHash);
+
   if (cached) {
-    if (typeof cached === "object" && 'error' in cached && typeof cached.error === "string") {
-      throw new AuthenticationError(
-        cached.error,
-        "https://docs.inferable.ai/pages/custom-auth"
-      );
+    if (typeof cached === "object" && "error" in cached && typeof cached.error === "string") {
+      throw new AuthenticationError(cached.error, "https://docs.inferable.ai/pages/custom-auth");
     }
     return cached;
   }
 
+  const { handleCustomAuthFunction } = await getClusterDetails({ clusterId });
+
+  const [authService, authFunction] = handleCustomAuthFunction.split(".");
+
   try {
     const serviceDefinition = await getServiceDefinition({
-      service: VERIFY_FUNCTION_SERVICE,
+      service: authService,
       owner: {
         clusterId: clusterId,
       },
     });
 
-    const functionDefinition = serviceDefinition?.functions?.find(
-      (f) => f.name === VERIFY_FUNCTION_NAME,
-    );
-
+    const functionDefinition = serviceDefinition?.functions?.find(f => f.name === authFunction);
 
     if (!functionDefinition) {
       throw new AuthenticationError(
-        `${VERIFY_FUNCTION_ID} is not registered`,
+        `${authFunction} is not registered`,
         "https://docs.inferable.ai/pages/custom-auth"
       );
     }
 
     const { id } = await jobs.createJob({
-      service: VERIFY_FUNCTION_SERVICE,
-      targetFn: VERIFY_FUNCTION_NAME,
+      service: authService,
+      targetFn: authFunction,
       targetArgs: packer.pack({
         token,
       }),
@@ -86,14 +76,12 @@ export const verify = async ({
 
     // This isn't expected
     if (result.status != "success") {
-      throw new Error(
-        `Failed to call ${VERIFY_FUNCTION_ID}: ${result.result}`,
-      );
+      throw new Error(`Failed to call ${authFunction}: ${result.result}`);
     }
 
     if (!result.result) {
       throw new AuthenticationError(
-        `${VERIFY_FUNCTION_ID} did not return a result`,
+        `${authFunction} did not return a result`,
         "https://docs.inferable.ai/pages/custom-auth"
       );
     }
@@ -104,16 +92,20 @@ export const verify = async ({
   } catch (e) {
     if (e instanceof JobPollTimeoutError) {
       throw new AuthenticationError(
-        `Call to ${VERIFY_FUNCTION_ID} did not complete in time`,
+        `Call to ${authFunction} did not complete in time`,
         "https://docs.inferable.ai/pages/custom-auth"
       );
     }
 
     // Cache the auth error for 1 minutes
     if (e instanceof AuthenticationError) {
-      await customAuthContextCache.set(secretHash, {
-        error: e.message
-      }, 60);
+      await customAuthContextCache.set(
+        secretHash,
+        {
+          error: e.message,
+        },
+        60
+      );
       throw e;
     }
 

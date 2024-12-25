@@ -7,10 +7,7 @@ import {
 } from "inferable";
 import { Validator } from "jsonschema";
 import { z } from "zod";
-import {
-  InvalidJobArgumentsError,
-  InvalidServiceRegistrationError,
-} from "../utilities/errors";
+import { InvalidJobArgumentsError, InvalidServiceRegistrationError } from "../utilities/errors";
 import { FunctionConfigSchema } from "./contract";
 import * as cron from "./cron";
 import * as data from "./data";
@@ -49,10 +46,10 @@ export const storedServiceDefinitionSchema = z.array(
           description: z.string().optional(),
           schema: z.string().optional(),
           config: FunctionConfigSchema.optional(),
-        }),
+        })
       )
       .optional(),
-  }),
+  })
 );
 
 export const embeddableServiceFunction = embeddableEntitiy<{
@@ -70,32 +67,23 @@ export async function recordServicePoll({
   service: string;
 }) {
   // As we call this on each poll, limit the number of updates that reach the database
-  return withThrottle(
-    `clusters:${clusterId}:services:${service}:throttle`,
-    60,
-    async () => {
-      const result = await data.db
-        .update(data.services)
-        .set({
-          timestamp: new Date(),
-        })
-        .where(
-          and(
-            eq(data.services.cluster_id, clusterId),
-            eq(data.services.service, service),
-          ),
-        )
-        .returning({
-          service: data.services.service,
-        });
+  return withThrottle(`clusters:${clusterId}:services:${service}:throttle`, 60, async () => {
+    const result = await data.db
+      .update(data.services)
+      .set({
+        timestamp: new Date(),
+      })
+      .where(and(eq(data.services.cluster_id, clusterId), eq(data.services.service, service)))
+      .returning({
+        service: data.services.service,
+      });
 
-      if (result.length === 0) {
-        return false;
-      }
+    if (result.length === 0) {
+      return false;
+    }
 
-      return true;
-    },
-  );
+    return true;
+  });
 }
 
 export async function deleteServiceDefinition({
@@ -107,12 +95,7 @@ export async function deleteServiceDefinition({
 }) {
   await data.db
     .delete(data.services)
-    .where(
-      and(
-        eq(data.services.cluster_id, owner.clusterId),
-        eq(data.services.service, service),
-      ),
-    );
+    .where(and(eq(data.services.cluster_id, owner.clusterId), eq(data.services.service, service)));
 
   await deleteServiceEmbeddings({
     serviceName: service,
@@ -138,8 +121,7 @@ export async function upsertServiceDefinition({
 
   // In order to prevent the service from being deleted by the cleanup job,
   // we set the timestamp to a future date if the service is permanent
-  const timestamp =
-    type === "permanent" ? sql`now() + interval '10 years'` : new Date();
+  const timestamp = type === "permanent" ? sql`now() + interval '10 years'` : new Date();
 
   await data.db
     .insert(data.services)
@@ -177,17 +159,10 @@ export const getServiceDefinition = async ({
       definition: data.services.definition,
     })
     .from(data.services)
-    .where(
-      and(
-        eq(data.services.cluster_id, owner.clusterId),
-        eq(data.services.service, service),
-      ),
-    )
+    .where(and(eq(data.services.cluster_id, owner.clusterId), eq(data.services.service, service)))
     .limit(1);
 
-  return serviceDefinition
-    ? parseServiceDefinition([serviceDefinition.definition])[0]
-    : undefined;
+  return serviceDefinition ? parseServiceDefinition([serviceDefinition.definition])[0] : undefined;
 };
 
 export const getServiceDefinitions = async (owner: {
@@ -216,17 +191,15 @@ export const getServiceDefinitions = async (owner: {
     return [];
   }
 
-  return serviceDefinitions.map((r) => ({
+  return serviceDefinitions.map(r => ({
     service: r.service,
     definition: parseServiceDefinition([r.definition])[0],
     timestamp: r.timestamp,
   }));
 };
 
-export const parseServiceDefinition = (
-  input: unknown[],
-): ServiceDefinition[] => {
-  if (!input || input.filter((i) => i).length === 0) {
+export const parseServiceDefinition = (input: unknown[]): ServiceDefinition[] => {
+  if (!input || input.filter(i => i).length === 0) {
     return [];
   }
 
@@ -291,32 +264,22 @@ export const cleanExpiredServiceDefinitions = async (): Promise<void> => {
       service: data.services.service,
     })
     .from(data.services)
-    .where(
-      lte(
-        data.services.timestamp,
-        new Date(Date.now() - SERVICE_LIVE_THRESHOLD_MS),
-      ),
-    )
+    .where(lte(data.services.timestamp, new Date(Date.now() - SERVICE_LIVE_THRESHOLD_MS)))
     .limit(10);
 
   // TODO: change query to bulk delete
   await Promise.all([
     ...serviceDefinitions.map(({ clusterId, service }) =>
-      deleteServiceEmbeddings({ serviceName: service, clusterId }),
+      deleteServiceEmbeddings({ serviceName: service, clusterId })
     ),
     ...serviceDefinitions.map(({ clusterId, service }) =>
       data.db
         .delete(data.services)
-        .where(
-          and(
-            eq(data.services.cluster_id, clusterId),
-            eq(data.services.service, service),
-          ),
-        ),
+        .where(and(eq(data.services.cluster_id, clusterId), eq(data.services.service, service)))
     ),
   ]);
 
-  serviceDefinitions.forEach((s) => {
+  serviceDefinitions.forEach(s => {
     logger.info("Cleaned up expired service definition", {
       clusterId: s.clusterId,
       service: s.service,
@@ -341,11 +304,7 @@ const deleteServiceEmbeddings = async ({
     clusterId,
   });
 
-  await embeddableServiceFunction.deleteEmbeddings(
-    clusterId,
-    "service-function",
-    serviceName,
-  );
+  await embeddableServiceFunction.deleteEmbeddings(clusterId, "service-function", serviceName);
 };
 
 /**
@@ -362,13 +321,13 @@ export const updateServiceEmbeddings = async ({
   const existingEmbeddings = await embeddableServiceFunction.getEmbeddingsGroup(
     clusterId,
     "service-function",
-    service.name,
+    service.name
   );
 
   const embeddableFunctions =
     service.functions
-      ?.filter((f) => !f.config?.private)
-      .map((f) => ({
+      ?.filter(f => !f.config?.private)
+      .map(f => ({
         serviceName: service.name,
         functionName: f.name,
         description: f.description,
@@ -376,35 +335,26 @@ export const updateServiceEmbeddings = async ({
       })) ?? [];
 
   await Promise.all(
-    embeddableFunctions.map((fn) =>
+    embeddableFunctions.map(fn =>
       embeddableServiceFunction.embedEntity(
         clusterId,
         "service-function",
         service.name,
         serviceFunctionEmbeddingId(fn),
-        fn,
-      ),
-    ),
+        fn
+      )
+    )
   );
 
   // Find any embeddings for the group which no longer exist on the service
   const removedEmbeddings = existingEmbeddings
-    .filter(
-      (e) =>
-        !embeddableFunctions.some(
-          (f) => serviceFunctionEmbeddingId(f) === e.id,
-        ),
-    )
-    .map((e) => e.id);
+    .filter(e => !embeddableFunctions.some(f => serviceFunctionEmbeddingId(f) === e.id))
+    .map(e => e.id);
 
   await Promise.all(
-    removedEmbeddings.map((id) =>
-      embeddableServiceFunction.deleteEmbedding(
-        clusterId,
-        "service-function",
-        id,
-      ),
-    ),
+    removedEmbeddings.map(id =>
+      embeddableServiceFunction.deleteEmbedding(clusterId, "service-function", id)
+    )
   );
 };
 
@@ -423,9 +373,7 @@ export const validateServiceRegistration = ({
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    throw new InvalidServiceRegistrationError(
-      error?.message ?? "Invalid service definition",
-    );
+    throw new InvalidServiceRegistrationError(error?.message ?? "Invalid service definition");
   }
 
   for (const fn of definition.functions ?? []) {
@@ -433,7 +381,7 @@ export const validateServiceRegistration = ({
       const errors = validateFunctionSchema(JSON.parse(fn.schema));
       if (errors.length > 0) {
         throw new InvalidServiceRegistrationError(
-          `${fn.name} schema invalid: ${JSON.stringify(errors)}`,
+          `${fn.name} schema invalid: ${JSON.stringify(errors)}`
         );
       }
     }
@@ -444,31 +392,7 @@ export const validateServiceRegistration = ({
       } catch {
         throw new InvalidServiceRegistrationError(
           `${fn.name} cache.keyPath is invalid`,
-          "https://docs.inferable.ai/pages/functions#config-cache",
-        );
-      }
-    }
-
-    // Checks for customer auth handler
-    const VERIFY_FUNCTION_NAME = "handleCustomAuth";
-    const VERIFY_FUNCTION_SERVICE = "default";
-    if (
-      service === VERIFY_FUNCTION_SERVICE &&
-      fn.name === VERIFY_FUNCTION_NAME
-    ) {
-      if (!fn.schema) {
-        throw new InvalidServiceRegistrationError(
-          `${fn.name} must have a valid schema`,
-          "https://docs.inferable.ai/pages/auth#handlecustomerauth",
-        );
-      }
-
-      // Check that the schema accepts and expected value
-      const result = validator.validate({ token: "test" }, JSON.parse(fn.schema));
-      if (!result.valid) {
-        throw new InvalidServiceRegistrationError(
-          `${fn.name} schema is not valid`,
-          "https://docs.inferable.ai/pages/auth#handlecustomerauth",
+          "https://docs.inferable.ai/pages/functions#config-cache"
         );
       }
     }
@@ -476,17 +400,11 @@ export const validateServiceRegistration = ({
 };
 
 export const start = () =>
-  cron.registerCron(
-    cleanExpiredServiceDefinitions,
-    "clean-service-definitions",
-    {
-      interval: 1000 * 10,
-    },
-  ); // 10 seconds
+  cron.registerCron(cleanExpiredServiceDefinitions, "clean-service-definitions", {
+    interval: 1000 * 10,
+  }); // 10 seconds
 
-export const normalizeFunctionReference = (
-  fn: string | { service: string; function: string },
-) =>
+export const normalizeFunctionReference = (fn: string | { service: string; function: string }) =>
   typeof fn === "object"
     ? serviceFunctionEmbeddingId({
         serviceName: fn.service,
