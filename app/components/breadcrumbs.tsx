@@ -28,6 +28,8 @@ export async function ClusterBreadcrumbs({
   const clusterDetails = await client.getCluster({
     headers: { authorization: `Bearer ${await getToken()}` },
     params: { clusterId },
+  }).catch(() => {
+    return { status: 500, body: { error: "Failed to fetch cluster details" } } as const;
   });
 
   if (clusterDetails.status !== 200) {
