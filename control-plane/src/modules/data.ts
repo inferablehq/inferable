@@ -201,7 +201,7 @@ export const integrations = pgTable(
     tavily: json("tavily").$type<{
       apiKey: string;
     }>(),
-    valTown: json("valTown").$type<{
+    valTown: json("valtown").$type<{
       endpoint: string;
     }>(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
