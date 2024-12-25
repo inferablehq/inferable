@@ -10,6 +10,8 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChartHorizontal,
+  FunctionSquare,
+  LucideIcon,
   Search,
   Trash2,
   Wrench,
@@ -20,32 +22,64 @@ import { auth } from "@clerk/nextjs";
 import ErrorDisplay from "@/components/error-display";
 import { revalidatePath } from "next/cache";
 
-const config = {
+type IntegrationConfig = {
+  [K in 'toolhouse' | 'langfuse' | 'tavily' | 'zapier' | 'valtown']: {
+    name: string;
+    description: string;
+    icon: LucideIcon;
+    stage: "alpha" | "beta" | "stable";
+  }
+};
+
+const config: IntegrationConfig = {
   toolhouse: {
     name: "Toolhouse",
     description:
       "Connect your toolhouse.ai tools directly to your Inferable Runs",
     icon: Wrench,
-    slug: "toolhouse",
+    stage: "beta",
   },
   langfuse: {
     name: "Langfuse",
     description: "Send LLM telemetry to Langfuse for monitoring and analytics",
     icon: BarChartHorizontal,
-    slug: "langfuse",
+    stage: "stable",
   },
   tavily: {
     name: "Tavily",
     description: "Use Tavily to search the web for information",
     icon: Search,
-    slug: "tavily",
+    stage: "stable",
   },
   zapier: {
     name: "Zapier",
     description: "Integrate your Inferable Runs with Zapier",
     icon: Zap,
-    slug: "zapier",
+    stage: "alpha",
   },
+  valtown: {
+    name: "Val.town",
+    description: "Register a service with a Val from Val.town",
+    icon: FunctionSquare,
+    stage: "alpha",
+  },
+};
+
+const stageDescriptions = {
+  "alpha": "In development, lacking docs",
+  "beta": "In testing, has docs",
+  "stable": "Stable, suitable for production use"
+} as const;
+
+const getStageStyles = (stage: "alpha" | "beta" | "stable") => {
+  switch (stage) {
+    case "alpha":
+      return "bg-red-100 text-red-700";
+    case "beta":
+      return "bg-yellow-100 text-yellow-700";
+    case "stable":
+      return "bg-green-100 text-green-700";
+  }
 };
 
 export default async function IntegrationsPage({
@@ -101,18 +135,27 @@ export default async function IntegrationsPage({
             .concat([["zapier", null]])
             .map(([key, integration]) => {
               const c = config[key as keyof typeof config];
-              const Icon = c?.icon;
+              if (!c) return null;
+              const Icon = c.icon;
 
               return (
                 <Card className="flex flex-col" key={key}>
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <Icon className="w-4 h-4" />
-                      <CardTitle>{c?.name}</CardTitle>
+                      <CardTitle>{c.name}</CardTitle>
+                      <div className="group relative">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStageStyles(c.stage)}`}
+                        >
+                          {c.stage}
+                        </span>
+                        <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+                          {stageDescriptions[c.stage]}
+                        </div>
+                      </div>
                     </div>
-                    <CardDescription>
-                      {c?.description ?? "Unknown"}
-                    </CardDescription>
+                    <CardDescription>{c.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex-grow flex items-end">
                     <div className="w-full flex gap-2">

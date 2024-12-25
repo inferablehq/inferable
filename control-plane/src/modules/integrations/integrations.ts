@@ -2,15 +2,16 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, integrations } from "../data";
 import { integrationSchema } from "./schema";
-import { tavilyIntegration, valTownIntegration, toolhouseIntegration } from "./constants";
+import { tavilyIntegration, valtownIntegration, toolhouseIntegration } from "./constants";
 import { tavily } from "./tavily";
 import { toolhouse } from "./toolhouse";
-import { valTown } from "./val-town";
+import { valtown } from "./valtown";
+import { ToolProvider } from "./types";
 
-const toolProviders = {
+const toolProviders: Record<string, ToolProvider> = {
   [toolhouseIntegration]: toolhouse,
   [tavilyIntegration]: tavily,
-  [valTownIntegration]: valTown,
+  [valtownIntegration]: valtown,
 };
 
 export function getToolProvider(tool: string) {
@@ -31,7 +32,7 @@ export const getIntegrations = async ({
       toolhouse: integrations.toolhouse,
       langfuse: integrations.langfuse,
       tavily: integrations.tavily,
-      valTown: integrations.valTown,
+      valtown: integrations.valtown,
     })
     .from(integrations)
     .where(eq(integrations.cluster_id, clusterId))
@@ -41,7 +42,7 @@ export const getIntegrations = async ({
           toolhouse: null,
           langfuse: null,
           tavily: null,
-          valTown: null,
+          valtown: null,
         }
     );
 };
@@ -72,9 +73,9 @@ export const upsertIntegrations = async ({
   await Promise.all(
     Object.entries(config).map(([key, value]) => {
       if (value) {
-        return getToolProvider(key)?.onActivate?.(clusterId);
+        return getToolProvider(key)?.onActivate?.(clusterId, config);
       } else if (value === null) {
-        return getToolProvider(key)?.onDeactivate?.(clusterId);
+        return getToolProvider(key)?.onDeactivate?.(clusterId, config);
       }
     })
   );

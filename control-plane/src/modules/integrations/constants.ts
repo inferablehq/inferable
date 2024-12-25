@@ -1,13 +1,13 @@
 export const toolhouseIntegration = "toolhouse";
 export const langfuseIntegration = "langfuse";
 export const tavilyIntegration = "tavily";
-export const valTownIntegration = "valTown";
+export const valtownIntegration = "valtown";
 
 export const allowedIntegrations = [
   toolhouseIntegration,
   langfuseIntegration,
   tavilyIntegration,
-  valTownIntegration,
+  valtownIntegration,
 ] as const;
 
-export const externalServices = [toolhouseIntegration, tavilyIntegration, valTownIntegration];
+export const externalServices = [toolhouseIntegration, tavilyIntegration, valtownIntegration];

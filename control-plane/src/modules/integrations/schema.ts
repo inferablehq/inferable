@@ -3,7 +3,7 @@ import {
   toolhouseIntegration,
   langfuseIntegration,
   tavilyIntegration,
-  valTownIntegration,
+  valtownIntegration,
 } from "./constants";
 
 export const integrationSchema = z.object({
@@ -28,7 +28,7 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
-  [valTownIntegration]: z
+  [valtownIntegration]: z
     .object({
       endpoint: z.string().url(),
     })

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { logger } from "../observability/logger";
 import { getJob } from "./jobs";
 import { externalServices } from "../integrations/constants";
-import { getToolProvider } from "../integrations/integrations";
+import { getIntegrations, getToolProvider } from "../integrations/integrations";
 
 const externalCallConsumer = env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL
   ? Consumer.create({
@@ -13,10 +13,7 @@ const externalCallConsumer = env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL
       batchSize: 5,
       visibilityTimeout: 60,
       heartbeatInterval: 30,
-      handleMessage: withObservability(
-        env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL,
-        handleExternalCall,
-      ),
+      handleMessage: withObservability(env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL, handleExternalCall),
       sqs,
     })
   : undefined;
@@ -55,10 +52,15 @@ async function handleExternalCall(message: BaseMessage) {
     return;
   }
 
-  const call = await getJob({
-    clusterId: zodResult.data.clusterId,
-    jobId: zodResult.data.callId,
-  });
+  const [call, integrations] = await Promise.all([
+    getJob({
+      clusterId: zodResult.data.clusterId,
+      jobId: zodResult.data.callId,
+    }),
+    getIntegrations({
+      clusterId: zodResult.data.clusterId,
+    }),
+  ]);
 
   if (!call) {
     logger.error("Could not find call", {
@@ -68,8 +70,5 @@ async function handleExternalCall(message: BaseMessage) {
     return;
   }
 
-  await getToolProvider(zodResult.data.service).handleCall({
-    call,
-    clusterId: zodResult.data.clusterId,
-  });
+  await getToolProvider(zodResult.data.service).handleCall(call, integrations);
 }

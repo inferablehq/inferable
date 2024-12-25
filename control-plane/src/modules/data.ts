@@ -1,4 +1,5 @@
-import { relations, sql } from "drizzle-orm";
+import advisoryLock from "advisory-lock";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import {
   boolean,
@@ -18,7 +19,6 @@ import { Pool } from "pg";
 import { env } from "../utilities/env";
 import { logger } from "./observability/logger";
 import { MessageData } from "./workflows/workflow-messages";
-import advisoryLock from "advisory-lock";
 
 export const createMutex = advisoryLock(env.DATABASE_URL);
 
@@ -201,7 +201,7 @@ export const integrations = pgTable(
     tavily: json("tavily").$type<{
       apiKey: string;
     }>(),
-    valTown: json("valTown").$type<{
+    valtown: json("valtown").$type<{
       endpoint: string;
     }>(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

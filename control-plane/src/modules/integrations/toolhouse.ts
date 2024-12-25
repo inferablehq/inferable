@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Toolhouse } from "@toolhouseai/sdk";
-import { eq, isNotNull } from "drizzle-orm";
+import assert from "assert";
+import { isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { integrationSchema } from "../contract";
 import * as cron from "../cron";
@@ -9,7 +10,7 @@ import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";
-import { getIntegrations } from "./integrations";
+import { ToolProvider } from "./types";
 
 const ToolHouseResultSchema = z.array(
   z.object({
@@ -39,37 +40,23 @@ export const validateConfig = async (config: z.infer<typeof integrationSchema>) 
   await toolhouse.getTools();
 };
 
-const handleCall = async ({
-  call,
-  clusterId,
-}: {
-  call: NonNullable<Awaited<ReturnType<typeof getJob>>>;
-  clusterId: string;
-}) => {
+const handleCall = async (
+  call: NonNullable<Awaited<ReturnType<typeof getJob>>>,
+  integrations: z.infer<typeof integrationSchema>
+) => {
   await acknowledgeJob({
     jobId: call.id,
-    clusterId,
+    clusterId: call.clusterId,
     machineId: "TOOLHOUSE",
   });
 
-  const [toolHouseConfig] = await data.db
-    .select({
-      config: data.integrations.toolhouse,
-    })
-    .from(data.integrations)
-    .where(eq(data.integrations.cluster_id, clusterId))
-    .limit(1);
-
-  if (!toolHouseConfig || !toolHouseConfig.config?.apiKey) {
-    logger.error("No ToolHouse config found for cluster", { clusterId });
-    return;
-  }
+  assert(integrations.toolhouse?.apiKey, "Missing ToolHouse API key");
 
   try {
     const result = await invokeToolHouse({
       input: packer.unpack(call.targetArgs),
       toolName: call.targetFn,
-      apiKey: toolHouseConfig.config.apiKey,
+      apiKey: integrations.toolhouse.apiKey,
       callId: call.id,
       metadata: {
         ...(call.authContext instanceof Object ? call.authContext : {}),
@@ -82,7 +69,7 @@ const handleCall = async ({
       resultType: "resolution",
       jobId: call.id,
       owner: {
-        clusterId,
+        clusterId: call.clusterId,
       },
       machineId: "TOOLHOUSE",
     });
@@ -92,7 +79,7 @@ const handleCall = async ({
       resultType: "rejection",
       jobId: call.id,
       owner: {
-        clusterId,
+        clusterId: call.clusterId,
       },
       machineId: "TOOLHOUSE",
     });
@@ -233,17 +220,15 @@ const toToolHouseName = (input: string) => {
   return input.replace(/([A-Z])/g, "_$1").toLowerCase();
 };
 
-export const toolhouse = {
+export const toolhouse: ToolProvider = {
   name: "ToolHouse",
-  onActivate: async (clusterId: string) => {
+  onActivate: async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
     return syncToolHouseService({
       clusterId,
-      apiKey: await getIntegrations({ clusterId }).then(
-        integrations => integrations.toolhouse?.apiKey
-      ),
+      apiKey: config.toolhouse?.apiKey,
     });
   },
-  onDeactivate: async (clusterId: string) => {
+  onDeactivate: async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
     // TODO: (good-first-issue) Delete the service definition
   },
   handleCall,

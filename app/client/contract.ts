@@ -74,7 +74,7 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
-  valTown: z
+  valtown: z
     .object({
       endpoint: z.string().url(),
     })

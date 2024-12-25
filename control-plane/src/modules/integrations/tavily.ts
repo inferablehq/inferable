@@ -1,9 +1,11 @@
+import assert from "assert";
 import { z } from "zod";
-import { getIntegrations } from "./integrations";
-import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
-import { logger } from "../observability/logger";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
+import { logger } from "../observability/logger";
 import { packer } from "../packer";
+import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
+import { integrationSchema } from "./schema";
+import { ToolProvider } from "./types";
 
 const TavilySearchParamsSchema = z.object({
   query: z.string(),
@@ -18,11 +20,6 @@ const TavilySearchParamsSchema = z.object({
 });
 
 export type TavilySearchParams = z.infer<typeof TavilySearchParamsSchema>;
-
-const tavilyApiKeyForCluster = async (clusterId: string) => {
-  const integrations = await getIntegrations({ clusterId });
-  return integrations.tavily?.apiKey;
-};
 
 /**
  * Perform a search using the Tavily API
@@ -135,24 +132,19 @@ const unsyncTavilyService = async ({ clusterId }: { clusterId: string }) => {
   });
 };
 
-const handleCall = async ({
-  call,
-  clusterId,
-}: {
-  call: NonNullable<Awaited<ReturnType<typeof getJob>>>;
-  clusterId: string;
-}) => {
+const handleCall = async (
+  call: NonNullable<Awaited<ReturnType<typeof getJob>>>,
+  integrations: z.infer<typeof integrationSchema>
+) => {
   await acknowledgeJob({
     jobId: call.id,
-    clusterId,
+    clusterId: call.clusterId,
     machineId: "TAVILY",
   });
 
-  const apiKey = await tavilyApiKeyForCluster(clusterId);
-  if (!apiKey) {
-    logger.warn("No Tavily API key found for integration", { clusterId });
-    return;
-  }
+  const apiKey = integrations.tavily?.apiKey;
+
+  assert(apiKey, "Missing Tavily API key");
 
   try {
     const result = await searchTavily({
@@ -165,7 +157,7 @@ const handleCall = async ({
       resultType: "resolution",
       jobId: call.id,
       owner: {
-        clusterId,
+        clusterId: call.clusterId,
       },
       machineId: "TAVILY",
     });
@@ -175,19 +167,19 @@ const handleCall = async ({
       resultType: "rejection",
       jobId: call.id,
       owner: {
-        clusterId,
+        clusterId: call.clusterId,
       },
       machineId: "TAVILY",
     });
   }
 };
 
-export const tavily = {
+export const tavily: ToolProvider = {
   name: "Tavily",
-  onActivate: async (clusterId: string) => {
+  onActivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {
     await syncTavilyService({
       clusterId,
-      apiKey: await tavilyApiKeyForCluster(clusterId),
+      apiKey: integrations.tavily?.apiKey,
     });
   },
   onDeactivate: async (clusterId: string) => {
