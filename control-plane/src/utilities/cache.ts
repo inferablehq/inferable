@@ -14,21 +14,21 @@ export const createCache = <T>(namespace: symbol) => {
         return localResult;
       }
 
-      const redisResult = await redisClient?.get(`${namespace.toString()}:${key}`);
+      const redisResult = await redisClient
+        ?.get(`${namespace.toString()}:${key}`)
+        .catch(() => undefined);
       if (redisResult) {
         return JSON.parse(redisResult) as T;
       }
       return undefined;
     },
     set: async (key: string, value: T, ttl: number) => {
-      await redisClient?.set(
-        `${namespace.toString()}:${key}`,
-        JSON.stringify(value),
-        {
-          EX: ttl
-        }
+      await redisClient
+        ?.set(`${namespace.toString()}:${key}`, JSON.stringify(value), {
+          EX: ttl,
+        })
+        .catch(() => undefined);
 
-      )
       return localCache.set(`${namespace.toString()}:${key}`, value, ttl);
     },
   };
@@ -42,4 +42,3 @@ export const createCache = <T>(namespace: symbol) => {
 export const hashFromSecret = (secret: string): string => {
   return createHash("sha256").update(secret).digest("hex");
 };
-

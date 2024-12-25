@@ -34,7 +34,7 @@ describe("updateServiceEmbeddings", () => {
     const result = await embeddableServiceFunction.getEmbeddingsGroup(
       owner.clusterId,
       "service-function",
-      "testService",
+      "testService"
     );
 
     expect(result).toHaveLength(1);
@@ -46,7 +46,7 @@ describe("updateServiceEmbeddings", () => {
             functionName: "testFn",
           }),
         }),
-      ]),
+      ])
     );
 
     // Adds a second function
@@ -72,7 +72,7 @@ describe("updateServiceEmbeddings", () => {
     const result2 = await embeddableServiceFunction.getEmbeddingsGroup(
       owner.clusterId,
       "service-function",
-      "testService",
+      "testService"
     );
 
     expect(result2).toHaveLength(2);
@@ -90,7 +90,7 @@ describe("updateServiceEmbeddings", () => {
             functionName: "testFn2",
           }),
         }),
-      ]),
+      ])
     );
 
     // Removes a function
@@ -111,7 +111,7 @@ describe("updateServiceEmbeddings", () => {
     const result3 = await embeddableServiceFunction.getEmbeddingsGroup(
       owner.clusterId,
       "service-function",
-      "testService",
+      "testService"
     );
 
     expect(result3).toHaveLength(1);
@@ -123,7 +123,7 @@ describe("updateServiceEmbeddings", () => {
             functionName: "testFn",
           }),
         }),
-      ]),
+      ])
     );
 
     // Renames a function
@@ -144,7 +144,7 @@ describe("updateServiceEmbeddings", () => {
     const result4 = await embeddableServiceFunction.getEmbeddingsGroup(
       owner.clusterId,
       "service-function",
-      "testService",
+      "testService"
     );
 
     expect(result4).toHaveLength(1);
@@ -156,7 +156,7 @@ describe("updateServiceEmbeddings", () => {
             functionName: "testFn2",
           }),
         }),
-      ]),
+      ])
     );
   });
 });
@@ -167,10 +167,8 @@ describe("parseJobArgs", () => {
       parseJobArgs({
         args: packer.pack([{}]),
         schema: "{}",
-      }),
-    ).rejects.toEqual(
-      new InvalidJobArgumentsError("Argument must be an object"),
-    );
+      })
+    ).rejects.toEqual(new InvalidJobArgumentsError("Argument must be an object"));
   });
 
   it("should reject if input is not an object", async () => {
@@ -178,10 +176,8 @@ describe("parseJobArgs", () => {
       parseJobArgs({
         args: packer.pack(1),
         schema: "{}",
-      }),
-    ).rejects.toEqual(
-      new InvalidJobArgumentsError("Argument must be an object"),
-    );
+      })
+    ).rejects.toEqual(new InvalidJobArgumentsError("Argument must be an object"));
   });
 
   it("should reject if input is invalid", async () => {
@@ -190,11 +186,11 @@ describe("parseJobArgs", () => {
         schema:
           '{"type":"object","properties":{"someString":{"type":"string"},"someNestedObject":{"type":"object","properties":{"someNumber":{"type":"number"}}}},"required":["someString","someNestedObject"]}',
         args: packer.pack({}),
-      }),
+      })
     ).rejects.toEqual(
       new InvalidJobArgumentsError(
-        'instance requires property "someString", instance requires property "someNestedObject"',
-      ),
+        'instance requires property "someString", instance requires property "someNestedObject"'
+      )
     );
   });
 
@@ -224,13 +220,13 @@ describe("validateServiceRegistration", () => {
               name: "someFn",
               schema: JSON.stringify({
                 type: "wrong_type",
-              })
+              }),
             },
           ],
         },
       });
     }).toThrow(InvalidServiceRegistrationError);
-  })
+  });
 
   it("should accept valid schema", () => {
     expect(() => {
@@ -242,39 +238,19 @@ describe("validateServiceRegistration", () => {
             {
               name: "someFn",
               description: "someFn",
-              schema: JSON.stringify(zodToJsonSchema(
-                z.object({
-                  test: z.string(),
-                })
-              ))
+              schema: JSON.stringify(
+                zodToJsonSchema(
+                  z.object({
+                    test: z.string(),
+                  })
+                )
+              ),
             },
           ],
         },
       });
     }).not.toThrow();
-  })
-
-  it("should reject incorrect handleCustomAuth registration", () => {
-    expect(() => {
-      validateServiceRegistration({
-        service: "default",
-        definition: {
-          name: "default",
-          functions: [
-            {
-              name: "handleCustomAuth",
-              description: "handleCustomAuth",
-              schema: JSON.stringify(zodToJsonSchema(
-                z.object({
-                  test: z.string(),
-                })
-              )),
-            },
-          ],
-        },
-      });
-    }).toThrow(InvalidServiceRegistrationError);
-  })
+  });
 
   it("should accept valid handleCustomAuth registration", () => {
     expect(() => {
@@ -286,17 +262,19 @@ describe("validateServiceRegistration", () => {
             {
               name: "handleCustomAuth",
               description: "handleCustomAuth",
-              schema: JSON.stringify(zodToJsonSchema(
-                z.object({
-                  token: z.string(),
-                })
-              ))
+              schema: JSON.stringify(
+                zodToJsonSchema(
+                  z.object({
+                    token: z.string(),
+                  })
+                )
+              ),
             },
           ],
         },
       });
     }).not.toThrow();
-  })
+  });
 
   it("should reject invalid cache.keyPath jsonpath", () => {
     expect(() => {
@@ -310,15 +288,15 @@ describe("validateServiceRegistration", () => {
               config: {
                 cache: {
                   keyPath: "$invalid",
-                  ttlSeconds: 10
-                }
-              }
+                  ttlSeconds: 10,
+                },
+              },
             },
           ],
         },
       });
     }).toThrow(InvalidServiceRegistrationError);
-  })
+  });
 
   it("should accept valid cache.keyPath jsonpath", () => {
     expect(() => {
@@ -332,13 +310,13 @@ describe("validateServiceRegistration", () => {
               config: {
                 cache: {
                   keyPath: "$.someKey",
-                  ttlSeconds: 10
-                }
-              }
+                  ttlSeconds: 10,
+                },
+              },
             },
           ],
         },
       });
     }).not.toThrow();
-  })
-})
+  });
+});

@@ -347,6 +347,7 @@ export const definition = {
       enableCustomAuth: z.boolean().optional(),
       enableRunConfigs: z.boolean().optional(),
       enableKnowledgebase: z.boolean().optional(),
+      handleCustomAuthFunction: z.string().optional(),
     }),
   },
   getCluster: {

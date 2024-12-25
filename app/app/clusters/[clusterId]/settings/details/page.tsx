@@ -38,6 +38,7 @@ const formSchema = z.object({
   enableCustomAuth: z.boolean().default(false),
   enableRunConfigs: z.boolean().default(false),
   enableKnowledgebase: z.boolean().default(false),
+  handleCustomAuthFunction: z.string().default(""),
 });
 
 export default function DetailsPage({
@@ -76,6 +77,10 @@ export default function DetailsPage({
           "enableKnowledgebase",
           details.body.enableKnowledgebase ?? false,
         );
+        form.setValue(
+          "handleCustomAuthFunction",
+          details.body.handleCustomAuthFunction ?? "",
+        );
       } else {
         createErrorToast(details, "Failed to fetch cluster details");
       }
@@ -99,6 +104,7 @@ export default function DetailsPage({
             enableCustomAuth: data.enableCustomAuth,
             enableRunConfigs: data.enableRunConfigs,
             enableKnowledgebase: data.enableKnowledgebase,
+            handleCustomAuthFunction: data.handleCustomAuthFunction,
           },
         });
 
@@ -230,6 +236,29 @@ export default function DetailsPage({
                   </FormItem>
                 )}
               />
+
+              {form.watch("enableCustomAuth") && (
+                <FormField
+                  control={form.control}
+                  name="handleCustomAuthFunction"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col items-start justify-between rounded-lg border p-4">
+                      <FormLabel>Custom Auth Function Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Name of the custom auth function"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        The name of the function that will handle custom authentication for this cluster
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField
                 control={form.control}
                 name="debug"

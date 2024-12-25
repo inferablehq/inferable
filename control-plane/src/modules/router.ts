@@ -20,11 +20,7 @@ import { authRouter } from "./auth/router";
 import { ulid } from "ulid";
 import { getBlobData } from "./blobs";
 import { posthog } from "./posthog";
-import {
-  upsertUserDefinedContext,
-  getToolMetadata,
-  deleteToolMetadata,
-} from "./tool-metadata";
+import { upsertUserDefinedContext, getToolMetadata, deleteToolMetadata } from "./tool-metadata";
 import { BadRequestError, NotFoundError } from "../utilities/errors";
 import {
   upsertRunConfig,
@@ -44,9 +40,7 @@ import {
 } from "./knowledge/knowledgebase";
 import { callsRouter } from "./calls/router";
 import { buildModel } from "./models";
-import {
-  getServiceDefinitions,
-} from "./service-definitions";
+import { getServiceDefinitions } from "./service-definitions";
 import { integrationsRouter } from "./integrations/router";
 import { getServerStats } from "./server-stats";
 
@@ -72,16 +66,13 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: {
-        contract: await readFile(
-          path.join(__dirname, "..", "..", "src", "./modules/contract.ts"),
-          {
-            encoding: "utf-8",
-          },
-        ),
+        contract: await readFile(path.join(__dirname, "..", "..", "src", "./modules/contract.ts"), {
+          encoding: "utf-8",
+        }),
       },
     };
   },
-  listClusters: async (request) => {
+  listClusters: async request => {
     const user = request.request.getAuth().isAdmin();
     const clusters = await management.getClusters(user);
 
@@ -90,7 +81,7 @@ export const router = initServer().router(contract, {
       body: clusters,
     };
   },
-  createCluster: async (request) => {
+  createCluster: async request => {
     const auth = request.request.getAuth().isAdmin();
     auth.canCreate({ cluster: true });
 
@@ -120,7 +111,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  deleteCluster: async (request) => {
+  deleteCluster: async request => {
     const { clusterId } = request.params;
     const user = request.request.getAuth().isAdmin();
     await user.canManage({ cluster: { clusterId } });
@@ -132,7 +123,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  updateCluster: async (request) => {
+  updateCluster: async request => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth().isAdmin();
     await auth.canManage({ cluster: { clusterId } });
@@ -143,6 +134,7 @@ export const router = initServer().router(contract, {
       additionalContext,
       debug,
       enableCustomAuth,
+      handleCustomAuthFunction,
       enableRunConfigs,
       enableKnowledgebase,
     } = request.body;
@@ -155,6 +147,7 @@ export const router = initServer().router(contract, {
       additionalContext,
       debug,
       enableCustomAuth,
+      handleCustomAuthFunction,
       enableRunConfigs,
       enableKnowledgebase,
     });
@@ -178,7 +171,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  getCluster: async (request) => {
+  getCluster: async request => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
@@ -198,7 +191,7 @@ export const router = initServer().router(contract, {
       body: cluster,
     };
   },
-  listEvents: async (request) => {
+  listEvents: async request => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
@@ -220,7 +213,7 @@ export const router = initServer().router(contract, {
       body: result,
     };
   },
-  listUsageActivity: async (request) => {
+  listUsageActivity: async request => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
@@ -232,7 +225,7 @@ export const router = initServer().router(contract, {
       body: result,
     };
   },
-  getEventMeta: async (request) => {
+  getEventMeta: async request => {
     const { clusterId, eventId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
@@ -247,7 +240,7 @@ export const router = initServer().router(contract, {
       body: result,
     };
   },
-  createMessage: async (request) => {
+  createMessage: async request => {
     const { clusterId, runId } = request.params;
     const { message, id, type } = request.body;
 
@@ -283,7 +276,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  listMessages: async (request) => {
+  listMessages: async request => {
     const { clusterId, runId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ run: { clusterId, runId } });
@@ -298,7 +291,7 @@ export const router = initServer().router(contract, {
       body: messages,
     };
   },
-  updateMessage: async (request) => {
+  updateMessage: async request => {
     const { clusterId, runId, messageId } = request.params;
     const { message } = request.body;
 
@@ -343,7 +336,7 @@ export const router = initServer().router(contract, {
       body: messages.upserted,
     };
   },
-  getClusterExport: async (request) => {
+  getClusterExport: async request => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth().isAdmin();
@@ -372,7 +365,7 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  consumeClusterExport: async (request) => {
+  consumeClusterExport: async request => {
     const { clusterId } = request.params;
     const { data } = request.body;
 
@@ -414,7 +407,7 @@ export const router = initServer().router(contract, {
           version: require("../../package.json").version,
         },
       },
-      { setOperationId: true },
+      { setOperationId: true }
     );
 
     return {
@@ -422,7 +415,7 @@ export const router = initServer().router(contract, {
       body: openApiDocument,
     };
   },
-  listMachines: async (request) => {
+  listMachines: async request => {
     const { clusterId } = request.params;
     const user = request.request.getAuth();
     await user.canAccess({ cluster: { clusterId } });
@@ -436,7 +429,7 @@ export const router = initServer().router(contract, {
       body: machines,
     };
   },
-  listServices: async (request) => {
+  listServices: async request => {
     const { clusterId } = request.params;
     const user = request.request.getAuth();
     await user.canAccess({ cluster: { clusterId } });
@@ -445,11 +438,11 @@ export const router = initServer().router(contract, {
       clusterId,
     });
 
-    const transformedServices = services.map((service) => ({
+    const transformedServices = services.map(service => ({
       name: service.service,
       timestamp: service.timestamp ?? new Date(),
       description: service.definition.description,
-      functions: service.definition.functions?.map((fn) => ({
+      functions: service.definition.functions?.map(fn => ({
         name: fn.name,
         description: fn.description,
         schema: fn.schema,
@@ -462,7 +455,7 @@ export const router = initServer().router(contract, {
       body: transformedServices,
     };
   },
-  getBlobData: async (request) => {
+  getBlobData: async request => {
     const { clusterId, blobId } = request.params;
 
     const user = request.request.getAuth();
@@ -488,7 +481,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  upsertFunctionMetadata: async (request) => {
+  upsertFunctionMetadata: async request => {
     const { service, function: functionName, clusterId } = request.params;
     const { additionalContext } = request.body;
 
@@ -508,7 +501,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getFunctionMetadata: async (request) => {
+  getFunctionMetadata: async request => {
     const { clusterId, service, function: functionName } = request.params;
 
     const auth = request.request.getAuth();
@@ -531,7 +524,7 @@ export const router = initServer().router(contract, {
     }
   },
 
-  deleteFunctionMetadata: async (request) => {
+  deleteFunctionMetadata: async request => {
     const { clusterId, service, function: functionName } = request.params;
 
     const auth = request.request.getAuth();
@@ -545,16 +538,10 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createRunConfig: async (request) => {
+  createRunConfig: async request => {
     const { clusterId } = request.params;
-    const {
-      name,
-      initialPrompt,
-      systemPrompt,
-      attachedFunctions,
-      resultSchema,
-      inputSchema,
-    } = request.body;
+    const { name, initialPrompt, systemPrompt, attachedFunctions, resultSchema, inputSchema } =
+      request.body;
 
     const auth = request.request.getAuth();
     await auth.canManage({ cluster: { clusterId } });
@@ -612,16 +599,10 @@ export const router = initServer().router(contract, {
     };
   },
 
-  upsertRunConfig: async (request) => {
+  upsertRunConfig: async request => {
     const { configId, clusterId } = request.params;
-    const {
-      name,
-      initialPrompt,
-      systemPrompt,
-      attachedFunctions,
-      resultSchema,
-      inputSchema,
-    } = request.body;
+    const { name, initialPrompt, systemPrompt, attachedFunctions, resultSchema, inputSchema } =
+      request.body;
 
     const auth = request.request.getAuth();
 
@@ -684,7 +665,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getRunConfig: async (request) => {
+  getRunConfig: async request => {
     const { clusterId, configId } = request.params;
     const { withPreviousVersions } = request.query;
 
@@ -703,7 +684,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  deleteRunConfig: async (request) => {
+  deleteRunConfig: async request => {
     const { clusterId, configId } = request.params;
 
     const auth = request.request.getAuth();
@@ -735,7 +716,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  listRunConfigs: async (request) => {
+  listRunConfigs: async request => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
@@ -749,7 +730,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  searchRunConfigs: async (request) => {
+  searchRunConfigs: async request => {
     const { clusterId } = request.params;
     const { search } = request.query;
 
@@ -764,7 +745,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createClusterKnowledgeArtifact: async (request) => {
+  createClusterKnowledgeArtifact: async request => {
     const { clusterId } = request.params;
     const { artifacts } = request.body;
 
@@ -782,7 +763,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getKnowledge: async (request) => {
+  getKnowledge: async request => {
     const { clusterId } = request.params;
     const { query, limit, tag } = request.query;
 
@@ -802,7 +783,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  upsertKnowledgeArtifact: async (request) => {
+  upsertKnowledgeArtifact: async request => {
     const { artifactId, clusterId } = request.params;
     const { data, tags, title } = request.body;
 
@@ -823,7 +804,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  deleteKnowledgeArtifact: async (request) => {
+  deleteKnowledgeArtifact: async request => {
     const { clusterId, artifactId } = request.params;
 
     const auth = request.request.getAuth().isAdmin();
@@ -840,7 +821,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getAllKnowledgeArtifacts: async (request) => {
+  getAllKnowledgeArtifacts: async request => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
@@ -854,7 +835,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getKnowledgeArtifact: async (request) => {
+  getKnowledgeArtifact: async request => {
     const { clusterId, artifactId } = request.params;
 
     const auth = request.request.getAuth();
@@ -876,7 +857,7 @@ export const router = initServer().router(contract, {
       body: artifact,
     };
   },
-  createStructuredOutput: async (request) => {
+  createStructuredOutput: async request => {
     const { clusterId } = request.params;
     const { prompt, resultSchema, modelId, temperature } = request.body;
 

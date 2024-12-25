@@ -78,6 +78,7 @@ export const editClusterDetails = async ({
   additionalContext,
   debug,
   enableCustomAuth,
+  handleCustomAuthFunction,
   enableRunConfigs,
   enableKnowledgebase,
 }: {
@@ -88,6 +89,7 @@ export const editClusterDetails = async ({
   additionalContext?: VersionedTexts;
   debug?: boolean;
   enableCustomAuth?: boolean;
+  handleCustomAuthFunction?: string;
   enableRunConfigs?: boolean;
   enableKnowledgebase?: boolean;
 }) => {
@@ -99,6 +101,7 @@ export const editClusterDetails = async ({
       additional_context: additionalContext,
       debug,
       enable_custom_auth: enableCustomAuth,
+      handle_custom_auth_function: handleCustomAuthFunction,
       enable_run_configs: enableRunConfigs,
       enable_knowledgebase: enableKnowledgebase,
     })

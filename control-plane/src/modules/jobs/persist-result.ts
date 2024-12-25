@@ -35,8 +35,8 @@ export async function acknowledgeJob({
       and(
         eq(data.jobs.id, jobId),
         eq(data.jobs.cluster_id, clusterId),
-        eq(data.jobs.status, "pending"),
-      ),
+        eq(data.jobs.status, "pending")
+      )
     )
     .returning({
       service: data.jobs.service,
@@ -86,8 +86,8 @@ export async function persistJobResult({
         eq(data.jobs.cluster_id, owner.clusterId),
         eq(data.jobs.executing_machine_id, machineId),
         eq(data.jobs.status, "running"),
-        isNull(data.jobs.resulted_at),
-      ),
+        isNull(data.jobs.resulted_at)
+      )
     )
     .returning({
       service: data.jobs.service,
@@ -125,7 +125,7 @@ export async function persistJobResult({
       service: updateResult[0].service,
       functionName: updateResult[0].targetFn,
       result,
-    }).catch((error) => {
+    }).catch(error => {
       logger.warn("Failed to upsert result keys", {
         error,
         jobId,
@@ -170,16 +170,13 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
         eq(data.jobs.status, "running"),
         lt(
           data.jobs.last_retrieved_at,
-          sql`now() - interval '1 second' * timeout_interval_seconds`,
+          sql`now() - interval '1 second' * timeout_interval_seconds`
         ),
         // only timeout jobs that have a timeout set
         isNotNull(data.jobs.timeout_interval_seconds),
         // Don't time out jobs that have pending approval requests
-        or(
-          eq(data.jobs.approval_requested, false),
-          isNotNull(data.jobs.approved),
-        ),
-      ),
+        or(eq(data.jobs.approval_requested, false), isNotNull(data.jobs.approved))
+      )
     )
     .returning({
       id: data.jobs.id,
@@ -199,12 +196,10 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
       and(
         lt(
           data.machines.last_ping_at,
-          sql`now() - interval '1 second' * ${
-            params?.machineStallTimeout ?? 90
-          }`,
+          sql`now() - interval '1 second' * ${params?.machineStallTimeout ?? 90}`
         ),
-        eq(data.machines.status, "active"),
-      ),
+        eq(data.machines.status, "active")
+      )
     )
     .returning({
       id: data.machines.id,
@@ -230,7 +225,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
         m.status = 'inactive' AND
         j.cluster_id = m.cluster_id AND
         j.remaining_attempts > 0
-    `,
+    `
   );
 
   const stalledRecoveredJobs = await data.db
@@ -239,9 +234,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
       status: "pending",
       remaining_attempts: sql`remaining_attempts - 1`,
     })
-    .where(
-      and(eq(data.jobs.status, "stalled"), gt(data.jobs.remaining_attempts, 0)),
-    )
+    .where(and(eq(data.jobs.status, "stalled"), gt(data.jobs.remaining_attempts, 0)))
     .returning({
       id: data.jobs.id,
       service: data.jobs.service,
@@ -256,12 +249,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
     .set({
       status: "failure",
     })
-    .where(
-      and(
-        eq(data.jobs.status, "stalled"),
-        lte(data.jobs.remaining_attempts, 0),
-      ),
-    )
+    .where(and(eq(data.jobs.status, "stalled"), lte(data.jobs.remaining_attempts, 0)))
     .returning({
       id: data.jobs.id,
       service: data.jobs.service,
@@ -271,7 +259,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
       runId: data.jobs.workflow_id,
     });
 
-  stalledByTimeout.forEach((row) => {
+  stalledByTimeout.forEach(row => {
     events.write({
       service: row.service,
       clusterId: row.clusterId,
@@ -285,7 +273,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
     });
   });
 
-  stalledByMachine.rows.forEach((row) => {
+  stalledByMachine.rows.forEach(row => {
     events.write({
       service: row.service,
       clusterId: row.cluster_id,
@@ -299,7 +287,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
     });
   });
 
-  stalledMachines.forEach((row) => {
+  stalledMachines.forEach(row => {
     events.write({
       type: "machineStalled",
       clusterId: row.clusterId,
@@ -307,7 +295,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
     });
   });
 
-  stalledRecoveredJobs.forEach(async (row) => {
+  stalledRecoveredJobs.forEach(async row => {
     events.write({
       service: row.service,
       clusterId: row.clusterId,
@@ -316,7 +304,7 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
     });
   });
 
-  stalledFailedJobs.forEach((row) => {
+  stalledFailedJobs.forEach(row => {
     events.write({
       service: row.service,
       clusterId: row.clusterId,
@@ -330,12 +318,12 @@ export async function selfHealJobs(params?: { machineStallTimeout?: number }) {
   });
 
   return {
-    stalledFailedByTimeout: stalledByTimeout.map((row) => row.id),
-    stalledRecovered: stalledRecoveredJobs.map((row) => row.id),
-    stalledMachines: stalledMachines.map((row) => ({
+    stalledFailedByTimeout: stalledByTimeout.map(row => row.id),
+    stalledRecovered: stalledRecoveredJobs.map(row => row.id),
+    stalledMachines: stalledMachines.map(row => ({
       id: row.id,
       clusterId: row.clusterId,
     })),
-    stalledFailedByMachine: stalledByMachine.rows.map((row) => row.id),
+    stalledFailedByMachine: stalledByMachine.rows.map(row => row.id),
   };
 }

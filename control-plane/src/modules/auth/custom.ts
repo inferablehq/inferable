@@ -6,7 +6,12 @@ import { getServiceDefinition } from "../service-definitions";
 import { createCache, hashFromSecret } from "../../utilities/cache";
 import { getClusterDetails } from "../management";
 
-const customAuthContextCache = createCache<unknown>(Symbol("customAuthContextCache"));
+const customAuthContextCache = createCache<{
+  service: string;
+  status: "pending" | "running" | "success" | "failure" | "stalled";
+  result: string | null;
+  resultType: jobs.ResultType | null;
+}>(Symbol("customAuthContextCache"));
 
 /**
  * Calls the custom verify function and returns the result
@@ -23,15 +28,25 @@ export const verify = async ({
   const cached = await customAuthContextCache.get(secretHash);
 
   if (cached) {
-    if (typeof cached === "object" && "error" in cached && typeof cached.error === "string") {
-      throw new AuthenticationError(cached.error, "https://docs.inferable.ai/pages/custom-auth");
+    if (
+      typeof cached === "object" &&
+      cached.status === "success" &&
+      cached.resultType === "resolution" &&
+      cached.result &&
+      packer.unpack(cached.result).error === "Custom auth token is not valid"
+    ) {
+      throw new AuthenticationError(
+        "Custom auth token is not valid",
+        "https://docs.inferable.ai/pages/custom-auth"
+      );
     }
-    return cached;
+
+    return cached.result ? packer.unpack(cached.result) : null;
   }
 
   const { handleCustomAuthFunction } = await getClusterDetails({ clusterId });
 
-  const [authService, authFunction] = handleCustomAuthFunction.split(".");
+  const [authService, authFunction] = handleCustomAuthFunction.split("_");
 
   try {
     const serviceDefinition = await getServiceDefinition({
@@ -64,7 +79,7 @@ export const verify = async ({
     const result = await getJobStatusSync({
       jobId: id,
       owner: { clusterId },
-      ttl: 15_000,
+      ttl: 10_000,
     });
 
     if (result.status == "success" && result.resultType !== "resolution") {
@@ -81,7 +96,7 @@ export const verify = async ({
 
     if (!result.result) {
       throw new AuthenticationError(
-        `${authFunction} did not return a result`,
+        `${authService}_${authFunction} did not return a result`,
         "https://docs.inferable.ai/pages/custom-auth"
       );
     }
@@ -92,17 +107,22 @@ export const verify = async ({
   } catch (e) {
     if (e instanceof JobPollTimeoutError) {
       throw new AuthenticationError(
-        `Call to ${authFunction} did not complete in time`,
+        `Call to ${authService}_${authFunction} did not complete in time`,
         "https://docs.inferable.ai/pages/custom-auth"
       );
     }
 
-    // Cache the auth error for 1 minutes
+    // Cache the auth error for 1 minute
     if (e instanceof AuthenticationError) {
       await customAuthContextCache.set(
         secretHash,
         {
-          error: e.message,
+          service: authService,
+          status: "success",
+          result: packer.pack({
+            error: `Custom auth token is not valid`,
+          }),
+          resultType: "resolution",
         },
         60
       );
