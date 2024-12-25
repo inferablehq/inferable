@@ -1,1 +1,2 @@
-ALTER TABLE "integrations" RENAME COLUMN "valTown" TO "valtown";
+ALTER TABLE "integrations" DROP COLUMN IF EXISTS "valTown";
+ALTER TABLE "integrations" ADD COLUMN "valtown" jsonb;
