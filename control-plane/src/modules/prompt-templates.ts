@@ -26,7 +26,7 @@ export const versionedRunConfig = new VersionedEntity(
     resultSchema: z.unknown().optional(),
     inputSchema: z.unknown().optional(),
   }),
-  "prompt_template",
+  "prompt_template"
 );
 
 export async function upsertRunConfig({
@@ -51,12 +51,7 @@ export async function upsertRunConfig({
   const [existing] = await db
     .select()
     .from(promptTemplates)
-    .where(
-      and(
-        eq(promptTemplates.cluster_id, clusterId),
-        eq(promptTemplates.id, id),
-      ),
-    )
+    .where(and(eq(promptTemplates.cluster_id, clusterId), eq(promptTemplates.id, id)))
     .limit(1);
 
   if (initialPrompt === "" || initialPrompt === undefined) {
@@ -129,16 +124,10 @@ export async function upsertRunConfig({
     });
   }
 
-  await embeddableServiceFunction.embedEntity(
-    clusterId,
-    "prompt-template",
-    "global",
-    upserted.id,
-    {
-      name: upserted.name,
-      prompt: upserted.initialPrompt ?? name,
-    },
-  );
+  await embeddableServiceFunction.embedEntity(clusterId, "prompt-template", "global", upserted.id, {
+    name: upserted.name,
+    prompt: upserted.initialPrompt ?? name,
+  });
 
   return upserted;
 }
@@ -166,26 +155,19 @@ export async function getRunConfig({
       clusterId: promptTemplates.cluster_id,
     })
     .from(promptTemplates)
-    .where(
-      and(
-        eq(promptTemplates.cluster_id, clusterId),
-        eq(promptTemplates.id, id),
-      ),
-    );
+    .where(and(eq(promptTemplates.cluster_id, clusterId), eq(promptTemplates.id, id)));
 
   if (!template) {
     throw new NotFoundError("Prompt template not found");
   }
 
-  const versions = withPreviousVersions
-    ? await versionedRunConfig.get(clusterId, id)
-    : [];
+  const versions = withPreviousVersions ? await versionedRunConfig.get(clusterId, id) : [];
 
   return {
     ...template,
     resultSchema: template.resultSchema as any,
     inputSchema: template.inputSchema as any,
-    versions: versions.map((v) => ({
+    versions: versions.map(v => ({
       version: v.version,
       name: v.entity.name,
       initialPrompt: v.entity.initialPrompt ?? null,
@@ -197,30 +179,15 @@ export async function getRunConfig({
   };
 }
 
-export async function deleteRunConfig({
-  clusterId,
-  id,
-}: {
-  clusterId: string;
-  id: string;
-}) {
+export async function deleteRunConfig({ clusterId, id }: { clusterId: string; id: string }) {
   const [deleted] = await db
     .delete(promptTemplates)
-    .where(
-      and(
-        eq(promptTemplates.cluster_id, clusterId),
-        eq(promptTemplates.id, id),
-      ),
-    )
+    .where(and(eq(promptTemplates.cluster_id, clusterId), eq(promptTemplates.id, id)))
     .returning({
       id: promptTemplates.id,
     });
 
-  await embeddableServiceFunction.deleteEmbedding(
-    clusterId,
-    "prompt-template",
-    id,
-  );
+  await embeddableServiceFunction.deleteEmbedding(clusterId, "prompt-template", id);
 
   if (!deleted) {
     throw new NotFoundError("Prompt template not found");
@@ -249,7 +216,7 @@ export async function searchRunConfigs(clusterId: string, search: string) {
     clusterId,
     "prompt-template",
     search,
-    10,
+    10
   );
 
   if (searchResults.length === 0) {
@@ -271,13 +238,13 @@ export async function searchRunConfigs(clusterId: string, search: string) {
     .where(
       inArray(
         promptTemplates.id,
-        searchResults.map((r) => r.embeddingId),
-      ),
+        searchResults.map(r => r.embeddingId)
+      )
     );
 
   return searchResults
-    .map((r) => {
-      const template = templates.find((t) => t.id === r.embeddingId);
+    .map(r => {
+      const template = templates.find(t => t.id === r.embeddingId);
 
       if (!template) {
         logger.error("Template not found for embedding", r);
@@ -289,7 +256,7 @@ export async function searchRunConfigs(clusterId: string, search: string) {
         similarity: r.similarity,
       };
     })
-    .filter((t) => t !== null) as {
+    .filter(t => t !== null) as {
     id: string;
     name: string;
     initialPrompt: string;
@@ -302,17 +269,9 @@ export async function searchRunConfigs(clusterId: string, search: string) {
   }[];
 }
 
-export const validateSchema = ({
-  schema,
-  name,
-}: {
-  schema: any;
-  name: string;
-}) => {
+export const validateSchema = ({ schema, name }: { schema: any; name: string }) => {
   try {
-    const resultSchemaErrors = validateFunctionSchema(
-      schema as JsonSchemaInput,
-    );
+    const resultSchemaErrors = validateFunctionSchema(schema as JsonSchemaInput);
 
     if (resultSchemaErrors.length > 0) {
       return {
@@ -336,13 +295,7 @@ export const validateSchema = ({
   }
 };
 
-export const validateInput = ({
-  schema,
-  input,
-}: {
-  schema: any;
-  input: any;
-}) => {
+export const validateInput = ({ schema, input }: { schema: any; input: any }) => {
   try {
     const ajv = new Ajv();
 
@@ -392,10 +345,7 @@ export type RunOptions = {
 
 type RunConfig = Awaited<ReturnType<typeof getRunConfig>>;
 
-export const mergeRunConfigOptions = (
-  options: RunOptions,
-  runConfig: RunConfig,
-) => {
+export const mergeRunConfigOptions = (options: RunOptions, runConfig: RunConfig) => {
   const mergedOptions: RunOptions = {
     initialPrompt: runConfig.initialPrompt ?? options.initialPrompt,
     systemPrompt: runConfig.systemPrompt ?? options.systemPrompt,

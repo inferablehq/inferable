@@ -106,7 +106,8 @@ export const runsRouter = initServer().router(
       const onStatusChange =
         body.onStatusChange?.function && normalizeFunctionReference(body.onStatusChange.function);
 
-      let runOptions: RunOptions = {
+      let runOptions: RunOptions & { runId?: string } = {
+        runId: body.runId,
         initialPrompt: body.initialPrompt,
         systemPrompt: body.systemPrompt,
         attachedFunctions: body.attachedFunctions?.map(normalizeFunctionReference),
@@ -147,17 +148,10 @@ export const runsRouter = initServer().router(
         runOptions.initialPrompt = `${runOptions.initialPrompt}\n\n<DATA>\n${JSON.stringify(runOptions.input, null, 2)}\n</DATA>`;
       }
 
-      if (!runOptions.initialPrompt) {
-        throw new Error("Failed to construct initialPrompt");
-      }
-
-      let customAuth = undefined;
-      if (auth.type === "custom") {
-        customAuth = auth.isCustomAuth();
-      }
+      let customAuth = auth.type === "custom" ? auth.isCustomAuth() : undefined;
 
       const workflow = await createRun({
-        runId: body.runId,
+        runId: runOptions.runId,
         user: auth,
         clusterId,
 
@@ -187,13 +181,13 @@ export const runsRouter = initServer().router(
         enableResultGrounding: runOptions.enableResultGrounding,
       });
 
-      if (body.initialPrompt) {
+      if (runOptions.initialPrompt) {
         await addMessageAndResume({
           id: ulid(),
           user: auth,
           clusterId,
           runId: workflow.id,
-          message: body.initialPrompt,
+          message: runOptions.initialPrompt,
           type: runConfig ? "template" : "human",
           metadata: runOptions.messageMetadata,
           skipAssert: true,
