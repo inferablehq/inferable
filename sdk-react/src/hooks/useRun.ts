@@ -4,24 +4,36 @@ import { contract } from "../contract";
 import { createApiClient } from "../createClient";
 import { useInterval } from "./useInterval";
 
+/** Authentication options for using cluster-based authentication */
 type AuthOptionsCluster = {
   authType: "cluster";
+  /** API secret key for cluster authentication */
   apiSecret: string;
 };
 
+/** Authentication options for using custom authentication */
 type AuthOptionsCustom = {
   authType: "custom";
+  /** Custom authentication token */
   customAuthToken: string;
 };
 
+/** Combined authentication options type */
 type AuthOptions = AuthOptionsCluster | AuthOptionsCustom;
 
+/** Configuration options for the useRun hook */
 type UseRunOptions = {
+  /** Optional existing run ID. If not provided, a new run will be created */
   runId?: string;
+  /** ID of the cluster to connect to */
   clusterId: string;
+  /** Optional base URL for the API. Defaults to production URL if not specified */
   baseUrl?: string;
+  /** Polling interval in milliseconds. Defaults to 1000ms */
   pollInterval?: number;
+  /** Optional error callback function */
   onError?: (error: Error) => void;
+  /** Optional pre-configured API client instance */
   apiClient?: ReturnType<typeof createApiClient>;
 } & AuthOptions;
 
@@ -30,13 +42,31 @@ type ListMessagesResponse = ClientInferResponseBody<(typeof contract)["listMessa
 type GetRunResponse = ClientInferResponseBody<(typeof contract)["getRun"], 200>;
 type ListRunsResponse = ClientInferResponseBody<(typeof contract)["listRuns"], 200>;
 
+/** Return type for the useRun hook */
 interface UseRunReturn {
+  /** Configured API client instance */
   client: ReturnType<typeof createApiClient>;
+  /** Function to create a new message in the current run */
   createMessage: (input: CreateMessageInput) => Promise<void>;
+  /** Array of messages in the current run */
   messages: ListMessagesResponse;
+  /** Current run details if available */
   run?: GetRunResponse;
 }
 
+/**
+ * React hook for managing a run session with real-time updates
+ * @param options Configuration options for the run session
+ * @returns Object containing the client, message creation function, messages array, and run details
+ * @example
+ * ```tsx
+ * const { messages, createMessage, run } = useRun({
+ *   clusterId: "my-cluster",
+ *   authType: "custom",
+ *   customAuthToken: "my-custom-auth-token"
+ * });
+ * ```
+ */
 export function useRun(options: UseRunOptions): UseRunReturn {
   const client = useMemo(() => {
     return (
@@ -162,6 +192,19 @@ export function useRun(options: UseRunOptions): UseRunReturn {
   };
 }
 
+/**
+ * React hook for listing and monitoring runs in a cluster
+ * @param options Configuration options for listing runs
+ * @returns Object containing the array of runs
+ * @example
+ * ```tsx
+ * const { runs } = useRuns({
+ *   clusterId: "my-cluster",
+ *   authType: "custom",
+ *   customAuthToken: "my-custom-auth-token"
+ * });
+ * ```
+ */
 export function useRuns(
   options: {
     clusterId: string;
