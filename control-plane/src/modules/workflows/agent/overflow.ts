@@ -49,9 +49,9 @@ export const handleContextWindowOverflow = async ({
   }
 
   // First message should always be human
-  while (messages.length && messages[0].type !== "human") {
+  while (messages.length && !["human", "template"].includes(messages[0].type)) {
     if (messages.length === 1) {
-      logger.error("Only message in mesasge history is not human", {
+      logger.error("Only message in mesasge history is not human or template", {
         messageId: messages[0].id
       });
       throw new AgentError("Run state is invalid");
