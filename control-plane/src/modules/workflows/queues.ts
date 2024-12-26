@@ -16,10 +16,7 @@ const runProcessConsumer = Consumer.create({
   batchSize: 5,
   visibilityTimeout: 180,
   heartbeatInterval: 30,
-  handleMessage: withObservability(
-    env.SQS_RUN_PROCESS_QUEUE_URL,
-    handleRunProcess,
-  ),
+  handleMessage: withObservability(env.SQS_RUN_PROCESS_QUEUE_URL, handleRunProcess),
   sqs,
 });
 
@@ -28,18 +25,12 @@ const runGenerateNameConsumer = Consumer.create({
   batchSize: 5,
   visibilityTimeout: 30,
   heartbeatInterval: 15,
-  handleMessage: withObservability(
-    env.SQS_RUN_GENERATE_NAME_QUEUE_URL,
-    handleRunNameGeneration,
-  ),
+  handleMessage: withObservability(env.SQS_RUN_GENERATE_NAME_QUEUE_URL, handleRunNameGeneration),
   sqs,
 });
 
 export const start = async () => {
-  await Promise.all([
-    runProcessConsumer.start(),
-    runGenerateNameConsumer.start(),
-  ]);
+  await Promise.all([runProcessConsumer.start(), runGenerateNameConsumer.start()]);
 };
 
 export const stop = async () => {
@@ -89,12 +80,9 @@ async function handleRunProcess(message: BaseMessage) {
         nextAttemptMessageId: sqsResult.MessageId,
       });
     } else {
-      logger.warn(
-        "Could not acquire run process lock after multiple attempts, skipping",
-        {
-          lockAttempts,
-        },
-      );
+      logger.warn("Could not acquire run process lock after multiple attempts, skipping", {
+        lockAttempts,
+      });
     }
     return;
   }
@@ -103,7 +91,7 @@ async function handleRunProcess(message: BaseMessage) {
     const [run, metadata] = await Promise.all([
       getRun({ clusterId, runId }),
       getRunMetadata({ clusterId, runId }),
-    ])
+    ]);
 
     if (!run) {
       logger.error("Received job for unknown workflow");
