@@ -11,7 +11,11 @@ import {
 } from "drizzle-orm";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
-import { BadRequestError, NotFoundError, RunBusyError } from "../../utilities/errors";
+import {
+  BadRequestError,
+  NotFoundError,
+  RunBusyError,
+} from "../../utilities/errors";
 import { Auth } from "../auth/auth";
 import {
   clusters,
@@ -64,7 +68,6 @@ export type Run = {
 };
 
 export const createRun = async ({
-  runId,
   user,
   clusterId,
   name,
@@ -86,7 +89,6 @@ export const createRun = async ({
   context,
   enableResultGrounding,
 }: {
-  runId?: string;
   user?: Auth;
   clusterId: string;
   name?: string;
@@ -115,8 +117,7 @@ export const createRun = async ({
 }): Promise<Run> => {
   let run: Run | undefined = undefined;
 
-  await db.transaction(async tx => {
-    // TODO: Resolve the run debug value via a subquery and remove the transaction: https://github.com/inferablehq/inferable/issues/389
+  await db.transaction(async (tx) => {
     const [debugQuery] = await tx
       .select({
         debug: clusters.debug,
@@ -128,7 +129,7 @@ export const createRun = async ({
       .insert(workflows)
       .values([
         {
-          id: runId ?? ulid(),
+          id: ulid(),
           cluster_id: clusterId,
           status: "pending",
           user_id: user?.entityId ?? "SYSTEM",
@@ -177,7 +178,7 @@ export const createRun = async ({
           workflow_id: run!.id,
           key,
           value,
-        }))
+        })),
       );
     }
   });
@@ -189,7 +190,13 @@ export const createRun = async ({
   return run;
 };
 
-export const deleteRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+export const deleteRun = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
   await db
     .delete(workflows)
     .where(and(eq(workflows.cluster_id, clusterId), eq(workflows.id, runId)));
@@ -209,7 +216,12 @@ export const updateWorkflow = async (workflow: Run): Promise<Run> => {
       feedback_comment: workflow.feedbackComment,
       feedback_score: workflow.feedbackScore,
     })
-    .where(and(eq(workflows.cluster_id, workflow.clusterId), eq(workflows.id, workflow.id)))
+    .where(
+      and(
+        eq(workflows.cluster_id, workflow.clusterId),
+        eq(workflows.id, workflow.id),
+      ),
+    )
     .returning({
       id: workflows.id,
       name: workflows.name,
@@ -236,7 +248,13 @@ export const updateWorkflow = async (workflow: Run): Promise<Run> => {
   return updated;
 };
 
-export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+export const getRun = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
   const [workflow] = await db
     .select({
       id: workflows.id,
@@ -308,8 +326,8 @@ export const getClusterWorkflows = async ({
         eq(workflows.cluster_id, clusterId),
         eq(workflows.test, test),
         ...(userId ? [eq(workflows.user_id, userId)] : []),
-        ...(configId ? [eq(workflows.config_id, configId)] : [])
-      )
+        ...(configId ? [eq(workflows.config_id, configId)] : []),
+      ),
     )
     .orderBy(desc(workflows.created_at))
     .limit(limit);
@@ -379,10 +397,7 @@ export const addMessageAndResume = async ({
   metadata?: RunMessageMetadata;
   skipAssert?: boolean;
 }) => {
-  if (!skipAssert) {
-    await assertRunReady({ clusterId, runId });
-  }
-
+  if (!skipAssert) await assertRunReady({ clusterId, runId });
   await upsertRunMessage({
     user,
     clusterId,
@@ -394,9 +409,6 @@ export const addMessageAndResume = async ({
     id,
     metadata,
   });
-
-  // TODO: Move run name generation to event sourcing (pg-listen) https://github.com/inferablehq/inferable/issues/390
-  await generateRunName(await getRun({ clusterId, runId }), message);
 
   await resumeRun({
     clusterId,
@@ -454,14 +466,7 @@ export const generateRunName = async (run: Run, content: string) => {
   });
 };
 
-export type RunMessage = {
-  message: string;
-  type: "human" | "template";
-  messageMetadata?: RunMessageMetadata;
-};
-
 export const createRunWithMessage = async ({
-  runId,
   user,
   clusterId,
   message,
@@ -485,9 +490,37 @@ export const createRunWithMessage = async ({
   authContext,
   context,
   enableResultGrounding,
-}: Parameters<typeof createRun>[0] & RunMessage) => {
+}: {
+  user?: Auth;
+  clusterId: string;
+  message: string;
+  systemPrompt?: string;
+  type: "human" | "template";
+  name?: string;
+  test?: boolean;
+  testMocks?: Record<
+    string,
+    {
+      output: Record<string, unknown>;
+    }
+  >;
+  messageMetadata?: RunMessageMetadata;
+  onStatusChange?: string;
+  resultSchema?: unknown;
+  metadata?: Record<string, string>;
+  attachedFunctions?: string[];
+  configId?: string;
+  configVersion?: number;
+  reasoningTraces?: boolean;
+  interactive?: boolean;
+  enableSummarization?: boolean;
+  modelIdentifier?: ChatIdentifiers;
+  customAuthToken?: string;
+  authContext?: unknown;
+  context?: unknown;
+  enableResultGrounding?: boolean;
+}) => {
   const workflow = await createRun({
-    runId,
     user,
     clusterId,
     name,
@@ -521,10 +554,15 @@ export const createRunWithMessage = async ({
     skipAssert: true,
   });
 
+  await generateRunName(workflow, message);
+
   return workflow;
 };
 
-export const assertRunReady = async (input: { runId: string; clusterId: string }) => {
+export const assertRunReady = async (input: {
+  runId: string;
+  clusterId: string;
+}) => {
   const run = await getRun(input);
   if (!run) {
     throw new NotFoundError("Run not found");
@@ -536,7 +574,9 @@ export const assertRunReady = async (input: { runId: string; clusterId: string }
   });
 
   if (!run.interactive) {
-    throw new BadRequestError("Run is not interactive and cannot accept new messages.");
+    throw new BadRequestError(
+      "Run is not interactive and cannot accept new messages.",
+    );
   }
 
   const acceptedStatuses = ["done", "failed", "pending", "paused"];
@@ -570,7 +610,9 @@ export const assertRunReady = async (input: { runId: string; clusterId: string }
     id: run.id,
   });
 
-  throw new RunBusyError("Run is not ready for new messages: Unprocessed messages");
+  throw new RunBusyError(
+    "Run is not ready for new messages: Unprocessed messages",
+  );
 };
 
 export const getWaitingJobIds = async ({
@@ -591,12 +633,12 @@ export const getWaitingJobIds = async ({
         eq(jobs.cluster_id, clusterId),
         or(
           inArray(jobs.status, ["pending", "running"]),
-          and(eq(jobs.approval_requested, true), isNull(jobs.approved))
-        )
-      )
+          and(eq(jobs.approval_requested, true), isNull(jobs.approved)),
+        ),
+      ),
     );
 
-  return waitingJobs.map(job => job.id);
+  return waitingJobs.map((job) => job.id);
 };
 
 export const getRunConfigMetrics = async ({
@@ -612,9 +654,10 @@ export const getRunConfigMetrics = async ({
       count: countDistinct(workflows.id).as("count"),
       feedbackScore: workflows.feedback_score,
       jobCount: countDistinct(jobs.id).as("job_count"),
-      jobFailureCount: sql<number>`COUNT(${jobs.id}) FILTER (WHERE ${jobs.status} = 'failure')`.as(
-        "job_failure_count"
-      ),
+      jobFailureCount:
+        sql<number>`COUNT(${jobs.id}) FILTER (WHERE ${jobs.status} = 'failure')`.as(
+          "job_failure_count",
+        ),
       timeToCompletion: sql<number>`
         EXTRACT(EPOCH FROM (
           MAX(${workflowMessages.created_at}) - MIN(${workflowMessages.created_at})
@@ -624,7 +667,12 @@ export const getRunConfigMetrics = async ({
     .from(workflows)
     .leftJoin(jobs, eq(workflows.id, jobs.workflow_id))
     .leftJoin(workflowMessages, eq(workflows.id, workflowMessages.workflow_id))
-    .where(and(eq(workflows.cluster_id, clusterId), eq(workflows.config_id, configId)))
+    .where(
+      and(
+        eq(workflows.cluster_id, clusterId),
+        eq(workflows.config_id, configId),
+      ),
+    )
     .groupBy(workflows.id, workflows.created_at, workflows.feedback_score)
     .limit(1000);
 };

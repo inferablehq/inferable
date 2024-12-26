@@ -14,14 +14,11 @@ import {
   getRun,
   getWorkflowDetail,
   updateWorkflow,
-  createRun,
-  addMessageAndResume,
 } from "./workflows";
 import { posthog } from "../posthog";
 import {
   RunOptions,
   getRunConfig,
-  listRunConfigs,
   mergeRunConfigOptions,
   validateSchema,
 } from "../prompt-templates";
@@ -29,7 +26,6 @@ import { NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
 import { normalizeFunctionReference } from "../service-definitions";
 import { dereferenceSync } from "dereference-json-schema";
-import { ulid } from "ulid";
 
 export const runsRouter = initServer().router(
   {
@@ -44,7 +40,7 @@ export const runsRouter = initServer().router(
     createRunRetry: contract.createRunRetry,
   },
   {
-    getRun: async request => {
+    getRun: async (request) => {
       const { clusterId, runId } = request.params;
       const auth = request.request.getAuth();
       await auth.canAccess({ run: { clusterId, runId } });
@@ -65,7 +61,7 @@ export const runsRouter = initServer().router(
         body: workflow,
       };
     },
-    createRun: async request => {
+    createRun: async (request) => {
       const { clusterId } = request.params;
       const body = request.body;
 
@@ -77,7 +73,8 @@ export const runsRouter = initServer().router(
         return {
           status: 400,
           body: {
-            message: "initialPrompt or configId is required to create a workflow",
+            message:
+              "initialPrompt or configId is required to create a workflow",
           },
         };
       }
@@ -104,12 +101,15 @@ export const runsRouter = initServer().router(
       // TODO: Validate that onStatusChange and attachedFunctions exist
       // TODO: Validate that onStatusChange schema is correct
       const onStatusChange =
-        body.onStatusChange?.function && normalizeFunctionReference(body.onStatusChange.function);
+        body.onStatusChange?.function &&
+        normalizeFunctionReference(body.onStatusChange.function);
 
       let runOptions: RunOptions = {
         initialPrompt: body.initialPrompt,
         systemPrompt: body.systemPrompt,
-        attachedFunctions: body.attachedFunctions?.map(normalizeFunctionReference),
+        attachedFunctions: body.attachedFunctions?.map(
+          normalizeFunctionReference,
+        ),
         resultSchema: body.resultSchema
           ? (dereferenceSync(body.resultSchema) as JsonSchemaInput)
           : undefined,
@@ -156,8 +156,7 @@ export const runsRouter = initServer().router(
         customAuth = auth.isCustomAuth();
       }
 
-      const workflow = await createRun({
-        runId: body.runId,
+      const workflow = await createRunWithMessage({
         user: auth,
         clusterId,
 
@@ -167,6 +166,7 @@ export const runsRouter = initServer().router(
         metadata: body.metadata,
 
         configId: runConfig?.id,
+        type: runConfig ? "template" : "human",
 
         // Customer Auth
         authContext: customAuth?.context,
@@ -177,28 +177,17 @@ export const runsRouter = initServer().router(
         onStatusChange,
 
         // Merged Options
+        message: runOptions.initialPrompt,
         resultSchema: runOptions.resultSchema,
         enableSummarization: runOptions.callSummarization,
         modelIdentifier: runOptions.modelIdentifier,
         interactive: runOptions.interactive,
         systemPrompt: runOptions.systemPrompt,
         attachedFunctions: runOptions.attachedFunctions,
+        messageMetadata: runOptions.messageMetadata,
         reasoningTraces: runOptions.reasoningTraces,
         enableResultGrounding: runOptions.enableResultGrounding,
       });
-
-      if (body.initialPrompt) {
-        await addMessageAndResume({
-          id: ulid(),
-          user: auth,
-          clusterId,
-          runId: workflow.id,
-          message: body.initialPrompt,
-          type: runConfig ? "template" : "human",
-          metadata: runOptions.messageMetadata,
-          skipAssert: true,
-        });
-      }
 
       posthog?.capture({
         distinctId: auth.entityId,
@@ -221,7 +210,7 @@ export const runsRouter = initServer().router(
         body: { id: workflow.id },
       };
     },
-    deleteRun: async request => {
+    deleteRun: async (request) => {
       const { clusterId, runId } = request.params;
 
       const auth = request.request.getAuth();
@@ -252,7 +241,7 @@ export const runsRouter = initServer().router(
         body: undefined,
       };
     },
-    createFeedback: async request => {
+    createFeedback: async (request) => {
       const { clusterId, runId } = request.params;
       const { comment, score } = request.body;
 
@@ -298,7 +287,7 @@ export const runsRouter = initServer().router(
         body: undefined,
       };
     },
-    listRuns: async request => {
+    listRuns: async (request) => {
       const { clusterId } = request.params;
       const { userId, test, limit, metadata, configId } = request.query;
 
@@ -345,7 +334,7 @@ export const runsRouter = initServer().router(
         body: result,
       };
     },
-    getRunTimeline: async request => {
+    getRunTimeline: async (request) => {
       const { clusterId, runId } = request.params;
       const { messagesAfter, jobsAfter, activityAfter } = request.query;
 
@@ -382,7 +371,7 @@ export const runsRouter = initServer().router(
 
       const blobs = await getBlobsForJobs({
         clusterId,
-        jobIds: jobs.map(job => job.id),
+        jobIds: jobs.map((job) => job.id),
       });
 
       return {
@@ -396,7 +385,7 @@ export const runsRouter = initServer().router(
         },
       };
     },
-    getRunConfigMetrics: async request => {
+    getRunConfigMetrics: async (request) => {
       const { clusterId, configId } = request.params;
 
       const auth = request.request.getAuth();
@@ -412,7 +401,7 @@ export const runsRouter = initServer().router(
         body: result,
       };
     },
-    listRunReferences: async request => {
+    listRunReferences: async (request) => {
       const { clusterId, runId } = request.params;
       const { token, before } = request.query;
 
@@ -431,7 +420,7 @@ export const runsRouter = initServer().router(
         body: jobReferences,
       };
     },
-    createRunRetry: async request => {
+    createRunRetry: async (request) => {
       const { clusterId, runId } = request.params;
       const { messageId } = request.body;
 
@@ -449,5 +438,5 @@ export const runsRouter = initServer().router(
         body: undefined,
       };
     },
-  }
+  },
 );

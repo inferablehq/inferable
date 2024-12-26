@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ErrorDisplay from "./error-display";
-import { LiveCheck } from "./live-check";
 
 interface ClusterBreadcrumbsProps {
   clusterId: string;
@@ -71,9 +70,6 @@ export async function ClusterBreadcrumbs({
       <Link href={`/clusters/${clusterId}/settings`} className={linkStyles}>
         <Settings className="h-4 w-4" /> Settings
       </Link>
-      <div className="ml-auto">
-        <LiveCheck />
-      </div>
     </div>
   );
 }
@@ -91,9 +87,6 @@ export async function GlobalBreadcrumbs() {
       >
         <ExternalLink className="h-4 w-4" /> Docs
       </Link>
-      <div className="ml-auto">
-        <LiveCheck />
-      </div>
     </div>
   );
 }

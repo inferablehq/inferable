@@ -81,9 +81,9 @@
     "@typescript-eslint/eslint-plugin": "^7.16.0",
     "@typescript-eslint/parser": "^7.16.0",
     "dotenv": "^16.3.1",
-    "prettier": "^3.2.5",
     "prettier-2": "npm:prettier@^2",
     "ts-node": "^10.9.2",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "prettier": "^3.2.5"
   }
 }

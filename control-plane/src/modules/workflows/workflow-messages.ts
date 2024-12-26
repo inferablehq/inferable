@@ -17,7 +17,10 @@ import { get, reduce } from "lodash";
 
 export type MessageData = z.infer<typeof messageDataSchema>;
 
-export type TypedMessage = AgentMessage | InvocationResultMessage | GenericMessage;
+export type TypedMessage =
+  | AgentMessage
+  | InvocationResultMessage
+  | GenericMessage;
 
 /**
  * A structured response from the agent.
@@ -119,9 +122,13 @@ export const upsertRunMessage = async ({
         eq(workflowMessages.cluster_id, clusterId),
         eq(workflowMessages.workflow_id, runId),
         eq(workflowMessages.id, id),
-        eq(workflowMessages.type, type)
+        eq(workflowMessages.type, type),
       ),
-      target: [workflowMessages.cluster_id, workflowMessages.workflow_id, workflowMessages.id],
+      target: [
+        workflowMessages.cluster_id,
+        workflowMessages.workflow_id,
+        workflowMessages.id,
+      ],
       set: {
         data,
         updated_at: new Date(),
@@ -198,8 +205,8 @@ export const prepMessagesForRetry = async ({
         and(
           gt(workflowMessages.id, messageId),
           eq(workflowMessages.cluster_id, clusterId),
-          eq(workflowMessages.workflow_id, runId)
-        )
+          eq(workflowMessages.workflow_id, runId),
+        ),
       )
       .returning({
         id: workflowMessages.id,
@@ -212,7 +219,7 @@ export const prepMessagesForRetry = async ({
   ]);
 
   return {
-    deleted: deleted.flat().map(d => d.id),
+    deleted: deleted.flat().map((d) => d.id),
   };
 };
 
@@ -245,17 +252,35 @@ export const getRunMessagesForDisplay = async ({
         gt(workflowMessages.id, after),
         ne(workflowMessages.type, "agent-invalid"),
         ne(workflowMessages.type, "supervisor"),
-        ne(workflowMessages.type, "result" as any)
-      )
+        ne(workflowMessages.type, "result" as any),
+      ),
     )
     .limit(last);
 
   const results = messages
-    .filter(m => m.type === "invocation-result")
+    .filter((m) => m.type === "invocation-result")
     .map((m: any) => m.data.result); // TODO: fix type
 
+  const allTokenized = results.reduce((acc, result) => {
+    return { ...acc, ...result };
+  }, {});
+
+  for (const message of messages) {
+    if (message.type === "agent") {
+      if ("message" in message.data) {
+        message.data.message = message.data.message?.replaceAll(
+          /{{[\w\d.\[\]]+?}}/g,
+          (match) => {
+            const id = match.replace("{{", "").replace("}}", "");
+            return `[${get(allTokenized, id)}](path://${id})`;
+          },
+        );
+      }
+    }
+  }
+
   return messages
-    .map(message => {
+    .map((message) => {
       // handle result messages before they were renamed
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((message as any).type === "result") {
@@ -272,7 +297,7 @@ export const getRunMessagesForDisplay = async ({
 
       return message;
     })
-    .map(message => {
+    .map((message) => {
       validateMessage(message);
 
       return {
@@ -309,14 +334,14 @@ export const getWorkflowMessages = async ({
       and(
         eq(workflowMessages.cluster_id, clusterId),
         eq(workflowMessages.workflow_id, runId),
-        gt(workflowMessages.id, after)
-      )
+        gt(workflowMessages.id, after),
+      ),
     )
     .limit(last)
-    .then(messages => messages.reverse());
+    .then((messages) => messages.reverse());
 
   return messages
-    .map(message => {
+    .map((message) => {
       // handle result messages before they were renamed
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((message as any).type === "result") {
@@ -332,7 +357,7 @@ export const getWorkflowMessages = async ({
       }
       return message;
     })
-    .map(message => {
+    .map((message) => {
       return {
         ...message,
         ...validateMessage(message),
@@ -340,7 +365,9 @@ export const getWorkflowMessages = async ({
     });
 };
 
-export const toAnthropicMessages = (messages: TypedMessage[]): Anthropic.MessageParam[] => {
+export const toAnthropicMessages = (
+  messages: TypedMessage[],
+): Anthropic.MessageParam[] => {
   return (
     messages
       .map(toAnthropicMessage)
@@ -350,7 +377,10 @@ export const toAnthropicMessages = (messages: TypedMessage[]): Anthropic.Message
         const previousMsg = acc[acc.length - 1];
 
         if (previousMsg?.role === currentRole) {
-          if (Array.isArray(previousMsg.content) && Array.isArray(msg.content)) {
+          if (
+            Array.isArray(previousMsg.content) &&
+            Array.isArray(msg.content)
+          ) {
             previousMsg.content.push(...msg.content);
             return acc;
           }
@@ -362,11 +392,13 @@ export const toAnthropicMessages = (messages: TypedMessage[]): Anthropic.Message
   );
 };
 
-export const toAnthropicMessage = (message: TypedMessage): Anthropic.MessageParam => {
+export const toAnthropicMessage = (
+  message: TypedMessage,
+): Anthropic.MessageParam => {
   switch (message.type) {
     case "agent": {
       const toolUses =
-        message.data.invocations?.map(invocation => {
+        message.data.invocations?.map((invocation) => {
           if (!invocation.id) throw new Error("Invocation is missing id");
           return {
             type: "tool_use" as const,
@@ -418,13 +450,17 @@ export const toAnthropicMessage = (message: TypedMessage): Anthropic.MessagePara
     case "template": {
       return {
         role: "user",
-        content: message.data.details ? JSON.stringify(message.data) : message.data.message,
+        content: message.data.details
+          ? JSON.stringify(message.data)
+          : message.data.message,
       };
     }
   }
 };
 
-const validateMessage = (message: Pick<RunMessage, "data" | "type">): TypedMessage => {
+const validateMessage = (
+  message: Pick<RunMessage, "data" | "type">,
+): TypedMessage => {
   switch (message.type) {
     case "agent": {
       assertAgentMessage(message);
@@ -442,11 +478,13 @@ const validateMessage = (message: Pick<RunMessage, "data" | "type">): TypedMessa
 };
 
 export function hasInvocations(message: AgentMessage): boolean {
-  return (message.data.invocations && message.data.invocations.length > 0) ?? false;
+  return (
+    (message.data.invocations && message.data.invocations.length > 0) ?? false
+  );
 }
 
 export function assertAgentMessage(
-  message: Pick<RunMessage, "data" | "type">
+  message: Pick<RunMessage, "data" | "type">,
 ): asserts message is AgentMessage {
   if (message.type !== "agent") {
     throw new Error("Expected an AgentMessage");
@@ -464,7 +502,7 @@ export function assertAgentMessage(
 }
 
 export function assertResultMessage(
-  message: Pick<RunMessage, "data" | "type">
+  message: Pick<RunMessage, "data" | "type">,
 ): asserts message is InvocationResultMessage {
   if (message.type !== "invocation-result") {
     throw new Error("Expected a InvocationResultMessage");
@@ -482,9 +520,11 @@ export function assertResultMessage(
 }
 
 export function assertGenericMessage(
-  message: Pick<RunMessage, "data" | "type">
+  message: Pick<RunMessage, "data" | "type">,
 ): asserts message is GenericMessage {
-  if (!["human", "template", "supervisor", "agent-invalid"].includes(message.type)) {
+  if (
+    !["human", "template", "supervisor", "agent-invalid"].includes(message.type)
+  ) {
     throw new Error("Expected a GenericMessage");
   }
 
@@ -517,8 +557,8 @@ export const lastAgentMessage = async ({
       and(
         eq(workflowMessages.cluster_id, clusterId),
         eq(workflowMessages.workflow_id, runId),
-        eq(workflowMessages.type, "agent")
-      )
+        eq(workflowMessages.type, "agent"),
+      ),
     )
     .orderBy(desc(workflowMessages.created_at))
     .limit(1);
