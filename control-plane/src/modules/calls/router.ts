@@ -145,10 +145,6 @@ export const callsRouter = initServer().router(
 
           resultType = "rejection";
         }
-      } else {
-        logger.warn("Call result is empty", {
-          callId,
-        })
       }
 
       await Promise.all([
