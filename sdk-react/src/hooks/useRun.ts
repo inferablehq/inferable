@@ -1,94 +1,103 @@
-import { useCallback, useMemo, useState } from "react";
-import { useInterval } from "./useInterval";
-import { createApiClient } from "../createClient";
-import { contract } from "../contract";
 import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
+import { useEffect, useMemo, useState } from "react";
+import { contract } from "../contract";
+import { createApiClient } from "../createClient";
+import { useInterval } from "./useInterval";
+
+type AuthOptionsCluster = {
+  authType: "cluster";
+  apiSecret: string;
+};
+
+type AuthOptionsCustom = {
+  authType: "custom";
+  customAuthToken: string;
+};
+
+type AuthOptions = AuthOptionsCluster | AuthOptionsCustom;
 
 type UseRunOptions = {
+  runId?: string;
   clusterId: string;
-  apiSecret?: string;
-  customAuthToken?: string;
   baseUrl?: string;
   pollInterval?: number;
   onError?: (error: Error) => void;
-};
+  apiClient?: ReturnType<typeof createApiClient>;
+} & AuthOptions;
 
 type CreateMessageInput = ClientInferRequest<(typeof contract)["createMessage"]>["body"];
 type ListMessagesResponse = ClientInferResponseBody<(typeof contract)["listMessages"], 200>;
 type GetRunResponse = ClientInferResponseBody<(typeof contract)["getRun"], 200>;
+type ListRunsResponse = ClientInferResponseBody<(typeof contract)["listRuns"], 200>;
 
 interface UseRunReturn {
   client: ReturnType<typeof createApiClient>;
   createMessage: (input: CreateMessageInput) => Promise<void>;
   messages: ListMessagesResponse;
   run?: GetRunResponse;
-  start: ({ initialPrompt, runId }: { initialPrompt?: string; runId?: string }) => void;
 }
 
 export function useRun(options: UseRunOptions): UseRunReturn {
-  const authType = options.customAuthToken ? "custom" : "cluster";
-  const apiSecret = options.customAuthToken ?? options.apiSecret;
-
-  const [client] = useState(() =>
-    createApiClient({
-      apiSecret,
-      authType,
-      baseUrl: options.baseUrl,
-    })
-  );
+  const client = useMemo(() => {
+    return (
+      options.apiClient ??
+      createApiClient({
+        authHeader:
+          options.authType === "custom"
+            ? `custom ${options.customAuthToken}`
+            : `bearer ${options.apiSecret}`,
+        baseUrl: options.baseUrl,
+      })
+    );
+  }, [
+    options.baseUrl,
+    options.authType,
+    options.authType === "custom" ? options.customAuthToken : options.apiSecret,
+  ]);
 
   const [messages, setMessages] = useState<ListMessagesResponse>([]);
   const [run, setRun] = useState<GetRunResponse>();
   const [runId, setRunId] = useState<string>();
 
-  const hasStarted = useMemo(() => ({ current: false }), []);
+  useEffect(() => {
+    if (!client) {
+      return;
+    }
 
-  const start = useCallback(
-    async ({ initialPrompt, runId }: { initialPrompt?: string; runId?: string }) => {
-      if (hasStarted.current) return;
-      hasStarted.current = true;
-      if (!client) return;
-
-      if ((!runId && !initialPrompt) || (!!runId && !!initialPrompt)) {
-        options.onError?.(
-          new Error("`start()` must be called with either runId or initialPrompt but not both")
-        );
-        return;
-      }
-
-      if (runId) {
-        setRunId(runId);
-        return;
-      }
-
-      try {
-        const response = await client.createRun({
+    if (options.runId) {
+      setRunId(options.runId);
+    } else {
+      client
+        .createRun({
           body: {
-            initialPrompt: initialPrompt,
+            runId,
           },
           params: {
             clusterId: options.clusterId,
           },
+        })
+        .then(response => {
+          if (response.status !== 201) {
+            options.onError?.(
+              new Error(
+                `Could not create run. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
+              )
+            );
+          } else {
+            setRunId(response.body.id);
+          }
+        })
+        .catch(error => {
+          options.onError?.(error instanceof Error ? error : new Error(String(error)));
         });
-
-        if (response.status !== 201) {
-          options.onError?.(
-            new Error(
-              `Could not create run. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
-            )
-          );
-        } else {
-          setRunId(response.body.id);
-        }
-      } catch (error) {
-        options.onError?.(error instanceof Error ? error : new Error(String(error)));
-      }
-    },
-    [client, options, hasStarted]
-  );
+    }
+  }, [client]);
 
   useInterval(async () => {
-    if (!runId) return;
+    if (!runId) {
+      return;
+    }
+
     try {
       const [messageResponse, runResponse] = await Promise.all([
         client.listMessages({
@@ -150,6 +159,52 @@ export function useRun(options: UseRunOptions): UseRunReturn {
     createMessage,
     messages,
     run,
-    start,
+  };
+}
+
+export function useRuns(
+  options: {
+    clusterId: string;
+    baseUrl?: string;
+    pollInterval?: number;
+    onError?: (error: Error) => void;
+    apiClient?: ReturnType<typeof createApiClient>;
+  } & AuthOptions
+) {
+  const [runs, setRuns] = useState<ListRunsResponse>([]);
+
+  const client = useMemo(() => {
+    return (
+      options.apiClient ??
+      createApiClient({
+        baseUrl: options.baseUrl,
+        authHeader:
+          options.authType === "custom"
+            ? `custom ${options.customAuthToken}`
+            : `bearer ${options.apiSecret}`,
+      })
+    );
+  }, [
+    options.baseUrl,
+    options.authType,
+    options.authType === "custom" ? options.customAuthToken : options.apiSecret,
+  ]);
+
+  useInterval(async () => {
+    const response = await client.listRuns({
+      params: {
+        clusterId: options.clusterId,
+      },
+    });
+
+    if (response.status === 200) {
+      setRuns(response.body);
+    } else {
+      options.onError?.(new Error(`Could not list runs. Status: ${response.status}`));
+    }
+  }, options.pollInterval || 2000);
+
+  return {
+    runs,
   };
 }
