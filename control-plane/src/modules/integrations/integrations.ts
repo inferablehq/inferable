@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, integrations } from "../data";
 import { integrationSchema } from "./schema";
-import { tavilyIntegration, valtownIntegration, toolhouseIntegration } from "./constants";
+import { tavilyIntegration, valtownIntegration, toolhouseIntegration, slackIntegration } from "./constants";
 import { tavily } from "./tavily";
 import { toolhouse } from "./toolhouse";
 import { valtown } from "./valtown";
@@ -33,6 +33,7 @@ export const getIntegrations = async ({
       langfuse: integrations.langfuse,
       tavily: integrations.tavily,
       valtown: integrations.valtown,
+      slack: integrations.slack,
     })
     .from(integrations)
     .where(eq(integrations.cluster_id, clusterId))
@@ -43,6 +44,7 @@ export const getIntegrations = async ({
           langfuse: null,
           tavily: null,
           valtown: null,
+          slack: null,
         }
     );
 };

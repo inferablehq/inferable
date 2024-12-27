@@ -5,7 +5,7 @@ import { packer } from "../packer";
 import { getRunMetadata } from "./metadata";
 import { getClusterBackgroundRun, Run } from "./workflows";
 import { workflowMessages } from "../data";
-import * as slack from "../slack";
+import * as slack from "../integrations/slack";
 
 export const notifyNewMessage = async ({
   message,

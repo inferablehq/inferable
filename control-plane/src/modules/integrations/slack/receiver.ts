@@ -7,9 +7,9 @@ import {
   HTTPResponseAck,
   Logger,
   LogLevel,
-} from '@slack/bolt'
-import { FastifyInstance, FastifyPluginCallback, FastifyReply, FastifyRequest } from 'fastify';
-import { logger } from '../observability/logger';
+} from "@slack/bolt";
+import { FastifyInstance, FastifyPluginCallback, FastifyReply, FastifyRequest } from "fastify";
+import { logger } from "../../observability/logger";
 
 const slackLogger: Logger = {
   debug: (message: string) => logger.debug(message),
@@ -19,28 +19,24 @@ const slackLogger: Logger = {
   getLevel: () => LogLevel.INFO,
   setLevel: () => void 0,
   setName: () => void 0,
-}
+};
 
 type FastifySlackReceiverParams = {
-  fastify: FastifyInstance
-  path: string
-  signingSecret: string
-}
+  fastify: FastifyInstance;
+  path: string;
+  signingSecret: string;
+};
 
 export class FastifySlackReceiver implements Receiver {
   private fastify: FastifyInstance;
   private app?: App;
-  private path: string
-  private signingSecret: string
+  private path: string;
+  private signingSecret: string;
 
-  constructor({
-    path,
-    fastify,
-    signingSecret,
-  }: FastifySlackReceiverParams) {
+  constructor({ path, fastify, signingSecret }: FastifySlackReceiverParams) {
     this.fastify = fastify;
-    this.path = path
-    this.signingSecret = signingSecret
+    this.path = path;
+    this.signingSecret = signingSecret;
   }
 
   init(app: App) {
@@ -48,33 +44,36 @@ export class FastifySlackReceiver implements Receiver {
   }
 
   async start() {
-    logger.info("Registering Slack receiver")
+    logger.info("Registering Slack receiver");
 
     // Register a seperate plugin and disable the content type parsers for the route
-    const slackPlugin: FastifyPluginCallback = async (instance) => {
-      const contentTypes = ['application/json', 'application/x-www-form-urlencoded'];
+    const slackPlugin: FastifyPluginCallback = async instance => {
+      const contentTypes = ["application/json", "application/x-www-form-urlencoded"];
 
       instance.removeContentTypeParser(contentTypes);
-      instance.addContentTypeParser(contentTypes, { parseAs: 'string' }, instance.defaultTextParser);
+      instance.addContentTypeParser(
+        contentTypes,
+        { parseAs: "string" },
+        instance.defaultTextParser
+      );
 
-      instance.post('', (request, reply) => this.requestHandler(request, reply));
+      instance.post("", (request, reply) => this.requestHandler(request, reply));
     };
 
     this.fastify.register(slackPlugin, { prefix: this.path });
   }
 
   async stop() {
-    this.fastify.server.close((err) => {
+    this.fastify.server.close(err => {
       if (err) {
         logger.error("Failed to stop Slack receiver gracefully", {
           error: err,
-        })
+        });
       }
-    })
+    });
   }
 
   async requestHandler(request: FastifyRequest, reply: FastifyReply) {
-
     const req = request.raw;
     const res = reply.raw;
 
@@ -94,7 +93,7 @@ export class FastifySlackReceiver implements Receiver {
             enabled: true,
             signingSecret: this.signingSecret,
           },
-          req,
+          req
         );
       } catch (error) {
         logger.warn("Failed to parse and verify Slack request", {
@@ -121,7 +120,7 @@ export class FastifySlackReceiver implements Receiver {
         return;
       }
 
-      if (body.type === 'url_verification') {
+      if (body.type === "url_verification") {
         boltHelpers.buildUrlVerificationResponse(res, body);
         return;
       }
@@ -144,11 +143,10 @@ export class FastifySlackReceiver implements Receiver {
       };
 
       await this.app?.processEvent(event);
-
     } catch (error) {
       logger.error("Failed to handle Slack request", {
         error,
-      })
+      });
     }
-  };
+  }
 }

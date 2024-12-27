@@ -2,6 +2,7 @@ import { initServer } from "@ts-rest/fastify";
 import { contract } from "../contract";
 import { getIntegrations, upsertIntegrations } from "./integrations";
 import { validateConfig } from "./toolhouse";
+import { BadRequestError } from "../../utilities/errors";
 
 export const integrationsRouter = initServer().router(
   {
@@ -11,6 +12,10 @@ export const integrationsRouter = initServer().router(
   {
     upsertIntegrations: async (request) => {
       const { clusterId } = request.params;
+
+      if (request.body.slack) {
+        throw new BadRequestError("Slack integration details are not editable");
+      }
 
       if (request.body.toolhouse) {
         try {
@@ -48,7 +53,12 @@ export const integrationsRouter = initServer().router(
 
       return {
         status: 200,
-        body: integrations,
+        body: {
+          ...integrations,
+          slack: {
+            sessionToken: "123123"
+          }
+        }
       };
     },
   },

@@ -15,7 +15,7 @@ import * as externalCalls from "./modules/jobs/external";
 import * as models from "./modules/models/routing";
 import { logContext, logger } from "./modules/observability/logger";
 import * as workflows from "./modules/workflows/workflows";
-import * as slack from "./modules/slack";
+import * as slack from "./modules/integrations/slack";
 import { hdx } from "./modules/observability/hyperdx";
 import { pg } from "./modules/data";
 import { addAttributes } from "./modules/observability/tracer";
@@ -29,7 +29,7 @@ const app = fastify({
 
 app.register(auth.plugin);
 
-app.register(initServer().plugin(router.router), (parent) => {
+app.register(initServer().plugin(router.router), parent => {
   return parent;
 });
 
@@ -75,8 +75,8 @@ app.setErrorHandler((error, request, reply) => {
 
   let docsLink;
 
-  if ('docsLink' in error) {
-    docsLink = error.docsLink
+  if ("docsLink" in error) {
+    docsLink = error.docsLink;
   }
 
   return reply.status(statusCode).send({
@@ -111,16 +111,16 @@ app.addHook("onRequest", (request, _reply, done) => {
         method: request.method,
       },
     },
-    done,
+    done
   );
 });
 
-app.addHook('onResponse', async (request, reply) => {
-  if (request.routerPath === '/live' && reply.statusCode >= 400) {
-    logger.warn('Live endpoint returned error', {
+app.addHook("onResponse", async (request, reply) => {
+  if (request.routerPath === "/live" && reply.statusCode >= 400) {
+    logger.warn("Live endpoint returned error", {
       statusCode: reply.statusCode,
-      path: request.url
-    })
+      path: request.url,
+    });
   }
 });
 
@@ -130,11 +130,11 @@ const startTime = Date.now();
   logger.info("Starting server", {
     environment: env.ENVIRONMENT,
     ee: env.EE_DEPLOYMENT,
-    headless: !!env.MANAGEMENT_API_SECRET
+    headless: !!env.MANAGEMENT_API_SECRET,
   });
 
   if (env.ENVIRONMENT === "prod") {
-    await runMigrations()
+    await runMigrations();
 
     logger.info("Database migrated", { latency: Date.now() - startTime });
   }
@@ -150,17 +150,12 @@ const startTime = Date.now();
     toolhouse.start(),
     externalCalls.start(),
     slack.start(app),
-    ...(env.EE_DEPLOYMENT
-      ? [
-          flagsmith?.getEnvironmentFlags(),
-          analytics.start(),
-        ]
-      : []),
+    ...(env.EE_DEPLOYMENT ? [flagsmith?.getEnvironmentFlags(), analytics.start()] : []),
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });
     })
-    .catch((err) => {
+    .catch(err => {
       logger.error("Failed to start dependencies", { error: err });
       process.exit(1);
     });
@@ -202,12 +197,12 @@ process.on("SIGTERM", async () => {
   process.exit(0);
 });
 
-process.on("uncaughtException", (err) => {
+process.on("uncaughtException", err => {
   logger.error("Uncaught exception", { error: err });
   hdx?.recordException(err);
 });
 
-process.on("unhandledRejection", (err) => {
+process.on("unhandledRejection", err => {
   logger.error("Unhandled rejection", { error: err });
   hdx?.recordException(err);
 });
