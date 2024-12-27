@@ -120,22 +120,6 @@ export async function persistJobResult({
       });
     }
 
-    await upsertResultKeys({
-      clusterId: owner.clusterId,
-      service: updateResult[0].service,
-      functionName: updateResult[0].targetFn,
-      result,
-    }).catch(error => {
-      logger.warn("Failed to upsert result keys", {
-        error,
-        jobId,
-        clusterId: owner.clusterId,
-        service: updateResult[0].service,
-        targetFn: updateResult[0].targetFn,
-        result,
-      });
-    });
-
     events.write({
       type: "functionResulted",
       service: updateResult[0]?.service,
