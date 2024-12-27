@@ -13,6 +13,7 @@ import {
   FunctionSquare,
   LucideIcon,
   Search,
+  Slack,
   Trash2,
   Wrench,
   Zap,
@@ -23,7 +24,7 @@ import ErrorDisplay from "@/components/error-display";
 import { revalidatePath } from "next/cache";
 
 type IntegrationConfig = {
-  [K in 'toolhouse' | 'langfuse' | 'tavily' | 'zapier' | 'valtown']: {
+  [K in 'toolhouse' | 'langfuse' | 'tavily' | 'zapier' | 'valtown' | 'slack']: {
     name: string;
     description: string;
     icon: LucideIcon;
@@ -61,6 +62,12 @@ const config: IntegrationConfig = {
     name: "Val.town",
     description: "Register a service with a Val from Val.town",
     icon: FunctionSquare,
+    stage: "alpha",
+  },
+  slack: {
+    name: "Slack",
+    description: "Trigger Runs from your Slack workspace",
+    icon: Slack,
     stage: "alpha",
   },
 };

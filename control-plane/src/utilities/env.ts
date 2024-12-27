@@ -41,6 +41,9 @@ const envSchema = z
     ANTHROPIC_API_KEY: z.string().optional(),
     COHERE_API_KEY: z.string().optional(),
 
+    NANGO_SECRET_KEY: z.string().optional(),
+    NANGO_SLACK_INTEGRATION_ID: z.string().default("slack"),
+
     SLACK_BOT_TOKEN: z.string().optional(),
     SLACK_SIGNING_SECRET: z.string().optional(),
     SLACK_CLUSTER_ID: z.string().optional(),

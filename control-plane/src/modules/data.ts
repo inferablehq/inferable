@@ -204,6 +204,9 @@ export const integrations = pgTable(
     valtown: json("valtown").$type<{
       endpoint: string;
     }>(),
+    slack: json("slack").$type<{
+      nangoConnectionId: string;
+    }>(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

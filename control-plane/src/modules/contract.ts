@@ -80,6 +80,12 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
+  slack: z
+    .object({
+      sessionToken: z.string(),
+    })
+    .optional()
+    .nullable(),
 });
 
 export const genericMessageDataSchema = z
