@@ -20,7 +20,7 @@ type CreateJobParams = {
   pool?: string;
   timeoutIntervalSeconds?: number;
   maxAttempts: number;
-  runId?: string;
+  runId: string;
   authContext?: unknown;
   runContext?: unknown;
 };
