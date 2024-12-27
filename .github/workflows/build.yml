@@ -657,3 +657,11 @@ jobs:
         ROLLBAR_ACCESS_TOKEN: ${{ secrets.CLOUD_ROLLBAR_ACCESS_TOKEN }}
         ROLLBAR_USERNAME: ${{ github.actor }}
         DEPLOY_ID: ${{ steps.rollbar_pre_deploy.outputs.deploy_id }}
+
+  final-step:
+    runs-on: ubuntu-latest
+    needs: ${{ toJson(jobs) }}
+    if: always()
+    steps:
+      - name: Final Step
+        run: echo "All jobs completed"
