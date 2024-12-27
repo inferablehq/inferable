@@ -2,7 +2,7 @@
   "name": "@inferable/control-plane",
   "version": "0.0.0",
   "private": true,
-  "description": "",
+  "description": "Inferable control plane is the backend for the Inferable platform.",
   "scripts": {
     "test": "tsx -r dotenv/config src/utilities/run-migrate.ts && jest src --setupFiles dotenv/config --forceExit --testPathIgnorePatterns=.*\\.ai\\.test\\.ts$ --testMatch='**/*.test.ts'",
     "test:ai:eval": "tsx -r dotenv/config src/modules/workflows/agent/evaluation",
@@ -29,7 +29,6 @@
     "@hyperdx/node-opentelemetry": "^0.8.1",
     "@langchain/cohere": "^0.3.1",
     "@langchain/langgraph": "^0.1.9",
-    "@openapi-contrib/openapi-schema-to-json-schema": "^5.1.0",
     "@slack/bolt": "^4.1.1",
     "@toolhouseai/sdk": "^1.0.4",
     "@ts-rest/core": "^3.27.0",
