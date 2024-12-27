@@ -11,7 +11,8 @@
     "test:watch": "jest --watch",
     "dev": "vite",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "format:check": "prettier --check $(git diff --diff-filter=d --name-only origin/main HEAD | grep -E \"\\.(ts|tsx)$\" || echo \".\") || exit 0"
+    "format:check": "prettier --check $(git diff --diff-filter=d --name-only origin/main HEAD | grep -E \"\\.(ts|tsx)$\" || echo \".\") || exit 0",
+    "prepublishOnly": "npm run clean && npm run format:check && npm run test && npm run build"
   },
   "author": "Inferable, Inc.",
   "license": "MIT",
