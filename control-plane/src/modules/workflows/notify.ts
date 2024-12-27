@@ -3,22 +3,25 @@ import * as jobs from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { getRunMetadata } from "./metadata";
-import { Run } from "./workflows";
+import { getClusterBackgroundRun, Run } from "./workflows";
 import { workflowMessages } from "../data";
 import * as slack from "../slack";
 
-export const notifyNewMessage = async ({ message, metadata }: {
+export const notifyNewMessage = async ({
+  message,
+  metadata,
+}: {
   message: {
     id: string;
     clusterId: string;
     runId: string;
     type: InferSelectModel<typeof workflowMessages>["type"];
     data: InferSelectModel<typeof workflowMessages>["data"];
-  },
+  };
   metadata?: Record<string, string>;
 }) => {
   await slack.handleNewRunMessage({ message, metadata });
-}
+};
 
 export const notifyStatusChange = async ({
   run,
@@ -54,6 +57,7 @@ export const notifyStatusChange = async ({
         owner: {
           clusterId: run.clusterId,
         },
+        runId: getClusterBackgroundRun(run.clusterId),
       });
       logger.info("Created job with run result", {
         jobId: id,

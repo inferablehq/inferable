@@ -5,6 +5,7 @@ import { getJobStatusSync } from "../jobs/jobs";
 import { getServiceDefinition } from "../service-definitions";
 import { createCache, hashFromSecret } from "../../utilities/cache";
 import { getClusterDetails } from "../management";
+import { getClusterBackgroundRun } from "../workflows/workflows";
 
 const customAuthContextCache = createCache<{
   service: string;
@@ -74,6 +75,7 @@ export const verify = async ({
       owner: {
         clusterId,
       },
+      runId: getClusterBackgroundRun(clusterId),
     });
 
     const result = await getJobStatusSync({

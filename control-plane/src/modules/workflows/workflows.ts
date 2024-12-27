@@ -524,6 +524,15 @@ export const createRunWithMessage = async ({
   return workflow;
 };
 
+/**
+ * A background run allows calls that are not associated with a specific run to have a home.
+ * @param clusterId - The cluster ID
+ * @returns A unique ID for the background run
+ */
+export const getClusterBackgroundRun = (clusterId: string) => {
+  return `${clusterId}BACKGROUND`;
+};
+
 export const assertRunReady = async (input: { runId: string; clusterId: string }) => {
   const run = await getRun(input);
   if (!run) {

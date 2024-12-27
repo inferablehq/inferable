@@ -1,16 +1,9 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { ulid } from "ulid";
-import {
-  InvalidJobArgumentsError,
-  NotFoundError,
-} from "../../utilities/errors";
+import { InvalidJobArgumentsError, NotFoundError } from "../../utilities/errors";
 import * as data from "../data";
 import * as events from "../observability/events";
-import {
-  FunctionConfig,
-  getServiceDefinition,
-  parseJobArgs,
-} from "../service-definitions";
+import { FunctionConfig, getServiceDefinition, parseJobArgs } from "../service-definitions";
 import { extractWithJsonPath } from "../util";
 import { env } from "../../utilities/env";
 import { injectTraceContext } from "../observability/tracer";
@@ -41,7 +34,7 @@ const extractCacheKeyFromJsonPath = (path: string, args: unknown) => {
     if (error instanceof NotFoundError) {
       throw new InvalidJobArgumentsError(
         `Failed to extract cache key from arguments: ${error.message}`,
-        "https://docs.inferable.ai/pages/functions#config-cache",
+        "https://docs.inferable.ai/pages/functions#config-cache"
       );
     }
     throw error;
@@ -53,7 +46,7 @@ export const createJob = async (params: {
   targetFn: string;
   targetArgs: string;
   owner: { clusterId: string };
-  runId?: string;
+  runId: string;
   authContext?: unknown;
   runContext?: unknown;
   schemaUnavailableRetryCount?: number;
@@ -68,19 +61,18 @@ export const createJob = async (params: {
   });
 
   const { config, schema } =
-    serviceDefinition?.functions?.find((f) => f.name === params.targetFn) ?? {};
+    serviceDefinition?.functions?.find(f => f.name === params.targetFn) ?? {};
 
   // sometimes the schema is not available immediately after the service is
   // registered, so we retry a few times
   if (!schema && (params.schemaUnavailableRetryCount ?? 0) < 3) {
     // wait for the service to be available
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // retry
     return createJob({
       ...params,
-      schemaUnavailableRetryCount:
-        (params.schemaUnavailableRetryCount ?? 0) + 1,
+      schemaUnavailableRetryCount: (params.schemaUnavailableRetryCount ?? 0) + 1,
     });
   }
 
@@ -91,8 +83,7 @@ export const createJob = async (params: {
 
   const jobConfig = {
     timeoutIntervalSeconds: config?.timeoutSeconds,
-    maxAttempts:
-      (config?.retryCountOnStall ?? DEFAULT_RETRY_COUNT_ON_STALL) + 1,
+    maxAttempts: (config?.retryCountOnStall ?? DEFAULT_RETRY_COUNT_ON_STALL) + 1,
     jobId: params.toolCallId ?? ulid(),
   };
 
@@ -181,11 +172,8 @@ const createJobStrategies = {
           eq(data.jobs.target_fn, targetFn),
           eq(data.jobs.status, "success"),
           eq(data.jobs.result_type, "resolution"),
-          gte(
-            data.jobs.resulted_at,
-            new Date(Date.now() - cacheTTLSeconds * 1000),
-          ),
-        ),
+          gte(data.jobs.resulted_at, new Date(Date.now() - cacheTTLSeconds * 1000))
+        )
       )
       .orderBy(desc(data.jobs.resulted_at))
       .limit(1);
@@ -282,7 +270,7 @@ const onAfterJobCreated = async ({
           ...injectTraceContext(),
         }),
       })
-      .catch((e) => {
+      .catch(e => {
         logger.error("Failed to send external call to SQS", { error: e });
       });
   }

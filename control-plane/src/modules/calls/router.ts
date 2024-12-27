@@ -8,6 +8,7 @@ import { createBlob } from "../blobs";
 import { logger } from "../observability/logger";
 import { recordServicePoll } from "../service-definitions";
 import { getJob } from "../jobs/jobs";
+import { getClusterBackgroundRun, resumeRun } from "../workflows/workflows";
 
 export const callsRouter = initServer().router(
   {
@@ -19,7 +20,7 @@ export const callsRouter = initServer().router(
     createCallApproval: contract.createCallApproval,
   },
   {
-    createCall: async (request) => {
+    createCall: async request => {
       const { clusterId } = request.params;
 
       const auth = request.request.getAuth();
@@ -35,6 +36,7 @@ export const callsRouter = initServer().router(
         targetFn: fn,
         targetArgs: packer.pack(input),
         owner: { clusterId },
+        runId: getClusterBackgroundRun(clusterId),
       });
 
       if (!waitTime || waitTime <= 0) {
@@ -73,7 +75,7 @@ export const callsRouter = initServer().router(
         },
       };
     },
-    createCallResult: async (request) => {
+    createCallResult: async request => {
       const { clusterId, callId } = request.params;
       let { result, resultType } = request.body;
       const { meta } = request.body;
@@ -119,14 +121,13 @@ export const callsRouter = initServer().router(
         if (Buffer.byteLength(data) > 500 * 1024) {
           logger.info("Call result too large, persisting as blob", {
             callId,
-          })
+          });
 
           const call = await getJob({ clusterId, jobId: callId });
 
           if (!call) {
             throw new NotFoundError("Call not found");
           }
-
 
           await createBlob({
             data: data.toString("base64"),
@@ -155,7 +156,7 @@ export const callsRouter = initServer().router(
           sdkLanguage: request.headers["x-machine-sdk-language"],
           xForwardedFor: request.headers["x-forwarded-for"],
           ip: request.request.ip,
-        }).catch((e) => {
+        }).catch(e => {
           // don't fail the request if the machine upsert fails
 
           logger.error("Failed to upsert machine", {
@@ -177,7 +178,7 @@ export const callsRouter = initServer().router(
         body: undefined,
       };
     },
-    listCalls: async (request) => {
+    listCalls: async request => {
       const { clusterId } = request.params;
       const { service, limit, acknowledge, status } = request.query;
 
@@ -235,7 +236,7 @@ export const callsRouter = initServer().router(
 
       return {
         status: 200,
-        body: pollResult.map((job) => ({
+        body: pollResult.map(job => ({
           id: job.id,
           function: job.targetFn,
           input: packer.unpack(job.targetArgs),
@@ -245,7 +246,7 @@ export const callsRouter = initServer().router(
         })),
       };
     },
-    createCallBlob: async (request) => {
+    createCallBlob: async request => {
       const { callId, clusterId } = request.params;
       const body = request.body;
 
@@ -275,7 +276,7 @@ export const callsRouter = initServer().router(
         body: blob,
       };
     },
-    getCall: async (request) => {
+    getCall: async request => {
       const { clusterId, callId } = request.params;
 
       const auth = request.request.getAuth();
@@ -303,7 +304,7 @@ export const callsRouter = initServer().router(
         body: call,
       };
     },
-    createCallApproval: async (request) => {
+    createCallApproval: async request => {
       const { clusterId, callId } = request.params;
 
       const auth = request.request.getAuth();
@@ -331,5 +332,5 @@ export const callsRouter = initServer().router(
         body: undefined,
       };
     },
-  },
+  }
 );

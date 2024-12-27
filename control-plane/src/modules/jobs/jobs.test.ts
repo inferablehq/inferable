@@ -2,19 +2,10 @@ import { ulid } from "ulid";
 import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
-import {
-  createJob,
-  pollJobs,
-  getJob,
-  requestApproval,
-  submitApproval,
-} from "./jobs";
-import {
-  acknowledgeJob,
-  persistJobResult,
-  selfHealJobs,
-} from "./persist-result";
+import { createJob, pollJobs, getJob, requestApproval, submitApproval } from "./jobs";
+import { acknowledgeJob, persistJobResult, selfHealJobs } from "./persist-result";
 import * as redis from "../redis";
+import { getClusterBackgroundRun } from "../workflows/workflows";
 
 const mockTargetFn = "testTargetFn";
 const mockTargetArgs = packer.pack({ test: "test" });
@@ -51,6 +42,7 @@ describe("createJob", () => {
       targetArgs: mockTargetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     expect(result.id).toBeDefined();
@@ -93,6 +85,7 @@ describe("selfHealJobs", () => {
       targetArgs: mockTargetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     expect(createJobResult.id).toBeDefined();
@@ -108,7 +101,7 @@ describe("selfHealJobs", () => {
     expect(acknowledged).toBeDefined();
 
     // wait for the job to timeout
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
     const healedJobs = await selfHealJobs();
@@ -150,6 +143,7 @@ describe("selfHealJobs", () => {
       targetArgs: mockTargetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     expect(createJobResult.id).toBeDefined();
@@ -161,7 +155,7 @@ describe("selfHealJobs", () => {
     });
 
     // wait for the job to timeout
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
     const healedJobs = await selfHealJobs();
@@ -204,6 +198,7 @@ describe("selfHealJobs", () => {
       targetArgs: mockTargetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     // acknowledge the job, so that it moves to running state
@@ -216,7 +211,7 @@ describe("selfHealJobs", () => {
     expect(acknowledged).toBeDefined();
 
     // wait for the job to timeout
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
     const healedJobs = await selfHealJobs();
@@ -256,6 +251,7 @@ describe("selfHealJobs", () => {
       owner,
       service: "testService",
       toolCallId,
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     expect(createJobResult1.id).toBeDefined();
@@ -267,6 +263,7 @@ describe("selfHealJobs", () => {
       owner,
       service: "testService",
       toolCallId,
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     expect(createJobResult2.id).toBe(createJobResult1.id);
@@ -301,6 +298,7 @@ describe("selfHealJobs", () => {
       targetArgs: mockTargetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     await acknowledgeJob({
@@ -325,6 +323,7 @@ describe("selfHealJobs", () => {
       targetArgs: mockTargetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     expect(createJobResult2.id).toBe(createJobResult1.id);
@@ -367,6 +366,7 @@ describe("pollJobs", () => {
       targetArgs: mockTargetArgs,
       owner,
       service,
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     const result = await pollJobs({
@@ -403,6 +403,7 @@ describe("pollJobs", () => {
       targetArgs: mockTargetArgs,
       owner,
       service,
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     const poll = () =>
@@ -417,9 +418,7 @@ describe("pollJobs", () => {
       ...Array(50)
         .fill(0)
         .map(async () => {
-          await new Promise((resolve) =>
-            setTimeout(resolve, Math.random() * 10)
-          );
+          await new Promise(resolve => setTimeout(resolve, Math.random() * 10));
           return poll();
         }),
     ]);
@@ -456,6 +455,7 @@ describe("submitApproval", () => {
       targetArgs: mockTargetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     expect(result.id).toBeDefined();
@@ -511,6 +511,7 @@ describe("submitApproval", () => {
       targetArgs: mockTargetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     expect(result.id).toBeDefined();

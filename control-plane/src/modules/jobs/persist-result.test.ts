@@ -4,6 +4,7 @@ import { createOwner } from "../test/util";
 import { createJob, getJobStatusSync, persistJobResult } from "./jobs";
 import { acknowledgeJob, selfHealJobs } from "./persist-result";
 import * as redis from "../redis";
+import { getClusterBackgroundRun } from "../workflows/workflows";
 
 jest.mock("../service-definitions", () => ({
   ...jest.requireActual("../service-definitions"),
@@ -29,6 +30,7 @@ describe("persistJobResult", () => {
       targetArgs,
       owner,
       service: "testService",
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     // last ping will be now
@@ -90,6 +92,7 @@ describe("persistJobResult", () => {
       targetArgs,
       owner,
       service,
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     await upsertMachine({
@@ -110,17 +113,15 @@ describe("persistJobResult", () => {
     const machineStallTimeout = 1;
 
     // wait 1s for the machine to stall
-    await new Promise((resolve) =>
-      setTimeout(resolve, machineStallTimeout * 1000),
-    );
+    await new Promise(resolve => setTimeout(resolve, machineStallTimeout * 1000));
 
     // self heal jobs with machine stall timeout of 1s
     const healedJobs = await selfHealJobs({ machineStallTimeout });
 
     expect(
       healedJobs.stalledMachines.some(
-        (x) => x.id === "testMachineId" && x.clusterId === owner.clusterId,
-      ),
+        x => x.id === "testMachineId" && x.clusterId === owner.clusterId
+      )
     ).toBe(true);
     expect(healedJobs.stalledRecovered).toContain(createJobResult.id);
   });
@@ -136,6 +137,7 @@ describe("persistJobResult", () => {
       targetArgs,
       owner,
       service,
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     // last ping will be now
@@ -187,6 +189,7 @@ describe("persistJobResult", () => {
       targetArgs,
       owner,
       service,
+      runId: getClusterBackgroundRun(owner.clusterId),
     });
 
     // last ping will be now
