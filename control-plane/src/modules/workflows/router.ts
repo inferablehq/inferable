@@ -73,15 +73,6 @@ export const runsRouter = initServer().router(
       await auth.canAccess({ cluster: { clusterId } });
       auth.canCreate({ run: true });
 
-      if (!body.initialPrompt && !body.configId) {
-        return {
-          status: 400,
-          body: {
-            message: "initialPrompt or configId is required to create a workflow",
-          },
-        };
-      }
-
       if (body.attachedFunctions && body.attachedFunctions.length == 0) {
         return {
           status: 400,
