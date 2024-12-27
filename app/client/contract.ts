@@ -80,6 +80,13 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
+  slack: z
+    .object({
+      nangoSessionToken: z.string().optional().nullable(),
+      nangoConnectionId: z.string().optional().nullable(),
+    })
+    .optional()
+    .nullable(),
 });
 
 export const genericMessageDataSchema = z
@@ -470,6 +477,16 @@ export const definition = {
       authorization: z.string(),
     }),
     body: z.object({
+      runId: z
+        .string()
+        .optional()
+        .describe(
+          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given"
+        )
+        .refine(
+          val => !val || /^[0-9A-Z]{26}$/.test(val),
+          "Run ID must be a valid ULID (26 uppercase alphanumeric characters)"
+        ),
       initialPrompt: z
         .string()
         .optional()

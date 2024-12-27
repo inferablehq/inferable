@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, integrations } from "../data";
 import { integrationSchema } from "./schema";
-import { tavilyIntegration, valtownIntegration, toolhouseIntegration, slackIntegration } from "./constants";
+import { tavilyIntegration, valtownIntegration, toolhouseIntegration } from "./constants";
 import { tavily } from "./tavily";
 import { toolhouse } from "./toolhouse";
 import { valtown } from "./valtown";
@@ -73,7 +73,9 @@ export const upsertIntegrations = async ({
     });
 
   await Promise.all(
-    Object.entries(config).map(([key, value]) => {
+    Object.entries(config)
+      .filter(([key]) => toolProviders[key as keyof typeof toolProviders])
+      .map(([key, value]) => {
       if (value) {
         return getToolProvider(key)?.onActivate?.(clusterId, config);
       } else if (value === null) {

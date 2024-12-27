@@ -4,6 +4,7 @@ import {
   langfuseIntegration,
   tavilyIntegration,
   valtownIntegration,
+  slackIntegration,
 } from "./constants";
 
 export const integrationSchema = z.object({
@@ -31,6 +32,14 @@ export const integrationSchema = z.object({
   [valtownIntegration]: z
     .object({
       endpoint: z.string().url(),
+    })
+    .optional()
+    .nullable(),
+  [slackIntegration]: z
+    .object({
+      nangoConnectionId: z.string(),
+      botUserId: z.string(),
+      teamId: z.string(),
     })
     .optional()
     .nullable(),

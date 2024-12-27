@@ -1380,6 +1380,13 @@
       "when": 1735130489381,
       "tag": "0197_jazzy_solo",
       "breakpoints": true
+    },
+    {
+      "idx": 198,
+      "version": "7",
+      "when": 1735276048829,
+      "tag": "0198_daily_smasher",
+      "breakpoints": true
     }
   ]
 }

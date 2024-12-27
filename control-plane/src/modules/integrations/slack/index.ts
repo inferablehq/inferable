@@ -4,11 +4,12 @@ import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
 import { logger } from "../../observability/logger";
 import { getRunsByMetadata } from "../../workflows/metadata";
-import { addMessageAndResume, createRunWithMessage, Run } from "../../workflows/workflows";
+import { addMessageAndResume, createRunWithMessage } from "../../workflows/workflows";
 import { AuthenticationError } from "../../../utilities/errors";
 import { ulid } from "ulid";
-import { InferSelectModel } from "drizzle-orm";
-import { workflowMessages } from "../../data";
+import { eq, InferSelectModel, sql } from "drizzle-orm";
+import { db, integrations, workflowMessages } from "../../data";
+import { nango } from "../nango";
 
 let app: App | undefined;
 
@@ -24,7 +25,6 @@ type MessageEvent = {
 export const handleNewRunMessage = async ({
   message,
   metadata,
-  client = app?.client,
 }: {
   message: {
     id: string;
@@ -34,7 +34,6 @@ export const handleNewRunMessage = async ({
     data: InferSelectModel<typeof workflowMessages>["data"];
   };
   metadata?: Record<string, string>;
-  client?: webApi.WebClient;
 }) => {
   if (message.type !== "agent") {
     return;
@@ -43,6 +42,18 @@ export const handleNewRunMessage = async ({
   if (!metadata?.[THREAD_META_KEY] || !metadata?.[CHANNEL_META_KEY]) {
     return;
   }
+
+  const integration = await getIntegrationForClusterId(message.clusterId);
+  if (!integration || !integration.slack) {
+    throw new Error(`Could not find Slack integration for cluster: ${message.clusterId}`);
+  }
+
+  const token = await getAccessToken(integration.slack.nangoConnectionId);
+  if (!token) {
+    throw new Error(`Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`);
+  }
+
+  const client = new webApi.WebClient(token)
 
   if ("message" in message.data && message.data.message) {
     client?.chat.postMessage({
@@ -57,20 +68,38 @@ export const handleNewRunMessage = async ({
 };
 
 export const start = async (fastify: FastifyInstance) => {
-  const SLACK_CLUSTER_ID = env.SLACK_CLUSTER_ID;
-  const SLACK_BOT_TOKEN = env.SLACK_BOT_TOKEN;
   const SLACK_SIGNING_SECRET = env.SLACK_SIGNING_SECRET;
 
-  if (!SLACK_CLUSTER_ID || !SLACK_BOT_TOKEN || !SLACK_SIGNING_SECRET) {
+  if (!SLACK_SIGNING_SECRET) {
     logger.info("Missing Slack environment variables. Skipping Slack integration.");
     return;
   }
 
   app = new App({
-    token: env.SLACK_BOT_TOKEN,
+    authorize: async ({ teamId, enterpriseId }) => {
+      if (!teamId) {
+        logger.warn("Slack event is missing teamId");
+        throw new Error("Slack event is missing teamId");
+      }
+      const integration = await getIntegrationForTeamId(teamId);
+
+      if (!integration || !integration.slack) {
+        logger.warn("Could not find Slack integration for teamId", {
+          teamId
+        });
+        throw new Error("Could not find Slack integration for teamId");
+      }
+
+      return {
+        teamId,
+        enterpriseId,
+        botUserId: integration.slack.botUserId,
+        botToken: await getAccessToken(integration.slack.nangoConnectionId),
+      }
+    },
     receiver: new FastifySlackReceiver({
       signingSecret: SLACK_SIGNING_SECRET,
-      path: "/triggers/slack",
+      path: "/integrations/slack",
       fastify,
     }),
   });
@@ -88,7 +117,7 @@ export const start = async (fastify: FastifyInstance) => {
   });
 
   // Event listener for direct messages
-  app.event("message", async ({ event, client }) => {
+  app.event("message", async ({ event, client, context }) => {
     logger.info("Received message event. Responding.", event);
 
     if (isBotMessage(event)) {
@@ -101,23 +130,33 @@ export const start = async (fastify: FastifyInstance) => {
       return;
     }
 
-    try {
-      await authenticateUser({
-        event,
-        client,
-      });
+    const teamId = context.teamId
 
+    if (!teamId) {
+      logger.warn("Received message without teamId. Ignoring.");
+      return;
+    }
+
+    const integration = await getIntegrationForTeamId(teamId);
+    if (!integration) {
+      logger.warn("Could not Slack integration for teamId.", {
+        teamId,
+      });
+      return;
+    }
+
+    try {
       if (hasThread(event)) {
         await handleExistingThread({
           event,
           client,
-          clusterId: SLACK_CLUSTER_ID,
+          clusterId: integration.cluster_id,
         });
       } else {
         await handleNewThread({
           event,
           client,
-          clusterId: SLACK_CLUSTER_ID,
+          clusterId: integration.cluster_id,
         });
       }
     } catch (error) {
@@ -125,7 +164,7 @@ export const start = async (fastify: FastifyInstance) => {
         client.chat.postMessage({
           thread_ts: event.ts,
           channel: event.channel,
-          text: `Sorry, I am having trouble authenticating you.\n\nPlease ensure your Inferable account has access to cluster <${env.APP_ORIGIN}/clusters/${SLACK_CLUSTER_ID}|${SLACK_CLUSTER_ID}>.`,
+          text: `Sorry, I am having trouble authenticating you.\n\nPlease ensure your Inferable account has access to cluster <${env.APP_ORIGIN}/clusters/${integration}|${integration}>.`,
         });
         return;
       }
@@ -144,16 +183,46 @@ const hasThread = (e: any): e is { thread_ts: string } => {
   return typeof e?.thread_ts === "string";
 };
 
-const hasUser = (e: any): e is { user: string } => {
-  return typeof e?.user === "string";
-};
-
 const isDirectMessage = (e: KnownEventFromType<"message">): boolean => {
   return e.channel_type === "im";
 };
 
-const isBotMessage = (e: KnownEventFromType<"message">): boolean => {
-  return e.subtype === "bot_message";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isBotMessage = (e: any): boolean => {
+  return typeof e?.bot_id === "string";
+};
+
+const getIntegrationForTeamId = async (teamId: string) => {
+  const [result] = await db.select({
+    cluster_id: integrations.cluster_id,
+    slack: integrations.slack,
+  })
+    .from(integrations)
+    .where(sql`slack->>'teamId' = ${teamId}`);
+
+  return result;
+};
+
+const getIntegrationForClusterId = async (clusterId: string) => {
+  const [result] = await db.select({
+    cluster_id: integrations.cluster_id,
+    slack: integrations.slack,
+  })
+    .from(integrations)
+    .where(
+      eq(integrations.cluster_id, clusterId)
+    );
+
+  return result;
+};
+
+
+const getAccessToken = async (connectionId: string) => {
+  if (!nango) {
+    throw new Error("Nango is not configured");
+  }
+
+  return await nango.getToken(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
 };
 
 const handleNewThread = async ({ event, client, clusterId }: MessageEvent) => {
@@ -223,34 +292,4 @@ const handleExistingThread = async ({ event, client, clusterId }: MessageEvent) 
   }
 
   throw new Error("Event had no text");
-};
-
-export const authenticateUser = async ({
-  event,
-  client,
-  authorizedUsers = env.SLACK_AUTHORIZED_USER_EMAILS ?? [],
-}: {
-  event: KnownEventFromType<"message">;
-  client: webApi.WebClient;
-  authorizedUsers?: string[];
-}) => {
-  if (hasUser(event)) {
-    const user = await client.users.info({
-      user: event.user,
-      token: env.SLACK_BOT_TOKEN,
-    });
-
-    const confirmed = user.user?.is_email_confirmed;
-    const email = user.user?.profile?.email;
-
-    logger.info("Authenticated Slack user", { email, authorizedUsers });
-    // TODO: Verify user in Clerk, for now check env
-    if (!confirmed || !email || !authorizedUsers.includes(email)) {
-      throw new AuthenticationError("Could not authenticate Slack user");
-    }
-
-    return true;
-  }
-
-  throw new Error("Event had no user");
 };

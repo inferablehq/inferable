@@ -1,15 +1,33 @@
 import { Nango } from "@nangohq/node";
 import { env } from "../../../utilities/env";
+import { z } from "zod";
 
-const nango = env.NANGO_SECRET_KEY && new Nango({ secretKey: env.NANGO_SECRET_KEY });
+export const nango = env.NANGO_SECRET_KEY && new Nango({ secretKey: env.NANGO_SECRET_KEY });
+
+export const webhookSchema = z.object({
+  connectionId: z.string(),
+  providerConfigKey: z.string(),
+  provider: z.string(),
+  operation: z.string(),
+  success: z.boolean(),
+  endUser: z.object({
+    endUserId: z.string(),
+  })
+})
+
+export const slackConnectionSchema = z.object({
+  connection_config: z.object({
+    "team.id": z.string(),
+    "bot_user_id": z.string(),
+  }),
+})
+
 
 export const getSession = async ({
-  userId,
-  organizationId,
+  clusterId,
   integrationId,
 }: {
-  userId: string;
-  organizationId: string;
+  clusterId: string;
   integrationId: string;
 }) => {
   if (!nango) {
@@ -18,10 +36,7 @@ export const getSession = async ({
 
   const res = await nango?.createConnectSession({
     end_user: {
-      id: userId,
-    },
-    organization: {
-      id: organizationId,
+      id: clusterId,
     },
     allowed_integrations: [integrationId],
   });

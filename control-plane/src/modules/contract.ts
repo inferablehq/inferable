@@ -82,7 +82,8 @@ export const integrationSchema = z.object({
     .nullable(),
   slack: z
     .object({
-      sessionToken: z.string(),
+      nangoSessionToken: z.string().optional().nullable(),
+      nangoConnectionId: z.string().optional().nullable(),
     })
     .optional()
     .nullable(),
@@ -1486,6 +1487,15 @@ export const definition = {
         }),
         refreshedAt: z.number(),
       }),
+    },
+  },
+  nangoWebhook: {
+    method: "POST",
+    path: "/integrations/nango",
+    headers: z.object({ "x-nango-signature": z.string() }),
+    body: z.object({}).passthrough(),
+    responses: {
+      200: z.undefined(),
     },
   },
 } as const;
