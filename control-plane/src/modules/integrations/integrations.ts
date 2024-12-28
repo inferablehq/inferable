@@ -9,7 +9,7 @@ import { valtown } from "./valtown";
 import { slack } from "./slack";
 import { InstallableIntegration } from "./types";
 
-const installableIntegrations: Record<string, InstallableIntegration> = {
+const installables: Record<string, InstallableIntegration> = {
   [toolhouseIntegration]: toolhouse,
   [tavilyIntegration]: tavily,
   [valtownIntegration]: valtown,
@@ -17,11 +17,11 @@ const installableIntegrations: Record<string, InstallableIntegration> = {
 };
 
 export function getInstallables(tool: string) {
-  if (!installableIntegrations[tool as keyof typeof installableIntegrations]) {
+  if (!installables[tool as keyof typeof installables]) {
     throw new Error(`Unknown tool provider integration requested: ${tool}`);
   }
 
-  return installableIntegrations[tool as keyof typeof installableIntegrations];
+  return installables[tool as keyof typeof installables];
 }
 
 export const getIntegrations = async ({
@@ -78,7 +78,7 @@ export const upsertIntegrations = async ({
 
   await Promise.all(
     Object.entries(config)
-      .filter(([key]) => installableIntegrations[key as keyof typeof installableIntegrations])
+      .filter(([key]) => installables[key as keyof typeof installables])
       .map(([key, value]) => {
       if (value) {
         return getInstallables(key)?.onActivate?.(clusterId, config);
