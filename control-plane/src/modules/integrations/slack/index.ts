@@ -7,12 +7,13 @@ import { getRunsByMetadata } from "../../workflows/metadata";
 import { addMessageAndResume, createRunWithMessage } from "../../workflows/workflows";
 import { AuthenticationError } from "../../../utilities/errors";
 import { ulid } from "ulid";
-import { eq, InferSelectModel, sql } from "drizzle-orm";
+import { and, eq, InferSelectModel, ne, sql } from "drizzle-orm";
 import { db, integrations, workflowMessages } from "../../data";
 import { nango } from "../nango";
 import { InstallableIntegration } from "../types";
 import { integrationSchema } from "../schema";
 import { z } from "zod";
+import { upsertIntegrations } from "../integrations";
 
 let app: App | undefined;
 
@@ -29,15 +30,48 @@ export const slack: InstallableIntegration = {
   name: "slack",
   onDeactivate: async (
     clusterId: string,
-    newConfig: z.infer<typeof integrationSchema>,
-    existingConfig: z.infer<typeof integrationSchema>
+    _: z.infer<typeof integrationSchema>,
+    prevConfig: z.infer<typeof integrationSchema>
   ) => {
-    if (!existingConfig.slack?.nangoConnectionId) {
+    if (!prevConfig.slack || !prevConfig.slack?.nangoConnectionId) {
       logger.warn("Can not uninstall Slack integration with no connection id")
+      return
     }
-    await uninstall(clusterId, existingConfig.slack!.nangoConnectionId);
+    // Cleanup the Nango connection
+    await deleteNangoConnection(clusterId, prevConfig.slack.nangoConnectionId);
   },
-  onActivate: async () => {},
+  onActivate: async (clusterId: string, newConfig: z.infer<typeof integrationSchema>) => {
+    if (!newConfig.slack || !newConfig.slack?.nangoConnectionId) {
+      logger.warn("Can not install Slack integration with no connection id")
+      return
+    }
+
+    // If another cluster is connected with this teamId, remove it
+    const [conflict] = await db.select({
+      cluster_id: integrations.cluster_id,
+      slack: integrations.slack,
+    })
+      .from(integrations)
+      .where(
+        and(
+          sql`slack->>'teamId' = ${newConfig.slack.teamId}`,
+          ne(integrations.cluster_id, clusterId)
+        ));
+
+    if (conflict) {
+      logger.info("Removing conflicting Slack integration", {
+        teamId: newConfig.slack.teamId,
+        conflictClusterId: conflict.cluster_id,
+      });
+
+      await upsertIntegrations({
+        clusterId: conflict.cluster_id,
+        config: {
+          slack: null,
+        }
+      })
+    }
+  },
   handleCall: async () => {
     logger.warn("Slack integration does not support calls");
   },
@@ -64,7 +98,7 @@ export const handleNewRunMessage = async ({
     return;
   }
 
-  const integration = await getIntegrationForClusterId(message.clusterId);
+  const integration = await integrationByCluster(message.clusterId);
   if (!integration || !integration.slack) {
     throw new Error(`Could not find Slack integration for cluster: ${message.clusterId}`);
   }
@@ -102,7 +136,7 @@ export const start = async (fastify: FastifyInstance) => {
         logger.warn("Slack event is missing teamId");
         throw new Error("Slack event is missing teamId");
       }
-      const integration = await getIntegrationForTeamId(teamId);
+      const integration = await integrationByTeam(teamId);
 
       if (!integration || !integration.slack) {
         logger.warn("Could not find Slack integration for teamId", {
@@ -163,7 +197,7 @@ export const start = async (fastify: FastifyInstance) => {
       return;
     }
 
-    const integration = await getIntegrationForTeamId(teamId);
+    const integration = await integrationByTeam(teamId);
     if (!integration) {
       logger.warn("Could not Slack integration for teamId.", {
         teamId,
@@ -218,7 +252,7 @@ const isBotMessage = (e: any): boolean => {
   return typeof e?.bot_id === "string";
 };
 
-const getIntegrationForTeamId = async (teamId: string) => {
+const integrationByTeam = async (teamId: string) => {
   const [result] = await db.select({
     cluster_id: integrations.cluster_id,
     slack: integrations.slack,
@@ -229,7 +263,7 @@ const getIntegrationForTeamId = async (teamId: string) => {
   return result;
 };
 
-const getIntegrationForClusterId = async (clusterId: string) => {
+const integrationByCluster = async (clusterId: string) => {
   const [result] = await db.select({
     cluster_id: integrations.cluster_id,
     slack: integrations.slack,
@@ -256,7 +290,7 @@ const getAccessToken = async (connectionId: string) => {
   return result;
 };
 
-const uninstall = async (clusterId: string, connectionId: string) => {
+const deleteNangoConnection = async (clusterId: string, connectionId: string) => {
   if (!nango) {
     throw new Error("Nango is not configured");
   }
