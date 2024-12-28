@@ -33,16 +33,23 @@ export const slack: InstallableIntegration = {
     _: z.infer<typeof integrationSchema>,
     prevConfig: z.infer<typeof integrationSchema>
   ) => {
-    if (!prevConfig.slack || !prevConfig.slack?.nangoConnectionId) {
-      logger.warn("Can not uninstall Slack integration with no connection id")
+    logger.info("Deactivating Slack integration", {
+      clusterId
+    })
+    if (!prevConfig.slack) {
+      logger.warn("Can not deactivate Slack integration with no config")
       return
     }
     // Cleanup the Nango connection
     await deleteNangoConnection(clusterId, prevConfig.slack.nangoConnectionId);
   },
-  onActivate: async (clusterId: string, newConfig: z.infer<typeof integrationSchema>) => {
-    if (!newConfig.slack || !newConfig.slack?.nangoConnectionId) {
-      logger.warn("Can not install Slack integration with no connection id")
+  onActivate: async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
+    logger.info("Activating Slack integration", {
+      clusterId,
+    })
+
+    if (!config.slack) {
+      logger.warn("Can not activate Slack integration with no config")
       return
     }
 
@@ -54,13 +61,13 @@ export const slack: InstallableIntegration = {
       .from(integrations)
       .where(
         and(
-          sql`slack->>'teamId' = ${newConfig.slack.teamId}`,
+          sql`slack->>'teamId' = ${config.slack.teamId}`,
           ne(integrations.cluster_id, clusterId)
         ));
 
     if (conflict) {
       logger.info("Removing conflicting Slack integration", {
-        teamId: newConfig.slack.teamId,
+        teamId: config.slack.teamId,
         conflictClusterId: conflict.cluster_id,
       });
 
