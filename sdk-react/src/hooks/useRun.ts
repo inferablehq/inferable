@@ -4,6 +4,7 @@ import { contract } from "../contract";
 import { createApiClient } from "../createClient";
 import { useInterval } from "./useInterval";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 /** Authentication options for using cluster-based authentication */
 type AuthOptionsCluster = {
@@ -106,7 +107,9 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
         .createRun({
           body: {
             runId,
-            resultSchema: options.resultSchema as any,
+            ...(options.resultSchema
+              ? { resultSchema: zodToJsonSchema(options.resultSchema) }
+              : {}),
           },
           params: {
             clusterId: options.clusterId,
