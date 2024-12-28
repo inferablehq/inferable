@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { contract } from "../contract";
 import { createApiClient } from "../createClient";
 import { useInterval } from "./useInterval";
+import { z } from "zod";
 
 /** Authentication options for using cluster-based authentication */
 type AuthOptionsCluster = {
@@ -22,7 +23,7 @@ type AuthOptionsCustom = {
 type AuthOptions = AuthOptionsCluster | AuthOptionsCustom;
 
 /** Configuration options for the useRun hook */
-type UseRunOptions = {
+type UseRunOptions<T extends z.ZodObject<any>> = {
   /** Optional existing run ID. If not provided, a new run will be created */
   runId?: string;
   /** ID of the cluster to connect to */
@@ -35,6 +36,8 @@ type UseRunOptions = {
   onError?: (error: Error) => void;
   /** Optional pre-configured API client instance */
   apiClient?: ReturnType<typeof createApiClient>;
+  /** Optional result schema for the run */
+  resultSchema?: T;
 } & AuthOptions;
 
 type CreateMessageInput = ClientInferRequest<(typeof contract)["createMessage"]>["body"];
@@ -43,7 +46,7 @@ type GetRunResponse = ClientInferResponseBody<(typeof contract)["getRun"], 200>;
 type ListRunsResponse = ClientInferResponseBody<(typeof contract)["listRuns"], 200>;
 
 /** Return type for the useRun hook */
-interface UseRunReturn {
+interface UseRunReturn<T extends z.ZodObject<any>> {
   /** Configured API client instance */
   client: ReturnType<typeof createApiClient>;
   /** Function to create a new message in the current run */
@@ -52,6 +55,8 @@ interface UseRunReturn {
   messages: ListMessagesResponse;
   /** Current run details if available */
   run?: GetRunResponse;
+  /** Result of the run if available */
+  result?: z.infer<T>;
 }
 
 /**
@@ -67,7 +72,7 @@ interface UseRunReturn {
  * });
  * ```
  */
-export function useRun(options: UseRunOptions): UseRunReturn {
+export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): UseRunReturn<T> {
   const client = useMemo(() => {
     return (
       options.apiClient ??
@@ -101,6 +106,7 @@ export function useRun(options: UseRunOptions): UseRunReturn {
         .createRun({
           body: {
             runId,
+            resultSchema: options.resultSchema as any,
           },
           params: {
             clusterId: options.clusterId,
@@ -189,6 +195,7 @@ export function useRun(options: UseRunOptions): UseRunReturn {
     createMessage,
     messages,
     run,
+    result: run?.result ? options.resultSchema?.safeParse(run.result)?.data : undefined,
   };
 }
 
