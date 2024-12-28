@@ -293,13 +293,21 @@ const cleanupConflictingConnections = async (clusterId: string, config: z.infer<
     );
 
   // Cleanup Nango connections
-  await Promise.all(conflicts.map((conflict) => {
+  await Promise.allSettled(conflicts.map(async (conflict) => {
     if (conflict.slack) {
-      logger.info("Removing conflicting Slack Nango connections", {
-        clusterId: conflict.cluster_id,
-        connectionId: conflict.slack.nangoConnectionId
-      })
-      return deleteNangoConnection(conflict.slack.nangoConnectionId);
+      try {
+        logger.info("Removing conflicting Slack Nango connections", {
+          clusterId: conflict.cluster_id,
+          connectionId: conflict.slack.nangoConnectionId
+        });
+        await deleteNangoConnection(conflict.slack.nangoConnectionId);
+      } catch (error) {
+        logger.error("Failed to delete Nango connection", {
+          error,
+          clusterId: conflict.cluster_id,
+          connectionId: conflict.slack.nangoConnectionId
+        });
+      }
     }
   }));
 
