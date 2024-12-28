@@ -10,6 +10,9 @@ import { ulid } from "ulid";
 import { eq, InferSelectModel, sql } from "drizzle-orm";
 import { db, integrations, workflowMessages } from "../../data";
 import { nango } from "../nango";
+import { InstallableIntegration } from "../types";
+import { integrationSchema } from "../schema";
+import { z } from "zod";
 
 let app: App | undefined;
 
@@ -21,6 +24,24 @@ type MessageEvent = {
   client: webApi.WebClient;
   clusterId: string;
 };
+
+export const slack: InstallableIntegration = {
+  name: "slack",
+  onDeactivate: async (
+    clusterId: string,
+    newConfig: z.infer<typeof integrationSchema>,
+    existingConfig: z.infer<typeof integrationSchema>
+  ) => {
+    if (!existingConfig.slack?.nangoConnectionId) {
+      logger.warn("Can not uninstall Slack integration with no connection id")
+    }
+    await uninstall(clusterId, existingConfig.slack!.nangoConnectionId);
+  },
+  onActivate: async () => {},
+  handleCall: async () => {
+    logger.warn("Slack integration does not support calls");
+  },
+}
 
 export const handleNewRunMessage = async ({
   message,
@@ -90,16 +111,21 @@ export const start = async (fastify: FastifyInstance) => {
         throw new Error("Could not find Slack integration for teamId");
       }
 
+      const token = await getAccessToken(integration.slack.nangoConnectionId)
+      if (!token) {
+        throw new Error(`Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`);
+      }
+
       return {
         teamId,
         enterpriseId,
         botUserId: integration.slack.botUserId,
-        botToken: await getAccessToken(integration.slack.nangoConnectionId),
+        botToken: token,
       }
     },
     receiver: new FastifySlackReceiver({
       signingSecret: SLACK_SIGNING_SECRET,
-      path: "/integrations/slack",
+      path: "/slack/events",
       fastify,
     }),
   });
@@ -222,8 +248,30 @@ const getAccessToken = async (connectionId: string) => {
     throw new Error("Nango is not configured");
   }
 
-  return await nango.getToken(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
+  const result = await nango.getToken(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
+  if (typeof result !== "string") {
+    return null;
+  }
+
+  return result;
 };
+
+const uninstall = async (clusterId: string, connectionId: string) => {
+  if (!nango) {
+    throw new Error("Nango is not configured");
+  }
+
+  logger.info("Removing Slack integration", {
+    connectionId,
+    clusterId
+  });
+
+  await nango.deleteConnection(
+    env.NANGO_SLACK_INTEGRATION_ID,
+    connectionId
+  );
+};
+
 
 const handleNewThread = async ({ event, client, clusterId }: MessageEvent) => {
   let thread = event.ts;

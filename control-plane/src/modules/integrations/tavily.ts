@@ -5,7 +5,7 @@ import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { integrationSchema } from "./schema";
-import { ToolProvider } from "./types";
+import { InstallableIntegration } from "./types";
 
 const TavilySearchParamsSchema = z.object({
   query: z.string(),
@@ -174,7 +174,7 @@ const handleCall = async (
   }
 };
 
-export const tavily: ToolProvider = {
+export const tavily: InstallableIntegration = {
   name: "Tavily",
   onActivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {
     await syncTavilyService({

@@ -17,6 +17,8 @@ import { Loading } from "@/components/loading";
 import Nango from '@nangohq/frontend';
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { ClientInferResponses } from "@ts-rest/core";
+import { contract } from "@/client/contract";
 
 const nango = new Nango();
 
@@ -28,8 +30,10 @@ export default function SlackIntegration({
   const { getToken } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
-  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [connection, setConnection] = useState<ClientInferResponses<
+  typeof contract.getIntegrations,
+  200
+>["body"]["slack"] | null>(null);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -44,19 +48,31 @@ export default function SlackIntegration({
     setLoading(false);
 
     if (response.status === 200) {
-      setSessionToken(response.body?.slack?.nangoSessionToken ?? null);
-      setConnectionId(response.body?.slack?.nangoConnectionId ?? null);
+      setConnection(response.body?.slack);
     }
 
   }, [clusterId, getToken]);
 
   const onSlackConnect = async () => {
-    if (!sessionToken) {
+    const response = await client.createNangoSession({
+      headers: {
+        authorization: `Bearer ${await getToken()}`,
+      },
+      params: {
+        clusterId: clusterId,
+      },
+      body: {
+        integration: "slack",
+      }
+    });
+
+    if (response.status !== 200 || !response.body || !response.body.token) {
+      toast.error("Failed to connect to Slack");
       return;
     }
 
     nango.openConnectUI({
-      sessionToken: sessionToken,
+      sessionToken: response.body.token,
       onEvent: async (event) => {
         if (event.type === "connect") {
           toast.success("Connected to Slack");
@@ -106,21 +122,21 @@ export default function SlackIntegration({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {sessionToken ? (
+          {connection ? (
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={onSlackConnect}
-              >
-                Connect Slack
-              </Button>
+              <h3 className="text-gray-500">Slack Connected (Team: {connection.teamId})</h3>
             </div>
-          ) : null}
-          {connectionId ? (
-            <div className="flex items-center gap-2">
-              <h3 className="text-gray-500">Connected ({connectionId})</h3>
-            </div>
-          ) : null}
+          ) : (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={onSlackConnect}
+                >
+                  Connect Slack
+                </Button>
+              </div>
+            )
+          }
         </CardContent>
       </Card>
     </div>

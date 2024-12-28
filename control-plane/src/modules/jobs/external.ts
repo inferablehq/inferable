@@ -5,7 +5,7 @@ import { z } from "zod";
 import { logger } from "../observability/logger";
 import { getJob } from "./jobs";
 import { externalServices } from "../integrations/constants";
-import { getIntegrations, getToolProvider } from "../integrations/integrations";
+import { getIntegrations, getInstallables } from "../integrations/integrations";
 
 const externalCallConsumer = env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL
   ? Consumer.create({
@@ -70,5 +70,5 @@ async function handleExternalCall(message: BaseMessage) {
     return;
   }
 
-  await getToolProvider(zodResult.data.service).handleCall(call, integrations);
+  await getInstallables(zodResult.data.service).handleCall(call, integrations);
 }

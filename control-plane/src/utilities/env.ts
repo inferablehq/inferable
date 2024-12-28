@@ -106,6 +106,8 @@ const envSchema = z
       "POSTHOG_API_KEY",
       "POSTHOG_HOST",
       "ANALYTICS_BUCKET_NAME",
+      "NANGO_SECRET_KEY",
+      "SLACK_SIGNING_SECRET",
     ];
 
     for (const key of EE_REQUIRED) {

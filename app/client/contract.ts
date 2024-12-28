@@ -82,8 +82,9 @@ export const integrationSchema = z.object({
     .nullable(),
   slack: z
     .object({
-      nangoSessionToken: z.string().optional().nullable(),
-      nangoConnectionId: z.string().optional().nullable(),
+      nangoConnectionId: z.string(),
+      botUserId: z.string(),
+      teamId: z.string(),
     })
     .optional()
     .nullable(),
@@ -1487,6 +1488,31 @@ export const definition = {
         }),
         refreshedAt: z.number(),
       }),
+    },
+  },
+  createNangoSession: {
+    method: "POST",
+    path: "/clusters/:clusterId/nango/sessions",
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    headers: z.object({ authorization: z.string() }),
+    body: z.object({
+      integration: z.string(),
+    }),
+    responses: {
+      200: z.object({
+        token: z.string(),
+      }),
+    },
+  },
+  createNangoEvent: {
+    method: "POST",
+    path: "/nango/events",
+    headers: z.object({ "x-nango-signature": z.string() }),
+    body: z.object({}).passthrough(),
+    responses: {
+      200: z.undefined(),
     },
   },
 } as const;

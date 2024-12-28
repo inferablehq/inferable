@@ -3,7 +3,7 @@ import { contract } from "../contract";
 import { getIntegrations, upsertIntegrations } from "./integrations";
 import { validateConfig } from "./toolhouse";
 import { AuthenticationError, BadRequestError } from "../../utilities/errors";
-import { getSession, nango, slackConnectionSchema, webhookSchema } from "./nango";
+import { getSession, nango, webhookSchema } from "./nango";
 import { env } from "../../utilities/env";
 import { logger } from "../observability/logger";
 
@@ -11,7 +11,8 @@ export const integrationsRouter = initServer().router(
   {
     upsertIntegrations: contract.upsertIntegrations,
     getIntegrations: contract.getIntegrations,
-    nangoWebhook: contract.nangoWebhook,
+    createNangoSession: contract.createNangoSession,
+    createNangoEvent: contract.createNangoEvent,
   },
   {
     upsertIntegrations: async (request) => {
@@ -36,10 +37,7 @@ export const integrationsRouter = initServer().router(
 
       await upsertIntegrations({
         clusterId,
-        config: {
-          ...request.body,
-          slack: undefined,
-        },
+        config: request.body,
       });
 
       return {
@@ -58,23 +56,35 @@ export const integrationsRouter = initServer().router(
         clusterId,
       });
 
-      if (!integrations.slack?.nangoConnectionId) {
-        integrations.slack = {
-          nangoSessionToken: await getSession({
-            clusterId,
-            integrationId: env.NANGO_SLACK_INTEGRATION_ID,
-          }),
-        } as any;
+      return {
+        status: 200,
+        body: integrations,
+      };
+    },
+    createNangoSession: async (request) => {
+      if (!nango) {
+        throw new Error("Nango is not configured");
       }
+
+      const { clusterId } = request.params;
+      const { integration } = request.body;
+
+      if (integration !== env.NANGO_SLACK_INTEGRATION_ID) {
+        throw new BadRequestError("Invalid Nango integration ID");
+      }
+
+      const auth = request.request.getAuth();
+      await auth.canAccess({ cluster: { clusterId } });
+      auth.isAdmin();
 
       return {
         status: 200,
         body: {
-          ...integrations,
-        }
-      };
+          token: await getSession({ clusterId, integrationId: env.NANGO_SLACK_INTEGRATION_ID }),
+        },
+      }
     },
-    nangoWebhook: async (request) => {
+    createNangoEvent: async (request) => {
       if (!nango) {
         throw new Error("Nango is not configured");
       }
@@ -104,30 +114,32 @@ export const integrationsRouter = initServer().router(
           && webhook.data.operation === "creation"
           && webhook.data.success
       ) {
-        const connectionResp = await nango.getConnection(
+        const connection = await nango.getConnection(
           webhook.data.providerConfigKey,
           webhook.data.connectionId,
         );
 
-        const connection = slackConnectionSchema.safeParse(connectionResp);
+        logger.info("New Slack connection registered", {
+          connectionId: webhook.data.connectionId,
+          teamId: connection.connection_config["team.id"],
+        });
 
-        if (connection.success) {
-          logger.info("New Slack connection registered", {
-            connectionId: webhook.data.connectionId,
-            teamId: connection.data.connection_config["team.id"],
-          });
+        const clusterId = connection.end_user?.id;
 
-          await upsertIntegrations({
-            clusterId: webhook.data.endUser.endUserId,
-            config: {
-              slack: {
-                nangoConnectionId: webhook.data.connectionId,
-                teamId: connection.data.connection_config["team.id"],
-                botUserId: connection.data.connection_config["bot_user_id"],
-              },
-            }
-          })
+        if (!clusterId) {
+          throw new BadRequestError("End user ID not found in Nango connection");
         }
+
+        await upsertIntegrations({
+          clusterId,
+          config: {
+            slack: {
+              nangoConnectionId: webhook.data.connectionId,
+              teamId: connection.connection_config["team.id"],
+              botUserId: connection.connection_config["bot_user_id"],
+            },
+          }
+        })
       }
 
       return {

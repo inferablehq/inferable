@@ -6,7 +6,7 @@ import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { integrationSchema } from "./schema";
-import { ToolProvider } from "./types";
+import { InstallableIntegration } from "./types";
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
@@ -165,7 +165,7 @@ const handleCall = async (
   }
 };
 
-export const valtown: ToolProvider = {
+export const valtown: InstallableIntegration = {
   name: "valtown",
   onActivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {
     const config = integrations.valtown;

@@ -10,7 +10,7 @@ import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";
-import { ToolProvider } from "./types";
+import { InstallableIntegration } from "./types";
 
 const ToolHouseResultSchema = z.array(
   z.object({
@@ -220,7 +220,7 @@ const toToolHouseName = (input: string) => {
   return input.replace(/([A-Z])/g, "_$1").toLowerCase();
 };
 
-export const toolhouse: ToolProvider = {
+export const toolhouse: InstallableIntegration = {
   name: "ToolHouse",
   onActivate: async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
     return syncToolHouseService({
