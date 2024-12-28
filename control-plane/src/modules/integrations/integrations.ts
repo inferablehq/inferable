@@ -81,7 +81,7 @@ export const upsertIntegrations = async ({
       .filter(([key]) => installables[key as keyof typeof installables])
       .map(([key, value]) => {
       if (value) {
-        return getInstallables(key)?.onActivate?.(clusterId, config);
+        return getInstallables(key)?.onActivate?.(clusterId, config, existing);
       } else if (value === null) {
         return getInstallables(key)?.onDeactivate?.(clusterId, config, existing);
       }

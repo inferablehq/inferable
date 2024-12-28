@@ -43,7 +43,11 @@ export const slack: InstallableIntegration = {
     // Cleanup the Nango connection
     await deleteNangoConnection(prevConfig.slack.nangoConnectionId);
   },
-  onActivate: async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
+  onActivate: async (
+    clusterId: string,
+    config: z.infer<typeof integrationSchema>,
+    prevConfig: z.infer<typeof integrationSchema>
+  ) => {
     logger.info("Activating Slack integration", {
       clusterId,
     })
@@ -53,8 +57,24 @@ export const slack: InstallableIntegration = {
       return
     }
 
-    // If another cluster is connected with this teamId, remove it
-    await cleanupConflictingConnections(clusterId, config);
+    // It can be possible for the same Nango session token to be used to create multiple connections
+    // e.g, if the "try again" button.
+    // This check will cleanup a previous connection if it is not the same
+    if (
+      prevConfig.slack
+        && config.slack
+        && prevConfig.slack.nangoConnectionId !== config.slack.nangoConnectionId
+    ) {
+      logger.warn("Slack integration has been overridden. Cleaning up previous Nango connection", {
+        prevNangoConnectionId: prevConfig.slack.nangoConnectionId,
+        nangoConnectionId: config.slack.nangoConnectionId
+      })
+
+      await deleteNangoConnection(prevConfig.slack.nangoConnectionId);
+    }
+
+    // If the user connects another cluster with the same Slack workspace, we cleanup the conflicting integrations
+    await cleanupConflictingIntegrations(clusterId, config);
   },
   handleCall: async () => {
     logger.warn("Slack integration does not support calls");
@@ -274,7 +294,7 @@ const getAccessToken = async (connectionId: string) => {
   return result;
 };
 
-const cleanupConflictingConnections = async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
+const cleanupConflictingIntegrations = async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
   if (!config.slack) {
     return;
   }
@@ -292,31 +312,12 @@ const cleanupConflictingConnections = async (clusterId: string, config: z.infer<
       )
     );
 
-  // Cleanup Nango connections
-  await Promise.allSettled(conflicts.map(async (conflict) => {
-    if (conflict.slack) {
-      try {
-        logger.info("Removing conflicting Slack Nango connections", {
-          clusterId: conflict.cluster_id,
-          connectionId: conflict.slack.nangoConnectionId
-        });
-        await deleteNangoConnection(conflict.slack.nangoConnectionId);
-      } catch (error) {
-        logger.error("Failed to delete Nango connection", {
-          error,
-          clusterId: conflict.cluster_id,
-          connectionId: conflict.slack.nangoConnectionId
-        });
-      }
-    }
-  }));
-
   if (conflicts.length) {
-    logger.info("Removed conflicting Slack integrations from DB", {
+    logger.info("Removed conflicting Slack integrations", {
       conflicts: conflicts.map((conflict) => conflict.cluster_id)
     })
 
-    // Cleanup Slack integrations
+    // Cleanup Slack integrations from DB
     await db
     .delete(integrations)
     .where(
@@ -325,6 +326,13 @@ const cleanupConflictingConnections = async (clusterId: string, config: z.infer<
         ne(integrations.cluster_id, clusterId)
       )
     );
+
+    // Cleanup Nango connections
+    await Promise.allSettled(conflicts.map(async (conflict) => {
+      if (conflict.slack) {
+        await deleteNangoConnection(conflict.slack.nangoConnectionId);
+      }
+    }));
 
   }
 }
