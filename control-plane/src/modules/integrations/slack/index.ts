@@ -234,7 +234,7 @@ export const start = async (fastify: FastifyInstance) => {
         client.chat.postMessage({
           thread_ts: event.ts,
           channel: event.channel,
-          text: `Sorry, I am having trouble authenticating you.\n\nPlease ensure your Inferable account has access to cluster <${env.APP_ORIGIN}/clusters/${integration}|${integration}>.`,
+          text: `Sorry, I am having trouble authenticating you.\n\nPlease ensure your Inferable account has access to cluster <${env.APP_ORIGIN}/clusters/${integration.cluster_id}|${integration.cluster_id}>.`,
         });
         return;
       }
