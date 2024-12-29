@@ -6,6 +6,7 @@ import { packer } from "../packer";
 import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { integrationSchema } from "./schema";
 import { InstallableIntegration } from "./types";
+import { tavilyIntegration } from "./constants";
 
 const TavilySearchParamsSchema = z.object({
   query: z.string(),
@@ -67,7 +68,7 @@ export async function searchTavily({
 }
 
 const definition = {
-  name: "Tavily",
+  name: tavilyIntegration,
   functions: [
     {
       name: "search",
@@ -119,7 +120,7 @@ const syncTavilyService = async ({ clusterId, apiKey }: { clusterId: string; api
 
   await upsertServiceDefinition({
     type: "permanent",
-    service: "Tavily",
+    service: tavilyIntegration,
     definition,
     owner: { clusterId },
   });

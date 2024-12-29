@@ -7,6 +7,7 @@ import { packer } from "../packer";
 import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { integrationSchema } from "./schema";
 import { InstallableIntegration } from "./types";
+import { valtownIntegration } from "./constants";
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
@@ -93,9 +94,9 @@ const syncValTownService = async ({
 
   await upsertServiceDefinition({
     type: "permanent",
-    service: "valtown",
+    service: valtownIntegration,
     definition: {
-      name: "valtown",
+      name: valtownIntegration,
       description: meta.description,
       functions: meta.functions.map(fn => ({
         name: fn.name,

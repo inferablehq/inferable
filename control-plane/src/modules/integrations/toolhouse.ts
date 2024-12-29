@@ -11,6 +11,7 @@ import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";
 import { InstallableIntegration } from "./types";
+import { toolhouseIntegration } from "./constants";
 
 const ToolHouseResultSchema = z.array(
   z.object({
@@ -159,9 +160,9 @@ const syncToolHouseService = async ({
   const tools = (await toolhouse.getTools()) as Anthropic.Messages.Tool[];
 
   await upsertServiceDefinition({
-    service: "ToolHouse",
+    service: toolhouseIntegration,
     definition: {
-      name: "ToolHouse",
+      name: toolhouseIntegration,
       functions: tools.map(tool => {
         return {
           name: toInferableName(tool.name),
