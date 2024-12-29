@@ -211,9 +211,9 @@ export const start = async (fastify: FastifyInstance) => {
       return;
     }
 
-    const user = await authenticateUser(event, client, integration);
-
     try {
+      const user = await authenticateUser(event, client, integration);
+
       if (hasThread(event)) {
         await handleExistingThread({
           userId: user?.id,
