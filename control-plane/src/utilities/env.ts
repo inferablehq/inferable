@@ -95,14 +95,6 @@ const envSchema = z
       }
     }
 
-    if (!!value.JWKS_URL !== !!value.CLERK_SECRET_KEY) {
-      return ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "JWKS_URL and CLERK_SECRET_KEY must be provided together",
-        path: ["JWKS_URL", "CLERK_SECRET_KEY"],
-      });
-    }
-
     if (!value.EE_DEPLOYMENT) {
       return;
     }

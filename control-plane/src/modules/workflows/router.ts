@@ -7,7 +7,6 @@ import { getRunsByMetadata } from "./metadata";
 import { getRunMessagesForDisplay } from "./workflow-messages";
 import {
   createRetry,
-  createRunWithMessage,
   deleteRun,
   getClusterWorkflows,
   getRunConfigMetrics,
@@ -21,7 +20,6 @@ import { posthog } from "../posthog";
 import {
   RunOptions,
   getRunConfig,
-  listRunConfigs,
   mergeRunConfigOptions,
   validateSchema,
 } from "../prompt-templates";
@@ -139,11 +137,11 @@ export const runsRouter = initServer().router(
         runOptions.initialPrompt = `${runOptions.initialPrompt}\n\n<DATA>\n${JSON.stringify(runOptions.input, null, 2)}\n</DATA>`;
       }
 
-      let customAuth = auth.type === "custom" ? auth.isCustomAuth() : undefined;
+      const customAuth = auth.type === "custom" ? auth.isCustomAuth() : undefined;
 
       const workflow = await createRun({
         runId: runOptions.runId,
-        user: auth,
+        userId: auth.entityId,
         clusterId,
 
         name: body.name,
@@ -175,7 +173,7 @@ export const runsRouter = initServer().router(
       if (runOptions.initialPrompt) {
         await addMessageAndResume({
           id: ulid(),
-          user: auth,
+          userId: auth.entityId,
           clusterId,
           runId: workflow.id,
           message: runOptions.initialPrompt,

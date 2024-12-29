@@ -1,6 +1,5 @@
 import assert from "assert";
-import { InferSelectModel, and, asc, desc, eq, gt, ne } from "drizzle-orm";
-import { Auth, ClerkAuth } from "../auth/auth";
+import { InferSelectModel, and, desc, eq, gt, ne } from "drizzle-orm";
 import { db, RunMessageMetadata, workflowMessages } from "../data";
 import { deleteJobsAfter } from "../jobs/jobs";
 import { resumeRun } from "./workflows";
@@ -13,7 +12,6 @@ import {
 } from "../contract";
 import { logger } from "../observability/logger";
 import Anthropic from "@anthropic-ai/sdk";
-import { get, reduce } from "lodash";
 
 export type MessageData = z.infer<typeof messageDataSchema>;
 
@@ -55,14 +53,14 @@ export type RunMessage = {
 
 export const insertRunMessage = async ({
   clusterId,
-  user,
+  userId,
   runId,
   id,
   type,
   data,
 }: {
   id: string;
-  user?: ClerkAuth;
+  userId?: string;
   clusterId: string;
   runId: string;
   type: InferSelectModel<typeof workflowMessages>["type"];
@@ -73,7 +71,7 @@ export const insertRunMessage = async ({
     .insert(workflowMessages)
     .values({
       id,
-      user_id: user?.entityId ?? "SYSTEM",
+      user_id: userId ?? "SYSTEM",
       cluster_id: clusterId,
       workflow_id: runId,
       type,
@@ -83,7 +81,7 @@ export const insertRunMessage = async ({
 };
 
 export const upsertRunMessage = async ({
-  user,
+  userId,
   clusterId,
   runId,
   id,
@@ -91,7 +89,7 @@ export const upsertRunMessage = async ({
   data,
   metadata,
 }: {
-  user?: Auth;
+  userId?: string;
   id: string;
   clusterId: string;
   runId: string;
@@ -106,7 +104,7 @@ export const upsertRunMessage = async ({
     .values([
       {
         id,
-        user_id: user?.entityId ?? "SYSTEM",
+        user_id: userId ?? "SYSTEM",
         cluster_id: clusterId,
         workflow_id: runId,
         type,
@@ -126,7 +124,7 @@ export const upsertRunMessage = async ({
         data,
         updated_at: new Date(),
         metadata,
-        user_id: user?.entityId ?? "SYSTEM",
+        user_id: userId ?? "SYSTEM",
       },
     })
     .returning({
@@ -143,19 +141,19 @@ export const upsertRunMessage = async ({
 export const editHumanMessage = async ({
   clusterId,
   runId,
-  user,
+  userId,
   message,
   id,
 }: {
   clusterId: string;
-  user?: Auth;
+  userId?: string;
   runId: string;
   message: string;
   id: string;
 }) => {
   const [upserted] = await upsertRunMessage({
     clusterId,
-    user,
+    userId,
     runId,
     data: {
       message,

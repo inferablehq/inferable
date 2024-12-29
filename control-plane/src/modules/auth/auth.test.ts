@@ -6,7 +6,6 @@ import * as clusterAuth from "./cluster";
 import * as clerkAuth from "./clerk";
 import {
   Auth,
-  ClerkAuth,
   extractAuthState,
   extractCustomAuthState,
 } from "./auth";
@@ -363,14 +362,14 @@ describe("extractAuthState", () => {
         });
 
         run1 = await createRunWithMessage({
-          user: owner1AuthState! as ClerkAuth,
+          userId: owner1AuthState!.entityId,
           clusterId: owner1.clusterId,
           message: "hello",
           type: "human",
         });
 
         run2 = await createRunWithMessage({
-          user: owner2AuthState! as ClerkAuth,
+          userId: owner2AuthState!.entityId,
           clusterId: owner2.clusterId,
           message: "hello",
           type: "human",

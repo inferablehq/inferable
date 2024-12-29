@@ -65,7 +65,7 @@ export type Run = {
 
 export const createRun = async ({
   runId,
-  user,
+  userId,
   clusterId,
   name,
   test,
@@ -87,7 +87,7 @@ export const createRun = async ({
   enableResultGrounding,
 }: {
   runId?: string;
-  user?: Auth;
+  userId?: string;
   clusterId: string;
   name?: string;
   systemPrompt?: string;
@@ -131,7 +131,7 @@ export const createRun = async ({
           id: runId ?? ulid(),
           cluster_id: clusterId,
           status: "pending",
-          user_id: user?.entityId ?? "SYSTEM",
+          user_id: userId ?? "SYSTEM",
           ...(name ? { name } : {}),
           debug: debugQuery.debug,
           system_prompt: systemPrompt,
@@ -361,7 +361,7 @@ export const getWorkflowDetail = async ({
 };
 
 export const addMessageAndResume = async ({
-  user,
+  userId,
   id,
   clusterId,
   runId,
@@ -370,7 +370,7 @@ export const addMessageAndResume = async ({
   metadata,
   skipAssert,
 }: {
-  user?: Auth;
+  userId?: string;
   id: string;
   clusterId: string;
   runId: string;
@@ -384,7 +384,7 @@ export const addMessageAndResume = async ({
   }
 
   await upsertRunMessage({
-    user,
+    userId,
     clusterId,
     runId,
     data: {
@@ -470,7 +470,7 @@ export type RunMessage = {
 
 export const createRunWithMessage = async ({
   runId,
-  user,
+  userId,
   clusterId,
   message,
   systemPrompt,
@@ -496,7 +496,7 @@ export const createRunWithMessage = async ({
 }: Parameters<typeof createRun>[0] & RunMessage) => {
   const workflow = await createRun({
     runId,
-    user,
+    userId,
     clusterId,
     name,
     test,
@@ -520,7 +520,7 @@ export const createRunWithMessage = async ({
 
   await addMessageAndResume({
     id: ulid(),
-    user,
+    userId,
     clusterId,
     runId: workflow.id,
     message,

@@ -249,7 +249,7 @@ export const router = initServer().router(contract, {
 
     await addMessageAndResume({
       id: id ?? ulid(),
-      user: auth,
+      userId: auth?.entityId,
       clusterId,
       runId,
       message,
@@ -300,7 +300,7 @@ export const router = initServer().router(contract, {
 
     const messages = await editHumanMessage({
       id: messageId,
-      user: auth,
+      userId: auth.entityId,
       clusterId,
       runId,
       message,
