@@ -435,15 +435,10 @@ const authenticateUser = async (event: KnownEventFromType<"message">, client: we
     logger.info("Missing CLERK_SECRET_KEY. Skipping Slack user authentication.");
     return
   }
-try {
-  const slackUser = await client.users.info({
-    user: event.user,
-    token: client.token,
-  });
-} catch (error) {
-  logger.error("Failed to fetch Slack user info", { error });
-  throw new AuthenticationError("Could not authenticate Slack user");
-}
+
+  if (!hasUser(event)) {
+    logger.warn("Slack event has no user.");
+    throw new AuthenticationError("Slack event has no user");
   }
 
   const slackUser = await client.users.info({
