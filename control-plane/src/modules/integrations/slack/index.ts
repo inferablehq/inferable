@@ -13,6 +13,7 @@ import { nango } from "../nango";
 import { InstallableIntegration } from "../types";
 import { integrationSchema } from "../schema";
 import { z } from "zod";
+import { getUserForCluster } from "../../clerk";
 
 let app: App | undefined;
 
@@ -209,6 +210,8 @@ export const start = async (fastify: FastifyInstance) => {
       return;
     }
 
+    await authenticateUser(event, client, integration);
+
     try {
       if (hasThread(event)) {
         await handleExistingThread({
@@ -250,6 +253,10 @@ const hasThread = (e: any): e is { thread_ts: string } => {
 const isDirectMessage = (e: KnownEventFromType<"message">): boolean => {
   return e.channel_type === "im";
 };
+
+const hasUser = (e: any): e is { user: string } => {
+   return typeof e?.user === "string";
+ };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const isBotMessage = (e: any): boolean => {
@@ -348,7 +355,6 @@ const deleteNangoConnection = async (connectionId: string) => {
   );
 };
 
-
 const handleNewThread = async ({ event, client, clusterId }: MessageEvent) => {
   let thread = event.ts;
   // If this message is part of a thread, associate the run with the thread rather than the message
@@ -416,4 +422,42 @@ const handleExistingThread = async ({ event, client, clusterId }: MessageEvent) 
   }
 
   throw new Error("Event had no text");
+};
+
+const authenticateUser = async (event: KnownEventFromType<"message">, client: webApi.WebClient, integration: { cluster_id: string }) => {
+  if (!env.CLERK_SECRET_KEY) {
+    logger.info("Missing CLERK_SECRET_KEY. Skipping Slack user authentication.");
+    return
+  }
+
+  if (!hasUser(event)) {
+    logger.warn("Slack event has no user.");
+    throw new AuthenticationError("Slack event has no user");
+  }
+
+  const slackUser = await client.users.info({
+    user: event.user,
+    token: client.token,
+  });
+
+  const confirmed = slackUser.user?.is_email_confirmed;
+  const email = slackUser.user?.profile?.email;
+
+  if (!confirmed || !email) {
+    logger.info("Could not authenticate Slack user.", {
+      confirmed,
+      email
+    });
+    throw new AuthenticationError("Could not authenticate Slack user");
+  }
+
+  const clerkUser = await getUserForCluster({
+    emailAddress: email,
+    cluserId: integration.cluster_id,
+  });
+
+  if (!clerkUser) {
+    logger.info("Could not find Slack user in Clerk.");
+    throw new AuthenticationError("Could not authenticate Slack user");
+  }
 };
