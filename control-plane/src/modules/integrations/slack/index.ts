@@ -1,4 +1,4 @@
-import { App, BlockAction, BlockElementAction, KnownEventFromType, SlackAction, webApi } from "@slack/bolt";
+import { App, BlockAction, KnownEventFromType, SlackAction, webApi } from "@slack/bolt";
 import { FastifySlackReceiver } from "./receiver";
 import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
@@ -16,10 +16,13 @@ import { z } from "zod";
 import { getUserForCluster } from "../../clerk";
 import { submitApproval } from "../../jobs/jobs";
 
-let app: App | undefined;
-
 const THREAD_META_KEY = "slackThreadTs";
 const CHANNEL_META_KEY = "slackChannel";
+
+const CALL_APPROVE_ACTION_ID = "call_approve";
+const CALL_DENY_ACTION_ID = "call_deny";
+
+let app: App | undefined;
 
 type MessageEvent = {
   event: KnownEventFromType<"message">;
@@ -182,7 +185,7 @@ export const handleApprovalRequest = async ({
               "emoji": true
             },
             "value": callId,
-            "action_id": "call_approve"
+            "action_id": CALL_APPROVE_ACTION_ID
           },
           {
             "type": "button",
@@ -192,7 +195,7 @@ export const handleApprovalRequest = async ({
               "emoji": true
             },
             "value": callId,
-            "action_id": "call_deny"
+            "action_id": CALL_DENY_ACTION_ID
           }
         ]
       }
@@ -242,124 +245,8 @@ export const start = async (fastify: FastifyInstance) => {
     }),
   });
 
-  app.action(
-    "call_approve",
-    async ({ ack, body, client, context }) => {
-      await ack();
-
-      if (!isBlockAction(body)) {
-        throw new Error("Slack Action was unexpected type");
-      }
-
-      const teamId = context.teamId;
-      const channelId = body.channel?.id;
-      const messageTs = body.message?.ts;
-      const action = body.actions.find(a => a.action_id === "call_approve");
-
-      if (!teamId || !channelId || !messageTs || !action || !hasValue(action)) {
-        throw new Error("Slack action does not conform to expected structure");
-      }
-
-      const integration = await integrationByTeam(teamId);
-
-      if (!integration || !integration.cluster_id) {
-        throw new Error("Could not find Slack integration for teamId");
-      }
-
-      const user = await authenticateUser(body.user.id, client, integration);
-
-      if (!user) {
-        logger.warn("Slack user could not be authenticated.");
-        throw new AuthenticationError("Slack user could not be authenticated.");
-      }
-
-      await submitApproval({
-        approved: true,
-        callId: action.value,
-        clusterId: integration.cluster_id
-      })
-
-      logger.info("Call approved via Slack", {
-        channelId,
-        messageTs,
-        callId: action.value,
-      });
-
-      await client.chat.update({
-        channel: channelId,
-        ts: messageTs,
-        blocks: [
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: `✅ Call \`${action.value}\` was approved`,
-            },
-          },
-        ],
-      });
-
-    }
-  );
-
-  app.action(
-    "call_deny",
-    async ({ ack, body, client, context }) => {
-      await ack();
-
-      if (!isBlockAction(body)) {
-        throw new Error("Slack Action was unexpected type");
-      }
-
-      const teamId = context.teamId;
-      const channelId = body.channel?.id;
-      const messageTs = body.message?.ts;
-      const action = body.actions.find(a => a.action_id === "call_deny");
-
-      if (!teamId || !channelId || !messageTs || !action || !hasValue(action)) {
-        throw new Error("Slack action does not conform to expected structure");
-      }
-
-      const integration = await integrationByTeam(teamId);
-
-      if (!integration || !integration.cluster_id) {
-        throw new Error("Could not find Slack integration for teamId");
-      }
-
-      const user = await authenticateUser(body.user.id, client, integration);
-
-      if (!user) {
-        logger.warn("Slack user could not be authenticated.");
-        throw new AuthenticationError("Slack user could not be authenticated.");
-      }
-
-      await submitApproval({
-        approved: false,
-        callId: action.value,
-        clusterId: integration.cluster_id
-      })
-
-      logger.info("Call denied via Slack", {
-        channelId,
-        messageTs,
-        callId: action.value,
-      });
-
-      await client.chat.update({
-        channel: channelId,
-        ts: messageTs,
-        blocks: [
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: `❌ Call \`${action.value}\` was denied`,
-            },
-          },
-        ],
-      });
-    }
-  );
+  app.action(CALL_APPROVE_ACTION_ID, async (params) => handleCallApprovalAction({ ...params, actionId: CALL_APPROVE_ACTION_ID }));
+  app.action(CALL_DENY_ACTION_ID, async (params) => handleCallApprovalAction({ ...params, actionId: CALL_DENY_ACTION_ID }));
 
   // Event listener for mentions
   app.event("app_mention", async ({ event, client }) => {
@@ -676,4 +563,76 @@ const authenticateUser = async (userId: string, client: webApi.WebClient, integr
   }
 
   return clerkUser;
+};
+
+const handleCallApprovalAction = async ({
+  ack,
+  body,
+  client,
+  context,
+  actionId
+}: {
+    ack: () => Promise<void>,
+    body: SlackAction,
+    client: webApi.WebClient,
+    context: { teamId?: string },
+    actionId: typeof CALL_APPROVE_ACTION_ID | typeof CALL_DENY_ACTION_ID
+  }) => {
+  await ack();
+
+  if (!isBlockAction(body)) {
+    throw new Error("Slack Action was unexpected type");
+  }
+
+  const approved  = actionId === CALL_APPROVE_ACTION_ID;
+  const teamId = context.teamId;
+  const channelId = body.channel?.id;
+  const messageTs = body.message?.ts;
+  const action = body.actions.find(a => a.action_id === actionId);
+
+  if (!teamId || !channelId || !messageTs || !action || !hasValue(action)) {
+    throw new Error("Slack action does not conform to expected structure");
+  }
+
+  const integration = await integrationByTeam(teamId);
+
+  if (!integration || !integration.cluster_id) {
+    throw new Error("Could not find Slack integration for teamId");
+  }
+
+  const user = await authenticateUser(body.user.id, client, integration);
+
+  if (!user) {
+    logger.warn("Slack user could not be authenticated.");
+    throw new AuthenticationError("Slack user could not be authenticated.");
+  }
+
+  await submitApproval({
+    approved,
+    callId: action.value,
+    clusterId: integration.cluster_id
+  });
+
+  logger.info("Call approval received via Slack", {
+    approved,
+    channelId,
+    messageTs,
+    callId: action.value,
+  });
+
+  const blockMessage = `${approved ? "✅" : "❌"} Call \`${action.value}\` was ${approved ? "approved" : "denied"}`;
+
+  await client.chat.update({
+    channel: channelId,
+    ts: messageTs,
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: blockMessage
+        },
+      },
+    ],
+  });
 };
