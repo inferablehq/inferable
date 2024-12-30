@@ -1,5 +1,5 @@
 import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { contract } from "../contract";
 import { createApiClient } from "../createClient";
 import { useInterval } from "./useInterval";
@@ -93,7 +93,7 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
 
   const [messages, setMessages] = useState<ListMessagesResponse>([]);
   const [run, setRun] = useState<GetRunResponse>();
-  const [runId, setRunId] = useState<string>();
+  const runIdRef = useRef<string | null>(options.runId || null);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -102,12 +102,11 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
     }
 
     if (options.runId) {
-      setRunId(options.runId);
+      runIdRef.current = options.runId;
     } else {
       client
         .createRun({
           body: {
-            runId,
             ...(options.resultSchema
               ? { resultSchema: zodToJsonSchema(options.resultSchema) }
               : {}),
@@ -124,25 +123,25 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
               )
             );
           } else {
-            setRunId(response.body.id);
+            runIdRef.current = response.body.id;
           }
         })
         .catch(error => {
           setError(error instanceof Error ? error : new Error(String(error)));
         });
     }
-  }, [client, options.runId, options.resultSchema, options.clusterId, runId]);
+  }, [client, options.runId, options.resultSchema, options.clusterId]);
 
   const requestParams = useMemo(
     () => ({
       clusterId: options.clusterId,
-      runId: runId!,
+      runId: runIdRef.current!,
     }),
-    [options.clusterId, runId]
+    [options.clusterId, runIdRef.current]
   );
 
   useInterval(async () => {
-    if (!runId) {
+    if (!runIdRef.current) {
       return;
     }
 
@@ -178,7 +177,7 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
 
   const createMessage = useMemo(
     () => async (input: CreateMessageInput) => {
-      if (!runId) return;
+      if (!runIdRef.current) return;
 
       const response = await client.createMessage({
         params: requestParams,
@@ -193,7 +192,7 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
         );
       }
     },
-    [client, runId, requestParams]
+    [client, runIdRef.current, requestParams]
   );
 
   const result = useMemo(
