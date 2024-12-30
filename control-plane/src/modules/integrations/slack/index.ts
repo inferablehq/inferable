@@ -1,4 +1,4 @@
-import { App, KnownEventFromType, webApi } from "@slack/bolt";
+import { App, BlockAction, BlockElementAction, KnownEventFromType, SlackAction, webApi } from "@slack/bolt";
 import { FastifySlackReceiver } from "./receiver";
 import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
@@ -14,6 +14,7 @@ import { InstallableIntegration } from "../types";
 import { integrationSchema } from "../schema";
 import { z } from "zod";
 import { getUserForCluster } from "../../clerk";
+import { submitApproval } from "../../jobs/jobs";
 
 let app: App | undefined;
 
@@ -128,6 +129,77 @@ export const handleNewRunMessage = async ({
   }
 };
 
+export const handleApprovalRequest = async ({
+  callId,
+  runId,
+  clusterId,
+  service,
+  targetFn,
+  metadata,
+}: {
+  callId: string;
+  runId: string;
+  clusterId: string;
+  service: string;
+  targetFn: string;
+  metadata?: Record<string, string>;
+}) => {
+  if (!metadata?.[THREAD_META_KEY] || !metadata?.[CHANNEL_META_KEY]) {
+    return;
+  }
+
+  const integration = await integrationByCluster(clusterId);
+  if (!integration || !integration.slack) {
+    throw new Error(`Could not find Slack integration for cluster: ${clusterId}`);
+  }
+
+  const token = await getAccessToken(integration.slack.nangoConnectionId);
+  if (!token) {
+    throw new Error(`Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`);
+  }
+
+  const client = new webApi.WebClient(token)
+
+  client?.chat.postMessage({
+    thread_ts: metadata[THREAD_META_KEY],
+    channel: metadata[CHANNEL_META_KEY],
+    blocks: [
+      {
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `I need your approval to call \`${service}.${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`
+        }
+      },
+      {
+        "type": "actions",
+        "elements": [
+          {
+            "type": "button",
+            "text": {
+              "type": "plain_text",
+              "text": "Approve",
+              "emoji": true
+            },
+            "value": callId,
+            "action_id": "call_approve"
+          },
+          {
+            "type": "button",
+            "text": {
+              "type": "plain_text",
+              "text": "Deny",
+              "emoji": true
+            },
+            "value": callId,
+            "action_id": "call_deny"
+          }
+        ]
+      }
+    ]
+  });
+};
+
 export const start = async (fastify: FastifyInstance) => {
   const SLACK_SIGNING_SECRET = env.SLACK_SIGNING_SECRET;
 
@@ -170,6 +242,125 @@ export const start = async (fastify: FastifyInstance) => {
     }),
   });
 
+  app.action(
+    "call_approve",
+    async ({ ack, body, client, context }) => {
+      await ack();
+
+      if (!isBlockAction(body)) {
+        throw new Error("Slack Action was unexpected type");
+      }
+
+      const teamId = context.teamId;
+      const channelId = body.channel?.id;
+      const messageTs = body.message?.ts;
+      const action = body.actions.find(a => a.action_id === "call_approve");
+
+      if (!teamId || !channelId || !messageTs || !action || !hasValue(action)) {
+        throw new Error("Slack action does not conform to expected structure");
+      }
+
+      const integration = await integrationByTeam(teamId);
+
+      if (!integration || !integration.cluster_id) {
+        throw new Error("Could not find Slack integration for teamId");
+      }
+
+      const user = await authenticateUser(body.user.id, client, integration);
+
+      if (!user) {
+        logger.warn("Slack user could not be authenticated.");
+        throw new AuthenticationError("Slack user could not be authenticated.");
+      }
+
+      await submitApproval({
+        approved: true,
+        callId: action.value,
+        clusterId: integration.cluster_id
+      })
+
+      logger.info("Call approved via Slack", {
+        channelId,
+        messageTs,
+        callId: action.value,
+      });
+
+      await client.chat.update({
+        channel: channelId,
+        ts: messageTs,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `✅ Call \`${action.value}\` was approved`,
+            },
+          },
+        ],
+      });
+
+    }
+  );
+
+  app.action(
+    "call_deny",
+    async ({ ack, body, client, context }) => {
+      await ack();
+
+      if (!isBlockAction(body)) {
+        throw new Error("Slack Action was unexpected type");
+      }
+
+      const teamId = context.teamId;
+      const channelId = body.channel?.id;
+      const messageTs = body.message?.ts;
+      const action = body.actions.find(a => a.action_id === "call_deny");
+
+      if (!teamId || !channelId || !messageTs || !action || !hasValue(action)) {
+        throw new Error("Slack action does not conform to expected structure");
+      }
+
+      const integration = await integrationByTeam(teamId);
+
+      if (!integration || !integration.cluster_id) {
+        throw new Error("Could not find Slack integration for teamId");
+      }
+
+      const user = await authenticateUser(body.user.id, client, integration);
+
+      if (!user) {
+        logger.warn("Slack user could not be authenticated.");
+        throw new AuthenticationError("Slack user could not be authenticated.");
+      }
+
+      await submitApproval({
+        approved: false,
+        callId: action.value,
+        clusterId: integration.cluster_id
+      })
+
+      logger.info("Call denied via Slack", {
+        channelId,
+        messageTs,
+        callId: action.value,
+      });
+
+      await client.chat.update({
+        channel: channelId,
+        ts: messageTs,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `❌ Call \`${action.value}\` was denied`,
+            },
+          },
+        ],
+      });
+    }
+  );
+
   // Event listener for mentions
   app.event("app_mention", async ({ event, client }) => {
     logger.info("Received mention event. Responding.", event);
@@ -185,6 +376,11 @@ export const start = async (fastify: FastifyInstance) => {
   // Event listener for direct messages
   app.event("message", async ({ event, client, context }) => {
     logger.info("Received message event. Responding.", event);
+
+    if (event.subtype === "message_changed") {
+      logger.info("Received message change event. Ignoring.", event);
+      return;
+    }
 
     if (isBotMessage(event)) {
       logger.info("Received message from bot. Ignoring.", event);
@@ -212,7 +408,12 @@ export const start = async (fastify: FastifyInstance) => {
     }
 
     try {
-      const user = await authenticateUser(event, client, integration);
+      if (!hasUser(event)) {
+        logger.warn("Slack event has no user.", { event });
+        throw new AuthenticationError("Slack event has no user");
+      }
+
+      const user = await authenticateUser(event.user, client, integration);
 
       if (hasThread(event)) {
         await handleExistingThread({
@@ -258,8 +459,16 @@ const isDirectMessage = (e: KnownEventFromType<"message">): boolean => {
 };
 
 const hasUser = (e: any): e is { user: string } => {
-   return typeof e?.user === "string";
- };
+  return typeof e?.user === "string";
+};
+
+const isBlockAction = (e: SlackAction): e is BlockAction => {
+  return typeof e?.type === "string" && e.type === "block_actions";
+}
+
+const hasValue = (e: any): e is { value: string } => {
+  return 'value' in e && typeof e?.value === "string";
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const isBotMessage = (e: any): boolean => {
@@ -430,21 +639,20 @@ const handleExistingThread = async ({ event, client, clusterId, userId }: Messag
   throw new Error("Event had no text");
 };
 
-const authenticateUser = async (event: KnownEventFromType<"message">, client: webApi.WebClient, integration: { cluster_id: string }) => {
+const authenticateUser = async (userId: string, client: webApi.WebClient, integration: { cluster_id: string }) => {
   if (!env.CLERK_SECRET_KEY) {
     logger.info("Missing CLERK_SECRET_KEY. Skipping Slack user authentication.");
     return
   }
 
-  if (!hasUser(event)) {
-    logger.warn("Slack event has no user.");
-    throw new AuthenticationError("Slack event has no user");
-  }
-
   const slackUser = await client.users.info({
-    user: event.user,
+    user: userId,
     token: client.token,
   });
+
+  logger.info("Authenticating Slack user", {
+    slackUser
+  })
 
   const confirmed = slackUser.user?.is_email_confirmed;
   const email = slackUser.user?.profile?.email;

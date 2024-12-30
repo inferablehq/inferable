@@ -150,7 +150,7 @@ describe("selfHealJobs", () => {
     expect(createJobResult.created).toBe(true);
 
     await requestApproval({
-      jobId: createJobResult.id,
+      callId: createJobResult.id,
       clusterId: owner.clusterId,
     });
 
@@ -463,7 +463,7 @@ describe("submitApproval", () => {
 
     await requestApproval({
       clusterId: owner.clusterId,
-      jobId: result.id,
+      callId: result.id,
     });
 
     const retreivedJob1 = await getJob({
@@ -475,7 +475,7 @@ describe("submitApproval", () => {
 
     await submitApproval({
       clusterId: owner.clusterId,
-      call: retreivedJob1!,
+      callId: retreivedJob1!.id,
       approved: true,
     });
 
@@ -491,7 +491,7 @@ describe("submitApproval", () => {
     // Re-submitting approval should be a no-op
     await submitApproval({
       clusterId: owner.clusterId,
-      call: retreivedJob1!,
+      callId: retreivedJob1!.id,
       approved: false,
     });
 
@@ -519,7 +519,7 @@ describe("submitApproval", () => {
 
     await requestApproval({
       clusterId: owner.clusterId,
-      jobId: result.id,
+      callId: result.id,
     });
 
     const retreivedJob1 = await getJob({
@@ -531,7 +531,7 @@ describe("submitApproval", () => {
 
     await submitApproval({
       clusterId: owner.clusterId,
-      call: retreivedJob1!,
+      callId: retreivedJob1!.id,
       approved: false,
     });
 
@@ -547,7 +547,7 @@ describe("submitApproval", () => {
     // Re-submitting approval should be a no-op
     await submitApproval({
       clusterId: owner.clusterId,
-      call: retreivedJob1!,
+      callId: retreivedJob1!.id,
       approved: true,
     });
 

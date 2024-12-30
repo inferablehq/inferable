@@ -7,6 +7,24 @@ import { getClusterBackgroundRun, Run } from "./workflows";
 import { workflowMessages } from "../data";
 import * as slack from "../integrations/slack";
 
+
+export const notifyApprovalRequest = async ({
+  callId,
+  clusterId,
+  runId,
+  service,
+  targetFn,
+}: {
+  callId: string;
+  clusterId: string;
+  runId: string;
+  service: string;
+  targetFn: string;
+}) => {
+  const metadata = await getRunMetadata({ clusterId, runId });
+  await slack.handleApprovalRequest({ callId, clusterId, runId, service, targetFn, metadata });
+};
+
 export const notifyNewMessage = async ({
   message,
   metadata,

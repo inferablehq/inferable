@@ -102,7 +102,7 @@ export const callsRouter = initServer().router(
           });
 
           await jobs.requestApproval({
-            jobId: callId,
+            callId: callId,
             clusterId,
           });
 
@@ -322,7 +322,7 @@ export const callsRouter = initServer().router(
       }
 
       await jobs.submitApproval({
-        call,
+        callId,
         clusterId,
         approved: request.body.approved,
       });

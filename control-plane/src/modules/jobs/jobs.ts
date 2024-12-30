@@ -8,6 +8,7 @@ import * as events from "../observability/events";
 import { packer } from "../packer";
 import { resumeRun } from "../workflows/workflows";
 import { selfHealJobs as selfHealCalls } from "./persist-result";
+import { notifyApprovalRequest } from "../workflows/notify";
 
 export { createJob } from "./create-job";
 export { acknowledgeJob, persistJobResult } from "./persist-result";
@@ -369,21 +370,32 @@ export const pollJobs = async ({
   return jobs;
 };
 
-export async function requestApproval({ jobId, clusterId }: { jobId: string; clusterId: string }) {
-  await data.db
+export async function requestApproval({ callId, clusterId }: { callId: string; clusterId: string }) {
+  const [updated] = await data.db
     .update(data.jobs)
     .set({
       approval_requested: true,
     })
-    .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
+    .returning({
+      callId: data.jobs.id,
+      clusterId: data.jobs.cluster_id,
+      runId: data.jobs.workflow_id,
+      service: data.jobs.service,
+      targetFn: data.jobs.target_fn,
+    })
+    .where(and(eq(data.jobs.id, callId), eq(data.jobs.cluster_id, clusterId)));
+
+    if (updated.runId) {
+      await notifyApprovalRequest(updated);
+    }
 }
 
 export async function submitApproval({
-  call,
+  callId,
   clusterId,
   approved,
 }: {
-  call: NonNullable<Awaited<ReturnType<typeof getJob>>>;
+  callId: string;
   clusterId: string;
   approved: boolean;
 }) {
@@ -399,7 +411,7 @@ export async function submitApproval({
       })
       .where(
         and(
-          eq(data.jobs.id, call.id),
+          eq(data.jobs.id, callId),
           eq(data.jobs.cluster_id, clusterId),
           // Do not allow denying a job that has already been approved
           isNull(data.jobs.approved),
@@ -407,7 +419,7 @@ export async function submitApproval({
         )
       );
   } else {
-    await data.db
+    const [updated] = await data.db
       .update(data.jobs)
       .set({
         approved: false,
@@ -417,9 +429,12 @@ export async function submitApproval({
           message: "This call was denied by the user.",
         }),
       })
+      .returning({
+        runId: data.jobs.workflow_id,
+      })
       .where(
         and(
-          eq(data.jobs.id, call.id),
+          eq(data.jobs.id, callId),
           eq(data.jobs.cluster_id, clusterId),
           // Do not allow denying a job that has already been approved
           isNull(data.jobs.approved),
@@ -427,10 +442,10 @@ export async function submitApproval({
         )
       );
 
-    if (call.runId) {
+    if (updated?.runId) {
       await resumeRun({
         clusterId,
-        id: call.runId,
+        id: updated.runId,
       });
     }
   }
