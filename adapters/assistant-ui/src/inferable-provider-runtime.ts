@@ -49,6 +49,7 @@ export function useInferableRuntime({
   baseUrl
 }: RuntimeOptions) {
   const { messages, run, createMessage } = useRun({
+    runId,
     clusterId,
     baseUrl,
     ...(customAuthToken
