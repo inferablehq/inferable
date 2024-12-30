@@ -8,8 +8,7 @@ import { deleteServiceDefinition, upsertServiceDefinition } from "../service-def
 import { integrationSchema } from "./schema";
 import { InstallableIntegration } from "./types";
 import { valtownIntegration } from "./constants";
-import { env } from "../../utilities/env";
-import { createHmac } from "crypto";
+import { createSign } from "crypto";
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
@@ -34,23 +33,28 @@ export const signedHeaders = ({
   body,
   method,
   path,
-  secret = env.VALTOWN_HTTP_SIGNING_SECRET,
+  privateKey,
   timestamp = Date.now().toString(),
 }: {
   body: string;
   method: string;
   path: string;
-  secret?: string;
+  privateKey: string;
   timestamp?: string;
 }): Record<string, string> => {
-  if (!secret) {
-    logger.error("Missing Val.town HTTP signing secret");
+  if (!privateKey) {
+    logger.error("Missing Val.town private key. This should never happen.");
     return {};
   }
 
-  const hmac = createHmac("sha256", secret);
-  hmac.update(`${timestamp}${method}${path}${body}`);
-  const xSignature = hmac.digest("hex");
+  // Handle both raw and PEM-formatted private keys
+  const keyToUse = privateKey.includes("PRIVATE KEY")
+    ? privateKey
+    : `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+
+  const sign = createSign("SHA256");
+  sign.update(`${timestamp}${method}${path}${body}`);
+  const xSignature = sign.sign(keyToUse, "hex");
 
   return {
     "X-Signature": xSignature,
@@ -61,10 +65,16 @@ export const signedHeaders = ({
 /**
  * Fetch metadata from Val.town endpoint
  */
-export async function fetchValTownMeta({ endpoint }: { endpoint: string }): Promise<ValTownMeta> {
+export async function fetchValTownMeta({
+  endpoint,
+  privateKey,
+}: {
+  endpoint: string;
+  privateKey: string;
+}): Promise<ValTownMeta> {
   const metaUrl = new URL("/meta", endpoint).toString();
   const response = await fetch(metaUrl, {
-    headers: signedHeaders({ body: "", method: "GET", path: "/meta" }),
+    headers: signedHeaders({ body: "", method: "GET", path: "/meta", privateKey }),
   });
 
   if (!response.ok) {
@@ -88,24 +98,28 @@ export async function executeValTownFunction({
   endpoint,
   functionName,
   params,
+  privateKey,
 }: {
   endpoint: string;
   functionName: string;
   params: Record<string, unknown>;
+  privateKey: string;
 }) {
   const execUrl = new URL(`/exec/functions/${functionName}`, endpoint).toString();
+  const body = JSON.stringify(params);
 
   const response = await fetch(execUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...signedHeaders({
-        body: JSON.stringify(params),
+        body,
         method: "POST",
         path: `/exec/functions/${functionName}`,
+        privateKey,
       }),
     },
-    body: JSON.stringify(params),
+    body,
   });
 
   if (!response.ok) {
@@ -121,13 +135,16 @@ export async function executeValTownFunction({
 const syncValTownService = async ({
   clusterId,
   endpoint,
+  privateKey,
 }: {
   clusterId: string;
   endpoint?: string;
+  privateKey?: string;
 }) => {
   assert(endpoint, "Missing Val.town configuration");
+  assert(privateKey, "Missing Val.town private key");
 
-  const meta = await fetchValTownMeta({ endpoint });
+  const meta = await fetchValTownMeta({ endpoint, privateKey });
 
   await upsertServiceDefinition({
     type: "permanent",
@@ -179,6 +196,7 @@ const handleCall = async (
       endpoint,
       functionName: call.targetFn,
       params: packer.unpack(call.targetArgs),
+      privateKey: integrations.valtown.privateKey,
     });
 
     await persistJobResult({
@@ -213,6 +231,7 @@ export const valtown: InstallableIntegration = {
     await syncValTownService({
       clusterId,
       endpoint: config.endpoint,
+      privateKey: config.privateKey,
     });
   },
   onDeactivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {

@@ -77,6 +77,8 @@ export const integrationSchema = z.object({
   valtown: z
     .object({
       endpoint: z.string().url(),
+      publicKey: z.string(),
+      privateKey: z.string(),
     })
     .optional()
     .nullable(),

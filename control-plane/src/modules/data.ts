@@ -203,6 +203,8 @@ export const integrations = pgTable(
     }>(),
     valtown: json("valtown").$type<{
       endpoint: string;
+      publicKey: string;
+      privateKey: string;
     }>(),
     slack: json("slack").$type<{
       nangoConnectionId: string;

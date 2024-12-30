@@ -75,9 +75,6 @@ const envSchema = z
     POSTHOG_API_KEY: z.string().optional(),
     POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
     ANALYTICS_BUCKET_NAME: z.string().optional(),
-
-    // Integrations
-    VALTOWN_HTTP_SIGNING_SECRET: z.string().optional(),
   })
   .superRefine((value, ctx) => {
     if (!value.MANAGEMENT_API_SECRET && !value.JWKS_URL) {
