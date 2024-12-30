@@ -5,60 +5,57 @@ import {
 } from "@assistant-ui/react";
 import { useRun } from "@inferable/react";
 import { agentDataSchema, genericMessageDataSchema, resultDataSchema } from "@inferable/react/dist/contract";
+import { z } from "zod";
 
 /**
  * Options for configuring runtime execution.
  */
 type RuntimeOptions = {
+  /** ID of the cluster to connect to */
   clusterId: string;
 
-  /**
-   * The cluster API secret to use for authentication.
-   * This is not recommended as the key will be available in the browser.
-   *
-   * @see https://docs.inferable.ai/pages/auth
-   */
-  apiSecret?: string;
+  /** Optional base URL for the API. Defaults to production URL if not specified */
+  baseUrl?: string;
 
-  /**
-   * A custom auth token to use for authentication.
-   *
-   * @see https://docs.inferable.ai/pages/custom-auth
-   */
-  customAuthToken?: string;
-
-  /**
-   * Optional, provided if you want to resume an existing run.
-   */
+  /** Optional, provided if you want to resume an existing run */
   runId?: string;
-
-  /**
-   * Callback invoked when an error occurs during execution.
-   * @param error - The error that occurred.
-   */
-  onError?: (error: Error) => void;
-};
+} & (
+  | {
+      /**
+       * The cluster API secret to use for authentication.
+       * This is not recommended as the key will be available in the browser.
+       *
+       * @see https://docs.inferable.ai/pages/auth
+       */
+      apiSecret: string;
+      customAuthToken?: never;
+    }
+  | {
+      /**
+       * A custom auth token to use for authentication.
+       *
+       * @see https://docs.inferable.ai/pages/custom-auth
+       */
+      customAuthToken: string;
+      apiSecret?: never;
+    }
+);
 
 export function useInferableRuntime({
   clusterId,
   apiSecret,
   customAuthToken,
   runId,
-  onError
+  baseUrl
 }: RuntimeOptions) {
-
-  const { messages, run, createMessage, start } = useRun({
+  const { messages, run, createMessage } = useRun({
     clusterId,
-    apiSecret,
-    customAuthToken,
-    onError,
+    baseUrl,
+    ...(customAuthToken
+      ? { authType: "custom" as const, customAuthToken }
+      : { authType: "cluster" as const, apiSecret: apiSecret! }
+    ),
   });
-
-  if (!run && !!runId) {
-    start({
-      runId
-    });
-  }
 
   const onNew = async (message: AppendMessage) => {
     if (message.content[0]?.type !== "text")
@@ -66,16 +63,10 @@ export function useInferableRuntime({
 
     const input = message.content[0].text;
 
-    if (!run) {
-      start({
-        initialPrompt: input
-      });
-    } else {
-      await createMessage({
-        message: input,
-        type: "human",
-      });
-    }
+    await createMessage({
+      message: input,
+      type: "human",
+    });
   };
 
   const isRunning = run?.status ? ["running", "pending"].includes(run.status) : false;
@@ -89,7 +80,6 @@ export function useInferableRuntime({
     }),
     run,
   }
-
 }
 
 const convertMessage = (message: any, allMessages: any): ThreadMessageLike => {

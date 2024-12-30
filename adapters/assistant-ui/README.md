@@ -40,11 +40,17 @@ import { AssistantRuntimeProvider, Thread } from "@assistant-ui/react";
 
 const { runtime, run } = useInferableRuntime({
   clusterId: '<YOUR_CLUSTER_ID>',
+  // Choose one of the following authentication methods:
+
+  // Option 1: Custom Auth Token (Recommended)
   customAuthToken: 'your-custom-auth-token',
-  // apiSecret: 'your-api-secret', // Not recommended
-  onError: (error) => {
-    console.error(error);
-  }
+
+  // Option 2: API Secret (Not recommended for browser usage)
+  // apiSecret: 'your-api-secret',
+
+  // Optional configuration
+  baseUrl: 'https://api.inferable.ai', // Optional: defaults to production URL
+  runId: 'existing-run-id', // Optional: to resume an existing run
 })
 
 return (
@@ -58,21 +64,17 @@ return (
 
 `userInferableRuntime` can also be used with `AssistantModal` for a modal UI.
 
+#### Configuration Options
 
-#### Error Handling
+The `useInferableRuntime` hook accepts the following options:
 
-You can handle errors by providing an `onError` callback:
-
-```typescript
-  const { runtime, run } = useInferableRuntime({
-    clusterId: '<YOUR_CLUSTER_ID>',
-    customAuthToken: 'your-custom-auth-token',
-    // apiSecret: 'your-api-secret', // Not recommended
-    onError: (error) => {
-      console.error(error);
-    }
-  })
-```
+- `clusterId` (required): The ID of your Inferable cluster
+- Authentication (one of the following is required):
+  - `customAuthToken`: A custom authentication token (recommended for browser usage)
+  - `apiSecret`: Your cluster's API secret (not recommended for browser usage)
+- Optional configuration:
+  - `baseUrl`: The base URL for API requests (defaults to production URL)
+  - `runId`: An existing run ID to resume
 
 ### Rendering function UI
 
