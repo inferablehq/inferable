@@ -119,6 +119,8 @@ The `useRun` hook returns an object with the following properties:
   createMessage: Function;  // Function to add new messages to the run
   messages: Message[];      // Array of all messages in the run
   run?: Run;               // Current run status and metadata
+  result?: T;              // Typed result of the run if resultSchema was provided
+  error: Error | null;     // Error if any occurred during operations
 }
 ```
 
@@ -131,6 +133,7 @@ const { messages, run, createMessage } = useRun({
   customAuthToken: "your-custom-auth-token",
   // apiSecret: 'your-api-secret', // Alternative auth method
   // pollInterval: 1000, // Optional: defaults to 1000ms
+  // resultSchema: z.object({...}), // Optional: schema for typed run results
 });
 ```
 
