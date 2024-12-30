@@ -38,6 +38,15 @@ pnpm add @inferable/assistant-ui @assistant-ui/react
 import { useInferableRuntime } from '@inferable/assistant-ui';
 import { AssistantRuntimeProvider, Thread } from "@assistant-ui/react";
 
+type RuntimeOptions = {
+  clusterId: string;
+  baseUrl?: string;
+  runId?: string;
+} & (
+  | { apiSecret: string; customAuthToken?: never }
+  | { customAuthToken: string; apiSecret?: never }
+);
+
 const { runtime, run } = useInferableRuntime({
   clusterId: '<YOUR_CLUSTER_ID>',
   // Choose one of the following authentication methods:
