@@ -8,6 +8,10 @@ import { deleteServiceDefinition, upsertServiceDefinition } from "../service-def
 import { integrationSchema } from "./schema";
 import { InstallableIntegration } from "./types";
 import { valtownIntegration } from "./constants";
+import { env } from "../../utilities/env";
+import { createHmac } from "crypto";
+
+const apiSecret = env.VALTOWN_HTTP_SIGNING_SECRET;
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
@@ -28,12 +32,41 @@ const valtownMetaSchema = z.object({
 
 type ValTownMeta = z.infer<typeof valtownMetaSchema>;
 
+const signedHeaders = ({
+  body,
+  secret,
+  method,
+  path,
+}: {
+  body: string;
+  secret?: string;
+  method: string;
+  path: string;
+}): Record<string, string> => {
+  if (!secret) {
+    logger.error("Missing Val.town HTTP signing secret");
+    return {};
+  }
+
+  const timestamp = Date.now().toString();
+  const hmac = createHmac("sha256", secret);
+  hmac.update(`${timestamp}${method}${path}${body}`);
+  const xSignature = hmac.digest("hex");
+
+  return {
+    "X-Signature": xSignature,
+    "X-Timestamp": timestamp,
+  };
+};
+
 /**
  * Fetch metadata from Val.town endpoint
  */
 async function fetchValTownMeta({ endpoint }: { endpoint: string }): Promise<ValTownMeta> {
   const metaUrl = new URL("/meta", endpoint).toString();
-  const response = await fetch(metaUrl);
+  const response = await fetch(metaUrl, {
+    headers: signedHeaders({ body: "", secret: apiSecret, method: "GET", path: "/meta" }),
+  });
 
   if (!response.ok) {
     logger.error("Failed to fetch Val.town metadata", {
@@ -67,6 +100,12 @@ async function executeValTownFunction({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...signedHeaders({
+        body: JSON.stringify(params),
+        secret: apiSecret,
+        method: "POST",
+        path: `/exec/functions/${functionName}`,
+      }),
     },
     body: JSON.stringify(params),
   });

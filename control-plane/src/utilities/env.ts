@@ -6,14 +6,14 @@ import { z } from "zod";
 export const truthy = z
   .enum(["0", "1", "true", "false"])
   .catch("false")
-  .transform((value) => value == "true" || value == "1");
+  .transform(value => value == "true" || value == "1");
 
 const envSchema = z
   .object({
     NODE_ENV: z
       .enum(["test", "development", "production"])
       .default("development")
-      .transform((value) => {
+      .transform(value => {
         if (process.env.CI) {
           return "test";
         }
@@ -75,6 +75,9 @@ const envSchema = z
     POSTHOG_API_KEY: z.string().optional(),
     POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
     ANALYTICS_BUCKET_NAME: z.string().optional(),
+
+    // Integrations
+    VALTOWN_HTTP_SIGNING_SECRET: z.string().optional(),
   })
   .superRefine((value, ctx) => {
     if (!value.MANAGEMENT_API_SECRET && !value.JWKS_URL) {
