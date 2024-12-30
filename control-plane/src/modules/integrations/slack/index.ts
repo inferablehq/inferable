@@ -163,34 +163,41 @@ export const handleApprovalRequest = async ({
 
   const client = new webApi.WebClient(token)
 
+  const text = `I need your approval to call \`${service}.${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`
+
   client?.chat.postMessage({
     thread_ts: metadata[THREAD_META_KEY],
     channel: metadata[CHANNEL_META_KEY],
     mrkdwn: true,
-    text: `I need your approval to call \`${service}.${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`,
+    text,
     blocks: [
       {
-        "type": "actions",
-        "elements": [
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text
+        }
+      },
+      {
+        type: "actions",
+        elements: [
           {
-            "type": "button",
-            "text": {
-              "type": "plain_text",
-              "text": "Approve",
-              "emoji": true
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "Approve",
             },
-            "value": callId,
-            "action_id": CALL_APPROVE_ACTION_ID
+            value: callId,
+            action_id: CALL_APPROVE_ACTION_ID
           },
           {
-            "type": "button",
-            "text": {
-              "type": "plain_text",
-              "text": "Deny",
-              "emoji": true
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "Deny",
             },
-            "value": callId,
-            "action_id": CALL_DENY_ACTION_ID
+            value: callId,
+            action_id: CALL_DENY_ACTION_ID
           }
         ]
       }
