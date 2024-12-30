@@ -33,8 +33,6 @@ type UseRunOptions<T extends z.ZodObject<any>> = {
   baseUrl?: string;
   /** Polling interval in milliseconds. Defaults to 1000ms */
   pollInterval?: number;
-  /** Optional error callback function */
-  onError?: (error: Error) => void;
   /** Optional pre-configured API client instance */
   apiClient?: ReturnType<typeof createApiClient>;
   /** Optional result schema for the run */
@@ -58,6 +56,8 @@ interface UseRunReturn<T extends z.ZodObject<any>> {
   run?: GetRunResponse;
   /** Result of the run if available */
   result?: z.infer<T>;
+  /** Error if any occurred */
+  error: Error | null;
 }
 
 /**
@@ -94,6 +94,7 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
   const [messages, setMessages] = useState<ListMessagesResponse>([]);
   const [run, setRun] = useState<GetRunResponse>();
   const [runId, setRunId] = useState<string>();
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!client) {
@@ -117,7 +118,7 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
         })
         .then(response => {
           if (response.status !== 201) {
-            options.onError?.(
+            setError(
               new Error(
                 `Could not create run. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
               )
@@ -127,10 +128,18 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
           }
         })
         .catch(error => {
-          options.onError?.(error instanceof Error ? error : new Error(String(error)));
+          setError(error instanceof Error ? error : new Error(String(error)));
         });
     }
-  }, [client]);
+  }, [client, options.runId, options.resultSchema, options.clusterId, runId]);
+
+  const requestParams = useMemo(
+    () => ({
+      clusterId: options.clusterId,
+      runId: runId!,
+    }),
+    [options.clusterId, runId]
+  );
 
   useInterval(async () => {
     if (!runId) {
@@ -139,24 +148,14 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
 
     try {
       const [messageResponse, runResponse] = await Promise.all([
-        client.listMessages({
-          params: {
-            clusterId: options.clusterId,
-            runId: runId,
-          },
-        }),
-        client.getRun({
-          params: {
-            clusterId: options.clusterId,
-            runId: runId,
-          },
-        }),
+        client.listMessages({ params: requestParams }),
+        client.getRun({ params: requestParams }),
       ]);
 
       if (messageResponse.status === 200) {
         setMessages(messageResponse.body);
       } else {
-        options.onError?.(
+        setError(
           new Error(
             `Could not list messages. Status: ${messageResponse.status} Body: ${JSON.stringify(messageResponse.body)}`
           )
@@ -164,41 +163,51 @@ export function useRun<T extends z.ZodObject<any>>(options: UseRunOptions<T>): U
       }
 
       if (runResponse.status === 200) {
-        setRun(runResponse.body);
+        const runHasChanged = JSON.stringify(runResponse.body) !== JSON.stringify(run);
+
+        if (runHasChanged) {
+          setRun(runResponse.body);
+        }
       } else {
-        options.onError?.(new Error(`Could not get run. Status: ${runResponse.status}`));
+        setError(new Error(`Could not get run. Status: ${runResponse.status}`));
       }
     } catch (error) {
-      options.onError?.(error instanceof Error ? error : new Error(String(error)));
+      setError(error instanceof Error ? error : new Error(String(error)));
     }
   }, options.pollInterval || 1000);
 
-  const createMessage = async (input: CreateMessageInput) => {
-    if (!runId) return;
+  const createMessage = useMemo(
+    () => async (input: CreateMessageInput) => {
+      if (!runId) return;
 
-    const response = await client.createMessage({
-      params: {
-        clusterId: options.clusterId,
-        runId,
-      },
-      body: input,
-    });
+      const response = await client.createMessage({
+        params: requestParams,
+        body: input,
+      });
 
-    if (response.status !== 201) {
-      options.onError?.(
-        new Error(
-          `Could not create message. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
-        )
-      );
-    }
-  };
+      if (response.status !== 201) {
+        setError(
+          new Error(
+            `Could not create message. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
+          )
+        );
+      }
+    },
+    [client, runId, requestParams]
+  );
+
+  const result = useMemo(
+    () => (run?.result ? options.resultSchema?.safeParse(run.result)?.data : undefined),
+    [run?.result, options.resultSchema]
+  );
 
   return {
     client,
     createMessage,
     messages,
     run,
-    result: run?.result ? options.resultSchema?.safeParse(run.result)?.data : undefined,
+    result,
+    error,
   };
 }
 

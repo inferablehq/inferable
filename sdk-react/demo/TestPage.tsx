@@ -16,7 +16,6 @@ export function TestPage(props: TestPageProps) {
   const [message, setMessage] = useState("");
   const { createMessage, messages, run } = useRun({
     ...props,
-    onError: error => console.error(error),
     authType: "custom",
     customAuthToken: props.customAuthToken,
     resultSchema: z.object({
