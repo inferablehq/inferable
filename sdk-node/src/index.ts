@@ -35,7 +35,7 @@ export {
   validateFunctionSchema,
   validateFunctionArgs,
   blob,
-  approvalRequest
+  Interrupt
 } from "./util";
 
 export { createApiClient } from "./create-client";

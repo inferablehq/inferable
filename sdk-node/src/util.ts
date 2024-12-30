@@ -313,15 +313,3 @@ export class Interrupt {
     return new Interrupt("approval");
   }
 }
-
-/**
- * @deprecated Use Interrupt.approval() instea
-  */
-export const approvalRequest = () => {
-  return {
-    [INTERRUPT_KEY]: {
-      type: "approval",
-    },
-  };
-};
-
