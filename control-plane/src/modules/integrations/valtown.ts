@@ -11,8 +11,6 @@ import { valtownIntegration } from "./constants";
 import { env } from "../../utilities/env";
 import { createHmac } from "crypto";
 
-const apiSecret = env.VALTOWN_HTTP_SIGNING_SECRET;
-
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
   endpoint: z.string().url(),
@@ -32,23 +30,24 @@ const valtownMetaSchema = z.object({
 
 type ValTownMeta = z.infer<typeof valtownMetaSchema>;
 
-const signedHeaders = ({
+export const signedHeaders = ({
   body,
-  secret,
   method,
   path,
+  secret = env.VALTOWN_HTTP_SIGNING_SECRET,
+  timestamp = Date.now().toString(),
 }: {
   body: string;
-  secret?: string;
   method: string;
   path: string;
+  secret?: string;
+  timestamp?: string;
 }): Record<string, string> => {
   if (!secret) {
     logger.error("Missing Val.town HTTP signing secret");
     return {};
   }
 
-  const timestamp = Date.now().toString();
   const hmac = createHmac("sha256", secret);
   hmac.update(`${timestamp}${method}${path}${body}`);
   const xSignature = hmac.digest("hex");
@@ -62,10 +61,10 @@ const signedHeaders = ({
 /**
  * Fetch metadata from Val.town endpoint
  */
-async function fetchValTownMeta({ endpoint }: { endpoint: string }): Promise<ValTownMeta> {
+export async function fetchValTownMeta({ endpoint }: { endpoint: string }): Promise<ValTownMeta> {
   const metaUrl = new URL("/meta", endpoint).toString();
   const response = await fetch(metaUrl, {
-    headers: signedHeaders({ body: "", secret: apiSecret, method: "GET", path: "/meta" }),
+    headers: signedHeaders({ body: "", method: "GET", path: "/meta" }),
   });
 
   if (!response.ok) {
@@ -85,7 +84,7 @@ async function fetchValTownMeta({ endpoint }: { endpoint: string }): Promise<Val
 /**
  * Execute a Val.town function
  */
-async function executeValTownFunction({
+export async function executeValTownFunction({
   endpoint,
   functionName,
   params,
@@ -102,7 +101,6 @@ async function executeValTownFunction({
       "Content-Type": "application/json",
       ...signedHeaders({
         body: JSON.stringify(params),
-        secret: apiSecret,
         method: "POST",
         path: `/exec/functions/${functionName}`,
       }),
