@@ -166,14 +166,9 @@ export const handleApprovalRequest = async ({
   client?.chat.postMessage({
     thread_ts: metadata[THREAD_META_KEY],
     channel: metadata[CHANNEL_META_KEY],
+    mrkdwn: true,
+    text: `I need your approval to call \`${service}.${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`,
     blocks: [
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": `I need your approval to call \`${service}.${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`
-        }
-      },
       {
         "type": "actions",
         "elements": [
@@ -620,19 +615,11 @@ const handleCallApprovalAction = async ({
     callId: action.value,
   });
 
-  const blockMessage = `${approved ? "✅" : "❌"} Call \`${action.value}\` was ${approved ? "approved" : "denied"}`;
+  const text = `${approved ? "✅" : "❌"} Call \`${action.value}\` was ${approved ? "approved" : "denied"}`;
 
   await client.chat.update({
     channel: channelId,
     ts: messageTs,
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: blockMessage
-        },
-      },
-    ],
+    text,
   });
 };
