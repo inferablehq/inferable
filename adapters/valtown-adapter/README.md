@@ -7,9 +7,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/)
 
-This is the official Inferable AI adapter for Val Town. It allows you to expose your Val Town functions as tools for Inferable cluster. Inferable is an [open-source developer platform for building AI agents](https://www.inferable.ai) and [Vals are small JavaScript or TypeScript snippets of code](https://www.val.town/), written in the browser and runs on a managed val.town server.
+This is the official Inferable AI adapter for Val Town. It allows you to expose your Val Town functions as tools for Inferable cluster. Inferable is an [open-source developer platform for build7ing AI agents](https://www.inferable.ai) and [Vals are small JavaScript or TypeScript snippets of code](https://www.val.town/), written in the browser and runs on a managed val.town server.
 
-[![](./valtown.mov.gif)](https://a.inferable.ai/valtown.mp4)
+[![Click to see the full demo](./valtown.mov.gif)](https://a.inferable.ai/valtown.mp4)
+[__Click to see the full demo__](https://a.inferable.ai/valtown.mp4)
 
 ## Quick Start
 
