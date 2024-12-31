@@ -13,6 +13,7 @@ import * as redis from "./modules/redis";
 import * as toolhouse from "./modules/integrations/toolhouse";
 import * as externalCalls from "./modules/jobs/external";
 import * as models from "./modules/models/routing";
+import * as email from "./modules/email";
 import { logContext, logger } from "./modules/observability/logger";
 import * as workflows from "./modules/workflows/workflows";
 import * as slack from "./modules/integrations/slack";
@@ -146,11 +147,15 @@ const startTime = Date.now();
     workflows.start(),
     models.start(),
     redis.start(),
-    customerTelemetry.start(),
-    toolhouse.start(),
-    externalCalls.start(),
     slack.start(app),
-    ...(env.EE_DEPLOYMENT ? [flagsmith?.getEnvironmentFlags(), analytics.start()] : []),
+    ...(env.EE_DEPLOYMENT ? [
+      customerTelemetry.start(),
+      toolhouse.start(),
+      externalCalls.start(),
+      email.start(),
+      flagsmith?.getEnvironmentFlags(),
+      analytics.start()
+    ] : []),
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });
@@ -190,6 +195,7 @@ process.on("SIGTERM", async () => {
     customerTelemetry.stop(),
     externalCalls.stop(),
     slack.stop(),
+    email.stop(),
   ]);
 
   logger.info("Shutdown complete");

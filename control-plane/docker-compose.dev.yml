@@ -45,6 +45,7 @@ configs:
       queues {
         run-process {}
         run-generate-name {}
+        email-ingestion {}
         customer-telemetry {}
         external-tool-call {}
       }
