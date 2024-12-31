@@ -12,7 +12,6 @@ import { createSign } from "crypto";
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
-  endpoint: z.string().url(),
   description: z.string(),
   functions: z.array(
     z.object({
@@ -47,10 +46,14 @@ export const signedHeaders = ({
     return {};
   }
 
-  // Handle both raw and PEM-formatted private keys
-  const keyToUse = privateKey.includes("PRIVATE KEY")
-    ? privateKey
-    : `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+  const keyToUse = [
+    "-----BEGIN PRIVATE KEY-----",
+    ...(privateKey.match(/.{1,64}/g) || []),
+    "-----END PRIVATE KEY-----",
+  ].join("\n");
+
+  //TODO: Remove this
+  console.log("Key to use:", keyToUse);
 
   const sign = createSign("SHA256");
   sign.update(`${timestamp}${method}${path}${body}`);
@@ -145,6 +148,11 @@ const syncValTownService = async ({
   assert(privateKey, "Missing Val.town private key");
 
   const meta = await fetchValTownMeta({ endpoint, privateKey });
+
+  await deleteServiceDefinition({
+    service: valtownIntegration,
+    owner: { clusterId },
+  });
 
   await upsertServiceDefinition({
     type: "permanent",

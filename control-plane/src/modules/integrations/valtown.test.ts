@@ -43,7 +43,6 @@ describe("Val.town Integration", () => {
   describe("fetchValTownMeta", () => {
     it("should fetch and parse metadata", async () => {
       const mockMeta = {
-        endpoint: "https://api.val.town",
         description: "Test description",
         functions: [
           {
