@@ -12,7 +12,6 @@ import { createSign } from "crypto";
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
-  endpoint: z.string().url(),
   description: z.string(),
   functions: z.array(
     z.object({
