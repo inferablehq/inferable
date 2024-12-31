@@ -46,10 +46,14 @@ export const signedHeaders = ({
     return {};
   }
 
-  // Handle both raw and PEM-formatted private keys
-  const keyToUse = privateKey.includes("PRIVATE KEY")
-    ? privateKey
-    : `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+  const keyToUse = [
+    "-----BEGIN PRIVATE KEY-----",
+    ...(privateKey.match(/.{1,64}/g) || []),
+    "-----END PRIVATE KEY-----",
+  ].join("\n");
+
+  //TODO: Remove this
+  console.log("Key to use:", keyToUse);
 
   const sign = createSign("SHA256");
   sign.update(`${timestamp}${method}${path}${body}`);
