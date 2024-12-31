@@ -1,4 +1,31 @@
+/**
+ * A service class that provides a server for handling function registration and execution.
+ * It supports optional authentication and provides metadata about registered functions.
+ *
+ * @example
+ * ```ts
+ * const service = new InferableService({
+ *   description: "My functions",
+ *   token: "optional-auth-token"
+ * });
+ *
+ * service.registerFunction({
+ *   name: "sum",
+ *   description: "Sum two numbers",
+ *   handler: async (input) => input.a + input.b,
+ *   input: {
+ *     type: "object",
+ *     properties: {
+ *       a: { type: "number" },
+ *       b: { type: "number" },
+ *     },
+ *     required: ["a", "b"],
+ *   },
+ * });
+ * ```
+ */
 export class InferableService {
+  /** Array of registered functions with their metadata and handlers */
   private functions: Parameters<InferableService["registerFunction"]>[0][] = [];
 
   constructor(
@@ -15,6 +42,15 @@ export class InferableService {
     },
   ) {}
 
+  /**
+   * Register a new function with the service.
+   *
+   * @param options The configuration options for the function
+   * @param options.name The name of the function to register
+   * @param options.description A human-readable description of what the function does
+   * @param options.handler An async function that handles the execution
+   * @param options.input JSON Schema object describing the expected input format
+   */
   registerFunction(options: {
     name: string;
     description: string;
@@ -30,6 +66,12 @@ export class InferableService {
     this.functions.push(options);
   }
 
+  /**
+   * Checks if the provided token matches the configured authentication token.
+   *
+   * @param token The authentication token to verify
+   * @returns True if authentication is successful or disabled, false otherwise
+   */
   private isAuthenticated(token: string | null): boolean {
     if (!this.options.token) {
       return true; // If no token is configured, authentication is disabled
@@ -37,6 +79,14 @@ export class InferableService {
     return token === this.options.token;
   }
 
+  /**
+   * Creates and returns a server request handler function.
+   * The server supports the following endpoints:
+   * - GET /meta: Returns metadata about the service and registered functions
+   * - POST /exec/functions/{functionName}: Executes a registered function
+   *
+   * @returns A function that handles incoming HTTP requests
+   */
   getServer(): (request: Request) => Promise<Response> {
     const server = async (request: Request): Promise<Response> => {
       console.log(`[Inferable Adapter] Incoming request to: ${request.url}`);

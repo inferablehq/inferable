@@ -1,6 +1,6 @@
 {
   "name": "@inferable/valtown-adapter",
-  "version": "0.0.11",
+  "version": "0.0.13",
   "license": "MIT",
   "exports": "./mod.ts",
   "description": "Inferable adapter for Val Town integration",
