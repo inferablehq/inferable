@@ -3,12 +3,17 @@ export class InferableService {
 
   constructor(
     private options: {
+      /**
+       * A description of the service.
+       */
       description: string;
+
+      /**
+       * A token to authenticate requests to the service. If not provided, authentication is disabled.
+       */
       token?: string;
     },
-  ) {
-    // Remove public key formatting logic as it's no longer needed
-  }
+  ) {}
 
   registerFunction(options: {
     name: string;
