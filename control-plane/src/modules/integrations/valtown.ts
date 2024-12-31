@@ -146,6 +146,11 @@ const syncValTownService = async ({
 
   const meta = await fetchValTownMeta({ endpoint, privateKey });
 
+  await deleteServiceDefinition({
+    service: valtownIntegration,
+    owner: { clusterId },
+  });
+
   await upsertServiceDefinition({
     type: "permanent",
     service: valtownIntegration,
