@@ -4,8 +4,13 @@ import { signedHeaders, fetchValTownMeta, executeValTownFunction } from "./valto
 
 const server = setupServer();
 
-const privateKey =
-  "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCbG8duYpxNeadWdSGxgPqhutRLpkNC3oZI8ySzeFbXu2o1PPEZRGyjq8uvp+zeg+bTtV7ArRKRi+KxnXOkDMQQT+eZjSxFYbw5Q6CClVlJbxE8+g15BSomIxvCGProZ6WHirjVMbiSpt6YBzyagNfpJVbPDm037hVYZjst40wwHBHUvxf1GA6MxKml36eH2at6nkRoKPF33CilYWzoJeHEt0gu2fgPkZUR38BgbS+8pvWic/xWy6D8Q5jzptpsNxmmIjrJq+KykinTUgT6FCNW8cbeTzsnBVF5IYeqgO58gIIJXslEx9EefeYAb7Recxj0W0TCFDrBDGMaLJM0ob7vAgMBAAECggEAJo9a3nXUXqxaLfOzmyGx7Sf5pA7i1MpmPtd3bciCamJUroSGeZ4ZlfzdB7+q8sx+w23o7uR348gPZNF8ULG9wkJjFLjUYzE/bksCKcSALHHYqryNQeNHTbDXs0KricBOleomNhYEySyD1O6jodNbGcJnGNWA0HE3TEEqACfsJl9IxMDNk7TOfJgmHQMqPcbValkVywSJMp2qDDKoxGzdp7ZiKZlZq+MujGBNqKh/AacYZKVn+B9hxedTRZXCDQebuqklpJbFAL0P1S5s6E8cx7xtvicQ7BPBseX3PH5Rs9CwqzZYPVEeSoystIpqVPnSn6QD/Ux7VicqIAvIglHCPQKBgQDUj4wZHv/gSkqFKgfagHREGak8VAUn5e+u0mOV7dIsxsPgic7dHvpI0lzVx59IXC8I8kmEPrLw43BTaRgvhvZxllQY8XzOZlukne2inpEpCEOHYrcmbSJJhpoabDIy5C3iy0zErIa9f0UVTyOx8NTS1G6odra7TfCqnPKp+/XdiwKBgQC6zocLrmvtN+J0ygJw+gX8MPxyHVObEtdW86/Be0GApMvJgQWN7AdcuNT1wOie6kaJ5fYu4U70GOb9Bz7QL2oMM+Y7FVLXDqA2BzdVmFPYkQxMBzRx+qLjJ0488WqUoBIhGh6QufPSvcqoLoSNx0fYKNrSV2DJnJkIiNLbquIYrQKBgE7IDWLaLHgS0N/eHh8L8Qu0fxcPBQIupNEkxSgyhu11le/I49TswFLxNNs/K3gEQqKMOlc7bdL+WQlxMDedTAX5c53zExDkux6eMg9Nuft9RpoNKlihpk2eB8u3Qju+eotOUluqnh3p587oEBDJc/fYKFNj/IIbdxGlLgN2kT/VAoGAPTw0Io0jjdhS4GvTzwr2aUv5hMK+REgx1Kv/AhKQT0Y2EzC7DGHBrBBepsx8tJMhWlTKlWWABx4eofT9DytrvOJKZzW/OQXvWKaW6fUMDyLFACsgcvhw6rtYtzt/74ZlSvqP6Gs8VOmoA+dzxjH8CAykZm0EKjKuK5EGZcGnaeUCgYEAuhZVvmLg70Gr+S02KfsVLMqORv+Hvy84ew5EM3vLTTkwOYhfVK9HNYLjh5yX9EdgjhJtAmCE0pG1NIed/86EY67/cB/4yI/UMB9MP/+xjWbxa0UkWGibwhM2ZmgZQXweL1Y1oTpTP342j0MkMI/7T+viq18IgcxqI3YIPI9Azgk=";
+const config = {
+  endpoint: "https://inferable.web.val.run",
+  publicKey:
+    '{"alg":"RS256","e":"AQAB","ext":true,"key_ops":[],"kty":"RSA","n":"wm3rV26ECbwcbW-83IZU6UiptRq6JroEMSz71S_JpuId83KyzjCPKCpI9lEcCg6ClSD_-gJQ1htUTqGpOwiYlYTCQARPvjYXPyRqjRy8Mjn6LsCM5UqTjMX3jXJm92X-NEgKtzAPeuAZ5tULWrZnBKNNmdhUp8JrW9wCAb2fWo64h5mWtun5Q8xELhzzhKHZD25O3UbB0OAb1iEArNsVwsH0afT_yLvx2K9ETVLS8u0j-Psl-FJwY-uJmwRxqE08viND_T4OldyHocrE8-dJaxgrp77YiYAKoKeZyoqzFXYKyqu-MwmWs20NP9dOgq5z61bmMiLUWE4phooL3r2alQ"}',
+  privateKey:
+    '{"alg":"RS256","d":"Gm_mTnznRMiYh_Pn1weH_7GC6-5-rdngzIv8kTQehAvefTYVJI67RH-dbKrCOIbZECyMyeKrObW9HLUEJRQJ5VjILfq4GhnSRuJtf5MO7vhtsZI6hkoB7qQTgV7zK8QpUNQT6u1EyZUzyGyjDtpa_ykyWc8t0aLQxMyRVEnDo4Uj9ZaPysEoPm6ZHOiK_0oPbFzoPjfCm3HqFx8lzTlpJVSdjCi8uz4yeldfkai-_jV4vpbP0g6zQi28L3hQUkvPiLuOv_WZOhjgUtpHUnmXlENV7pQ_8L5EVqiXDNUNsiimpYOqaGYChjGgjUE94Rcrs4AXOE187iQuhaDp0LfMAQ","dp":"K8trecJdBBHf90EC6FwV-M8jwsk9CV3ppcBICVzWvC1eVBiv6Bhn576AHvBHlP5XWa2IRZpE2JDd7nBUoZFcGrNontJJU2w0EMHkdxsK6C_hHbf5llPgM9m04FzaT6XggyYhOHIZvXU84KTSkDJhN6CzNcs3LqW3hTmqstBowAE","dq":"NYlCeQZi-sRbT3tntMJIWh6VytGgUa1MpLUZh26xgd3WpUdmIKFObKZaMwBANJklNCWeniQrzvG7PrZcpFMo6zwVpB3k_Tj-MDCzADmycBPjadGAMHXfH0jGVJc33B9T8-HK7nD8JsZc2FqxAHbhiTkfZz0wCzfVNiTsvys_i9E","e":"AQAB","ext":true,"key_ops":["sign"],"kty":"RSA","n":"wm3rV26ECbwcbW-83IZU6UiptRq6JroEMSz71S_JpuId83KyzjCPKCpI9lEcCg6ClSD_-gJQ1htUTqGpOwiYlYTCQARPvjYXPyRqjRy8Mjn6LsCM5UqTjMX3jXJm92X-NEgKtzAPeuAZ5tULWrZnBKNNmdhUp8JrW9wCAb2fWo64h5mWtun5Q8xELhzzhKHZD25O3UbB0OAb1iEArNsVwsH0afT_yLvx2K9ETVLS8u0j-Psl-FJwY-uJmwRxqE08viND_T4OldyHocrE8-dJaxgrp77YiYAKoKeZyoqzFXYKyqu-MwmWs20NP9dOgq5z61bmMiLUWE4phooL3r2alQ","p":"-jBc8mJWjEsRsuaFB3m26lWdJFn4j2suI-0G_8Byz-QHLG4PA2YdR-icU-oCQorO6C_jJkKkqQJJiRDZe1BIZFF632U5nIIhfoa4ysoholacsDmloVOxn3ZgRPKrqOK53ShxggmwXpf5WPETZHCAC3fZ8PgT24MsKRYijf55DAE","q":"xvIBxmn3EzWQdWKFbmgfiLkajiFB8xNPhHeVlAGF9afAaHwwMVhqkvgHVekrcYhqkIB5wTdcxZxlRLZAI_8H7mvk1FRwkkojUctw8jDtgO8Jx4SWS6-ieinFUW1H_RXGVPi5kqqCwSd6NEABUrz3WaFADH38hajLp-Qr9IDhnpU","qi":"6nQ9U91UzdOf9CHxeGxvYIt0oYOsFPuGIAdlaNGv0k510ypgmgTUE5PKH1JIZR3R5i41kE77XNYmF9PImCdyl6GTbaQIwQnmcjeqyTHhRRae9irIhKVFfFazRY64YpMfc3ZgUmG4ht5NacLd0QmJjmduFuc9Z-LIcaL7VisWcpo"}',
+};
 
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
@@ -18,7 +23,7 @@ describe("Val.town Integration", () => {
         body: JSON.stringify({ test: "value" }),
         method: "GET",
         path: "/meta",
-        privateKey,
+        privateKey: JSON.parse(config.privateKey),
         timestamp: "819118800000",
       });
 
@@ -33,7 +38,7 @@ describe("Val.town Integration", () => {
         body: "",
         method: "GET",
         path: "/meta",
-        privateKey: "",
+        privateKey: null,
       });
 
       expect(result).toStrictEqual({});
@@ -67,7 +72,6 @@ describe("Val.town Integration", () => {
 
       const result = await fetchValTownMeta({
         endpoint: "https://api.val.town",
-        privateKey,
       });
 
       expect(result).toEqual(mockMeta);
@@ -95,7 +99,7 @@ describe("Val.town Integration", () => {
         endpoint: "https://api.val.town",
         functionName: "testFn",
         params: { param: "value" },
-        privateKey,
+        privateKey: JSON.parse(config.privateKey),
       });
 
       expect(result).toEqual(mockResponse);

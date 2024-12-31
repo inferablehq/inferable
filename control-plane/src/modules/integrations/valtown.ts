@@ -8,7 +8,22 @@ import { deleteServiceDefinition, upsertServiceDefinition } from "../service-def
 import { integrationSchema } from "./schema";
 import { InstallableIntegration } from "./types";
 import { valtownIntegration } from "./constants";
-import { createSign } from "crypto";
+import { createSign, SignJsonWebKeyInput } from "crypto";
+
+const privateKeySchema = z.object({
+  format: z.literal("jwk"),
+  key: z.object({
+    kty: z.literal("RSA"),
+    n: z.string(),
+    e: z.string(),
+    d: z.string(),
+    p: z.string(),
+    q: z.string(),
+    dp: z.string(),
+    dq: z.string(),
+    qi: z.string(),
+  }),
+});
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
@@ -38,7 +53,7 @@ export const signedHeaders = ({
   body: string;
   method: string;
   path: string;
-  privateKey: string;
+  privateKey: unknown;
   timestamp?: string;
 }): Record<string, string> => {
   if (!privateKey) {
@@ -46,18 +61,11 @@ export const signedHeaders = ({
     return {};
   }
 
-  const keyToUse = [
-    "-----BEGIN PRIVATE KEY-----",
-    ...(privateKey.match(/.{1,64}/g) || []),
-    "-----END PRIVATE KEY-----",
-  ].join("\n");
-
-  //TODO: Remove this
-  console.log("Key to use:", keyToUse);
+  const privateKeyObject = privateKeySchema.parse({ key: privateKey, format: "jwk" });
 
   const sign = createSign("SHA256");
   sign.update(`${timestamp}${method}${path}${body}`);
-  const xSignature = sign.sign(keyToUse, "hex");
+  const xSignature = sign.sign(privateKeyObject, "hex");
 
   return {
     "X-Signature": xSignature,
@@ -68,16 +76,12 @@ export const signedHeaders = ({
 /**
  * Fetch metadata from Val.town endpoint
  */
-export async function fetchValTownMeta({
-  endpoint,
-  privateKey,
-}: {
-  endpoint: string;
-  privateKey: string;
-}): Promise<ValTownMeta> {
+export async function fetchValTownMeta({ endpoint }: { endpoint: string }): Promise<ValTownMeta> {
   const metaUrl = new URL("/meta", endpoint).toString();
   const response = await fetch(metaUrl, {
-    headers: signedHeaders({ body: "", method: "GET", path: "/meta", privateKey }),
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 
   if (!response.ok) {
@@ -106,7 +110,7 @@ export async function executeValTownFunction({
   endpoint: string;
   functionName: string;
   params: Record<string, unknown>;
-  privateKey: string;
+  privateKey: SignJsonWebKeyInput | null;
 }) {
   const execUrl = new URL(`/exec/functions/${functionName}`, endpoint).toString();
   const body = JSON.stringify(params);
@@ -147,7 +151,7 @@ const syncValTownService = async ({
   assert(endpoint, "Missing Val.town configuration");
   assert(privateKey, "Missing Val.town private key");
 
-  const meta = await fetchValTownMeta({ endpoint, privateKey });
+  const meta = await fetchValTownMeta({ endpoint });
 
   await deleteServiceDefinition({
     service: valtownIntegration,
@@ -204,7 +208,7 @@ const handleCall = async (
       endpoint,
       functionName: call.targetFn,
       params: packer.unpack(call.targetArgs),
-      privateKey: integrations.valtown.privateKey,
+      privateKey: JSON.parse(integrations.valtown.privateKey),
     });
 
     await persistJobResult({
@@ -239,7 +243,7 @@ export const valtown: InstallableIntegration = {
     await syncValTownService({
       clusterId,
       endpoint: config.endpoint,
-      privateKey: config.privateKey,
+      privateKey: JSON.parse(config.privateKey),
     });
   },
   onDeactivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {

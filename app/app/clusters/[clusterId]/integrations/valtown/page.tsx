@@ -51,26 +51,19 @@ export default function ValtownIntegration({
       ) as CryptoKeyPair;
 
       const publicKey = await window.crypto.subtle.exportKey(
-        "spki",
+        "jwk",
         keyPair.publicKey
-      );
-      const privateKey = await window.crypto.subtle.exportKey(
-        "pkcs8",
-        keyPair.privateKey
-      );
+      ).then((key) => JSON.stringify(key));
 
-      // Convert to base64
-      const publicKeyBase64 = btoa(Array.from(new Uint8Array(publicKey))
-        .map(b => String.fromCharCode(b))
-        .join(""));
-      const privateKeyBase64 = btoa(Array.from(new Uint8Array(privateKey))
-        .map(b => String.fromCharCode(b))
-        .join(""));
+      const privateKey = await window.crypto.subtle.exportKey(
+        "jwk",
+        keyPair.privateKey
+      ).then((key) => JSON.stringify(key));
 
       toast.dismiss(loadingToast);
       toast.success("Key pair generated successfully");
-      setPublicKey(publicKeyBase64);
-      return { publicKey: publicKeyBase64, privateKey: privateKeyBase64 };
+      setPublicKey(publicKey);
+      return { publicKey, privateKey };
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error("Failed to generate key pair");

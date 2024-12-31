@@ -7,7 +7,7 @@
     "test": "tsx -r dotenv/config src/utilities/run-migrate.ts && jest src --setupFiles dotenv/config --forceExit --testPathIgnorePatterns=.*\\.ai\\.test\\.ts$ --testMatch='**/*.test.ts'",
     "test:ai:eval": "tsx -r dotenv/config src/modules/workflows/agent/evaluation",
     "test:ai": "jest src --testMatch='**/*.ai.test.ts' --setupFiles dotenv/config --forceExit",
-    "test:dev": "jest --watch src --setupFiles dotenv/config --forceExit --onlyChanged",
+    "test:dev": "jest --watch  src --setupFiles dotenv/config --forceExit --onlyChanged --testMatch='**/*.test.ts'",
     "dev": "tsx --watch -r dotenv/config src/index.ts",
     "migrations": "npx drizzle-kit generate",
     "migrate": "tsx -r dotenv/config src/utilities/run-migrate.ts",
