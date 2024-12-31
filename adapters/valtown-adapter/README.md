@@ -9,7 +9,7 @@
 
 This is the official Inferable AI adapter for Val Town. It allows you to expose your Val Town functions as tools for Inferable cluster. Inferable is an [open-source developer platform for building AI agents](https://www.inferable.ai) and [Vals are small JavaScript or TypeScript snippets of code](https://www.val.town/), written in the browser and runs on a managed val.town server.
 
-<video src="https://a.inferable.ai/valtown.mp4" width="500" />
+https://a.inferable.ai/valtown.mp4
 
 ## Quick Start
 
