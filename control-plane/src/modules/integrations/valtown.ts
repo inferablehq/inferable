@@ -5,25 +5,9 @@ import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
+import { valtownIntegration } from "./constants";
 import { integrationSchema } from "./schema";
 import { InstallableIntegration } from "./types";
-import { valtownIntegration } from "./constants";
-import { createSign, SignJsonWebKeyInput } from "crypto";
-
-const privateKeySchema = z.object({
-  format: z.literal("jwk"),
-  key: z.object({
-    kty: z.literal("RSA"),
-    n: z.string(),
-    e: z.string(),
-    d: z.string(),
-    p: z.string(),
-    q: z.string(),
-    dp: z.string(),
-    dq: z.string(),
-    qi: z.string(),
-  }),
-});
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
@@ -43,44 +27,21 @@ const valtownMetaSchema = z.object({
 
 type ValTownMeta = z.infer<typeof valtownMetaSchema>;
 
-export const signedHeaders = ({
-  body,
-  method,
-  path,
-  privateKey,
-  timestamp = Date.now().toString(),
-}: {
-  body: string;
-  method: string;
-  path: string;
-  privateKey: unknown;
-  timestamp?: string;
-}): Record<string, string> => {
-  if (!privateKey) {
-    logger.error("Missing Val.town private key. This should never happen.");
-    return {};
-  }
-
-  const privateKeyObject = privateKeySchema.parse({ key: privateKey, format: "jwk" });
-
-  const sign = createSign("SHA256");
-  sign.update(`${timestamp}${method}${path}${body}`);
-  const xSignature = sign.sign(privateKeyObject, "hex");
-
-  return {
-    "X-Signature": xSignature,
-    "X-Timestamp": timestamp,
-  };
-};
-
 /**
  * Fetch metadata from Val.town endpoint
  */
-export async function fetchValTownMeta({ endpoint }: { endpoint: string }): Promise<ValTownMeta> {
+export async function fetchValTownMeta({
+  endpoint,
+  token,
+}: {
+  endpoint: string;
+  token: string;
+}): Promise<ValTownMeta> {
   const metaUrl = new URL("/meta", endpoint).toString();
   const response = await fetch(metaUrl, {
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -105,12 +66,12 @@ export async function executeValTownFunction({
   endpoint,
   functionName,
   params,
-  privateKey,
+  token,
 }: {
   endpoint: string;
   functionName: string;
   params: Record<string, unknown>;
-  privateKey: SignJsonWebKeyInput | null;
+  token: string;
 }) {
   const execUrl = new URL(`/exec/functions/${functionName}`, endpoint).toString();
   const body = JSON.stringify(params);
@@ -119,12 +80,7 @@ export async function executeValTownFunction({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...signedHeaders({
-        body,
-        method: "POST",
-        path: `/exec/functions/${functionName}`,
-        privateKey,
-      }),
+      Authorization: `Bearer ${token}`,
     },
     body,
   });
@@ -142,16 +98,16 @@ export async function executeValTownFunction({
 const syncValTownService = async ({
   clusterId,
   endpoint,
-  privateKey,
+  token,
 }: {
   clusterId: string;
   endpoint?: string;
-  privateKey?: string;
+  token?: string;
 }) => {
   assert(endpoint, "Missing Val.town configuration");
-  assert(privateKey, "Missing Val.town private key");
+  assert(token, "Missing Val.town token");
 
-  const meta = await fetchValTownMeta({ endpoint });
+  const meta = await fetchValTownMeta({ endpoint, token });
 
   await deleteServiceDefinition({
     service: valtownIntegration,
@@ -208,7 +164,7 @@ const handleCall = async (
       endpoint,
       functionName: call.targetFn,
       params: packer.unpack(call.targetArgs),
-      privateKey: JSON.parse(integrations.valtown.privateKey),
+      token: integrations.valtown.token,
     });
 
     await persistJobResult({
@@ -243,7 +199,7 @@ export const valtown: InstallableIntegration = {
     await syncValTownService({
       clusterId,
       endpoint: config.endpoint,
-      privateKey: JSON.parse(config.privateKey),
+      token: config.token,
     });
   },
   onDeactivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {

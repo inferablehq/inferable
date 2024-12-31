@@ -18,10 +18,6 @@ import { ArrowLeft, ClipboardCopy } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "@/components/loading";
 
-interface CryptoKeyPair {
-  publicKey: CryptoKey;
-  privateKey: CryptoKey;
-}
 
 export default function ValtownIntegration({
   params: { clusterId },
@@ -30,46 +26,12 @@ export default function ValtownIntegration({
 }) {
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [publicKey, setPublicKey] = useState<string | null>(null);
   const [endpoint, setEndpoint] = useState("");
+  const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const generateKeyPair = useCallback(async () => {
-    const loadingToast = toast.loading("Generating key pair...");
-    try {
-      const algorithm: RsaHashedKeyGenParams = {
-        name: "RSASSA-PKCS1-v1_5",
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: { name: "SHA-256" },
-      };
-
-      const keyPair = await window.crypto.subtle.generateKey(
-        algorithm,
-        true,
-        ["sign"]
-      ) as CryptoKeyPair;
-
-      const publicKey = await window.crypto.subtle.exportKey(
-        "jwk",
-        keyPair.publicKey
-      ).then((key) => JSON.stringify(key));
-
-      const privateKey = await window.crypto.subtle.exportKey(
-        "jwk",
-        keyPair.privateKey
-      ).then((key) => JSON.stringify(key));
-
-      toast.dismiss(loadingToast);
-      toast.success("Key pair generated successfully");
-      setPublicKey(publicKey);
-      return { publicKey, privateKey };
-    } catch (error) {
-      toast.dismiss(loadingToast);
-      toast.error("Failed to generate key pair");
-      console.error("Key generation error:", error);
-      return null;
-    }
+  const generateToken = useCallback(async () => {
+    return `sk-inf-val-${window.crypto.randomUUID()}`;
   }, []);
 
   const handleSubmit = async () => {
@@ -85,13 +47,6 @@ export default function ValtownIntegration({
 
     const loadingToast = toast.loading("Saving configuration...");
 
-    // Generate key pair first
-    const keys = await generateKeyPair();
-    if (!keys) {
-      toast.dismiss(loadingToast);
-      return;
-    }
-
     const response = await client.upsertIntegrations({
       headers: {
         authorization: `Bearer ${await getToken()}`,
@@ -102,8 +57,7 @@ export default function ValtownIntegration({
       body: {
         valtown: {
           endpoint,
-          publicKey: keys.publicKey,
-          privateKey: keys.privateKey,
+          token: await generateToken(),
         },
       },
     });
@@ -132,7 +86,7 @@ export default function ValtownIntegration({
 
     if (response.status === 200 && response.body?.valtown) {
       setEndpoint(response.body.valtown.endpoint || "");
-      setPublicKey(response.body.valtown.publicKey || null);
+      setToken(response.body.valtown.token || null);
     }
   }, [clusterId, getToken]);
 
@@ -184,23 +138,24 @@ export default function ValtownIntegration({
             <Button onClick={handleSubmit}>Save Configuration</Button>
           </div>
 
-          {publicKey && (
+          {token && (
             <div className="mt-6 space-y-4">
               <div>
-                <label className="text-sm font-medium">Generated Public Key</label>
-                <textarea
+                <label className="text-sm font-medium">Authentication Token</label>
+                <Input
                   readOnly
-                  className="w-full min-h-[100px] p-2 text-sm font-mono border rounded-md"
-                  value={publicKey}
+                  value={token}
+                  type="password"
+                  className="font-mono"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  This public key is used to verify message integrity. Share this key with your Val to enable it to verify that requests are genuinely coming from your Inferable cluster.
+                  Use this token to authenticate requests from your Val to Inferable. Keep this token secret and secure.
                 </p>
               </div>
               <Button variant="outline" onClick={() => {
-                navigator.clipboard.writeText(publicKey);
+                navigator.clipboard.writeText(token);
                 toast.success("Copied to clipboard");
-              }}><ClipboardCopy className="w-4 h-4 mr-2" /> Copy Public Key</Button>
+              }}><ClipboardCopy className="w-4 h-4 mr-2" /> Copy Token</Button>
             </div>
           )}
         </CardContent>
