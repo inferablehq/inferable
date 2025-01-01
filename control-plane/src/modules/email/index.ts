@@ -8,6 +8,7 @@ import { ParsedMail, simpleParser } from "mailparser";
 import { getUserForCluster } from "../clerk";
 import { AuthenticationError } from "../../utilities/errors";
 import { createRunWithMessage } from "../workflows/workflows";
+import { flagsmith } from "../flagsmith";
 
 const sesMessageSchema = z.object({
   notificationType: z.string(),
@@ -92,6 +93,19 @@ async function handleEmailIngestion(raw: unknown) {
   }
 
   const user = await authenticateUser(message.source, message.clusterId);
+
+  const flags = await flagsmith?.getIdentityFlags(message.clusterId, {
+    clusterId: message.clusterId,
+  });
+
+  const useEmail = flags?.isFeatureEnabled("experimental_email_trigger");
+
+  if (!useEmail) {
+    logger.info("Email trigger is disabled. Skipping", {
+      clusterId: message.clusterId,
+    });
+    return;
+  }
 
   await handleNewChain({
     userId: user.id,
