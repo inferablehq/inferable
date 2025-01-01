@@ -9,6 +9,14 @@ import { getUserForCluster } from "../clerk";
 import { AuthenticationError } from "../../utilities/errors";
 import { createRunWithMessage } from "../workflows/workflows";
 import { flagsmith } from "../flagsmith";
+import { InferSelectModel } from "drizzle-orm";
+import { workflowMessages } from "../data";
+import { ses } from "../ses";
+
+const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
+const EMAIL_SUBJECT_META_KEY = "emailSubject";
+const EMAIL_SOURCE_META_KEY = "emailSource";
+//const EMAIL_MESSAGE_ID_META_KEY = "emailMessageId";
 
 const sesMessageSchema = z.object({
   notificationType: z.string(),
@@ -84,35 +92,52 @@ export const stop = async () => {
   emailIngestionConsumer?.stop();
 };
 
-async function handleEmailIngestion(raw: unknown) {
-  const message = await parseMessage(raw);
-  if (!message.body) {
-    logger.info("Email had no body. Skipping", {
-    });
+export const handleNewRunMessage = async ({
+  message,
+  metadata,
+}: {
+  message: {
+    id: string;
+    clusterId: string;
+    runId: string;
+    type: InferSelectModel<typeof workflowMessages>["type"];
+    data: InferSelectModel<typeof workflowMessages>["data"];
+  };
+  metadata?: Record<string, string>;
+}) => {
+  if (message.type !== "agent") {
     return;
   }
 
-  const user = await authenticateUser(message.source, message.clusterId);
-
-  const flags = await flagsmith?.getIdentityFlags(message.clusterId, {
-    clusterId: message.clusterId,
-  });
-
-  const useEmail = flags?.isFeatureEnabled("experimental_email_trigger");
-
-  if (!useEmail) {
-    logger.info("Email trigger is disabled. Skipping", {
-      clusterId: message.clusterId,
-    });
+  if (!metadata?.[EMAIL_INIT_MESSAGE_ID_META_KEY] || !metadata?.[EMAIL_SUBJECT_META_KEY] || !metadata?.[EMAIL_SOURCE_META_KEY]) {
     return;
   }
 
-  await handleNewChain({
-    userId: user.id,
-    body: message.body,
-    clusterId: message.clusterId
-  });
-}
+  if ("message" in message.data && message.data.message) {
+    await ses.sendEmail({
+      Source: `${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}`,
+      Destination: {
+        ToAddresses: [
+          metadata[EMAIL_SOURCE_META_KEY]
+        ],
+      },
+      Message: {
+        Subject: {
+          Charset: "UTF-8",
+          Data: `Re: ${metadata[EMAIL_SUBJECT_META_KEY]}`,
+        },
+        Body: {
+          Text: {
+            Charset: "UTF-8",
+            Data: message.data.message,
+          },
+        },
+      },
+    })
+  } else {
+    logger.warn("Email thread message does not have content");
+  }
+};
 
 export async function parseMessage(message: unknown) {
   const notification = snsNotificationSchema.safeParse(message);
@@ -158,10 +183,55 @@ export async function parseMessage(message: unknown) {
     body,
     clusterId,
     ingestionAddresses,
+    subject: mail.subject,
+    messageId: mail.messageId,
     source: sesMessage.data.mail.source,
-    messageId: sesMessage.data.mail.messageId,
   }
 }
+
+async function handleEmailIngestion(raw: unknown) {
+  const message = await parseMessage(raw);
+  if (!message.body) {
+    logger.info("Email had no body. Skipping", {
+    });
+    return;
+  }
+
+  if (!message.messageId) {
+    logger.info("Email had no messageId. Skipping");
+    return;
+  }
+
+  if (!message.subject) {
+    logger.info("Email had no subject. Skipping");
+    return;
+  }
+
+  const user = await authenticateUser(message.source, message.clusterId);
+
+  const flags = await flagsmith?.getIdentityFlags(message.clusterId, {
+    clusterId: message.clusterId,
+  });
+
+  const useEmail = flags?.isFeatureEnabled("experimental_email_trigger");
+
+  if (!useEmail) {
+    logger.info("Email trigger is disabled. Skipping", {
+      clusterId: message.clusterId,
+    });
+    return;
+  }
+
+  await handleNewChain({
+    userId: user.id,
+    body: message.body,
+    clusterId: message.clusterId,
+    messageId: message.messageId,
+    subject: message.subject,
+    source: message.source
+  });
+}
+
 
 const parseMailContent = (message: string):  Promise<ParsedMail> => {
   return new Promise((resolve, reject) => {
@@ -200,14 +270,25 @@ const handleNewChain = async ({
   userId,
   body,
   clusterId,
+  messageId,
+  subject,
+  source
 }: {
   userId: string;
   body: string;
   clusterId: string;
+  messageId: string;
+  subject: string;
+  source: string;
 }) => {
   await createRunWithMessage({
     userId,
     clusterId,
+    metadata: {
+      [EMAIL_INIT_MESSAGE_ID_META_KEY]: messageId,
+      [EMAIL_SUBJECT_META_KEY]: subject,
+      [EMAIL_SOURCE_META_KEY]: source,
+    },
     message: body,
     type: "human",
   })

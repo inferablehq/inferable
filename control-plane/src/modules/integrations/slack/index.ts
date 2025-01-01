@@ -128,7 +128,7 @@ export const handleNewRunMessage = async ({
       text: message.data.message,
     });
   } else {
-    logger.warn("Slack initialted message does not have content");
+    logger.warn("Slack thread message does not have content");
   }
 };
 

@@ -6,8 +6,9 @@ import { buildMessageBody } from "../src/modules/email/test.util";
 const messageBody = JSON.stringify(buildMessageBody({
   body: "What tools are available",
   from: "john@johnjcsmith.com",
-  subject: "Subject",
-  to: [ "01JE9SYD010WFFJ6GVE26WGVVK@run.inferable.ai" ]
+  subject: "This is a test",
+  to: [ "01JE9SYD010WFFJ6GVE26WGVVK@run.inferable.ai" ],
+  messageId: "<93FC27CD-9054-4BB5-ADA9-C9CB425D3844@johnjcsmith.com>"
 }));
 
 // Define the AWS CLI command

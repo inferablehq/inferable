@@ -1,17 +1,19 @@
 import { ulid } from "ulid";
 
-export function buildMessageBody({from, to, subject, body}: {
+export function buildMessageBody({from, to, subject, body, messageId}: {
   from: string;
   to: string[];
   subject: string;
-  body: string;}) {
+  body: string;
+  messageId: string;
+}) {
 
   const messageBase = {
     notificationType: "Received",
     mail: {
       timestamp: "",
       source: from,
-      messageId: "",
+      messageId: ulid(),
       destination: to,
       headersTruncated: false,
       headers: [],
@@ -20,7 +22,7 @@ export function buildMessageBody({from, to, subject, body}: {
         from: [ from ],
         date: "",
         to,
-        messageId: "<93FC27CD-9054-4BB5-ADA9-C9CB425D3844@johnjcsmith.com>",
+        messageId: messageId,
         subject,
       }
     },
@@ -44,8 +46,8 @@ export function buildMessageBody({from, to, subject, body}: {
       'Content-Type: text/plain\r\n' +
       'Content-Transfer-Encoding: 7bit\r\n' +
       'Mime-Version: 1.0 (Mac OS X Mail 16.0 \\(3826.300.87.4.3\\))\r\n' +
-      'Subject: ${subject}\r\n' +
-      'Message-Id: <93FC27CD-9054-4BB5-ADA9-C9CB425D3844@johnjcsmith.com>\r\n' +
+      `Subject: ${subject}\r\n` +
+      `Message-Id: ${messageId}\r\n` +
       'Date: Tue, 31 Dec 2024 14:45:38 +1030\r\n' +
       `To: ${to}\r\n` +
       '\r\n' +

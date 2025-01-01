@@ -6,6 +6,7 @@ import { getRunMetadata } from "./metadata";
 import { getClusterBackgroundRun, Run } from "./workflows";
 import { workflowMessages } from "../data";
 import * as slack from "../integrations/slack";
+import * as email from "../email";
 
 
 export const notifyApprovalRequest = async ({
@@ -39,6 +40,7 @@ export const notifyNewMessage = async ({
   metadata?: Record<string, string>;
 }) => {
   await slack.handleNewRunMessage({ message, metadata });
+  await email.handleNewRunMessage({ message, metadata });
 };
 
 export const notifyStatusChange = async ({
