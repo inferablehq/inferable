@@ -1,21 +1,12 @@
 import { initServer } from "@ts-rest/fastify";
+import { dereferenceSync } from "dereference-json-schema";
 import { JsonSchemaInput } from "inferable/bin/types";
+import { ulid } from "ulid";
+import { NotFoundError } from "../../utilities/errors";
+import { getBlobsForJobs } from "../blobs";
 import { contract } from "../contract";
-import { getJobReferences, getJobsForWorkflow } from "../jobs/jobs";
+import { getJobReferences } from "../jobs/jobs";
 import * as events from "../observability/events";
-import { getRunsByMetadata } from "./metadata";
-import { getRunMessagesForDisplay } from "./workflow-messages";
-import {
-  createRetry,
-  deleteRun,
-  getClusterWorkflows,
-  getRunConfigMetrics,
-  getRun,
-  getWorkflowDetail,
-  updateWorkflow,
-  createRun,
-  addMessageAndResume,
-} from "./workflows";
 import { posthog } from "../posthog";
 import {
   RunOptions,
@@ -23,11 +14,20 @@ import {
   mergeRunConfigOptions,
   validateSchema,
 } from "../prompt-templates";
-import { NotFoundError } from "../../utilities/errors";
-import { getBlobsForJobs } from "../blobs";
 import { normalizeFunctionReference } from "../service-definitions";
-import { dereferenceSync } from "dereference-json-schema";
-import { ulid } from "ulid";
+import { timeline } from "../timeline";
+import { getRunsByMetadata } from "./metadata";
+import {
+  addMessageAndResume,
+  assertRunReady,
+  createRetry,
+  createRun,
+  deleteRun,
+  getClusterWorkflows,
+  getRunConfigMetrics,
+  getWorkflowDetail,
+  updateWorkflow,
+} from "./workflows";
 
 export const runsRouter = initServer().router(
   {
@@ -330,32 +330,17 @@ export const runsRouter = initServer().router(
     },
     getRunTimeline: async request => {
       const { clusterId, runId } = request.params;
-      const { messagesAfter, jobsAfter, activityAfter } = request.query;
+      const { messagesAfter, activityAfter } = request.query;
 
       const auth = request.request.getAuth();
       await auth.canAccess({ run: { clusterId, runId } });
 
-      const [messages, activity, jobs, workflow] = await Promise.all([
-        getRunMessagesForDisplay({
-          clusterId,
-          runId,
-          after: messagesAfter,
-        }),
-        events.getActivityForTimeline({
-          clusterId,
-          runId,
-          after: activityAfter,
-        }),
-        getJobsForWorkflow({
-          clusterId,
-          runId,
-          after: jobsAfter,
-        }),
-        getRun({
-          clusterId,
-          runId,
-        }),
-      ]);
+      const { messages, activity, jobs, workflow } = await timeline.getRunTimeline({
+        clusterId,
+        runId,
+        messagesAfter,
+        activityAfter,
+      });
 
       if (!workflow) {
         return {
@@ -416,7 +401,6 @@ export const runsRouter = initServer().router(
     },
     createRunRetry: async request => {
       const { clusterId, runId } = request.params;
-      const { messageId } = request.body;
 
       const user = request.request.getAuth().isAdmin();
       await user.canAccess({ cluster: { clusterId } });
@@ -424,7 +408,6 @@ export const runsRouter = initServer().router(
       await createRetry({
         clusterId,
         runId,
-        messageId,
       });
 
       return {

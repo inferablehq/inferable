@@ -37,6 +37,10 @@ const messageSkeleton = (
   </div>
 );
 
+function uniqueBy<T>(array: T[], key: keyof T) {
+  return array.filter((v, i, a) => a.findIndex(t => t[key] === v[key]) === i);
+}
+
 function ElementWrapper({
   mutableId,
   children,
@@ -67,13 +71,7 @@ function smoothScrollToBottom(element: HTMLElement) {
   });
 }
 
-export function Run({
-  clusterId,
-  runId,
-}: {
-  clusterId: string;
-  runId: string;
-}) {
+export function Run({ clusterId, runId }: { clusterId: string; runId: string }) {
   const router = useRouter();
 
   const goToRun = useCallback(
@@ -94,10 +92,7 @@ export function Run({
     200
   > | null>(null);
 
-  const [run, setRun] = useState<ClientInferResponseBody<
-    typeof contract.getRun,
-    200
-  > | null>(null);
+  const [run, setRun] = useState<ClientInferResponseBody<typeof contract.getRun, 200> | null>(null);
 
   useEffect(() => {
     async function fetchRunMetadata() {
@@ -119,6 +114,9 @@ export function Run({
     fetchRunMetadata();
   }, [clusterId, runId, getToken]);
 
+  const messagesAfter = useRef<string>("0");
+  const activityAfter = useRef<string>("0");
+
   const fetchRunTimeline = useCallback(async () => {
     const result = await client.getRunTimeline({
       headers: {
@@ -128,32 +126,58 @@ export function Run({
         clusterId,
         runId,
       },
+      query: {
+        messagesAfter: messagesAfter.current,
+        activityAfter: activityAfter.current,
+      },
     });
 
     if (result.status === 200) {
-      setRunTimeline(result.body);
+      if (result.body.messages.length === 0 && result.body.activity.length === 0) {
+        console.debug("No new messages or activity");
+        return;
+      }
+
+      setRunTimeline(t => {
+        const newTimeline = {
+          ...t,
+          blobs: uniqueBy(result.body.blobs.concat(t?.blobs ?? []), "id"),
+          messages: uniqueBy(result.body.messages.concat(t?.messages ?? []), "id"),
+          activity: uniqueBy(result.body.activity.concat(t?.activity ?? []), "id"),
+          jobs: uniqueBy(result.body.jobs.concat(t?.jobs ?? []), "id"),
+          run: result.body.run ?? t?.run,
+        };
+
+        return newTimeline;
+      });
+
+      const maxMessageId = result.body.messages.sort((a, b) => b.id.localeCompare(a.id))[0]?.id;
+      const maxActivityId = result.body.activity.sort((a, b) => b.id.localeCompare(a.id))[0]?.id;
+
+      if (maxMessageId) {
+        messagesAfter.current = maxMessageId;
+      }
+
+      if (maxActivityId) {
+        activityAfter.current = maxActivityId;
+      }
     } else {
       if (result.status === 404) {
         goToRun(clusterId, "");
       }
     }
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    return fetchRunTimeline();
   }, [clusterId, runId, getToken, goToRun]);
 
   useEffect(() => {
     fetchRunTimeline();
-
-    const timeout = setInterval(fetchRunTimeline, 2000);
-
-    return () => {
-      clearInterval(timeout);
-    };
   }, [fetchRunTimeline]);
 
   const wipMessages = useQueue<
-    ClientInferResponseBody<
-      typeof contract.getRunTimeline,
-      200
-    >["messages"][number]
+    ClientInferResponseBody<typeof contract.getRunTimeline, 200>["messages"][number]
   >([]);
 
   const onSubmit = useCallback(
@@ -242,7 +266,7 @@ export function Run({
   const organization = useOrganization();
 
   const role = user.user?.organizationMemberships.find(
-    (o) => o.organization.id === organization?.organization?.id
+    o => o.organization.id === organization?.organization?.id
   )?.role;
 
   const isAdmin = role === "org:admin";
@@ -250,7 +274,7 @@ export function Run({
   const isOwner = runTimeline?.run.userId === user.user?.id;
 
   const jobElements =
-    runTimeline?.jobs.map((job) => ({
+    runTimeline?.jobs.map(job => ({
       element: (
         <ElementWrapper mutableId={mutableId} id={job.id} key={job.id}>
           <FunctionCall
@@ -271,7 +295,7 @@ export function Run({
                 clusterId,
               });
             }}
-            onFocusChange={(focused) => {
+            onFocusChange={focused => {
               if (!focused && focusedJobId !== job.id) {
                 return;
               }
@@ -285,17 +309,10 @@ export function Run({
 
   const eventElements =
     runTimeline?.messages
-      .filter((m) =>
-        ["human", "agent", "template", "invocation-result"].includes(m.type)
-      )
-      .map((m) => ({
+      .filter(m => ["human", "agent", "template", "invocation-result"].includes(m.type))
+      .map(m => ({
         element: (
-          <ElementWrapper
-            mutableId={mutableId}
-            id={m.id}
-            key={m.id}
-            human={m.type === "human"}
-          >
+          <ElementWrapper mutableId={mutableId} id={m.id} key={m.id} human={m.type === "human"}>
             <RunEvent
               key={m.id}
               id={m.id}
@@ -310,7 +327,7 @@ export function Run({
               pending={"pending" in m && m.pending}
               runId={runId}
               messages={runTimeline?.messages ?? []}
-              onPreMutation={(ulid) => setMutableId(ulid)}
+              onPreMutation={ulid => setMutableId(ulid)}
             />
           </ElementWrapper>
         ),
@@ -318,7 +335,7 @@ export function Run({
       })) || [];
 
   const blobElements =
-    runTimeline?.blobs.map((a) => ({
+    runTimeline?.blobs.map(a => ({
       element: (
         <ElementWrapper id={a.id} key={a.id} mutableId={mutableId}>
           <Blob blob={a} clusterId={clusterId} key={a.id} />
@@ -339,9 +356,7 @@ export function Run({
               msSincePreviousEvent={
                 index > 0
                   ? new Date(a.createdAt).getTime() -
-                    new Date(
-                      runTimeline?.activity[index - 1]?.createdAt ?? 0
-                    ).getTime()
+                    new Date(runTimeline?.activity[index - 1]?.createdAt ?? 0).getTime()
                   : 0
               }
             />
@@ -366,18 +381,14 @@ export function Run({
                   </div>
                 )}
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">
-                    {run.test ? "Test Run" : "Run"}
-                  </span>
+                  <span className="text-sm font-medium">{run.test ? "Test Run" : "Run"}</span>
                   <p className="text-xs text-gray-400">{run.id}</p>
                 </div>
               </div>
 
               {run.metadata && Object.keys(run.metadata).length > 0 && (
                 <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">
-                    Metadata
-                  </span>
+                  <span className="text-xs font-medium text-gray-500">Metadata</span>
                   <div className="flex flex-wrap gap-1">
                     {Object.entries(run.metadata).map(([key, value]) => (
                       <div
@@ -394,9 +405,7 @@ export function Run({
 
               {run.context && Object.keys(run.context).length > 0 && (
                 <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">
-                    Context
-                  </span>
+                  <span className="text-xs font-medium text-gray-500">Context</span>
                   <div className="flex flex-wrap gap-1">
                     {Object.entries(run.context).map(([key, value]) => {
                       const displayValue =
@@ -419,11 +428,9 @@ export function Run({
 
               {run.attachedFunctions && run.attachedFunctions.length > 0 ? (
                 <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">
-                    Functions
-                  </span>
+                  <span className="text-xs font-medium text-gray-500">Functions</span>
                   <div className="flex flex-wrap gap-1">
-                    {run.attachedFunctions.map((fn) => (
+                    {run.attachedFunctions.map(fn => (
                       <div
                         key={fn}
                         className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono"
@@ -436,9 +443,7 @@ export function Run({
                 </div>
               ) : (
                 <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">
-                    Functions
-                  </span>
+                  <span className="text-xs font-medium text-gray-500">Functions</span>
                   <div className="flex flex-wrap gap-1">
                     <div className="py-0.5 rounded text-xs text-gray-500">
                       Full access including{" "}
@@ -455,9 +460,7 @@ export function Run({
 
               {run.userId && (
                 <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">
-                    User Context
-                  </span>
+                  <span className="text-xs font-medium text-gray-500">User Context</span>
                   <div className="flex flex-wrap gap-1">
                     <div
                       className="bg-gray-100 px-2 py-0.5 rounded text-xs"
@@ -474,9 +477,7 @@ export function Run({
                   <div className="bg-red-50 p-1.5 rounded">
                     <MessageCircleWarning className="h-4 w-4 text-red-500" />
                   </div>
-                  <span className="text-sm text-red-600">
-                    Failed: {run.failureReason}
-                  </span>
+                  <span className="text-sm text-red-600">Failed: {run.failureReason}</span>
                   <Button
                     size="sm"
                     variant="outline"
@@ -507,7 +508,7 @@ export function Run({
                             id: loading,
                           });
                         })
-                        .catch((e) => {
+                        .catch(e => {
                           createErrorToast(e, "Failed to retry run");
                         })
                         .finally(() => {
@@ -529,15 +530,10 @@ export function Run({
 
   const pendingMessage =
     wipMessages.queue
-      .filter((m) => !runTimeline?.messages.map((m) => m.id).includes(m.id))
-      .map((m) => ({
+      .filter(m => !runTimeline?.messages.map(m => m.id).includes(m.id))
+      .map(m => ({
         element: (
-          <ElementWrapper
-            mutableId={mutableId}
-            id={m.id}
-            key={m.id}
-            human={m.type === "human"}
-          >
+          <ElementWrapper mutableId={mutableId} id={m.id} key={m.id} human={m.type === "human"}>
             <RunEvent
               key={m.id}
               id={m.id}
@@ -552,7 +548,7 @@ export function Run({
               pending={"pending" in m && m.pending}
               runId={runId}
               messages={runTimeline?.messages ?? []}
-              onPreMutation={(ulid) => setMutableId(ulid)}
+              onPreMutation={ulid => setMutableId(ulid)}
             />
           </ElementWrapper>
         ),
@@ -569,7 +565,7 @@ export function Run({
   ]
     .filter(Boolean)
     .sort((a, b) => (a!.timestamp > b!.timestamp ? 1 : -1))
-    .map((item) => item!.element);
+    .map(item => item!.element);
 
   const isEditable = isAdmin || isOwner;
 
@@ -589,11 +585,7 @@ export function Run({
         ref={scrollContainerRef}
         className="h-[calc(100vh-25rem)] border rounded-sm text-sm overflow-y-auto scroll-smooth"
       >
-        {elements.length > 0 ? (
-          <div className="flex flex-col">{elements}</div>
-        ) : (
-          messageSkeleton
-        )}
+        {elements.length > 0 ? <div className="flex flex-col">{elements}</div> : messageSkeleton}
       </div>
       <div ref={messagesEndRef} />
       <div className="flex flex-col space-y-2 p-2 bg-slate-50 border">
@@ -604,8 +596,8 @@ export function Run({
               placeholder={"Message Inferable"}
               className="focus-visible:ring-offset-0"
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => {
+              onChange={e => setPrompt(e.target.value)}
+              onKeyDown={e => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   onSubmit(prompt);
@@ -635,19 +627,14 @@ export function Run({
                 clusterId={clusterId}
                 comment={runTimeline?.run.feedbackComment}
                 score={runTimeline?.run.feedbackScore}
-                userName={
-                  user.user?.emailAddresses.find((e) => e.emailAddress)
-                    ?.emailAddress ?? ""
-                }
+                userName={user.user?.emailAddresses.find(e => e.emailAddress)?.emailAddress ?? ""}
               />
             </div>
           </div>
         ) : (
           !!runTimeline && (
             <div>
-              <p className="text-gray-500 text-center">
-                You are not the owner of this workflow.
-              </p>
+              <p className="text-gray-500 text-center">You are not the owner of this workflow.</p>
             </div>
           )
         )}

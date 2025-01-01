@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, SQL, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { NotFoundError } from "../../utilities/errors";
 import { db, events as eventsTable } from "../data";
@@ -13,6 +13,7 @@ export type EventTypes =
   | "jobStalled"
   | "jobStalledTooManyTimes"
   | "jobRecovered"
+  | "jobTimeout"
   | "machineRegistered"
   | "machinePing"
   | "machineStalled"
@@ -26,7 +27,8 @@ export type EventTypes =
   | "workflowFeedbackSubmitted"
   | "resultSummarized"
   | "knowledgeArtifactsAccessed"
-  | "functionRegistrySearchCompleted";
+  | "functionRegistrySearchCompleted"
+  | "messageRetried";
 
 type Event = {
   clusterId: string;
@@ -71,6 +73,7 @@ type Event = {
     artifacts?: string[];
     duration?: number;
     tools?: string[];
+    messageId?: string;
   };
 };
 
@@ -141,7 +144,7 @@ class EventWriterBuffer {
       }
 
       const result = await db.insert(eventsTable).values(
-        insertable.map((e) => ({
+        insertable.map(e => ({
           id: e.id,
           cluster_id: e.clusterId,
           run_id: e.workflowId,
@@ -161,7 +164,7 @@ class EventWriterBuffer {
           token_usage_input: e.tokenUsageInput,
           token_usage_output: e.tokenUsageOutput,
           model_id: e.modelId,
-        })),
+        }))
       );
 
       logger.debug("Wrote events", {
@@ -172,7 +175,7 @@ class EventWriterBuffer {
         logger.error("Failed to write events, retrying", {
           error: e,
         });
-        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         await this.writeEvents(insertable, attempt + 1);
       } else {
         logger.error("Failed to write events", {
@@ -204,9 +207,7 @@ export const write = (event: Event, syntheticDelay = 0) => {
     id: ulid(),
     createdAt: new Date(Date.now() + syntheticDelay),
     userAttentionLevel:
-      typeToUserAttentionLevel[
-        event.type as keyof typeof typeToUserAttentionLevel
-      ],
+      typeToUserAttentionLevel[event.type as keyof typeof typeToUserAttentionLevel],
   });
 };
 
@@ -235,11 +236,8 @@ export const getActivityByWorkflowIdForUserAttentionLevel = async (params: {
       and(
         eq(eventsTable.cluster_id, params.clusterId),
         eq(eventsTable.run_id, params.runId),
-        gte(
-          eventsTable.attention_level,
-          userAttentionLevels[params.userAttentionLevel],
-        ),
-      ),
+        gte(eventsTable.attention_level, userAttentionLevels[params.userAttentionLevel])
+      )
     )
     .limit(100)
     .orderBy(desc(eventsTable.created_at));
@@ -271,7 +269,8 @@ export const getActivityForTimeline = async (params: {
       and(
         eq(eventsTable.cluster_id, params.clusterId),
         eq(eventsTable.run_id, params.runId),
-      ),
+        ...(params.after ? [gt(eventsTable.id, params.after)] : [])
+      )
     )
     .limit(100)
     .orderBy(desc(eventsTable.created_at));
@@ -279,10 +278,7 @@ export const getActivityForTimeline = async (params: {
   return results;
 };
 
-export const getMetaForActivity = async (params: {
-  clusterId: string;
-  eventId: string;
-}) => {
+export const getMetaForActivity = async (params: { clusterId: string; eventId: string }) => {
   const s = await db
     .select({
       id: eventsTable.id,
@@ -299,12 +295,7 @@ export const getMetaForActivity = async (params: {
       meta: eventsTable.meta,
     })
     .from(eventsTable)
-    .where(
-      and(
-        eq(eventsTable.cluster_id, params.clusterId),
-        eq(eventsTable.id, params.eventId),
-      ),
-    )
+    .where(and(eq(eventsTable.cluster_id, params.clusterId), eq(eventsTable.id, params.eventId)))
     .limit(1);
 
   if (s.length === 0) {
@@ -347,14 +338,11 @@ export const getActivityByClusterId = async (params: {
         ...([
           params.filters?.type && eq(eventsTable.type, params.filters.type),
           params.filters?.jobId && eq(eventsTable.job_id, params.filters.jobId),
-          params.filters?.machineId &&
-            eq(eventsTable.machine_id, params.filters.machineId),
-          params.filters?.service &&
-            eq(eventsTable.service, params.filters.service),
-          params.filters?.workflowId &&
-            eq(eventsTable.run_id, params.filters.workflowId),
-        ].filter(Boolean) as SQL[]),
-      ),
+          params.filters?.machineId && eq(eventsTable.machine_id, params.filters.machineId),
+          params.filters?.service && eq(eventsTable.service, params.filters.service),
+          params.filters?.workflowId && eq(eventsTable.run_id, params.filters.workflowId),
+        ].filter(Boolean) as SQL[])
+      )
     )
     .orderBy(desc(eventsTable.created_at))
     .limit(100);
@@ -370,10 +358,8 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
     .select({
       date: sql<string>`DATE(created_at)`,
       modelId: eventsTable.model_id,
-      totalInputTokens:
-        sql<number>`sum(cast(token_usage_input as integer))`.mapWith(Number),
-      totalOutputTokens:
-        sql<number>`sum(cast(token_usage_output as integer))`.mapWith(Number),
+      totalInputTokens: sql<number>`sum(cast(token_usage_input as integer))`.mapWith(Number),
+      totalOutputTokens: sql<number>`sum(cast(token_usage_output as integer))`.mapWith(Number),
       totalModelInvocations: sql<number>`count(*)`.mapWith(Number),
     })
     .from(eventsTable)
@@ -381,8 +367,8 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
       and(
         eq(eventsTable.cluster_id, params.clusterId),
         eq(eventsTable.type, "modelInvocation"),
-        gte(eventsTable.created_at, sixtyDaysAgo),
-      ),
+        gte(eventsTable.created_at, sixtyDaysAgo)
+      )
     )
     .groupBy(sql`DATE(created_at)`, eventsTable.model_id)
     .orderBy(sql`DATE(created_at)` as SQL);
@@ -397,8 +383,8 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
       and(
         eq(eventsTable.cluster_id, params.clusterId),
         eq(eventsTable.type, "modelInvocation"),
-        gte(eventsTable.created_at, sixtyDaysAgo),
-      ),
+        gte(eventsTable.created_at, sixtyDaysAgo)
+      )
     )
     .groupBy(sql`DATE(created_at)`)
     .orderBy(sql`DATE(created_at)` as SQL);

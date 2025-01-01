@@ -13,7 +13,7 @@ import {
   editHumanMessage,
   getRunMessagesForDisplay,
 } from "./workflows/workflow-messages";
-import { addMessageAndResume } from "./workflows/workflows";
+import { addMessageAndResume, assertRunReady } from "./workflows/workflows";
 import { runsRouter } from "./workflows/router";
 import { machineRouter } from "./machines/router";
 import { authRouter } from "./auth/router";
@@ -295,8 +295,17 @@ export const router = initServer().router(contract, {
     const { clusterId, runId, messageId } = request.params;
     const { message } = request.body;
 
+    await assertRunReady({ clusterId, runId });
+
     const auth = request.request.getAuth();
     await auth.canManage({ run: { clusterId, runId } });
+
+    assertGenericMessage({
+      type: "human",
+      data: {
+        message,
+      },
+    });
 
     const messages = await editHumanMessage({
       id: messageId,
@@ -305,15 +314,6 @@ export const router = initServer().router(contract, {
       runId,
       message,
     });
-
-    if (messages.upserted == null) {
-      return {
-        status: 404,
-        body: { message: "Message not found" },
-      };
-    }
-
-    assertGenericMessage(messages.upserted);
 
     posthog?.capture({
       distinctId: auth.entityId,
@@ -333,7 +333,7 @@ export const router = initServer().router(contract, {
 
     return {
       status: 200,
-      body: messages.upserted,
+      body: messages.inserted,
     };
   },
   getClusterExport: async request => {

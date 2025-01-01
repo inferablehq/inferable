@@ -73,29 +73,6 @@ export const getJobStatusSync = async ({
   return jobResult;
 };
 
-export const deleteJobsAfter = async ({
-  clusterId,
-  runId,
-  messageId,
-}: {
-  clusterId: string;
-  runId: string;
-  messageId: string;
-}) => {
-  return data.db
-    .delete(data.jobs)
-    .where(
-      and(
-        eq(data.jobs.workflow_id, runId),
-        eq(data.jobs.cluster_id, clusterId),
-        gt(data.jobs.id, messageId)
-      )
-    )
-    .returning({
-      id: data.jobs.id,
-    });
-};
-
 export const getJob = async ({ clusterId, jobId }: { clusterId: string; jobId: string }) => {
   const [[job], blobs] = await Promise.all([
     data.db
@@ -370,7 +347,13 @@ export const pollJobs = async ({
   return jobs;
 };
 
-export async function requestApproval({ callId, clusterId }: { callId: string; clusterId: string }) {
+export async function requestApproval({
+  callId,
+  clusterId,
+}: {
+  callId: string;
+  clusterId: string;
+}) {
   const [updated] = await data.db
     .update(data.jobs)
     .set({
@@ -385,9 +368,9 @@ export async function requestApproval({ callId, clusterId }: { callId: string; c
     })
     .where(and(eq(data.jobs.id, callId), eq(data.jobs.cluster_id, clusterId)));
 
-    if (updated.runId) {
-      await notifyApprovalRequest(updated);
-    }
+  if (updated.runId) {
+    await notifyApprovalRequest(updated);
+  }
 }
 
 export async function submitApproval({

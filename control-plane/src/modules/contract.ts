@@ -733,7 +733,6 @@ export const definition = {
     body: z.object({ message: z.string() }),
     responses: {
       200: z.object({
-        data: genericMessageDataSchema,
         id: z.string(),
       }),
       404: z.object({ message: z.string() }),
@@ -925,7 +924,6 @@ export const definition = {
     query: z.object({
       messagesAfter: z.string().default("0"),
       activityAfter: z.string().default("0"),
-      jobsAfter: z.string().default("0"),
     }),
     pathParams: z.object({
       clusterId: z.string(),

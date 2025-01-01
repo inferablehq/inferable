@@ -117,7 +117,7 @@ app.addHook("onRequest", (request, _reply, done) => {
 });
 
 app.addHook("onResponse", async (request, reply) => {
-  if (request.routerPath === "/live" && reply.statusCode >= 400) {
+  if (request.routeOptions.url === "/live" && reply.statusCode >= 400) {
     logger.warn("Live endpoint returned error", {
       statusCode: reply.statusCode,
       path: request.url,
@@ -140,6 +140,10 @@ const startTime = Date.now();
     logger.info("Database migrated", { latency: Date.now() - startTime });
   }
 
+  if (!env.EE_DEPLOYMENT) {
+    logger.warn("EE_DEPLOYMENT is not set, skipping EE dependencies");
+  }
+
   await Promise.all([
     events.initialize(),
     jobs.start(),
@@ -148,14 +152,16 @@ const startTime = Date.now();
     models.start(),
     redis.start(),
     slack.start(app),
-    ...(env.EE_DEPLOYMENT ? [
-      customerTelemetry.start(),
-      toolhouse.start(),
-      externalCalls.start(),
-      email.start(),
-      flagsmith?.getEnvironmentFlags(),
-      analytics.start()
-    ] : []),
+    externalCalls.start(),
+    ...(env.EE_DEPLOYMENT
+      ? [
+          customerTelemetry.start(),
+          toolhouse.start(),
+          email.start(),
+          flagsmith?.getEnvironmentFlags(),
+          analytics.start(),
+        ]
+      : []),
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });

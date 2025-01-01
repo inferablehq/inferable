@@ -4,12 +4,10 @@ import { AgentError, JobPollTimeoutError } from "../../../../utilities/errors";
 import * as jobs from "../../../jobs/jobs";
 import { logger } from "../../../observability/logger";
 import { packer } from "../../../packer";
-import {
-  getServiceDefinition,
-  serviceFunctionEmbeddingId,
-} from "../../../service-definitions";
+import { getServiceDefinition, serviceFunctionEmbeddingId } from "../../../service-definitions";
 import { summariseJobResultIfNecessary } from "../summarizer";
 import { AgentTool } from "../tool";
+import { events } from "../../../observability/events";
 
 export const SpecialResultTypes = {
   jobTimeout: "inferableJobTimeout",
@@ -35,9 +33,7 @@ export const buildAbstractServiceFunctionTool = ({
 
   return new AgentTool({
     name: toolName,
-    description: (
-      description ?? `${serviceName}-${functionName} function`
-    ).substring(0, 1024),
+    description: (description ?? `${serviceName}-${functionName} function`).substring(0, 1024),
     schema,
     func: async () => undefined,
   });
@@ -76,7 +72,7 @@ export const buildServiceFunctionTool = ({
     schema,
   });
 
-  tool.func = async (input) => {
+  tool.func = async input => {
     const requestArgs = packer.pack(input);
 
     const serviceDefinition = await getServiceDefinition({
@@ -90,14 +86,10 @@ export const buildServiceFunctionTool = ({
       throw new AgentError(`Service definition not found for ${serviceName}`);
     }
 
-    const functionDefinition = serviceDefinition.functions?.find(
-      (f) => f.name === functionName,
-    );
+    const functionDefinition = serviceDefinition.functions?.find(f => f.name === functionName);
 
     if (!functionDefinition) {
-      throw new AgentError(
-        `Could not find function definition for ${functionName}`,
-      );
+      throw new AgentError(`Could not find function definition for ${functionName}`);
     }
 
     const { id } = await jobs.createJob({
@@ -123,7 +115,7 @@ export const buildServiceFunctionTool = ({
         owner: {
           clusterId: workflow.clusterId,
         },
-        ttl: 5_000,
+        ttl: 30_000,
       });
 
       const result = rawResult ? packer.unpack(rawResult) : null;
@@ -155,6 +147,16 @@ export const buildServiceFunctionTool = ({
       if (e instanceof JobPollTimeoutError) {
         logger.info("Timed out waiting for job to complete", {
           jobId: id,
+        });
+
+        events.write({
+          clusterId: workflow.clusterId,
+          type: "jobTimeout",
+          jobId: id,
+          workflowId: workflow.id,
+          meta: {
+            error: e,
+          },
         });
 
         return JSON.stringify({
@@ -193,19 +195,13 @@ const functionSchemaResponse = z.discriminatedUnion("resultType", [
 ]);
 
 export const parseFunctionResponse = (response: string) => {
-  assert(
-    typeof response === "string",
-    `Expected response to be a string, got ${typeof response}`,
-  );
+  assert(typeof response === "string", `Expected response to be a string, got ${typeof response}`);
 
   let parsed = null;
 
   try {
     parsed = JSON.parse(response);
-    parsed.result =
-      typeof parsed.result === "string"
-        ? JSON.parse(parsed.result)
-        : parsed.result;
+    parsed.result = typeof parsed.result === "string" ? JSON.parse(parsed.result) : parsed.result;
   } catch (e) {
     // Allow for non-JSON result
   }

@@ -59,12 +59,9 @@ export default function RootLayout({
       <RollbarProvider config={rollbarConfig}>
         <html lang="en">
           <body
-            className={cn(
-              "min-h-screen bg-background font-sans antialiased",
-              fontSans.variable,
-            )}
+            className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}
           >
-            <Toaster position="top-center" />
+            <Toaster position="top-center" toastOptions={{ className: "text-sm" }} />
             <PHProvider>
               <PostHogUser />
               <PostHogPageView />

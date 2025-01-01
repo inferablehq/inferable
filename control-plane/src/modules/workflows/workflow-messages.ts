@@ -1,8 +1,5 @@
-import assert from "assert";
-import { InferSelectModel, and, desc, eq, gt, ne } from "drizzle-orm";
-import { db, RunMessageMetadata, workflowMessages } from "../data";
-import { deleteJobsAfter } from "../jobs/jobs";
-import { resumeRun } from "./workflows";
+import Anthropic from "@anthropic-ai/sdk";
+import { and, desc, eq, gt, InferSelectModel, ne } from "drizzle-orm";
 import { z } from "zod";
 import {
   agentDataSchema,
@@ -10,8 +7,11 @@ import {
   messageDataSchema,
   resultDataSchema,
 } from "../contract";
+import { db, RunMessageMetadata, workflowMessages } from "../data";
+import { events } from "../observability/events";
 import { logger } from "../observability/logger";
-import Anthropic from "@anthropic-ai/sdk";
+import { resumeRun } from "./workflows";
+import { ulid } from "ulid";
 
 export type MessageData = z.infer<typeof messageDataSchema>;
 
@@ -58,6 +58,7 @@ export const insertRunMessage = async ({
   id,
   type,
   data,
+  metadata,
 }: {
   id: string;
   userId?: string;
@@ -65,9 +66,10 @@ export const insertRunMessage = async ({
   runId: string;
   type: InferSelectModel<typeof workflowMessages>["type"];
   data: InferSelectModel<typeof workflowMessages>["data"];
+  metadata?: RunMessageMetadata;
 }) => {
   validateMessage({ data, type });
-  await db
+  return db
     .insert(workflowMessages)
     .values({
       id,
@@ -76,66 +78,11 @@ export const insertRunMessage = async ({
       workflow_id: runId,
       type,
       data,
-    })
-    .onConflictDoNothing();
-};
-
-export const upsertRunMessage = async ({
-  userId,
-  clusterId,
-  runId,
-  id,
-  type,
-  data,
-  metadata,
-}: {
-  userId?: string;
-  id: string;
-  clusterId: string;
-  runId: string;
-  type: InferSelectModel<typeof workflowMessages>["type"];
-  data: InferSelectModel<typeof workflowMessages>["data"];
-  metadata?: RunMessageMetadata;
-}) => {
-  validateMessage({ data, type });
-
-  const result = await db
-    .insert(workflowMessages)
-    .values([
-      {
-        id,
-        user_id: userId ?? "SYSTEM",
-        cluster_id: clusterId,
-        workflow_id: runId,
-        type,
-        data,
-        metadata,
-      },
-    ])
-    .onConflictDoUpdate({
-      where: and(
-        eq(workflowMessages.cluster_id, clusterId),
-        eq(workflowMessages.workflow_id, runId),
-        eq(workflowMessages.id, id),
-        eq(workflowMessages.type, type)
-      ),
-      target: [workflowMessages.cluster_id, workflowMessages.workflow_id, workflowMessages.id],
-      set: {
-        data,
-        updated_at: new Date(),
-        metadata,
-        user_id: userId ?? "SYSTEM",
-      },
+      metadata,
     })
     .returning({
       id: workflowMessages.id,
-      type: workflowMessages.type,
-      data: workflowMessages.data,
     });
-
-  assert(result.length === 1, "Expected one result");
-
-  return result;
 };
 
 export const editHumanMessage = async ({
@@ -151,7 +98,7 @@ export const editHumanMessage = async ({
   message: string;
   id: string;
 }) => {
-  const [upserted] = await upsertRunMessage({
+  const [inserted] = await insertRunMessage({
     clusterId,
     userId,
     runId,
@@ -159,14 +106,16 @@ export const editHumanMessage = async ({
       message,
     },
     type: "human",
-    id,
+    id: ulid(),
   });
 
-  // delete all messages after the human message
-  const deleted = await prepMessagesForRetry({
+  events.write({
     clusterId,
-    runId,
-    messageId: id,
+    workflowId: runId,
+    type: "messageRetried",
+    meta: {
+      messageId: id,
+    },
   });
 
   await resumeRun({
@@ -175,42 +124,7 @@ export const editHumanMessage = async ({
   });
 
   return {
-    upserted,
-    deleted,
-  };
-};
-
-export const prepMessagesForRetry = async ({
-  clusterId,
-  runId,
-  messageId,
-}: {
-  clusterId: string;
-  runId: string;
-  messageId: string;
-}) => {
-  const deleted = await Promise.all([
-    db
-      .delete(workflowMessages)
-      .where(
-        and(
-          gt(workflowMessages.id, messageId),
-          eq(workflowMessages.cluster_id, clusterId),
-          eq(workflowMessages.workflow_id, runId)
-        )
-      )
-      .returning({
-        id: workflowMessages.id,
-      }),
-    deleteJobsAfter({
-      runId,
-      clusterId,
-      messageId,
-    }),
-  ]);
-
-  return {
-    deleted: deleted.flat().map(d => d.id),
+    inserted,
   };
 };
 
@@ -247,10 +161,6 @@ export const getRunMessagesForDisplay = async ({
       )
     )
     .limit(last);
-
-  const results = messages
-    .filter(m => m.type === "invocation-result")
-    .map((m: any) => m.data.result); // TODO: fix type
 
   return messages
     .map(message => {

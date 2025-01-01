@@ -1,11 +1,5 @@
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { get } from "lodash";
 import { Blocks, ChevronRight, Info } from "lucide-react";
@@ -17,9 +11,7 @@ import ErrorDisplay from "../error-display";
 import { resultDataSchema } from "@/client/contract";
 
 export function InvocationResult(props: MessageContainerProps) {
-  const { success, data, error } = resultDataSchema.safeParse(
-    props.data
-  );
+  const { success, data, error } = resultDataSchema.safeParse(props.data);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const componentRef = useRef<HTMLDivElement>(null);
@@ -31,7 +23,7 @@ export function InvocationResult(props: MessageContainerProps) {
   return (
     <>
       <div className="ml-8 relative group" ref={componentRef}>
-        <div className="absolute left-1 top-0 bottom-0 w-[2px] -top-4 -bottom-4 bg-border/50" />
+        <div className="absolute left-1 w-[2px] -top-4 -bottom-4 bg-border/50" />
 
         <div className="flex items-start gap-4 relative">
           <div className="shrink-0 mt-2 w-2 h-2 rounded-full bg-gray-900 relative z-10 ring-4 ring-white" />
@@ -44,9 +36,7 @@ export function InvocationResult(props: MessageContainerProps) {
               )}
             >
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-medium text-gray-700">
-                  Invocation Result
-                </span>
+                <span className="font-medium text-gray-700">Invocation Result</span>
                 <span className="text-muted-foreground font-mono">
                   {new Date(props.createdAt).toLocaleString()}
                 </span>
@@ -63,31 +53,21 @@ export function InvocationResult(props: MessageContainerProps) {
               <div className="mt-2 pl-2 space-y-3">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="space-y-1">
-                    <dt className="text-xs font-medium text-muted-foreground">
-                      Result Type
-                    </dt>
+                    <dt className="text-xs font-medium text-muted-foreground">Result Type</dt>
                     <dd className="font-mono">
                       {get(data, `result.${data.id}.resultType`) || "—"}
                     </dd>
                   </div>
                   <div className="space-y-1">
-                    <dt className="text-xs font-medium text-muted-foreground">
-                      Status
-                    </dt>
-                    <dd className="font-mono">
-                      {get(data, `result.${data.id}.status`) || "—"}
-                    </dd>
+                    <dt className="text-xs font-medium text-muted-foreground">Status</dt>
+                    <dd className="font-mono">{get(data, `result.${data.id}.status`) || "—"}</dd>
                   </div>
                 </div>
 
                 <div className="flex gap-2">
                   <Sheet>
                     <SheetTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 justify-start"
-                      >
+                      <Button variant="outline" size="sm" className="flex-1 justify-start">
                         <Info className="h-4 w-4 mr-2" />
                         View Invocation Details
                       </Button>
@@ -120,9 +100,7 @@ export function InvocationResult(props: MessageContainerProps) {
                               <Blocks className="w-3 h-3 text-gray-600" />
                             </div>
                             <div>
-                              <div className="text-sm font-medium">
-                                Result Data
-                              </div>
+                              <div className="text-sm font-medium">Result Data</div>
                               <div className="text-xs text-muted-foreground">
                                 Function invocation details
                               </div>
