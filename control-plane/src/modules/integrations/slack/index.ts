@@ -556,7 +556,7 @@ const authenticateUser = async (userId: string, client: webApi.WebClient, integr
 
   const clerkUser = await getUserForCluster({
     emailAddress: email,
-    cluserId: integration.cluster_id,
+    clusterId: integration.cluster_id,
   });
 
   if (!clerkUser) {

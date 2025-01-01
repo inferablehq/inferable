@@ -9,7 +9,7 @@ const getOrgIdForClusterId = async (cluserId: string) => {
     organizationId: clusters.organization_id
   }).from(clusters).where(eq(clusters.id, cluserId));
 
-  return cluster.organizationId
+  return cluster?.organizationId
 }
 
 const getUserForOrg = async (emailAddress: string, organizationId: string) => {
@@ -30,12 +30,12 @@ const getUserForOrg = async (emailAddress: string, organizationId: string) => {
 
 export const getUserForCluster = async ({
   emailAddress,
-  cluserId
+  clusterId
 }: {
   emailAddress: string;
-  cluserId: string;
+  clusterId: string;
 }) => {
-  const organizationId = await getOrgIdForClusterId(cluserId);
+  const organizationId = await getOrgIdForClusterId(clusterId);
 
   if (!organizationId) {
     throw new Error("Can not lookup user without organizationId")

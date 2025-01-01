@@ -67,6 +67,8 @@ const envSchema = z
 
     BEDROCK_AVAILABLE: truthy.default(false),
 
+    INFERABLE_EMAIL_DOMAIN: z.string().default("run.inferable.ai"),
+
     // Observability
     HYPERDX_API_KEY: z.string().optional(),
     ROLLBAR_ACCESS_TOKEN: z.string().optional(),
