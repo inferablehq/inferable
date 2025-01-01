@@ -39,7 +39,7 @@ export const stop = async () => {
 };
 
 const MAX_PROCESS_LOCK_ATTEMPTS = 5;
-async function handleRunProcess(message: BaseMessage) {
+async function handleRunProcess(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
       lockAttempts: z.number().default(0),
@@ -104,7 +104,7 @@ async function handleRunProcess(message: BaseMessage) {
   }
 }
 
-async function handleRunNameGeneration(message: BaseMessage) {
+async function handleRunNameGeneration(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
       content: z.string(),

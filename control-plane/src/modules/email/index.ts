@@ -1,8 +1,7 @@
 import { Consumer } from "sqs-consumer";
 import { env } from "../../utilities/env";
-import { sqs } from "../sqs";
+import { BaseMessage, sqs, withObservability } from "../sqs";
 import { z } from "zod";
-import { Message } from "@aws-sdk/client-sqs";
 import { logger } from "../observability/logger";
 import { safeParse } from "../../utilities/safe-parse";
 
@@ -67,7 +66,7 @@ const emailIngestionConsumer = env.SQS_EMAIL_INGESTION_QUEUE_URL
       batchSize: 5,
       visibilityTimeout: 60,
       heartbeatInterval: 30,
-      handleMessage: handleEmailIngestion,
+      handleMessage: withObservability(env.SQS_EMAIL_INGESTION_QUEUE_URL, handleEmailIngestion),
       sqs,
     })
   : undefined;
@@ -80,52 +79,44 @@ export const stop = async () => {
   emailIngestionConsumer?.stop();
 };
 
-async function handleEmailIngestion(message: Message) {
-  try {
-    const notificationJson = safeParse(message.Body);
-    if (!notificationJson.success) {
-      logger.error("SNS notification is not valid JSON", {
-        error: notificationJson.error,
-      });
-      return;
-    }
-
-    const notification = snsNotificationSchema.safeParse(notificationJson.data);
-    if (!notification.success) {
-      logger.error("Could not parse SNS notification", {
-        error: notification.error,
-      });
-      return;
-    }
-
-
-    const sesJson = safeParse(notification.data.Message);
-    if (!sesJson.success) {
-      logger.error("SES message is not valid JSON", {
-        error: sesJson.error,
-      });
-      return;
-    }
-
-    const sesMessage = sesMessageSchema.safeParse(sesJson.data);
-    if (!sesMessage.success) {
-      logger.error("Could not parse SES message", {
-        error: sesMessage.error,
-      });
-      return;
-    }
-
-    logger.info("Ingesting email event", {
-      messageId: sesMessage.data.mail.messageId,
-      source: sesMessage.data.mail.source,
-      destination: sesMessage.data.mail.destination,
-      subject: sesMessage.data.mail.commonHeaders.subject,
+async function handleEmailIngestion(message: unknown) {
+  logger.info("Ingesting email event")
+  const notificationJson = safeParse(message);
+  if (!notificationJson.success) {
+    logger.error("SNS notification is not valid JSON", {
+      error: notificationJson.error,
     });
-
-
-  } catch (error) {
-    logger.error("Error while ingesting email event", {
-      error,
-    });
+    return;
   }
+
+  const notification = snsNotificationSchema.safeParse(notificationJson.data);
+  if (!notification.success) {
+    logger.error("Could not parse SNS notification", {
+      error: notification.error,
+    });
+    return;
+  }
+
+
+  const sesJson = safeParse(notification.data.Message);
+  if (!sesJson.success) {
+    logger.error("SES message is not valid JSON", {
+      error: sesJson.error,
+    });
+    return;
+  }
+
+  const sesMessage = sesMessageSchema.safeParse(sesJson.data);
+  if (!sesMessage.success) {
+    logger.error("Could not parse SES message", {
+      error: sesMessage.error,
+    });
+    return;
+  }
+
+  logger.info("Ingesting email event", {
+    source: sesMessage.data.mail.source,
+    destination: sesMessage.data.mail.destination,
+    subject: sesMessage.data.mail.commonHeaders.subject,
+  });
 }

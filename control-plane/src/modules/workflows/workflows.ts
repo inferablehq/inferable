@@ -12,7 +12,6 @@ import {
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
 import { BadRequestError, NotFoundError, RunBusyError } from "../../utilities/errors";
-import { Auth } from "../auth/auth";
 import {
   clusters,
   db,

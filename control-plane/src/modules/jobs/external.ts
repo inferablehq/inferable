@@ -1,6 +1,6 @@
 import { Consumer } from "sqs-consumer";
 import { env } from "../../utilities/env";
-import { BaseMessage, baseMessageSchema, sqs, withObservability } from "../sqs";
+import { baseMessageSchema, sqs, withObservability } from "../sqs";
 import { z } from "zod";
 import { logger } from "../observability/logger";
 import { getJob } from "./jobs";
@@ -26,7 +26,7 @@ export const stop = async () => {
   externalCallConsumer?.stop();
 };
 
-async function handleExternalCall(message: BaseMessage) {
+async function handleExternalCall(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
       callId: z.string(),
