@@ -115,7 +115,7 @@ export const buildServiceFunctionTool = ({
         owner: {
           clusterId: workflow.clusterId,
         },
-        ttl: 30_000,
+        ttl: 5_000,
       });
 
       const result = rawResult ? packer.unpack(rawResult) : null;
@@ -147,16 +147,6 @@ export const buildServiceFunctionTool = ({
       if (e instanceof JobPollTimeoutError) {
         logger.info("Timed out waiting for job to complete", {
           jobId: id,
-        });
-
-        events.write({
-          clusterId: workflow.clusterId,
-          type: "jobTimeout",
-          jobId: id,
-          workflowId: workflow.id,
-          meta: {
-            error: e,
-          },
         });
 
         return JSON.stringify({

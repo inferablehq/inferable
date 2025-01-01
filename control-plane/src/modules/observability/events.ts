@@ -13,7 +13,6 @@ export type EventTypes =
   | "jobStalled"
   | "jobStalledTooManyTimes"
   | "jobRecovered"
-  | "jobTimeout"
   | "machineRegistered"
   | "machinePing"
   | "machineStalled"
