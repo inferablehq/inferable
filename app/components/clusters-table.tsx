@@ -35,11 +35,14 @@ const columns: ColumnDef<ClusterData>[] = [
           Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => (
       <div className="flex-1">
-        <Link href={`/clusters/${row.original.id}`} className="text-gray-900 hover:text-gray-700 text-lg font-semibold">
+        <Link
+          href={`/clusters/${row.original.id}`}
+          className="text-gray-900 hover:text-gray-700 text-lg font-semibold"
+        >
           {row.getValue("name")}
         </Link>
         <div className="text-sm text-gray-500 truncate mt-1" title={row.original.description || ""}>
@@ -60,7 +63,7 @@ const columns: ColumnDef<ClusterData>[] = [
           Created
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => {
       const date = new Date(row.getValue("createdAt"));
@@ -108,13 +111,12 @@ const columns: ColumnDef<ClusterData>[] = [
         <Button
           variant="ghost"
           size="icon"
+          asChild
           className="h-8 w-8 text-red-600 hover:text-red-900"
-          onClick={() => {
-            // TODO: Implement delete functionality
-            console.log('Delete cluster:', row.original.id);
-          }}
         >
-          <Trash2 className="h-4 w-4" />
+          <Link href={`/clusters/${row.original.id}/settings/danger`}>
+            <Trash2 className="h-4 w-4" />
+          </Link>
         </Button>
       </div>
     ),
@@ -126,7 +128,12 @@ interface ClustersTableProps {
 }
 
 export function ClustersTable({ clusters }: ClustersTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    {
+      id: "createdAt",
+      desc: true,
+    },
+  ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   return (
@@ -135,7 +142,7 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
         <Input
           placeholder="Filter clusters..."
           value={(columnFilters[0]?.value as string) ?? ""}
-          onChange={(event) =>
+          onChange={event =>
             setColumnFilters([
               {
                 id: "name",
