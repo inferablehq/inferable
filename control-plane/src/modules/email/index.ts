@@ -7,12 +7,12 @@ import { safeParse } from "../../utilities/safe-parse";
 import { ParsedMail, simpleParser } from "mailparser";
 import { getUserForCluster } from "../clerk";
 import { AuthenticationError, NotFoundError } from "../../utilities/errors";
-import { createRunWithMessage } from "../workflows/workflows";
+import { addMessageAndResume, createRunWithMessage } from "../workflows/workflows";
 import { flagsmith } from "../flagsmith";
 import { InferSelectModel } from "drizzle-orm";
 import { workflowMessages } from "../data";
 import { ses } from "../ses";
-import { getMessageByReference, insertRunMessage, updateMessageReference } from "../workflows/workflow-messages";
+import { getMessageByReference, updateMessageReference } from "../workflows/workflow-messages";
 import { ulid } from "ulid";
 
 const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
@@ -172,7 +172,7 @@ export async function parseMessage(message: unknown) {
   }
 
   return {
-    body,
+    body: body ? stripQuoteTail(body) : undefined,
     clusterId,
     ingestionAddresses,
     subject: mail.subject,
@@ -181,6 +181,17 @@ export async function parseMessage(message: unknown) {
     inReplyTo: mail.inReplyTo,
     references: (typeof mail.references === "string") ? [mail.references] : mail.references ?? [],
   }
+}
+
+// Strip trailing email chain quotes ">"
+export const stripQuoteTail = (message: string) => {
+  const lines = message.split("\n").reverse();
+
+  while (lines[0] && lines[0].startsWith(">") || lines[0].trim() === "") {
+    lines.shift();
+  }
+
+  return lines.reverse().join("\n");
 }
 
 async function handleEmailIngestion(raw: unknown) {
@@ -323,7 +334,7 @@ const handleExistingChain = async ({
   runId: string;
 }) => {
   logger.info("Continuing existing run from email")
-  await insertRunMessage({
+  await addMessageAndResume({
     id: ulid(),
     clusterId,
     userId,
@@ -332,10 +343,7 @@ const handleExistingChain = async ({
       displayable: {},
       externalReference: messageId,
     },
-    data: {
-      message: body
-    },
+    message: body,
     type: "human",
   })
 }
-
