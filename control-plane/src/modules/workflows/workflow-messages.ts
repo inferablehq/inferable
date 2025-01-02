@@ -5,6 +5,7 @@ import { z } from "zod";
 import { unifiedMessageDataSchema } from "../contract";
 import { db, RunMessageMetadata, workflowMessages } from "../data";
 import { events } from "../observability/events";
+import { logger } from "../observability/logger";
 import { resumeRun } from "./workflows";
 
 export type TypedMessage = z.infer<typeof unifiedMessageDataSchema>;
@@ -60,6 +61,7 @@ export const insertRunMessage = async ({
   data: InferSelectModel<typeof workflowMessages>["data"];
   metadata?: RunMessageMetadata;
 }) => {
+  validateMessage({ data, type });
   return db
     .insert(workflowMessages)
     .values({
@@ -67,8 +69,9 @@ export const insertRunMessage = async ({
       user_id: userId ?? "SYSTEM",
       cluster_id: clusterId,
       workflow_id: runId,
+      type,
+      data,
       metadata,
-      ...unifiedMessageDataSchema.parse({ data, type }),
     })
     .returning({
       id: workflowMessages.id,
@@ -251,7 +254,7 @@ export const getWorkflowMessages = async ({
     .map(message => {
       return {
         ...message,
-        ...unifiedMessageDataSchema.parse(message),
+        ...validateMessage(message),
       };
     });
 };
@@ -338,6 +341,22 @@ export const toAnthropicMessage = (message: TypedMessage): Anthropic.MessagePara
       };
     }
   }
+};
+
+const validateMessage = (message: unknown) => {
+  const result = unifiedMessageDataSchema.safeParse(message);
+
+  if (!result.success) {
+    logger.error(`Invalid message type detected`, {
+      data: message,
+      result,
+      error: result.error,
+    });
+
+    throw new Error("Invalid message data");
+  }
+
+  return result.data;
 };
 
 export function hasInvocations(message: AgentMessage): boolean {
