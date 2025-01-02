@@ -5,7 +5,7 @@ import { clusterExists, getClusterDetails } from "../cluster";
 import * as clusterAuth from "./cluster";
 import * as clerkAuth from "./clerk";
 import * as customAuth from "./custom";
-import { getRunCustomAuthToken, getRun } from "../workflows/workflows";
+import { getRun } from "../workflows/workflows";
 import { logger } from "../observability/logger";
 import { env } from "../../utilities/env";
 
@@ -361,7 +361,7 @@ export const extractCustomAuthState = async (
 
   return {
     type: "custom",
-    entityId: "CUSTOM_AUTH",
+    entityId: `custom:${context.userId}`,
     clusterId,
     organizationId: cluster.organization_id,
     token,
@@ -380,16 +380,16 @@ export const extractCustomAuthState = async (
       }
 
       if (opts.run) {
-        const existingToken = await getRunCustomAuthToken({
+        const existingRun = await getRun({
           clusterId: opts.run.clusterId,
           runId: opts.run.runId,
         });
 
-        if (!existingToken) {
-          throw new AuthenticationError("Custom auth can only access runs created by custom auth");
+        if (!existingRun) {
+          throw new AuthenticationError("Custom auth does not have access to this run");
         }
 
-        if (existingToken !== this.token) {
+        if (existingRun.userId !== this.entityId) {
           throw new AuthenticationError("Custom auth does not have access to this run");
         }
       }
@@ -417,16 +417,16 @@ export const extractCustomAuthState = async (
         throw new AuthenticationError("Custom auth can only manage runs");
       }
 
-      const existingToken = await getRunCustomAuthToken({
+      const existingRun = await getRun({
         clusterId: opts.run.clusterId,
         runId: opts.run.runId,
       });
 
-      if (!existingToken) {
-        throw new AuthenticationError("Custom auth can only access runs created by custom auth");
+      if (!existingRun) {
+        throw new AuthenticationError("Custom auth does not have access to this run");
       }
 
-      if (existingToken !== this.token) {
+      if (existingRun.userId !== this.entityId) {
         throw new AuthenticationError("Custom auth does not have access to this run");
       }
 

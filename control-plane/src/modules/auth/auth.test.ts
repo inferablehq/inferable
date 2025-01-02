@@ -506,13 +506,14 @@ describe("extractCustomAuthState", () => {
 
   it("should extract ApiKeyAuth from valid API secret", async () => {
     mockCustomAuth.verify.mockResolvedValue({
-      someAuthValue: "someValue",
+      userId: "someValue",
     });
 
     const result = await extractCustomAuthState("abc123", owner.clusterId);
 
     expect(result).toMatchObject({
       type: "custom",
+      entityId: "someValue",
       organizationId: owner.organizationId,
       clusterId: owner.clusterId,
       canAccess: expect.any(Function),
@@ -534,7 +535,7 @@ describe("extractCustomAuthState", () => {
     });
 
     mockCustomAuth.verify.mockResolvedValue({
-      someAuthValue: "someValue",
+      userId: "someValue",
     });
 
     await expect(extractCustomAuthState("abc123", owner.clusterId)).rejects.toThrow("Custom auth is not enabled for this cluster");
@@ -544,7 +545,7 @@ describe("extractCustomAuthState", () => {
   describe("isUser", () => {
     it("should throw", async () => {
       mockCustomAuth.verify.mockResolvedValue({
-        someAuthValue: "someValue",
+        userId: "someValue",
       });
 
       const result = await extractCustomAuthState("abc123", owner.clusterId);
@@ -557,7 +558,7 @@ describe("extractCustomAuthState", () => {
     describe("cluster", () => {
       it("should succeed for same cluster", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -571,7 +572,7 @@ describe("extractCustomAuthState", () => {
 
       it("should throw for different cluster", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -588,7 +589,7 @@ describe("extractCustomAuthState", () => {
       // Custom auth can access runs
       it("should succeed if run is custom authenticated", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const run = await createRun({
@@ -612,7 +613,7 @@ describe("extractCustomAuthState", () => {
 
       it("should throw if custom authenticated token doesn't match", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const run = await createRun({
@@ -636,7 +637,7 @@ describe("extractCustomAuthState", () => {
 
       it("should throw if run is not custom authenticated", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const run = await createRun({
@@ -669,7 +670,7 @@ describe("extractCustomAuthState", () => {
         });
 
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -694,7 +695,7 @@ describe("extractCustomAuthState", () => {
         });
 
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -717,7 +718,7 @@ describe("extractCustomAuthState", () => {
         });
 
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -739,7 +740,7 @@ describe("extractCustomAuthState", () => {
       // Customer Provided auth can not manage cluster
       it("should throw", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -756,7 +757,7 @@ describe("extractCustomAuthState", () => {
       // Customer Provided auth can not manage templates
       it("should throw", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -778,7 +779,7 @@ describe("extractCustomAuthState", () => {
     describe("cluster", () => {
       it("should throw", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -793,7 +794,7 @@ describe("extractCustomAuthState", () => {
       // Customer provided auth cannot create templates
       it("should throw", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(
@@ -808,7 +809,7 @@ describe("extractCustomAuthState", () => {
       // Customer provided auth can create runs
       it("should succeed", async () => {
         mockCustomAuth.verify.mockResolvedValue({
-          someAuthValue: "someValue",
+          userId: "someValue",
         });
 
         const result = await extractCustomAuthState(

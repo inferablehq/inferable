@@ -658,25 +658,3 @@ export const createRetry = async ({ clusterId, runId }: { clusterId: string; run
     id: runId,
   });
 };
-
-export const getRunCustomAuthToken = async ({
-  clusterId,
-  runId,
-}: {
-  clusterId: string;
-  runId: string;
-}) => {
-  const [workflow] = await db
-    .select({
-      customAuthToken: workflows.custom_auth_token,
-    })
-    .from(workflows)
-    .where(and(eq(workflows.id, runId), eq(workflows.cluster_id, clusterId)))
-    .limit(1);
-
-  if (!workflow) {
-    throw new NotFoundError("Run not found");
-  }
-
-  return workflow.customAuthToken;
-};

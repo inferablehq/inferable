@@ -6,6 +6,7 @@ import { getServiceDefinition } from "../service-definitions";
 import { createCache, hashFromSecret } from "../../utilities/cache";
 import { getClusterDetails } from "../management";
 import { getClusterBackgroundRun } from "../workflows/workflows";
+import { z } from "zod";
 
 const customAuthContextCache = createCache<{
   service: string;
@@ -13,6 +14,10 @@ const customAuthContextCache = createCache<{
   result: string | null;
   resultType: jobs.ResultType | null;
 }>(Symbol("customAuthContextCache"));
+
+const customAuthResultSchema = z.object({
+  userId: z.string(),
+}).passthrough();
 
 /**
  * Calls the custom verify function and returns the result
@@ -23,7 +28,7 @@ export const verify = async ({
 }: {
   token: string;
   clusterId: string;
-}): Promise<unknown> => {
+}): Promise<z.infer<typeof customAuthResultSchema>> => {
   const secretHash = hashFromSecret(`${clusterId}:${token}`);
 
   const cached = await customAuthContextCache.get(secretHash);
@@ -103,9 +108,19 @@ export const verify = async ({
       );
     }
 
+    const parsed = customAuthResultSchema.safeParse(packer.unpack(result.result));
+
+    if (!parsed.success) {
+      throw new AuthenticationError(
+        `${authService}_${authFunction} returned invalid result object`,
+        "https://docs.inferable.ai/pages/custom-auth"
+      );
+    }
+
     await customAuthContextCache.set(secretHash, result, 300);
 
-    return packer.unpack(result.result);
+    return parsed.data;
+
   } catch (e) {
     if (e instanceof JobPollTimeoutError) {
       throw new AuthenticationError(
