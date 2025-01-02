@@ -28,7 +28,7 @@ export const notifyApprovalRequest = async ({
 
 export const notifyNewMessage = async ({
   message,
-  metadata,
+  runMetadata,
 }: {
   message: {
     id: string;
@@ -37,10 +37,10 @@ export const notifyNewMessage = async ({
     type: InferSelectModel<typeof workflowMessages>["type"];
     data: InferSelectModel<typeof workflowMessages>["data"];
   };
-  metadata?: Record<string, string>;
+  runMetadata?: Record<string, string>;
 }) => {
-  await slack.handleNewRunMessage({ message, metadata });
-  await email.handleNewRunMessage({ message, metadata });
+  await slack.handleNewRunMessage({ message, runMetadata });
+  await email.handleNewRunMessage({ message, runMetadata });
 };
 
 export const notifyStatusChange = async ({

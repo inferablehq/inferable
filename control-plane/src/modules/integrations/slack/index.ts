@@ -89,7 +89,7 @@ export const slack: InstallableIntegration = {
 
 export const handleNewRunMessage = async ({
   message,
-  metadata,
+  runMetadata,
 }: {
   message: {
     id: string;
@@ -98,13 +98,13 @@ export const handleNewRunMessage = async ({
     type: InferSelectModel<typeof workflowMessages>["type"];
     data: InferSelectModel<typeof workflowMessages>["data"];
   };
-  metadata?: Record<string, string>;
+  runMetadata?: Record<string, string>;
 }) => {
   if (message.type !== "agent") {
     return;
   }
 
-  if (!metadata?.[THREAD_META_KEY] || !metadata?.[CHANNEL_META_KEY]) {
+  if (!runMetadata?.[THREAD_META_KEY] || !runMetadata?.[CHANNEL_META_KEY]) {
     return;
   }
 
@@ -122,8 +122,8 @@ export const handleNewRunMessage = async ({
 
   if ("message" in message.data && message.data.message) {
     client?.chat.postMessage({
-      thread_ts: metadata[THREAD_META_KEY],
-      channel: metadata[CHANNEL_META_KEY],
+      thread_ts: runMetadata[THREAD_META_KEY],
+      channel: runMetadata[CHANNEL_META_KEY],
       mrkdwn: true,
       text: message.data.message,
     });

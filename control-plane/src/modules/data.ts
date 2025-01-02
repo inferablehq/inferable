@@ -303,6 +303,7 @@ export const workflows = pgTable(
 
 export type RunMessageMetadata = {
   displayable: Record<string, string>;
+  externalReference?: string;
 };
 
 export const workflowMessages = pgTable(

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { and, desc, eq, gt, InferSelectModel, ne } from "drizzle-orm";
+import { and, desc, eq, gt, InferSelectModel, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   agentDataSchema,
@@ -438,3 +438,49 @@ export const lastAgentMessage = async ({
   assertAgentMessage(result);
   return result;
 };
+
+
+export const getMessageByReference = async (reference: string, clusterId: string) => {
+  const [result] = await db
+    .select({
+      id: workflowMessages.id,
+      clusterId: workflowMessages.cluster_id,
+      runId: workflowMessages.workflow_id,
+      type: workflowMessages.type,
+      data: workflowMessages.data,
+      createdAt: workflowMessages.created_at,
+      updatedAt: workflowMessages.updated_at,
+    })
+    .from(workflowMessages)
+    .where(
+      and(
+        eq(workflowMessages.cluster_id, clusterId),
+        sql`metadata->>'externalReference' = ${reference}`
+      )
+    );
+
+  return result
+}
+
+export const updateMessageReference = async ({
+  externalReference,
+  clusterId,
+  messageId
+}:
+  {
+    externalReference: string,
+    clusterId: string,
+    messageId: string
+  }) => {
+  await db
+    .update(workflowMessages)
+    .set({
+      metadata: sql`COALESCE(${workflowMessages.metadata}, '{}')::jsonb || ${JSON.stringify({ externalReference })}::jsonb`,
+    })
+    .where(
+      and(
+        eq(workflowMessages.cluster_id, clusterId),
+        eq(workflowMessages.id, messageId)
+      )
+    );
+}

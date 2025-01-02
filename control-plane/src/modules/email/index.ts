@@ -1,22 +1,23 @@
 import { Consumer } from "sqs-consumer";
 import { env } from "../../utilities/env";
-import { BaseMessage, sqs, withObservability } from "../sqs";
+import { sqs, withObservability } from "../sqs";
 import { z } from "zod";
 import { logger } from "../observability/logger";
 import { safeParse } from "../../utilities/safe-parse";
 import { ParsedMail, simpleParser } from "mailparser";
 import { getUserForCluster } from "../clerk";
-import { AuthenticationError } from "../../utilities/errors";
+import { AuthenticationError, NotFoundError } from "../../utilities/errors";
 import { createRunWithMessage } from "../workflows/workflows";
 import { flagsmith } from "../flagsmith";
 import { InferSelectModel } from "drizzle-orm";
 import { workflowMessages } from "../data";
 import { ses } from "../ses";
+import { getMessageByReference, insertRunMessage, updateMessageReference } from "../workflows/workflow-messages";
+import { ulid } from "ulid";
 
 const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
 const EMAIL_SUBJECT_META_KEY = "emailSubject";
 const EMAIL_SOURCE_META_KEY = "emailSource";
-//const EMAIL_MESSAGE_ID_META_KEY = "emailMessageId";
 
 const sesMessageSchema = z.object({
   notificationType: z.string(),
@@ -59,7 +60,6 @@ const sesMessageSchema = z.object({
   content: z.string(),
 })
 
-
 const snsNotificationSchema = z.object({
   Type: z.literal("Notification"),
   MessageId: z.string(),
@@ -94,7 +94,7 @@ export const stop = async () => {
 
 export const handleNewRunMessage = async ({
   message,
-  metadata,
+  runMetadata,
 }: {
   message: {
     id: string;
@@ -102,29 +102,30 @@ export const handleNewRunMessage = async ({
     runId: string;
     type: InferSelectModel<typeof workflowMessages>["type"];
     data: InferSelectModel<typeof workflowMessages>["data"];
+
   };
-  metadata?: Record<string, string>;
+  runMetadata?: Record<string, string>;
 }) => {
   if (message.type !== "agent") {
     return;
   }
 
-  if (!metadata?.[EMAIL_INIT_MESSAGE_ID_META_KEY] || !metadata?.[EMAIL_SUBJECT_META_KEY] || !metadata?.[EMAIL_SOURCE_META_KEY]) {
+  if (!runMetadata?.[EMAIL_INIT_MESSAGE_ID_META_KEY] || !runMetadata?.[EMAIL_SUBJECT_META_KEY] || !runMetadata?.[EMAIL_SOURCE_META_KEY]) {
     return;
   }
 
   if ("message" in message.data && message.data.message) {
-    await ses.sendEmail({
+    const result = await ses.sendEmail({
       Source: `${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}`,
       Destination: {
         ToAddresses: [
-          metadata[EMAIL_SOURCE_META_KEY]
+          runMetadata[EMAIL_SOURCE_META_KEY]
         ],
       },
       Message: {
         Subject: {
           Charset: "UTF-8",
-          Data: `Re: ${metadata[EMAIL_SUBJECT_META_KEY]}`,
+          Data: `Re: ${runMetadata[EMAIL_SUBJECT_META_KEY]}`,
         },
         Body: {
           Text: {
@@ -134,6 +135,22 @@ export const handleNewRunMessage = async ({
         },
       },
     })
+
+    if (!result.MessageId) {
+      throw new Error("SES did not return a message ID");
+    }
+
+    await updateMessageReference({
+      clusterId: message.clusterId,
+      messageId: message.id,
+      externalReference: `<${result.MessageId}@email.amazonses.com>`,
+    });
+
+    logger.info("Email sent", {
+      clusterId: message.clusterId,
+      messageId: message.id,
+    });
+
   } else {
     logger.warn("Email thread message does not have content");
   }
@@ -186,6 +203,8 @@ export async function parseMessage(message: unknown) {
     subject: mail.subject,
     messageId: mail.messageId,
     source: sesMessage.data.mail.source,
+    inReplyTo: mail.inReplyTo,
+    references: (typeof mail.references === "string") ? [mail.references] : mail.references ?? [],
   }
 }
 
@@ -220,6 +239,22 @@ async function handleEmailIngestion(raw: unknown) {
       clusterId: message.clusterId,
     });
     return;
+  }
+
+  const reference = message.inReplyTo || message.references[0];
+  if (reference) {
+    const existing = await getMessageByReference(reference, message.clusterId);
+    if (!existing) {
+      throw new NotFoundError("Ingested email is replying to an unknown message");
+    }
+
+    return await handleExistingChain({
+      userId: user.id,
+      body: message.body,
+      clusterId: message.clusterId,
+      messageId: message.messageId,
+      runId: existing.runId
+    });
   }
 
   await handleNewChain({
@@ -281,6 +316,7 @@ const handleNewChain = async ({
   subject: string;
   source: string;
 }) => {
+  logger.info("Creating new run from email")
   await createRunWithMessage({
     userId,
     clusterId,
@@ -289,7 +325,41 @@ const handleNewChain = async ({
       [EMAIL_SUBJECT_META_KEY]: subject,
       [EMAIL_SOURCE_META_KEY]: source,
     },
+    messageMetadata: {
+      displayable: {},
+      externalReference: messageId,
+    },
     message: body,
+    type: "human",
+  })
+}
+
+const handleExistingChain = async ({
+  userId,
+  body,
+  clusterId,
+  messageId,
+  runId
+}: {
+  userId: string;
+  body: string;
+  clusterId: string;
+  messageId: string;
+  runId: string;
+}) => {
+  logger.info("Continuing existing run from email")
+  await insertRunMessage({
+    id: ulid(),
+    clusterId,
+    userId,
+    runId,
+    metadata: {
+      displayable: {},
+      externalReference: messageId,
+    },
+    data: {
+      message: body
+    },
     type: "human",
   })
 }
