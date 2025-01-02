@@ -1,8 +1,8 @@
 import { createWorkflowAgent } from "./agent";
 import { z } from "zod";
+import { assertResultMessage } from "../workflow-messages";
 import { redisClient } from "../../redis";
 import { AgentTool } from "./tool";
-import { assertMessageOfType } from "../workflow-messages";
 
 if (process.env.CI) {
   jest.retryTimes(3);
@@ -89,7 +89,10 @@ describe("Agent", () => {
 
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
     });
 
@@ -128,8 +131,14 @@ describe("Agent", () => {
       expect(outputState.messages).toHaveLength(5);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
-      expect(outputState.messages[3]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
+      expect(outputState.messages[3]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[4]).toHaveProperty("type", "agent");
     });
 
@@ -167,18 +176,21 @@ describe("Agent", () => {
       expect(outputState.messages).toHaveLength(4);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
 
-      const resultMessage = assertMessageOfType("invocation-result", outputState.messages[2]);
-      const topLevelResult = resultMessage.data.result;
-      Object.keys(topLevelResult).forEach(key => {
+      assertResultMessage(outputState.messages[2]);
+      const topLevelResult = outputState.messages[2].data.result;
+      Object.keys(topLevelResult).forEach((key) => {
         expect(topLevelResult[key]).toEqual({
           result: "Failed to echo the word 'hello'",
           status: "success",
           resultType: "rejection",
         });
-      });
+      })
     });
   });
 
@@ -186,6 +198,7 @@ describe("Agent", () => {
     jest.setTimeout(120000);
 
     it("should result result schema", async () => {
+
       const app = await createWorkflowAgent({
         workflow: {
           ...workflow,
@@ -193,10 +206,10 @@ describe("Agent", () => {
             type: "object",
             properties: {
               word: {
-                type: "string",
-              },
-            },
-          },
+                type: "string"
+              }
+            }
+          }
         },
         findRelevantTools: async () => tools,
         getTool: async () => tools[0],
@@ -220,10 +233,13 @@ describe("Agent", () => {
       expect(outputState.messages).toHaveLength(2);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[1].data.result).toHaveProperty("word", "hello");
+      expect(outputState.messages[1].data.result).toHaveProperty(
+        "word",
+        "hello",
+      );
 
       expect(outputState.result).toEqual({
-        word: "hello",
+        word: "hello"
       });
     });
   });
@@ -288,9 +304,15 @@ describe("Agent", () => {
 
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
-      expect(outputState.messages[4]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[4]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[5]).toHaveProperty("type", "agent");
     });
 
@@ -366,18 +388,26 @@ describe("Agent", () => {
 
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
-      expect(outputState.messages[4]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[4]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[5]).toHaveProperty("type", "agent");
     });
+
 
     it("should respect mock responses", async () => {
       const tools = [
         new AgentTool({
           name: "searchHaystack",
           description: "Search haystack",
-          schema: z.object({}).passthrough(),
+          schema: z.object({
+          }).passthrough(),
           func: async (input: any) => {
             return toolCallback(input.input);
           },
@@ -391,14 +421,15 @@ describe("Agent", () => {
             type: "object",
             properties: {
               word: {
-                type: "string",
-              },
-            },
-          },
+                type: "string"
+              }
+            }
+          }
         },
         allAvailableTools: ["searchHaystack"],
         findRelevantTools: async () => tools,
-        getTool: async input => tools.find(tool => tool.name === input.toolName)!,
+        getTool: async (input) =>
+          tools.find((tool) => tool.name === input.toolName)!,
         postStepSave: async () => {},
         mockModelResponses: [
           JSON.stringify({
@@ -406,28 +437,27 @@ describe("Agent", () => {
             invocations: [
               {
                 toolName: "searchHaystack",
-                input: {},
-              },
-            ],
+                input: {}
+              }
+            ]
           }),
           JSON.stringify({
             done: true,
             result: {
-              word: "needle",
-            },
-          }),
-        ],
+              word: "needle"
+            }
+          })
+        ]
       });
 
-      toolCallback.mockResolvedValue(
-        JSON.stringify({
-          result: JSON.stringify({
-            word: "needle",
-          }),
-          resultType: "resolution",
-          status: "success",
-        })
-      );
+
+      toolCallback.mockResolvedValue(JSON.stringify({
+        result: JSON.stringify({
+          word: "needle"
+        }),
+        resultType: "resolution",
+        status: "success",
+      }));
 
       const outputState = await app.invoke({
         messages: [
@@ -445,10 +475,14 @@ describe("Agent", () => {
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
       expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
-      expect(outputState.messages[3].data).toHaveProperty("result", {
-        word: "needle",
-      });
+      expect(outputState.messages[3].data).toHaveProperty(
+        "result",
+        {
+          word: "needle"
+        }
+      )
       expect(toolCallback).toHaveBeenCalledTimes(1);
     });
   });
+
 });

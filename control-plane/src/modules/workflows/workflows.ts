@@ -354,7 +354,7 @@ export const getWorkflowDetail = async ({
     // Current a workflow can have multiple "results".
     // For now, we just use the last result.
     // In the future, we will actually persist the workflow result.
-    result: agentMessage?.type === "agent" ? agentMessage.data.result : null,
+    result: agentMessage?.data?.result ?? null,
   };
 };
 

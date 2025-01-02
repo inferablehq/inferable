@@ -1,10 +1,13 @@
 import { ulid } from "ulid";
-import { AgentError, InvalidJobArgumentsError } from "../../../../utilities/errors";
+import {
+  AgentError,
+  InvalidJobArgumentsError,
+} from "../../../../utilities/errors";
 import * as events from "../../../observability/events";
 import { logger } from "../../../observability/logger";
 import { addAttributes, withSpan } from "../../../observability/tracer";
 import { trackCustomerTelemetry } from "../../../track-customer-telemetry";
-import { AgentMessage, assertMessageOfType } from "../../workflow-messages";
+import { AgentMessage, assertAgentMessage } from "../../workflow-messages";
 import { Run } from "../../workflows";
 import { ToolFetcher } from "../agent";
 import { WorkflowAgentState } from "../state";
@@ -13,12 +16,14 @@ import { AgentTool, AgentToolInputError } from "../tool";
 
 export const TOOL_CALL_NODE_NAME = "action";
 
-export const handleToolCalls = (state: WorkflowAgentState, getTool: ToolFetcher) =>
-  withSpan("workflow.toolCalls", () => _handleToolCalls(state, getTool));
+export const handleToolCalls = (
+  state: WorkflowAgentState,
+  getTool: ToolFetcher,
+) => withSpan("workflow.toolCalls", () => _handleToolCalls(state, getTool));
 
 const _handleToolCalls = async (
   state: WorkflowAgentState,
-  getTool: ToolFetcher
+  getTool: ToolFetcher,
 ): Promise<Partial<WorkflowAgentState>> => {
   // When we recieve parallel tool calls, we will receive a number of ToolMessage's
   // after the last AIMessage (The actual function call).
@@ -28,9 +33,12 @@ const _handleToolCalls = async (
 
   const resolvedToolsCalls = new Set<string>();
   while (lastMessage.type === "invocation-result") {
-    logger.info("Found invocation-result message, finding last non-invocation message", {
-      toolCallId: lastMessage.data.id,
-    });
+    logger.info(
+      "Found invocation-result message, finding last non-invocation message",
+      {
+        toolCallId: lastMessage.data.id,
+      },
+    );
 
     // Keep track of the tool calls which have already resolved
     resolvedToolsCalls.add(lastMessage.data.id);
@@ -46,18 +54,21 @@ const _handleToolCalls = async (
     lastMessage = message;
   }
 
-  const agentMessage = assertMessageOfType("agent", lastMessage);
+  assertAgentMessage(lastMessage);
 
-  if (!agentMessage.data.invocations || agentMessage.data.invocations.length === 0) {
+  if (
+    !lastMessage.data.invocations ||
+    lastMessage.data.invocations.length === 0
+  ) {
     logger.error("Expected a tool call", { lastMessage });
     throw new AgentError("Expected a tool call");
   }
 
   const toolResults = await Promise.all(
-    agentMessage.data.invocations
+    lastMessage.data.invocations
       // Filter out any tool_calls which have already resolvedd
-      .filter(toolCall => !resolvedToolsCalls.has(toolCall.id ?? ""))
-      .map(toolCall => handleToolCall(toolCall, state.workflow, getTool))
+      .filter((toolCall) => !resolvedToolsCalls.has(toolCall.id ?? ""))
+      .map((toolCall) => handleToolCall(toolCall, state.workflow, getTool)),
   );
 
   return toolResults.reduce(
@@ -66,10 +77,10 @@ const _handleToolCalls = async (
       if (result.waitingJobs) acc.waitingJobs!.push(...result.waitingJobs);
       if (result.result) {
         if (!!acc.result && !!result.result && result.result !== acc.result) {
-          logger.error("Multiple tools returned different results. Last one will be used.", {
-            result,
-            accResult: acc.result,
-          });
+          logger.error(
+            "Multiple tools returned different results. Last one will be used.",
+            { result, accResult: acc.result },
+          );
         }
 
         acc.result = result.result;
@@ -82,26 +93,30 @@ const _handleToolCalls = async (
       waitingJobs: [],
       status: "running",
       result: undefined,
-    }
+    },
   );
 };
 
 const handleToolCall = (
   toolCall: Required<AgentMessage["data"]>["invocations"][number],
   workflow: Run,
-  getTool: ToolFetcher
+  getTool: ToolFetcher,
 ) =>
-  withSpan("workflow.toolCall", () => _handleToolCall(toolCall, workflow, getTool), {
-    attributes: {
-      "tool.name": toolCall.toolName,
-      "tool.call.id": toolCall.id,
+  withSpan(
+    "workflow.toolCall",
+    () => _handleToolCall(toolCall, workflow, getTool),
+    {
+      attributes: {
+        "tool.name": toolCall.toolName,
+        "tool.call.id": toolCall.id,
+      },
     },
-  });
+  );
 
 const _handleToolCall = async (
   toolCall: Required<AgentMessage["data"]>["invocations"][number],
   workflow: Run,
-  getTool: ToolFetcher
+  getTool: ToolFetcher,
 ): Promise<Partial<WorkflowAgentState>> => {
   logger.info("Executing tool call");
 

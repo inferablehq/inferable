@@ -1,11 +1,14 @@
-import { ulid } from "ulid";
-import { z } from "zod";
-import { Model } from "../../../models";
-import { assertMessageOfType } from "../../workflow-messages";
 import { ReleventToolLookup } from "../agent";
-import { WorkflowAgentState } from "../state";
-import { AgentTool } from "../tool";
 import { handleModelCall } from "./model-call";
+import { z } from "zod";
+import { WorkflowAgentState } from "../state";
+import { ulid } from "ulid";
+import {
+  assertAgentMessage,
+  assertGenericMessage,
+} from "../../workflow-messages";
+import { Model } from "../../../models";
+import { AgentTool } from "../tool";
 
 describe("handleModelCall", () => {
   const workflow = {
@@ -68,7 +71,7 @@ describe("handleModelCall", () => {
       },
       structured: {
         done: true,
-        message: "nothing to do",
+        message: "nothing to do"
       },
     });
 
@@ -80,8 +83,8 @@ describe("handleModelCall", () => {
 
     expect(result.messages![0]).toHaveProperty("type", "agent");
 
-    const agentMessage = assertMessageOfType("agent", result.messages![0]);
-    expect(agentMessage.data.invocations).not.toBeDefined();
+    assertAgentMessage(result.messages![0]);
+    expect(result.messages![0].data.invocations).not.toBeDefined();
   });
 
   it("should ignore done if invocations are provided", async () => {
@@ -112,12 +115,12 @@ describe("handleModelCall", () => {
 
     expect(result.messages![0]).toHaveProperty("type", "agent");
 
-    const agentMessage = assertMessageOfType("agent", result.messages![0]);
+    assertAgentMessage(result.messages![0]);
 
     // Result should have been striped out
-    expect(agentMessage.data.result).not.toBeDefined();
-    expect(agentMessage.data.invocations).toHaveLength(1);
-    expect(agentMessage.data.invocations).toContainEqual({
+    expect(result.messages![0].data.result).not.toBeDefined();
+    expect(result.messages![0].data.invocations).toHaveLength(1);
+    expect(result.messages![0].data.invocations).toContainEqual({
       id: expect.any(String),
       toolName: "notify",
       input: { message: "A message" },
@@ -143,20 +146,20 @@ describe("handleModelCall", () => {
     expect(result.status).toBe("running");
 
     expect(result.messages![0]).toHaveProperty("type", "agent-invalid");
-    const invalidMessage = assertMessageOfType("agent-invalid", result.messages![0]);
-    expect(invalidMessage.data).toHaveProperty(
+    assertGenericMessage(result.messages![0]);
+    expect(result.messages![0].data).toHaveProperty(
       "details",
       expect.objectContaining({
         message: "nothing to do",
-      })
+      }),
     );
 
     expect(result.messages![1]).toHaveProperty("type", "supervisor");
-    const supervisorMessage = assertMessageOfType("supervisor", result.messages![1]);
+    assertGenericMessage(result.messages![1]);
 
-    expect(supervisorMessage.data).toHaveProperty(
+    expect(result.messages![1].data).toHaveProperty(
       "message",
-      "If you are not done, please provide an invocation, otherwise return done."
+      "If you are not done, please provide an invocation, otherwise return done.",
     );
   });
 
@@ -178,20 +181,20 @@ describe("handleModelCall", () => {
     expect(result.status).toBe("running");
 
     expect(result.messages![0]).toHaveProperty("type", "agent-invalid");
-    const invalidMessage = assertMessageOfType("agent-invalid", result.messages![0]);
-    expect(invalidMessage.data).toHaveProperty(
+    assertGenericMessage(result.messages![0]);
+    expect(result.messages![0].data).toHaveProperty(
       "details",
       expect.objectContaining({
         done: true,
-      })
+      }),
     );
 
     expect(result.messages![1]).toHaveProperty("type", "supervisor");
 
-    const supervisorMessage = assertMessageOfType("supervisor", result.messages![1]);
-    expect(supervisorMessage.data).toHaveProperty(
+    assertGenericMessage(result.messages![1]);
+    expect(result.messages![1].data).toHaveProperty(
       "message",
-      "Please provide a final result or a reason for stopping."
+      "Please provide a final result or a reason for stopping.",
     );
   });
 
@@ -202,7 +205,9 @@ describe("handleModelCall", () => {
       throw error;
     };
 
-    expect(handleModelCall(state, model, errorFindRelevantTools)).rejects.toThrow(error);
+    expect(
+      handleModelCall(state, model, errorFindRelevantTools),
+    ).rejects.toThrow(error);
   });
 
   it("should abort if a cycle is detected", async () => {
@@ -215,7 +220,9 @@ describe("handleModelCall", () => {
         runId: workflow.id,
         type: "agent" as const,
         data: {
-          invocations: [{ done: false, learning: "I learnt some stuff" } as any],
+          invocations: [
+            { done: false, learning: "I learnt some stuff" } as any,
+          ],
         },
       });
       messages.push({
@@ -229,9 +236,9 @@ describe("handleModelCall", () => {
       });
     }
 
-    expect(handleModelCall({ ...state, messages }, model, findRelevantTools)).rejects.toThrow(
-      "Detected cycle in workflow."
-    );
+    expect(
+      handleModelCall({ ...state, messages }, model, findRelevantTools),
+    ).rejects.toThrow("Detected cycle in workflow.");
   });
 
   it("should trigger supervisor if parsing fails", async () => {
@@ -251,17 +258,17 @@ describe("handleModelCall", () => {
     expect(result.status).toBe("running");
 
     expect(result.messages![0]).toHaveProperty("type", "agent-invalid");
-    const invalidMessage = assertMessageOfType("agent-invalid", result.messages![0]);
-    expect(invalidMessage.data).toHaveProperty("details");
+    assertGenericMessage(result.messages![0]);
+    expect(result.messages![0].data).toHaveProperty("details");
 
     expect(result.messages![1]).toHaveProperty("type", "supervisor");
-    const supervisorMessage = assertMessageOfType("supervisor", result.messages![1]);
+    assertGenericMessage(result.messages![1]);
 
-    expect(supervisorMessage.data).toHaveProperty(
+    expect(result.messages![1].data).toHaveProperty(
       "message",
-      expect.stringContaining("Provided object was invalid, check your input")
+      expect.stringContaining("Provided object was invalid, check your input"),
     );
-    expect(supervisorMessage.data.details).toHaveProperty("errors");
+    expect(result.messages![1].data.details).toHaveProperty("errors");
   });
 
   // Edge case where the model trys to call a tool (unbound) rather than returning it through `invocations` array.
@@ -298,9 +305,9 @@ describe("handleModelCall", () => {
       expect(result.status).toBe("running");
 
       expect(result.messages![0]).toHaveProperty("type", "agent");
-      const agentMessage = assertMessageOfType("agent", result.messages![0]);
+      assertAgentMessage(result.messages![0]);
 
-      expect(agentMessage.data).toHaveProperty("invocations", [
+      expect(result.messages![0].data).toHaveProperty("invocations", [
         {
           id: expect.any(String),
           toolName: "notify",
@@ -353,9 +360,9 @@ describe("handleModelCall", () => {
       expect(result.status).toBe("running");
 
       expect(result.messages![0]).toHaveProperty("type", "agent");
-      const agentMessage = assertMessageOfType("agent", result.messages![0]);
+      assertAgentMessage(result.messages![0]);
 
-      expect(agentMessage.data).toHaveProperty("invocations", [
+      expect(result.messages![0].data).toHaveProperty("invocations", [
         {
           id: expect.any(String),
           toolName: "notify",

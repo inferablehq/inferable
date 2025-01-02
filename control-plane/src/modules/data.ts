@@ -18,6 +18,7 @@ import {
 import { Pool } from "pg";
 import { env } from "../utilities/env";
 import { logger } from "./observability/logger";
+import { MessageData } from "./workflows/workflow-messages";
 
 export const createMutex = advisoryLock(env.DATABASE_URL);
 
@@ -322,7 +323,7 @@ export const workflowMessages = pgTable(
       withTimezone: true,
       precision: 6,
     }),
-    data: json("data").$type<unknown>().notNull(),
+    data: json("data").$type<MessageData>().notNull(),
     type: text("type", {
       enum: ["human", "invocation-result", "template", "agent", "agent-invalid", "supervisor"],
     }).notNull(),

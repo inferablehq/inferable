@@ -4,9 +4,9 @@ import { SpecialResultTypes } from "../tools/functions";
 import { NotFoundError } from "../../../../utilities/errors";
 import { ulid } from "ulid";
 import { WorkflowAgentState } from "../state";
+import { assertResultMessage } from "../../workflow-messages";
 import { redisClient } from "../../../redis";
 import { AgentTool } from "../tool";
-import { assertMessageOfType } from "../../workflow-messages";
 
 describe("handleToolCalls", () => {
   const workflow = {
@@ -91,7 +91,7 @@ describe("handleToolCalls", () => {
         result: JSON.stringify([waitingJobId]),
         resultType: SpecialResultTypes.jobTimeout,
         status: "success",
-      })
+      }),
     );
     const stateUpdate = await handleToolCalls(baseState, async () => tool);
 
@@ -117,16 +117,16 @@ describe("handleToolCalls", () => {
     expect(stateUpdate).toHaveProperty("messages");
     expect(stateUpdate.messages).toHaveLength(1);
 
-    expect(stateUpdate.messages![0]).toHaveProperty("type", "invocation-result");
+    expect(stateUpdate.messages![0]).toHaveProperty(
+      "type",
+      "invocation-result",
+    );
 
-    assertMessageOfType("invocation-result", stateUpdate.messages![0]!);
+    assertResultMessage(stateUpdate.messages![0]!);
 
-    expect(stateUpdate.messages![0]!.data as any).toEqual(
-      expect.objectContaining({
-        result: expect.objectContaining({
-          message: expect.stringContaining(`Failed to find tool: console_echo`),
-        }),
-      })
+    expect(stateUpdate.messages![0]?.data.result).toHaveProperty(
+      "message",
+      expect.stringContaining(`Failed to find tool: console_echo`),
     );
   });
 
@@ -158,7 +158,7 @@ describe("handleToolCalls", () => {
         ...baseState,
         messages,
       },
-      async () => tool
+      async () => tool,
     );
 
     expect(toolHandler).toHaveBeenCalledTimes(0);
@@ -170,18 +170,24 @@ describe("handleToolCalls", () => {
 
     expect(stateUpdate.messages).toHaveLength(1);
 
-    expect(stateUpdate.messages![0]).toHaveProperty("type", "invocation-result");
-    assertMessageOfType("invocation-result", stateUpdate.messages![0]!);
+    expect(stateUpdate.messages![0]).toHaveProperty(
+      "type",
+      "invocation-result",
+    );
+    assertResultMessage(stateUpdate.messages![0]);
 
-    expect((stateUpdate.messages![0].data as any).result).toEqual(
+    expect(stateUpdate.messages![0].data.result).toEqual(
       expect.objectContaining({
-        message: expect.stringContaining(`Provided input did not match schema for ${tool.name}`),
+        message: expect.stringContaining(
+          `Provided input did not match schema for ${tool.name}`,
+        ),
         parseResult: expect.arrayContaining([
           expect.objectContaining({
-            message: 'is not allowed to have the additional property "wrongKey"',
-          }),
+            message: "is not allowed to have the additional property \"wrongKey\""
+          }
+        )
         ]),
-      })
+      }),
     );
   });
 
@@ -234,7 +240,7 @@ describe("handleToolCalls", () => {
           ...baseState,
           messages,
         },
-        async () => tool
+        async () => tool,
       );
 
       expect(stateUpdate).toHaveProperty("status", "running");
@@ -250,15 +256,18 @@ describe("handleToolCalls", () => {
       expect(arg1).toEqual(
         expect.objectContaining({
           input: "hello",
-        })
+        }),
       );
 
       // We should only receive one new message, a tool call result for tool call `123`
       expect(stateUpdate.messages).toHaveLength(1);
 
-      expect(stateUpdate.messages![0]).toHaveProperty("type", "invocation-result");
+      expect(stateUpdate.messages![0]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
 
-      assertMessageOfType("invocation-result", stateUpdate.messages![0]!);
+      assertResultMessage(stateUpdate.messages![0]);
       expect(stateUpdate.messages![0].data).toHaveProperty("id", "123");
     });
 
@@ -299,7 +308,7 @@ describe("handleToolCalls", () => {
           result: JSON.stringify([waitingJobId]),
           resultType: SpecialResultTypes.jobTimeout,
           status: "success",
-        })
+        }),
       );
 
       toolHandler.mockResolvedValueOnce(
@@ -307,7 +316,7 @@ describe("handleToolCalls", () => {
           result: JSON.stringify({}),
           resultType: "resolution",
           status: "success",
-        })
+        }),
       );
 
       const stateUpdate = await handleToolCalls(
@@ -315,7 +324,7 @@ describe("handleToolCalls", () => {
           ...baseState,
           messages,
         },
-        async () => tool
+        async () => tool,
       );
 
       expect(toolHandler).toHaveBeenCalledTimes(2);
