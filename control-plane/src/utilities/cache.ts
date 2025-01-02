@@ -13,7 +13,6 @@ export const createCache = <T>(namespace: symbol) => {
       const localResult = localCache.get<T>(key);
 
       if (localResult !== undefined) {
-        logger.info("Local cache hit", { key });
         return localResult;
       }
 
@@ -26,7 +25,6 @@ export const createCache = <T>(namespace: symbol) => {
       return undefined;
     },
     set: async (key: string, value: T, stdTTLSeconds: number) => {
-      logger.info("Local cache set", { key, value, stdTTLSeconds });
       localCache.set(key, value, stdTTLSeconds);
 
       if (stdTTLSeconds > 1000) {
