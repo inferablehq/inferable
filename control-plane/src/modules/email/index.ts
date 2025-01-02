@@ -159,6 +159,9 @@ export const handleNewRunMessage = async ({
 export async function parseMessage(message: unknown) {
   const notification = snsNotificationSchema.safeParse(message);
   if (!notification.success) {
+    logger.error("Could not parse SNS notification message", {
+      error: notification.error,
+    })
     throw new Error("Could not parse SNS notification message");
   }
 
@@ -169,6 +172,9 @@ export async function parseMessage(message: unknown) {
 
   const sesMessage = sesMessageSchema.safeParse(sesJson.data);
   if (!sesMessage.success) {
+    logger.error("Could not parse SES message", {
+      error: sesMessage.error,
+    })
     throw new Error("Could not parse SES message");
   }
 
