@@ -8,7 +8,7 @@ const intervals: NodeJS.Timeout[] = [];
 export const registerCron = async (
   fn: () => Promise<unknown>,
   name: string,
-  { interval }: { interval: number },
+  { interval }: { interval: number }
 ) => {
   const mutex = createMutex(`cron-${name}`);
 
@@ -37,7 +37,7 @@ export const registerCron = async (
 };
 
 process.on("beforeExit", () => {
-  intervals.forEach((intervalId) => {
+  intervals.forEach(intervalId => {
     clearInterval(intervalId);
   });
 });

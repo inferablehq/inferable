@@ -36,7 +36,9 @@ export const clusterExists = async ({
   organizationId: string;
   clusterId: string;
 }): Promise<boolean> => {
-  const cached = await cache.get(`${organizationId}:${clusterId}`);
+  const key = `${organizationId}:${clusterId}`;
+
+  const cached = await cache.get(key);
 
   if (cached !== undefined) {
     return cached;
@@ -50,7 +52,7 @@ export const clusterExists = async ({
     .where(and(eq(data.clusters.id, clusterId), eq(data.clusters.organization_id, organizationId)));
 
   const exists = cluster.count > 0;
-  await cache.set(`${organizationId}:${clusterId}`, exists, 1000 * 60);
+  await cache.set(key, exists, 60);
   return exists;
 };
 

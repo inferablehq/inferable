@@ -1,6 +1,6 @@
-import { db, events, jobs } from "./data";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { createCache } from "../utilities/cache";
+import { db, events, jobs } from "./data";
 
 const cache = createCache<{
   functionCalls: { count: number };
@@ -47,6 +47,6 @@ export async function getServerStats() {
   };
 
   // Cache for 10 minutes
-  await cache.set("server-stats", stats, 1000 * 60 * 10);
+  await cache.set("server-stats", stats, 60 * 10);
   return stats;
 }

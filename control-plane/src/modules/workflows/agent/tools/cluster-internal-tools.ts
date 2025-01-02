@@ -5,17 +5,12 @@ import {
 } from "./knowledge-artifacts";
 import { createCache } from "../../../../utilities/cache";
 import { getClusterDetails } from "../../../management";
-import {
-  buildCurrentDateTimeTool,
-  CURRENT_DATE_TIME_TOOL_NAME,
-} from "./date-time";
+import { buildCurrentDateTimeTool, CURRENT_DATE_TIME_TOOL_NAME } from "./date-time";
 import { AgentTool } from "../tool";
 
 const clusterSettingsCache = createCache<{
   enableKnowledgebase: boolean;
 }>(Symbol("clusterSettings"));
-
-const CACHE_TTL = 60 * 2; // 2 minutes
 
 export type InternalToolBuilder = (
   workflow: Run,
@@ -35,7 +30,7 @@ export const getClusterInternalTools = async (
     settings = {
       enableKnowledgebase: cluster.enableKnowledgebase,
     };
-    await clusterSettingsCache.set(cacheKey, settings, CACHE_TTL);
+    await clusterSettingsCache.set(cacheKey, settings, 60 * 2);
   }
 
   const tools: Record<string, InternalToolBuilder> = {};
