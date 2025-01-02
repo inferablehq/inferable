@@ -85,7 +85,7 @@ export const handleNewRunMessage = async ({
 
   if ("message" in message.data && message.data.message) {
     const result = await ses.sendEmail({
-      Source: `${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}`,
+      Source: `"Inferable" <${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}>`,
       Destination: {
         ToAddresses: [
           runMetadata[EMAIL_SOURCE_META_KEY]
