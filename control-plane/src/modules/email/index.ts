@@ -22,40 +22,15 @@ const EMAIL_SOURCE_META_KEY = "emailSource";
 const sesMessageSchema = z.object({
   notificationType: z.string(),
   mail: z.object({
-    timestamp: z.string(),
     source: z.string().email(),
-    messageId: z.string(),
     destination: z.array(z.string().email()),
-    headersTruncated: z.boolean(),
-    headers: z.array(
-      z.object({
-        name: z.string(),
-        value: z.string(),
-      })
-    ),
-    commonHeaders: z.object({
-      returnPath: z.string().email(),
-      from: z.array(z.string().email()),
-      date: z.string(),
-      to: z.array(z.string().email()),
-      messageId: z.string(),
-      subject: z.string(),
-    }),
   }),
   receipt: z.object({
-    timestamp: z.string(),
-    processingTimeMillis: z.number(),
-    recipients: z.array(z.string().email()),
     spamVerdict: z.object({ status: z.string() }),
     virusVerdict: z.object({ status: z.string() }),
     spfVerdict: z.object({ status: z.string() }),
     dkimVerdict: z.object({ status: z.string() }),
     dmarcVerdict: z.object({ status: z.string() }),
-    action: z.object({
-      type: z.string(),
-      topicArn: z.string(),
-      encoding: z.string(),
-    }),
   }),
   content: z.string(),
 })
@@ -63,14 +38,8 @@ const sesMessageSchema = z.object({
 const snsNotificationSchema = z.object({
   Type: z.literal("Notification"),
   MessageId: z.string(),
-  TopicArn: z.string(),
   Subject: z.string(),
   Message: z.string(),
-  Timestamp: z.string(),
-  SignatureVersion: z.string(),
-  Signature: z.string(),
-  SigningCertURL: z.string(),
-  UnsubscribeURL: z.string(),
 });
 
 const emailIngestionConsumer = env.SQS_EMAIL_INGESTION_QUEUE_URL
