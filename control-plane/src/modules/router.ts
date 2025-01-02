@@ -9,7 +9,7 @@ import * as data from "./data";
 import * as management from "./management";
 import * as events from "./observability/events";
 import {
-  assertGenericMessage,
+  assertMessageOfType,
   editHumanMessage,
   getRunMessagesForDisplay,
 } from "./workflows/workflow-messages";
@@ -300,7 +300,7 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth();
     await auth.canManage({ run: { clusterId, runId } });
 
-    assertGenericMessage({
+    assertMessageOfType("human", {
       type: "human",
       data: {
         message,

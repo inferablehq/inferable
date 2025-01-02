@@ -91,14 +91,14 @@ export const integrationSchema = z.object({
     .nullable(),
 });
 
-export const genericMessageDataSchema = z
+const genericMessageDataSchema = z
   .object({
     message: z.string(),
     details: z.object({}).passthrough().optional(),
   })
   .strict();
 
-export const resultDataSchema = z
+const resultDataSchema = z
   .object({
     id: z.string(),
     result: z.object({}).passthrough(),
@@ -124,7 +124,7 @@ export const learningSchema = z.object({
   }),
 });
 
-export const agentDataSchema = z
+const agentDataSchema = z
   .object({
     done: z.boolean().optional(),
     result: anyObject.optional(),
@@ -144,10 +144,31 @@ export const agentDataSchema = z
   })
   .strict();
 
-export const messageDataSchema = z.union([
-  resultDataSchema,
-  agentDataSchema,
-  genericMessageDataSchema,
+export const unifiedMessageDataSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("agent"),
+    data: agentDataSchema,
+  }),
+  z.object({
+    type: z.literal("invocation-result"),
+    data: resultDataSchema,
+  }),
+  z.object({
+    type: z.literal("human"),
+    data: genericMessageDataSchema,
+  }),
+  z.object({
+    type: z.literal("template"),
+    data: genericMessageDataSchema,
+  }),
+  z.object({
+    type: z.literal("supervisor"),
+    data: genericMessageDataSchema,
+  }),
+  z.object({
+    type: z.literal("agent-invalid"),
+    data: genericMessageDataSchema,
+  }),
 ]);
 
 export const FunctionConfigSchema = z.object({
@@ -623,21 +644,14 @@ export const definition = {
     }),
     responses: {
       200: z.array(
-        z.object({
-          id: z.string(),
-          data: messageDataSchema,
-          type: z.enum([
-            "human",
-            "template",
-            "invocation-result",
-            "agent",
-            "agent-invalid",
-            "supervisor",
-          ]),
-          createdAt: z.date(),
-          pending: z.boolean().default(false),
-          displayableContext: z.record(z.string()).nullable(),
-        })
+        z
+          .object({
+            id: z.string(),
+            createdAt: z.date(),
+            pending: z.boolean().default(false),
+            displayableContext: z.record(z.string()).nullable(),
+          })
+          .merge(z.object({ data: unifiedMessageDataSchema }))
       ),
       401: z.undefined(),
     },
@@ -935,16 +949,7 @@ export const definition = {
         messages: z.array(
           z.object({
             id: z.string(),
-            data: messageDataSchema,
-            type: z.enum([
-              // TODO: Remove 'template' type
-              "template",
-              "invocation-result",
-              "human",
-              "agent",
-              "agent-invalid",
-              "supervisor",
-            ]),
+            data: unifiedMessageDataSchema,
             createdAt: z.date(),
             pending: z.boolean().default(false),
             displayableContext: z.record(z.string()).nullable(),

@@ -14,6 +14,7 @@ import { workflowMessages } from "../data";
 import { ses } from "../ses";
 import { getMessageByReference, updateMessageReference } from "../workflows/workflow-messages";
 import { ulid } from "ulid";
+import { unifiedMessageDataSchema } from "../contract";
 
 const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
 const EMAIL_SUBJECT_META_KEY = "emailSubject";
@@ -33,7 +34,7 @@ const sesMessageSchema = z.object({
     dmarcVerdict: z.object({ status: z.string() }),
   }),
   content: z.string(),
-})
+});
 
 const snsNotificationSchema = z.object({
   Type: z.literal("Notification"),
@@ -54,7 +55,7 @@ const emailIngestionConsumer = env.SQS_EMAIL_INGESTION_QUEUE_URL
   : undefined;
 
 export const start = async () => {
-  emailIngestionConsumer?.start()
+  emailIngestionConsumer?.start();
 };
 
 export const stop = async () => {
@@ -71,7 +72,6 @@ export const handleNewRunMessage = async ({
     runId: string;
     type: InferSelectModel<typeof workflowMessages>["type"];
     data: InferSelectModel<typeof workflowMessages>["data"];
-
   };
   runMetadata?: Record<string, string>;
 }) => {
@@ -79,17 +79,21 @@ export const handleNewRunMessage = async ({
     return;
   }
 
-  if (!runMetadata?.[EMAIL_INIT_MESSAGE_ID_META_KEY] || !runMetadata?.[EMAIL_SUBJECT_META_KEY] || !runMetadata?.[EMAIL_SOURCE_META_KEY]) {
+  if (
+    !runMetadata?.[EMAIL_INIT_MESSAGE_ID_META_KEY] ||
+    !runMetadata?.[EMAIL_SUBJECT_META_KEY] ||
+    !runMetadata?.[EMAIL_SOURCE_META_KEY]
+  ) {
     return;
   }
 
-  if ("message" in message.data && message.data.message) {
+  const messageData = unifiedMessageDataSchema.parse(message.data).data;
+
+  if ("message" in messageData && messageData.message) {
     const result = await ses.sendEmail({
       Source: `"Inferable" <${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}>`,
       Destination: {
-        ToAddresses: [
-          runMetadata[EMAIL_SOURCE_META_KEY]
-        ],
+        ToAddresses: [runMetadata[EMAIL_SOURCE_META_KEY]],
       },
       Message: {
         Subject: {
@@ -99,11 +103,11 @@ export const handleNewRunMessage = async ({
         Body: {
           Text: {
             Charset: "UTF-8",
-            Data: message.data.message,
+            Data: messageData.message,
           },
         },
       },
-    })
+    });
 
     if (!result.MessageId) {
       throw new Error("SES did not return a message ID");
@@ -119,7 +123,6 @@ export const handleNewRunMessage = async ({
       clusterId: message.clusterId,
       messageId: message.id,
     });
-
   } else {
     logger.warn("Email thread message does not have content");
   }
@@ -130,7 +133,7 @@ export async function parseMessage(message: unknown) {
   if (!notification.success) {
     logger.error("Could not parse SNS notification message", {
       error: notification.error,
-    })
+    });
     throw new Error("Could not parse SNS notification message");
   }
 
@@ -143,19 +146,22 @@ export async function parseMessage(message: unknown) {
   if (!sesMessage.success) {
     logger.error("Could not parse SES message", {
       error: sesMessage.error,
-    })
+    });
     throw new Error("Could not parse SES message");
   }
 
-  const ingestionAddresses = sesMessage.data.mail.destination.filter(
-    (email) => email.endsWith(env.INFERABLE_EMAIL_DOMAIN)
-  )
+  const ingestionAddresses = sesMessage.data.mail.destination.filter(email =>
+    email.endsWith(env.INFERABLE_EMAIL_DOMAIN)
+  );
 
   if (ingestionAddresses.length > 1) {
     throw new Error("Found multiple Inferable email addresses in destination");
   }
 
-  const clusterId = ingestionAddresses.pop()?.replace(env.INFERABLE_EMAIL_DOMAIN, "").replace("@", "");
+  const clusterId = ingestionAddresses
+    .pop()
+    ?.replace(env.INFERABLE_EMAIL_DOMAIN, "")
+    .replace("@", "");
 
   if (!clusterId) {
     throw new Error("Could not extract clusterId from email address");
@@ -166,9 +172,9 @@ export async function parseMessage(message: unknown) {
     throw new Error("Could not parse email content");
   }
 
-  let body = mail.text
+  let body = mail.text;
   if (!body && mail.html) {
-    body = mail.html
+    body = mail.html;
   }
 
   return {
@@ -179,26 +185,25 @@ export async function parseMessage(message: unknown) {
     messageId: mail.messageId,
     source: sesMessage.data.mail.source,
     inReplyTo: mail.inReplyTo,
-    references: (typeof mail.references === "string") ? [mail.references] : mail.references ?? [],
-  }
+    references: typeof mail.references === "string" ? [mail.references] : (mail.references ?? []),
+  };
 }
 
 // Strip trailing email chain quotes ">"
 export const stripQuoteTail = (message: string) => {
   const lines = message.split("\n").reverse();
 
-  while (lines[0] && lines[0].startsWith(">") || lines[0].trim() === "") {
+  while ((lines[0] && lines[0].startsWith(">")) || lines[0].trim() === "") {
     lines.shift();
   }
 
   return lines.reverse().join("\n");
-}
+};
 
 async function handleEmailIngestion(raw: unknown) {
   const message = await parseMessage(raw);
   if (!message.body) {
-    logger.info("Email had no body. Skipping", {
-    });
+    logger.info("Email had no body. Skipping", {});
     return;
   }
 
@@ -239,7 +244,7 @@ async function handleEmailIngestion(raw: unknown) {
       body: message.body,
       clusterId: message.clusterId,
       messageId: message.messageId,
-      runId: existing.runId
+      runId: existing.runId,
     });
   }
 
@@ -249,12 +254,11 @@ async function handleEmailIngestion(raw: unknown) {
     clusterId: message.clusterId,
     messageId: message.messageId,
     subject: message.subject,
-    source: message.source
+    source: message.source,
   });
 }
 
-
-const parseMailContent = (message: string):  Promise<ParsedMail> => {
+const parseMailContent = (message: string): Promise<ParsedMail> => {
   return new Promise((resolve, reject) => {
     simpleParser(message, (error, parsed) => {
       if (error) {
@@ -263,9 +267,8 @@ const parseMailContent = (message: string):  Promise<ParsedMail> => {
         resolve(parsed);
       }
     });
-  })
+  });
 };
-
 
 const authenticateUser = async (emailAddress: string, clusterId: string) => {
   if (!env.CLERK_SECRET_KEY) {
@@ -293,7 +296,7 @@ const handleNewChain = async ({
   clusterId,
   messageId,
   subject,
-  source
+  source,
 }: {
   userId: string;
   body: string;
@@ -302,7 +305,7 @@ const handleNewChain = async ({
   subject: string;
   source: string;
 }) => {
-  logger.info("Creating new run from email")
+  logger.info("Creating new run from email");
   await createRunWithMessage({
     userId,
     clusterId,
@@ -317,15 +320,15 @@ const handleNewChain = async ({
     },
     message: body,
     type: "human",
-  })
-}
+  });
+};
 
 const handleExistingChain = async ({
   userId,
   body,
   clusterId,
   messageId,
-  runId
+  runId,
 }: {
   userId: string;
   body: string;
@@ -333,7 +336,7 @@ const handleExistingChain = async ({
   messageId: string;
   runId: string;
 }) => {
-  logger.info("Continuing existing run from email")
+  logger.info("Continuing existing run from email");
   await addMessageAndResume({
     id: ulid(),
     clusterId,
@@ -345,5 +348,5 @@ const handleExistingChain = async ({
     },
     message: body,
     type: "human",
-  })
-}
+  });
+};
