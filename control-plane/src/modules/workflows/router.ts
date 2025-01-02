@@ -155,7 +155,6 @@ export const runsRouter = initServer().router(
 
         // Customer Auth
         authContext: customAuth?.context,
-        customAuthToken: customAuth?.token,
 
         context: body.context,
 

@@ -79,7 +79,6 @@ export const createRun = async ({
   reasoningTraces,
   enableSummarization,
   modelIdentifier,
-  customAuthToken,
   authContext,
   context,
   enableResultGrounding,
@@ -106,7 +105,6 @@ export const createRun = async ({
   reasoningTraces?: boolean;
   enableSummarization?: boolean;
   modelIdentifier?: ChatIdentifiers;
-  customAuthToken?: string;
   authContext?: unknown;
   context?: unknown;
   enableResultGrounding?: boolean;
@@ -144,7 +142,6 @@ export const createRun = async ({
           config_id: configId,
           config_version: configVersion,
           model_identifier: modelIdentifier,
-          custom_auth_token: customAuthToken,
           auth_context: authContext,
           context: context,
           enable_result_grounding: enableResultGrounding,
@@ -487,7 +484,6 @@ export const createRunWithMessage = async ({
   enableSummarization,
   modelIdentifier,
   onStatusChange,
-  customAuthToken,
   authContext,
   context,
   enableResultGrounding,
@@ -510,7 +506,6 @@ export const createRunWithMessage = async ({
     interactive,
     enableSummarization,
     modelIdentifier,
-    customAuthToken,
     authContext,
     context,
     enableResultGrounding,
