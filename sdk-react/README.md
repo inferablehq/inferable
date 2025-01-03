@@ -11,8 +11,6 @@
 This is the official Inferable AI SDK for React.
 It is used to start and interact with [Inferable runs](https://docs.inferable.ai/pages/runs) from React applications.
 
-It does **not** currently support [registering functions](https://docs.inferable.ai/pages/functions) as the backend SDKs do.
-
 ## Installation
 
 ```bash
@@ -29,218 +27,155 @@ pnpm add @inferable/react
 
 ## Quick Start
 
-Here's a simple example of a chat interface that uses both `useRun` and `useRuns` hooks:
+Here's a minimal example showing how to use the three main hooks:
 
 ```tsx
-import { useRun, useRuns } from "@inferable/react";
-import { useState } from "react";
+import { useInferable, useRun, useMessages } from "@inferable/react";
 
 function Chat() {
-  const [input, setInput] = useState("");
-
-  // Get list of all runs
-  const { runs } = useRuns({
+  // Initialize the Inferable client
+  const inferable = useInferable({
     clusterId: "your-cluster-id",
-    authType: "custom",
-    customAuthToken: "your-custom-auth-token",
+    // Simple cluster-based auth for backend services
+    authType: "cluster",
+    apiSecret: "your-api-secret",
+    // Or use custom auth for frontend apps with user-specific permissions
+    // https://docs.inferable.ai/pages/custom-auth
+    // authType: "custom",
+    // customAuthToken: "your-custom-auth-token",
   });
 
-  // Get current run and message handling
-  const { messages, createMessage } = useRun({
-    clusterId: "your-cluster-id",
-    authType: "custom",
-    customAuthToken: "your-custom-auth-token",
-  });
+  // Start or connect to a run
+  const run = useRun(inferable);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    await createMessage({
-      message: input,
-      type: "human",
-    });
-    setInput("");
-  };
+  // Get utility functions for working with messages
+  const messages = useMessages(run.messages);
 
   return (
     <div>
-      {/* Display previous runs */}
-      <div className="runs-list">
-        <h3>Previous Runs</h3>
-        {runs.map(run => (
-          <div key={run.id}>
-            {run.name} - {run.status}
-          </div>
-        ))}
-      </div>
+      {/* Display messages */}
+      {messages.all("asc")?.map(msg => (
+        <div key={msg.id}>
+          {msg.type === "human" ? "You: " : "Assistant: "}
+          {msg.data.message}
+        </div>
+      ))}
 
-      {/* Display current chat */}
-      <div className="chat">
-        {messages.map(msg => (
-          <div key={msg.id} className={`message ${msg.type}`}>
-            {msg.type === "human" ? "👤" : "🤖"} {msg.message}
-          </div>
-        ))}
-      </div>
-
-      {/* Input area */}
-      <div className="input-area">
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyPress={e => e.key === "Enter" && handleSend()}
-          placeholder="Type your message..."
-        />
-        <button onClick={handleSend}>Send</button>
-      </div>
+      {/* Message input */}
+      <input
+        onKeyPress={e => {
+          if (e.key === "Enter") {
+            run.createMessage(e.target.value);
+            e.target.value = "";
+          }
+        }}
+        placeholder={run?.id ? "Type your message..." : "Type your initial message..."}
+      />
     </div>
   );
 }
-
-export default Chat;
 ```
 
-This example demonstrates:
+## Running the Demo
 
-- Listing all runs using `useRuns`
-- Starting a new run and handling messages using `useRun`
-- Sending messages to the run
-- Basic UI for displaying messages and run history
+The repository includes a development server in the `./demo` directory:
 
-> More details on Inferable front-end usage can be found [here](https://docs.inferable.ai/pages/frontend).
+1. Clone the repository
+2. Install dependencies:
 
-### useRun Hook
-
-The `useRun` hook returns an object with the following properties:
-
-```typescript
-{
-  client: ApiClient;        // The underlying API client
-  createMessage: Function;  // Function to add new messages to the run
-  messages: Message[];      // Array of all messages in the run
-  run?: Run;               // Current run status and metadata
-  result?: T;              // Typed result of the run if resultSchema was provided
-  error: Error | null;     // Error if any occurred during operations
-}
+```bash
+npm install
 ```
 
-#### Basic Usage
-
-```typescript
-const { messages, run, createMessage } = useRun({
-  clusterId: "your-cluster-id",
-  authType: "custom",
-  customAuthToken: "your-custom-auth-token",
-  // apiSecret: 'your-api-secret', // Alternative auth method
-  // pollInterval: 1000, // Optional: defaults to 1000ms
-  // resultSchema: z.object({...}), // Optional: schema for typed run results
-});
-```
-
-#### Adding Messages
-
-You can add messages to the run by calling the `createMessage` function:
-
-```typescript
-await createMessage({
-  message: "Hello!",
-  type: "human",
-});
-```
-
-#### Error Handling
-
-You can handle errors by providing an `onError` callback:
-
-```typescript
-const { messages, run, createMessage } = useRun({
-  clusterId: "your-cluster-id",
-  authType: "custom",
-  customAuthToken: "your-custom-auth-token",
-  onError: error => {
-    console.error("Run error:", error);
-  },
-});
-```
-
-#### Polling Interval
-
-The hook polls for updates by default every 1000ms. You can customize this:
-
-```typescript
-const { messages } = useRun({
-  // ... other options
-  pollInterval: 2000, // Poll every 2 seconds
-});
-```
-
-### useRuns Hook
-
-The `useRuns` hook returns an object with the following properties:
-
-```typescript
-{
-  runs: Array<{
-    id: string; // The run ID
-    name: string; // Name of the run
-    userId: string | null; // User ID associated with the run
-    createdAt: Date; // When the run was created
-    status: "pending" | "running" | "paused" | "done" | "failed" | null; // Current status
-    test: boolean; // Whether this is a test run
-    configId: string | null; // Associated config ID
-    configVersion: number | null; // Version of the config
-    feedbackScore: number | null; // Feedback score if any
-  }>;
-}
-```
-
-#### Basic Usage
-
-```typescript
-const { runs } = useRuns({
-  clusterId: "your-cluster-id",
-  authType: "custom",
-  customAuthToken: "your-custom-auth-token",
-  // apiSecret: 'your-api-secret', // Alternative auth method
-  // pollInterval: 2000, // Optional: defaults to 2000ms
-});
-```
-
-#### Polling Interval
-
-The hook polls for updates by default every 2000ms. You can customize this:
-
-```typescript
-const { runs } = useRuns({
-  // ... other options
-  pollInterval: 5000, // Poll every 5 seconds
-});
-```
-
-## Custom Authentication
-
-Custom Authentication is a feature that allows you to bring your own custom auth tokens and validate them via your own auth providers. It ensure you can safely call the inferable API:
-
-1. Without exposing your API secret
-2. Without any privilege escalation on user data
-
-For more infromation, see [Custom Auth](https://docs.inferable.ai/pages/custom-auth).
-
-## Local Development
-
-There is development server included in the repository at `./demo`.
-
-1. Start the development server:
+3. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-This will start a Vite dev server at http://localhost:3000 with the test page, which provides a simple interface to test the SDK's functionality.
+This will start a Vite dev server at http://localhost:3000 with a test page that provides a simple interface to test the SDK's functionality.
+
+## API Reference
+
+### useInferable Hook
+
+The core hook for initializing the Inferable client.
+
+```typescript
+const inferable = useInferable({
+  clusterId: string;
+  authType: "custom" | "cluster";
+  customAuthToken?: string;  // Required if authType is "custom"
+  apiSecret?: string;        // Required if authType is "cluster"
+  baseUrl?: string;         // Optional, defaults to "https://api.inferable.ai"
+});
+
+// Returns:
+{
+  client: ApiClient;
+  clusterId: string;
+  createRun: (options: {
+    initialPrompt: string;
+    systemPrompt?: string;
+    name?: string;
+    model?: "claude-3-5-sonnet" | "claude-3-haiku";
+    resultSchema?: z.ZodObject<any>;
+    metadata?: Record<string, string>;
+    interactive?: boolean;
+  }) => Promise<{ id: string }>;
+  listRuns: () => Promise<{
+    runs: Array<{
+      id: string;
+      name: string;
+      userId: string | null;
+      createdAt: Date;
+      status: "pending" | "running" | "paused" | "done" | "failed" | null;
+      test: boolean;
+      configId: string | null;
+      configVersion: number | null;
+      feedbackScore: number | null;
+    }>;
+  }>;
+}
+```
+
+### useRun Hook
+
+Manages an individual run session with real-time updates.
+
+```typescript
+const {
+  setRunId,        // Function to set the current run ID
+  createMessage,   // Function to send a new message
+  messages,        // Array of all messages in the run
+  run,            // Current run details
+  result,         // Typed result if resultSchema was provided
+  error           // Error object if any errors occurred
+} = useRun(inferable, {
+  persist?: boolean;  // Whether to persist run ID in localStorage (default: true)
+});
+```
+
+### useMessages Hook
+
+Provides utility functions for working with messages.
+
+```typescript
+const {
+  all, // Function to get all messages sorted
+  getOfType, // Function to filter messages by type
+} = useMessages(messages);
+
+// Example usage:
+const allMessages = all("asc"); // Get all messages, oldest first
+const humanMessages = getOfType("human"); // Get only human messages
+const agentMessages = getOfType("agent"); // Get only agent messages
+const results = getOfType("invocation-result"); // Get only invocation results
+```
 
 ## Documentation
 
-- [Inferable documentation](https://docs.inferable.ai/) contains all the information you need to get started with Inferable.
+For more detailed information, visit the [Inferable documentation](https://docs.inferable.ai/).
 
 ## Support
 
