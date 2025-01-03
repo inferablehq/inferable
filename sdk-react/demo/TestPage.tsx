@@ -197,6 +197,29 @@ export function TestPage(props: UseInferableOptions) {
             </div>
           ))}
         </div>
+        <button
+          onClick={async () => {
+            const { id } = await inferable.createRun({
+              initialPrompt: "",
+              interactive: true,
+            });
+            setRunId(id);
+            await fetchRuns();
+          }}
+          className="create-run-button"
+          style={{
+            width: "100%",
+            padding: "8px",
+            marginTop: "12px",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          Create New Run
+        </button>
       </div>
     </div>
   );

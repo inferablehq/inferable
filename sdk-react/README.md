@@ -9,7 +9,14 @@
 [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/)
 
 This is the official Inferable AI SDK for React.
+
 It is used to start and interact with [Inferable runs](https://docs.inferable.ai/pages/runs) from React applications.
+
+## Demo
+
+<video width="100%" controls>
+  <source src="https://a.inferable.ai/react.mp4" type="video/mp4">
+</video>
 
 ## Installation
 
