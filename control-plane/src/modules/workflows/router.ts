@@ -19,7 +19,6 @@ import { timeline } from "../timeline";
 import { getRunsByMetadata } from "./metadata";
 import {
   addMessageAndResume,
-  assertRunReady,
   createRetry,
   createRun,
   deleteRun,
@@ -60,7 +59,10 @@ export const runsRouter = initServer().router(
 
       return {
         status: 200,
-        body: workflow,
+        body: {
+          ...workflow,
+          result: workflow.result ?? null,
+        },
       };
     },
     createRun: async request => {

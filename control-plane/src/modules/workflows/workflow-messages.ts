@@ -1,55 +1,47 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { and, desc, eq, gt, InferSelectModel, ne, sql } from "drizzle-orm";
+import { ulid } from "ulid";
 import { z } from "zod";
-import {
-  agentDataSchema,
-  genericMessageDataSchema,
-  messageDataSchema,
-  resultDataSchema,
-} from "../contract";
+import { unifiedMessageDataSchema } from "../contract";
 import { db, RunMessageMetadata, workflowMessages } from "../data";
 import { events } from "../observability/events";
-import { logger } from "../observability/logger";
 import { resumeRun } from "./workflows";
-import { ulid } from "ulid";
 
-export type MessageData = z.infer<typeof messageDataSchema>;
+export type TypedMessage = z.infer<typeof unifiedMessageDataSchema>;
 
-export type TypedMessage = AgentMessage | InvocationResultMessage | GenericMessage;
+export type TypedMessageWithMeta = {
+  id: string;
+  data: TypedMessage;
+  createdAt: Date;
+  pending: boolean;
+  displayableContext: Record<string, string> | null;
+};
 
 /**
  * A structured response from the agent.
  */
-export type AgentMessage = {
-  data: z.infer<typeof agentDataSchema>;
-  type: "agent";
-};
+export type AgentMessage = Extract<TypedMessage, { type: "agent" }>;
 
 /**
  * The result of a tool call.
  */
-export type InvocationResultMessage = {
-  data: z.infer<typeof resultDataSchema>;
-  type: "invocation-result";
-};
+export type InvocationResultMessage = Extract<TypedMessage, { type: "invocation-result" }>;
 
 /**
  * A generic message container.
  */
-export type GenericMessage = {
-  data: z.infer<typeof genericMessageDataSchema>;
-  type: "human" | "template" | "supervisor" | "agent-invalid";
-};
+export type GenericMessage = Extract<
+  TypedMessage,
+  { type: "human" | "template" | "supervisor" | "agent-invalid" }
+>;
 
-export type RunMessage = {
+export type RunMessage = TypedMessage & {
   id: string;
-  data: InferSelectModel<typeof workflowMessages>["data"];
-  type: InferSelectModel<typeof workflowMessages>["type"];
   clusterId: string;
   runId: string;
   createdAt: Date;
   updatedAt?: Date | null;
-} & TypedMessage;
+};
 
 export const insertRunMessage = async ({
   clusterId,
@@ -68,7 +60,6 @@ export const insertRunMessage = async ({
   data: InferSelectModel<typeof workflowMessages>["data"];
   metadata?: RunMessageMetadata;
 }) => {
-  validateMessage({ data, type });
   return db
     .insert(workflowMessages)
     .values({
@@ -76,9 +67,8 @@ export const insertRunMessage = async ({
       user_id: userId ?? "SYSTEM",
       cluster_id: clusterId,
       workflow_id: runId,
-      type,
-      data,
       metadata,
+      ...unifiedMessageDataSchema.parse({ data, type }),
     })
     .returning({
       id: workflowMessages.id,
@@ -138,7 +128,7 @@ export const getRunMessagesForDisplay = async ({
   runId: string;
   last?: number;
   after?: string;
-}) => {
+}): Promise<TypedMessageWithMeta[]> => {
   const messages = await db
     .select({
       id: workflowMessages.id,
@@ -181,10 +171,28 @@ export const getRunMessagesForDisplay = async ({
       return message;
     })
     .map(message => {
-      validateMessage(message);
+      const { success, data, error } = unifiedMessageDataSchema.safeParse({
+        type: message.type,
+        data: message.data,
+      });
+
+      const messageWithType = !success
+        ? {
+            type: "supervisor" as const,
+            data: {
+              message: "Invalid message data",
+              details: {
+                error: error?.message,
+              },
+            },
+          }
+        : data;
 
       return {
-        ...message,
+        id: message.id,
+        data: messageWithType,
+        createdAt: message.createdAt,
+        pending: false,
         displayableContext: message.metadata?.displayable ?? null,
       };
     });
@@ -243,7 +251,7 @@ export const getWorkflowMessages = async ({
     .map(message => {
       return {
         ...message,
-        ...validateMessage(message),
+        ...unifiedMessageDataSchema.parse(message),
       };
     });
 };
@@ -332,79 +340,24 @@ export const toAnthropicMessage = (message: TypedMessage): Anthropic.MessagePara
   }
 };
 
-const validateMessage = (message: Pick<RunMessage, "data" | "type">): TypedMessage => {
-  switch (message.type) {
-    case "agent": {
-      assertAgentMessage(message);
-      break;
-    }
-    case "invocation-result": {
-      assertResultMessage(message);
-      break;
-    }
-    default: {
-      assertGenericMessage(message);
-    }
-  }
-  return message;
-};
-
 export function hasInvocations(message: AgentMessage): boolean {
   return (message.data.invocations && message.data.invocations.length > 0) ?? false;
 }
 
-export function assertAgentMessage(
-  message: Pick<RunMessage, "data" | "type">
-): asserts message is AgentMessage {
-  if (message.type !== "agent") {
-    throw new Error("Expected an AgentMessage");
-  }
-
-  const result = agentDataSchema.safeParse(message.data);
+export function assertMessageOfType<
+  T extends "agent" | "invocation-result" | "human" | "template" | "supervisor" | "agent-invalid",
+>(type: T, message: unknown) {
+  const result = unifiedMessageDataSchema.safeParse(message);
 
   if (!result.success) {
-    logger.error("Invalid AgentMessage data", {
-      data: message.data,
-      result,
-    });
-    throw new Error("Invalid AgentMessage data");
-  }
-}
-
-export function assertResultMessage(
-  message: Pick<RunMessage, "data" | "type">
-): asserts message is InvocationResultMessage {
-  if (message.type !== "invocation-result") {
-    throw new Error("Expected a InvocationResultMessage");
+    throw new Error("Invalid message data");
   }
 
-  const result = resultDataSchema.safeParse(message.data);
-
-  if (!result.success) {
-    logger.error("Invalid InvocationResultMessage data", {
-      data: message.data,
-      result,
-    });
-    throw new Error("Invalid InvocationResultMessage data");
-  }
-}
-
-export function assertGenericMessage(
-  message: Pick<RunMessage, "data" | "type">
-): asserts message is GenericMessage {
-  if (!["human", "template", "supervisor", "agent-invalid"].includes(message.type)) {
-    throw new Error("Expected a GenericMessage");
+  if (result.data.type !== type) {
+    throw new Error(`Expected a ${type} message. Got ${result.data.type}`);
   }
 
-  const result = genericMessageDataSchema.safeParse(message.data);
-
-  if (!result.success) {
-    logger.error("Invalid GenericMessage data", {
-      data: message.data,
-      result,
-    });
-    throw new Error("Invalid GenericMessage data");
-  }
+  return result.data as Extract<TypedMessage, { type: T }>;
 }
 
 export const lastAgentMessage = async ({
@@ -435,10 +388,8 @@ export const lastAgentMessage = async ({
     return;
   }
 
-  assertAgentMessage(result);
-  return result;
+  return assertMessageOfType("agent", result);
 };
-
 
 export const getMessageByReference = async (reference: string, clusterId: string) => {
   const [result] = await db
@@ -459,28 +410,22 @@ export const getMessageByReference = async (reference: string, clusterId: string
       )
     );
 
-  return result
-}
+  return result;
+};
 
 export const updateMessageReference = async ({
   externalReference,
   clusterId,
-  messageId
-}:
-  {
-    externalReference: string,
-    clusterId: string,
-    messageId: string
-  }) => {
+  messageId,
+}: {
+  externalReference: string;
+  clusterId: string;
+  messageId: string;
+}) => {
   await db
     .update(workflowMessages)
     .set({
       metadata: sql`COALESCE(${workflowMessages.metadata}, '{}')::jsonb || ${JSON.stringify({ externalReference })}::jsonb`,
     })
-    .where(
-      and(
-        eq(workflowMessages.cluster_id, clusterId),
-        eq(workflowMessages.id, messageId)
-      )
-    );
-}
+    .where(and(eq(workflowMessages.cluster_id, clusterId), eq(workflowMessages.id, messageId)));
+};
