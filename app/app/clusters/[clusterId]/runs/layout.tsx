@@ -1,6 +1,5 @@
 import { client } from "@/client/client";
-import { ClusterDetails } from "@/components/cluster-details";
-import { RunList } from "@/components/WorkflowList";
+import { ClusterRunsLayout } from "@/components/cluster-runs-layout";
 import { auth } from "@clerk/nextjs";
 
 export async function generateMetadata({
@@ -32,19 +31,5 @@ export default function Home({
   };
   children: React.ReactNode;
 }) {
-  return (
-    <div className="flex flex-col lg:flex-row gap-6 p-6">
-      <div className="w-full lg:w-[300px] flex-shrink-0">
-        <RunList clusterId={clusterId} />
-      </div>
-      <div className="w-full max-w-[1024px]">
-        {children}
-      </div>
-      <div className="w-full lg:w-[200px] flex-shrink-0">
-        <ClusterDetails clusterId={clusterId} />
-      </div>
-    </div>
-  );
+  return <ClusterRunsLayout clusterId={clusterId}>{children}</ClusterRunsLayout>;
 }
-
-

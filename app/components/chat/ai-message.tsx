@@ -1,4 +1,4 @@
-import { agentDataSchema } from "@/client/contract";
+import { unifiedMessageDataSchema } from "@/client/contract";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatRelative } from "date-fns";
 import { startCase } from "lodash";
@@ -7,6 +7,7 @@ import { z } from "zod";
 import { JSONDisplay } from "../JSONDisplay";
 import { Markdown } from "./markdown";
 import { MessageContainerProps } from "./workflow-event";
+import assert from "assert";
 
 const basicResultSchema = z.record(z.string());
 
@@ -37,10 +38,8 @@ const ResultSection = ({ result }: { result: object }) => {
   return <JSONDisplay json={result} />;
 };
 
-export const AiMessage = ({ data, createdAt, messages }: MessageContainerProps) => {
-  const parsedData = agentDataSchema.parse(data);
-  const { issue, result, message, invocations, learnings } = parsedData;
-
+export const AiMessage = ({ data, createdAt, messages }: MessageContainerProps<"agent">) => {
+  const { issue, result, message, invocations, learnings } = data;
   const hasReasoning = invocations?.find(invocation => invocation.reasoning);
   if (!hasReasoning && !message && !result && !issue && !learnings) {
     return null;
@@ -56,7 +55,7 @@ export const AiMessage = ({ data, createdAt, messages }: MessageContainerProps) 
           <div>
             <div className="text-sm font-medium">Inferable</div>
             <div className="text-xs text-muted-foreground">
-              {formatRelative(createdAt, new Date())}
+              {createdAt ? formatRelative(createdAt, new Date()) : "unknown"}
             </div>
           </div>
         </div>

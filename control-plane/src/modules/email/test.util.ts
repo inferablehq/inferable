@@ -1,11 +1,12 @@
 import { ulid } from "ulid";
 
-export function buildMessageBody({from, to, subject, body, messageId}: {
+export function buildMessageBody({from, to, subject, body, messageId, inReplyTo}: {
   from: string;
   to: string[];
   subject: string;
   body: string;
   messageId: string;
+  inReplyTo?: string;
 }) {
 
   const messageBase = {
@@ -48,6 +49,8 @@ export function buildMessageBody({from, to, subject, body, messageId}: {
       'Mime-Version: 1.0 (Mac OS X Mail 16.0 \\(3826.300.87.4.3\\))\r\n' +
       `Subject: ${subject}\r\n` +
       `Message-Id: ${messageId}\r\n` +
+      (inReplyTo ? `In-Reply-To: ${inReplyTo}\r\n` : "") +
+      (inReplyTo ? `References: ${inReplyTo}\r\n` : "") +
       'Date: Tue, 31 Dec 2024 14:45:38 +1030\r\n' +
       `To: ${to}\r\n` +
       '\r\n' +

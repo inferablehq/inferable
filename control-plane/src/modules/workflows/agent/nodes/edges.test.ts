@@ -48,6 +48,7 @@ describe("postStartEdge", () => {
           },
           runId: baseState.workflow.id,
           clusterId: baseState.workflow.clusterId,
+          createdAt: new Date(),
         },
       ],
     };

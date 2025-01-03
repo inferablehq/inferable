@@ -37,12 +37,7 @@ export type Auth = {
       configId: string;
     };
   }): Promise<Auth>;
-  canCreate(opts: {
-    cluster?: boolean;
-    run?: boolean;
-    config?: boolean;
-    call?: boolean;
-  }): Auth;
+  canCreate(opts: { cluster?: boolean; run?: boolean; config?: boolean; call?: boolean }): Auth;
   isMachine(): ApiKeyAuth;
   isClerk(): ClerkAuth;
   isAdmin(): Auth;
@@ -79,7 +74,7 @@ export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {
   });
 
   // Pre-handler hook to extract the auth state from the request and add it to the "auth" decorator property
-  fastify.addHook("preHandler", async (request) => {
+  fastify.addHook("preHandler", async request => {
     const authorization = request.headers.authorization;
 
     const substrings = authorization?.split(" ");
@@ -98,7 +93,7 @@ export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {
 
       if (!clusterId) {
         throw new AuthenticationError(
-          "Custom auth can only be used with /clusters/:clusterId paths",
+          "Custom auth can only be used with /clusters/:clusterId paths"
         );
       }
 
@@ -110,9 +105,7 @@ export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {
   });
 });
 
-export const extractAuthState = async (
-  token: string,
-): Promise<Auth | undefined> => {
+export const extractAuthState = async (token: string): Promise<Auth | undefined> => {
   // Management Secret support (Hobby deployments only)
   if (token && token === env.MANAGEMENT_API_SECRET) {
     // This is also validated on startup
@@ -140,9 +133,7 @@ export const extractAuthState = async (
         throw new AuthenticationError("Management API secret auth is not clerk");
       },
       isCustomAuth: function () {
-        throw new AuthenticationError(
-          "Management API secret auth is not custom auth",
-        );
+        throw new AuthenticationError("Management API secret auth is not custom auth");
       },
       isAdmin: function () {
         return this;
@@ -167,9 +158,7 @@ export const extractAuthState = async (
 
           if (opts.cluster) {
             if (opts.cluster.clusterId !== this.clusterId) {
-              throw new AuthenticationError(
-                "API Key does not have access to this cluster",
-              );
+              throw new AuthenticationError("API Key does not have access to this cluster");
             }
           }
 
@@ -187,9 +176,7 @@ export const extractAuthState = async (
           }
 
           if (opts.cluster) {
-            throw new AuthenticationError(
-              "API key can not manage this cluster",
-            );
+            throw new AuthenticationError("API key can not manage this cluster");
           }
 
           // API key can manage runs if it has access to the cluster
@@ -238,9 +225,7 @@ export const extractAuthState = async (
   }
 
   // Check if the token is a Clerk-provided JWT token and validate it.
-  const clerkAuthDetails = env.JWKS_URL
-    ? await clerkAuth.verify(token)
-    : undefined;
+  const clerkAuthDetails = env.JWKS_URL ? await clerkAuth.verify(token) : undefined;
 
   if (clerkAuthDetails) {
     return {
@@ -253,8 +238,7 @@ export const extractAuthState = async (
           throw new AuthenticationError("Invalid assertion");
         }
 
-        const clusterId =
-          opts.cluster?.clusterId ?? (opts.run?.clusterId as string);
+        const clusterId = opts.cluster?.clusterId ?? (opts.run?.clusterId as string);
 
         // First check the cluster
         if (
@@ -263,9 +247,7 @@ export const extractAuthState = async (
             clusterId,
           }))
         ) {
-          throw new AuthenticationError(
-            "User does not have access to the cluster",
-          );
+          throw new AuthenticationError("User does not have access to the cluster");
         }
 
         // If the User has access to the cluster, they also have access to the workflow
@@ -331,9 +313,7 @@ export const extractAuthState = async (
       },
       isAdmin: function () {
         if (this.organizationRole !== CLERK_ADMIN_ROLE) {
-          throw new AuthenticationError(
-            "User is not an admin of the organization",
-          );
+          throw new AuthenticationError("User is not an admin of the organization");
         }
         return this;
       },
@@ -352,7 +332,7 @@ export const extractAuthState = async (
 
 export const extractCustomAuthState = async (
   token: string,
-  clusterId: string,
+  clusterId: string
 ): Promise<CustomAuth | undefined> => {
   const cluster = await getClusterDetails(clusterId);
 
@@ -361,12 +341,9 @@ export const extractCustomAuthState = async (
   }
 
   if (!cluster.organization_id) {
-    logger.warn(
-      "Recieved custom auth for cluster without organization",
-      {
-        clusterId,
-      },
-    );
+    logger.warn("Recieved custom auth for cluster without organization", {
+      clusterId,
+    });
     return undefined;
   }
 
@@ -395,15 +372,11 @@ export const extractCustomAuthState = async (
       }
 
       if (opts.cluster && opts.cluster.clusterId !== clusterId) {
-        throw new AuthenticationError(
-          "Custom auth does not have access to this cluster",
-        );
+        throw new AuthenticationError("Custom auth does not have access to this cluster");
       }
 
       if (opts.run && opts.run.clusterId !== clusterId) {
-        throw new AuthenticationError(
-          "Custom auth does not have access to this run",
-        );
+        throw new AuthenticationError("Custom auth does not have access to this run");
       }
 
       if (opts.run) {
@@ -413,15 +386,11 @@ export const extractCustomAuthState = async (
         });
 
         if (!existingToken) {
-          throw new AuthenticationError(
-            "Custom auth can only access runs created by custom auth",
-          );
+          throw new AuthenticationError("Custom auth can only access runs created by custom auth");
         }
 
         if (existingToken !== this.token) {
-          throw new AuthenticationError(
-            "Custom auth does not have access to this run",
-          );
+          throw new AuthenticationError("Custom auth does not have access to this run");
         }
       }
 
@@ -433,27 +402,19 @@ export const extractCustomAuthState = async (
       }
 
       if (opts.cluster) {
-        throw new AuthenticationError(
-          "Custom auth can not manage clusters",
-        );
+        throw new AuthenticationError("Custom auth can not manage clusters");
       }
 
       if (opts.config) {
-        throw new AuthenticationError(
-          "Custom auth can not manage templates",
-        );
+        throw new AuthenticationError("Custom auth can not manage templates");
       }
 
       if (opts.run && opts.run.clusterId !== clusterId) {
-        throw new AuthenticationError(
-          "Custom auth does not have access to this run",
-        );
+        throw new AuthenticationError("Custom auth does not have access to this run");
       }
 
       if (!opts.run) {
-        throw new AuthenticationError(
-          "Custom auth can only manage runs",
-        );
+        throw new AuthenticationError("Custom auth can only manage runs");
       }
 
       const existingToken = await getRunCustomAuthToken({
@@ -462,15 +423,11 @@ export const extractCustomAuthState = async (
       });
 
       if (!existingToken) {
-        throw new AuthenticationError(
-          "Custom auth can only access runs created by custom auth",
-        );
+        throw new AuthenticationError("Custom auth can only access runs created by custom auth");
       }
 
       if (existingToken !== this.token) {
-        throw new AuthenticationError(
-          "Custom auth does not have access to this run",
-        );
+        throw new AuthenticationError("Custom auth does not have access to this run");
       }
 
       return this;
@@ -481,21 +438,15 @@ export const extractCustomAuthState = async (
       }
 
       if (opts.cluster) {
-        throw new AuthenticationError(
-          "Custom auth can not create clusters",
-        );
+        throw new AuthenticationError("Custom auth can not create clusters");
       }
 
       if (opts.config) {
-        throw new AuthenticationError(
-          "Custom auth can not create templates",
-        );
+        throw new AuthenticationError("Custom auth can not create templates");
       }
 
       if (opts.call) {
-        throw new AuthenticationError(
-          "Custom auth can not create calls",
-        );
+        throw new AuthenticationError("Custom auth can not create calls");
       }
 
       // Can create runs

@@ -1,4 +1,4 @@
-import { contract } from "@/client/contract";
+import { contract, MessageTypes, UnifiedMessage, UnifiedMessageOfType } from "@/client/contract";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import React from "react";
 import { AiMessage } from "./ai-message";
@@ -7,60 +7,33 @@ import { TemplateMessage } from "./template-mesage";
 import { WorkflowJob } from "@/lib/types";
 import { InvocationResult } from "./InvocationResult";
 
-export type MessageContainerProps = {
-  id: string;
-  createdAt: Date;
+export type MessageContainerProps<T extends MessageTypes> = UnifiedMessageOfType<T> & {
   messages: ClientInferResponseBody<typeof contract.listMessages, 200>;
-  data: ClientInferResponseBody<
-    typeof contract.listMessages,
-    200
-  >[number]["data"];
-  displayableContext?: Record<string, string>;
-  isEditable: boolean;
-  type: ClientInferResponseBody<
-    typeof contract.listMessages,
-    200
-  >[number]["type"];
-  showMeta: boolean;
-  clusterId: string;
   jobs: WorkflowJob[];
-  pending?: boolean;
+  clusterId: string;
   runId: string;
+  isEditable: boolean;
+  showMeta: boolean;
+  pending?: boolean;
 };
 
-const container: {
-  [key: string]: (props: MessageContainerProps) => React.ReactNode;
-} = {
-  human: HumanMessage,
-  agent: AiMessage,
-  template: TemplateMessage,
-  "invocation-result": InvocationResult,
-  default: (data) => <p>{JSON.stringify(data)}</p>,
-};
-
-function RunEvent(
-  props: Omit<MessageContainerProps, "onPreMutation"> & {
-    onPreMutation: (ulid: string) => void;
+function RunEvent(props: MessageContainerProps<MessageTypes>) {
+  switch (props.type) {
+    case "agent":
+      return <AiMessage {...props} />;
+    case "human":
+      return <HumanMessage {...props} />;
+    case "template":
+      return <TemplateMessage {...props} />;
+    case "invocation-result":
+      return <InvocationResult {...props} />;
+    case "supervisor":
+      return null;
+    case "agent-invalid":
+      return null;
+    default:
+      return null;
   }
-) {
-  const Container = container[props.type] || container.default;
-
-  return (
-    <Container
-      data={props.data}
-      jobs={props.jobs}
-      type={props.type}
-      clusterId={props.clusterId}
-      runId={props.runId}
-      isEditable={props.isEditable}
-      id={props.id}
-      displayableContext={props.displayableContext}
-      showMeta={props.showMeta}
-      createdAt={props.createdAt}
-      pending={props.pending ?? false}
-      messages={props.messages}
-    />
-  );
 }
 
 export default RunEvent;

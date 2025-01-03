@@ -214,12 +214,12 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
         wipMessages.add({
           id,
           createdAt: new Date(),
-          type: "human",
           data: {
             message: inputPrompt,
           },
           pending: true,
           displayableContext: null,
+          type: "human",
         });
       }
     },
@@ -314,24 +314,19 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
         element: (
           <ElementWrapper mutableId={mutableId} id={m.id} key={m.id} human={m.type === "human"}>
             <RunEvent
+              {...m}
               key={m.id}
-              id={m.id}
               isEditable={isAdmin || isOwner}
-              createdAt={m.createdAt}
-              data={m.data}
-              displayableContext={m.displayableContext ?? undefined}
-              type={m.type}
               showMeta={false}
               clusterId={clusterId}
               jobs={runTimeline?.jobs ?? []}
               pending={"pending" in m && m.pending}
               runId={runId}
               messages={runTimeline?.messages ?? []}
-              onPreMutation={ulid => setMutableId(ulid)}
             />
           </ElementWrapper>
         ),
-        timestamp: new Date(m.createdAt).getTime(),
+        timestamp: m.createdAt ? new Date(m.createdAt).getTime() : 0,
       })) || [];
 
   const blobElements =
@@ -535,24 +530,19 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
         element: (
           <ElementWrapper mutableId={mutableId} id={m.id} key={m.id} human={m.type === "human"}>
             <RunEvent
+              {...m}
               key={m.id}
-              id={m.id}
               isEditable={isAdmin || isOwner}
-              createdAt={m.createdAt}
-              data={m.data}
-              displayableContext={m.displayableContext ?? undefined}
-              type={m.type}
               showMeta={false}
               clusterId={clusterId}
               jobs={runTimeline?.jobs ?? []}
               pending={"pending" in m && m.pending}
               runId={runId}
               messages={runTimeline?.messages ?? []}
-              onPreMutation={ulid => setMutableId(ulid)}
             />
           </ElementWrapper>
         ),
-        timestamp: new Date(m.createdAt).getTime(),
+        timestamp: m.createdAt ? new Date(m.createdAt).getTime() : new Date().getTime(),
       })) || [];
 
   const elements = [

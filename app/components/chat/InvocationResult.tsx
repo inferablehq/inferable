@@ -4,21 +4,14 @@ import { cn } from "@/lib/utils";
 import { get } from "lodash";
 import { Blocks, ChevronRight, Info } from "lucide-react";
 import { useRef, useState } from "react";
-import { z } from "zod";
+import ErrorDisplay from "../error-display";
 import { ReadOnlyJSON } from "../read-only-json";
 import type { MessageContainerProps } from "./workflow-event";
-import ErrorDisplay from "../error-display";
-import { resultDataSchema } from "@/client/contract";
+import { formatRelative } from "date-fns";
 
-export function InvocationResult(props: MessageContainerProps) {
-  const { success, data, error } = resultDataSchema.safeParse(props.data);
-
+export function InvocationResult(props: MessageContainerProps<"invocation-result">) {
   const [isExpanded, setIsExpanded] = useState(false);
   const componentRef = useRef<HTMLDivElement>(null);
-
-  if (!success) {
-    return <ErrorDisplay error={error} meta={{ data }} />;
-  }
 
   return (
     <>
@@ -38,7 +31,7 @@ export function InvocationResult(props: MessageContainerProps) {
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-medium text-gray-700">Invocation Result</span>
                 <span className="text-muted-foreground font-mono">
-                  {new Date(props.createdAt).toLocaleString()}
+                  {props.createdAt ? formatRelative(props.createdAt, new Date()) : "unknown"}
                 </span>
               </div>
               <ChevronRight
@@ -55,12 +48,14 @@ export function InvocationResult(props: MessageContainerProps) {
                   <div className="space-y-1">
                     <dt className="text-xs font-medium text-muted-foreground">Result Type</dt>
                     <dd className="font-mono">
-                      {get(data, `result.${data.id}.resultType`) || "—"}
+                      {get(props.data, `result.${props.data.id}.resultType`) || "—"}
                     </dd>
                   </div>
                   <div className="space-y-1">
                     <dt className="text-xs font-medium text-muted-foreground">Status</dt>
-                    <dd className="font-mono">{get(data, `result.${data.id}.status`) || "—"}</dd>
+                    <dd className="font-mono">
+                      {get(props.data, `result.${props.data.id}.status`) || "—"}
+                    </dd>
                   </div>
                 </div>
 
@@ -86,7 +81,9 @@ export function InvocationResult(props: MessageContainerProps) {
                             <div>
                               <div className="font-mono">Invocation Result</div>
                               <div className="text-xs text-muted-foreground">
-                                {new Date(props.createdAt).toLocaleString()}
+                                {props.createdAt
+                                  ? formatRelative(props.createdAt, new Date())
+                                  : "unknown"}
                               </div>
                             </div>
                           </div>

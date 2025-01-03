@@ -1,15 +1,17 @@
 import { createHash } from "crypto";
 import NodeCache from "node-cache";
 import { redisClient } from "../modules/redis";
-
-const localCache = new NodeCache({
-  maxKeys: 5000,
-});
+import { logger } from "../modules/observability/logger";
 
 export const createCache = <T>(namespace: symbol) => {
+  const localCache = new NodeCache({
+    maxKeys: 5000,
+  });
+
   return {
     get: async (key: string) => {
-      const localResult = localCache.get<T>(`${namespace.toString()}:${key}`);
+      const localResult = localCache.get<T>(key);
+
       if (localResult !== undefined) {
         return localResult;
       }
@@ -22,14 +24,27 @@ export const createCache = <T>(namespace: symbol) => {
       }
       return undefined;
     },
-    set: async (key: string, value: T, ttl: number) => {
+    set: async (key: string, value: T, stdTTLSeconds: number) => {
+      localCache.set(key, value, stdTTLSeconds);
+
+      if (stdTTLSeconds > 1000) {
+        logger.warn("Cache set with TTL greater than 1000 seconds", {
+          key,
+          stdTTLSeconds,
+        });
+      }
+
       await redisClient
         ?.set(`${namespace.toString()}:${key}`, JSON.stringify(value), {
-          EX: ttl,
+          EX: stdTTLSeconds,
         })
-        .catch(() => undefined);
-
-      return localCache.set(`${namespace.toString()}:${key}`, value, ttl);
+        .catch(error => {
+          logger.error("Error setting cache", {
+            error,
+            key,
+            value,
+          });
+        });
     },
   };
 };
