@@ -1,5 +1,5 @@
-import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { ClientInferResponseBody } from "@ts-rest/core";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { contract } from "../contract";
 import { useInferable } from "./useInferable";
@@ -7,40 +7,94 @@ import { useInferable } from "./useInferable";
 export type ListMessagesResponse = ClientInferResponseBody<(typeof contract)["listMessages"], 200>;
 type GetRunResponse = ClientInferResponseBody<(typeof contract)["getRun"], 200>;
 
-/** Return type for the useRun hook */
+/**
+ * Return type for the useRun hook containing all the necessary methods and data for managing a run session
+ * @template T - A Zod object schema type that defines the expected result structure
+ */
 interface UseRunReturn<T extends z.ZodObject<any>> {
-  /** Set the run ID */
+  /** Function to set the current run ID and reset the session state */
   setRunId: (runId: string) => void;
-  /** Function to create a new message in the current run */
+  /**
+   * Function to create a new human message in the current run
+   * @param input - The message text to send
+   */
   createMessage: (input: string) => Promise<void>;
-  /** Array of messages in the current run */
+  /** Array of messages in the current run, including human messages, agent responses, and invocation results */
   messages: ListMessagesResponse;
-  /** Current run details if available */
+  /** Current run details including status, metadata, and result if available */
   run?: GetRunResponse;
-  /** Result of the run if available */
+  /**
+   * Typed result of the run based on the provided schema T.
+   * Only available when the run is complete and successful.
+   */
   result?: z.infer<T>;
-  /** Error if any occurred */
+  /** Error object if any errors occurred during the session */
   error: Error | null;
 }
 
+/**
+ * Configuration options for the useRun hook
+ */
 interface UseRunOptions {
-  /** Whether to persist the run ID in localStorage. Defaults to true. */
+  /**
+   * Whether to persist the run ID in localStorage.
+   * When true, the run ID will be saved and restored between page reloads.
+   * @default true
+   */
   persist?: boolean;
 }
 
 const STORAGE_KEY = "inferable_current_run_id";
 
 /**
- * React hook for managing a run session with real-time updates
- * @param options Configuration options for the run session
- * @returns Object containing the client, message creation function, messages array, and run details
+ * React hook for managing an Inferable run session with real-time updates.
+ * This hook handles message polling, run status updates, and message creation.
+ *
+ * @template T - A Zod object schema type that defines the expected result structure
+ * @param inferable - The Inferable client instance from useInferable hook
+ * @param options - Configuration options for the run session
+ * @returns Object containing methods and data for managing the run session
+ *
  * @example
  * ```tsx
- * const { messages, createMessage, run } = useRun({
+ * // Basic usage with custom authentication
+ * const inferable = useInferable({
  *   clusterId: "my-cluster",
  *   authType: "custom",
- *   customAuthToken: "my-custom-auth-token"
+ *   customAuthToken: "my-token"
  * });
+ *
+ * const { messages, createMessage, run, result } = useRun(inferable);
+ *
+ * // Create a new message
+ * await createMessage("Hello, how can you help me today?");
+ *
+ * // Access messages
+ * messages.map(msg => console.log(msg.data.message));
+ *
+ * @example
+ * ```tsx
+ * // Usage with result schema validation
+ * const ResultSchema = z.object({
+ *   summary: z.string(),
+ *   confidence: z.number()
+ * });
+ *
+ * const { result } = useRun<typeof ResultSchema>(inferable);
+ *
+ * if (result) {
+ *   console.log(result.summary); // Typed as string
+ *   console.log(result.confidence); // Typed as number
+ * }
+ * ```
+ *
+ * @example
+ * ```tsx
+ * // Disable persistence
+ * const { setRunId } = useRun(inferable, { persist: false });
+ *
+ * // Manually manage run ID
+ * setRunId("new-run-id");
  * ```
  */
 export function useRun<T extends z.ZodObject<any>>(
