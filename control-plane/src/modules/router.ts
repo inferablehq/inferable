@@ -12,6 +12,7 @@ import {
   assertMessageOfType,
   editHumanMessage,
   getRunMessagesForDisplay,
+  getRunMessagesForDisplayWithPolling,
 } from "./workflows/workflow-messages";
 import { addMessageAndResume, assertRunReady } from "./workflows/workflows";
 import { runsRouter } from "./workflows/router";
@@ -281,9 +282,11 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth();
     await auth.canAccess({ run: { clusterId, runId } });
 
-    const messages = await getRunMessagesForDisplay({
+    const messages = await getRunMessagesForDisplayWithPolling({
       clusterId,
       runId,
+      after: request.query.after,
+      last: request.query.last,
     });
 
     return {

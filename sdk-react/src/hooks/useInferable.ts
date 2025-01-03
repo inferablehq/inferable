@@ -54,7 +54,19 @@ export function useInferable(options: UseInferableOptions): {
     metadata?: Record<string, string>;
     interactive?: boolean;
   }) => Promise<{ id: string }>;
-  listRuns: () => Promise<{ runs: { id: string }[] }>;
+  listRuns: () => Promise<{
+    runs: Array<{
+      id: string;
+      name: string;
+      userId: string | null;
+      createdAt: Date;
+      status: "pending" | "running" | "paused" | "done" | "failed" | null;
+      test: boolean;
+      configId: string | null;
+      configVersion: number | null;
+      feedbackScore: number | null;
+    }>;
+  }>;
 } {
   const client = useMemo(
     () =>
@@ -109,6 +121,10 @@ export function useInferable(options: UseInferableOptions): {
   );
 
   const listRuns = useCallback(() => {
+    if (!options.clusterId) {
+      throw new Error("Cluster ID is required");
+    }
+
     return client
       .listRuns({
         params: {
@@ -123,13 +139,13 @@ export function useInferable(options: UseInferableOptions): {
         }
         const runs = Array.isArray(response.body) ? response.body : [];
         return {
-          runs: runs.map(run => ({ id: String(run.id) })),
+          runs,
         };
       });
   }, [client, options.clusterId]);
 
   return {
-    client,
+    client: client,
     clusterId: options.clusterId,
     createRun,
     listRuns,

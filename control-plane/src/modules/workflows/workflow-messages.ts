@@ -184,6 +184,37 @@ export const getRunMessagesForDisplay = async ({
     });
 };
 
+export const getRunMessagesForDisplayWithPolling = async ({
+  clusterId,
+  runId,
+  last = 100,
+  after = "0",
+}: {
+  clusterId: string;
+  runId: string;
+  last?: number;
+  after?: string;
+}): Promise<UnifiedMessage[]> => {
+  let rowsCount = 0;
+  const delay = 200;
+  const timeout = 20_000;
+  const startTime = Date.now();
+
+  do {
+    const messages = await getRunMessagesForDisplay({ clusterId, runId, last, after });
+    rowsCount = messages.length;
+
+    if (rowsCount > 0) {
+      return messages;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, delay));
+  } while (Date.now() - startTime < timeout);
+
+  // Return empty array if no messages found after timeout
+  return [];
+};
+
 export const getWorkflowMessages = async ({
   clusterId,
   runId,

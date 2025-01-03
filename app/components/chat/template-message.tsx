@@ -1,4 +1,3 @@
-import { messageDataSchema } from "@/client/contract";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatRelative } from "date-fns";
@@ -7,31 +6,21 @@ import { ChevronDown } from "lucide-react";
 import { MessageContainerProps } from "./workflow-event";
 import { z } from "zod";
 
-type TemplateMessageData = z.infer<typeof messageDataSchema> & {
-  type: "template";
-  message: string;
-};
-
 export function TemplateMessage({
   createdAt,
   displayableContext,
   data,
-  clusterId,
-  id: messageId,
-  runId,
-}: MessageContainerProps & { runId: string }) {
-  const parsedData = messageDataSchema.parse(data) as TemplateMessageData;
-
+}: MessageContainerProps<"template"> & { runId: string }) {
   return (
     <Card>
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
           <div className="text-sm text-muted-foreground">
-            {formatRelative(new Date(createdAt), new Date())}
+            {createdAt ? formatRelative(new Date(createdAt), new Date()) : "unknown"}
           </div>
         </div>
       </div>
-      {Object.entries({ ...parsedData, ...displayableContext }).map(([key, value]) => (
+      {Object.entries({ ...data, ...displayableContext }).map(([key, value]) => (
         <CardContent className="flex flex-col" key={key}>
           {key === "message" ? (
             <Collapsible>

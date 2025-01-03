@@ -663,6 +663,10 @@ export const definition = {
     headers: z.object({
       authorization: z.string(),
     }),
+    query: z.object({
+      after: z.string().default("0"),
+      last: z.coerce.number().min(10).max(50).default(50),
+    }),
     responses: {
       200: z.array(unifiedMessageDataSchema),
       401: z.undefined(),

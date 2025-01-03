@@ -77,19 +77,28 @@ export const integrationSchema = z.object({
   valtown: z
     .object({
       endpoint: z.string().url(),
+      token: z.string(),
+    })
+    .optional()
+    .nullable(),
+  slack: z
+    .object({
+      nangoConnectionId: z.string(),
+      botUserId: z.string(),
+      teamId: z.string(),
     })
     .optional()
     .nullable(),
 });
 
-export const genericMessageDataSchema = z
+const genericMessageDataSchema = z
   .object({
     message: z.string(),
     details: z.object({}).passthrough().optional(),
   })
   .strict();
 
-export const resultDataSchema = z
+const resultDataSchema = z
   .object({
     id: z.string(),
     result: z.object({}).passthrough(),
@@ -115,7 +124,7 @@ export const learningSchema = z.object({
   }),
 });
 
-export const agentDataSchema = z
+const agentDataSchema = z
   .object({
     done: z.boolean().optional(),
     result: anyObject.optional(),
@@ -135,11 +144,53 @@ export const agentDataSchema = z
   })
   .strict();
 
-export const messageDataSchema = z.union([
-  resultDataSchema,
-  agentDataSchema,
-  genericMessageDataSchema,
+const peripheralMessageDataSchema = z.object({
+  id: z.string(),
+  createdAt: z.date().optional(),
+  pending: z.boolean().optional(),
+  displayableContext: z.record(z.string()).optional().nullable(),
+});
+
+export const unifiedMessageDataSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("agent"),
+      data: agentDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("invocation-result"),
+      data: resultDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("human"),
+      data: genericMessageDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("template"),
+      data: genericMessageDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("supervisor"),
+      data: genericMessageDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("agent-invalid"),
+      data: genericMessageDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
 ]);
+
+export type UnifiedMessage = z.infer<typeof unifiedMessageDataSchema>;
 
 export const FunctionConfigSchema = z.object({
   cache: z
@@ -613,25 +664,13 @@ export const definition = {
       authorization: z.string(),
     }),
     responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          data: messageDataSchema,
-          type: z.enum([
-            "human",
-            "template",
-            "invocation-result",
-            "agent",
-            "agent-invalid",
-            "supervisor",
-          ]),
-          createdAt: z.date(),
-          pending: z.boolean().default(false),
-          displayableContext: z.record(z.string()).nullable(),
-        })
-      ),
+      200: z.array(unifiedMessageDataSchema),
       401: z.undefined(),
     },
+    query: z.object({
+      last: z.coerce.number().min(10).max(50).default(50),
+      after: z.string().default("0"),
+    }),
   },
   listRuns: {
     method: "GET",
@@ -724,7 +763,6 @@ export const definition = {
     body: z.object({ message: z.string() }),
     responses: {
       200: z.object({
-        data: genericMessageDataSchema,
         id: z.string(),
       }),
       404: z.object({ message: z.string() }),
@@ -916,7 +954,6 @@ export const definition = {
     query: z.object({
       messagesAfter: z.string().default("0"),
       activityAfter: z.string().default("0"),
-      jobsAfter: z.string().default("0"),
     }),
     pathParams: z.object({
       clusterId: z.string(),
@@ -925,24 +962,7 @@ export const definition = {
     responses: {
       404: z.undefined(),
       200: z.object({
-        messages: z.array(
-          z.object({
-            id: z.string(),
-            data: messageDataSchema,
-            type: z.enum([
-              // TODO: Remove 'template' type
-              "template",
-              "invocation-result",
-              "human",
-              "agent",
-              "agent-invalid",
-              "supervisor",
-            ]),
-            createdAt: z.date(),
-            pending: z.boolean().default(false),
-            displayableContext: z.record(z.string()).nullable(),
-          })
-        ),
+        messages: z.array(unifiedMessageDataSchema),
         activity: z.array(
           z.object({
             id: z.string(),
@@ -1480,6 +1500,31 @@ export const definition = {
         }),
         refreshedAt: z.number(),
       }),
+    },
+  },
+  createNangoSession: {
+    method: "POST",
+    path: "/clusters/:clusterId/nango/sessions",
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    headers: z.object({ authorization: z.string() }),
+    body: z.object({
+      integration: z.string(),
+    }),
+    responses: {
+      200: z.object({
+        token: z.string(),
+      }),
+    },
+  },
+  createNangoEvent: {
+    method: "POST",
+    path: "/nango/events",
+    headers: z.object({ "x-nango-signature": z.string() }),
+    body: z.object({}).passthrough(),
+    responses: {
+      200: z.undefined(),
     },
   },
 } as const;
