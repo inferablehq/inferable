@@ -671,7 +671,7 @@ export const definition = {
         .default(0)
         .describe("Time in seconds to keep the request open waiting for a response"),
       after: z.string().default("0"),
-      last: z.coerce.number().min(10).max(50).default(50),
+      limit: z.coerce.number().min(10).max(50).default(50),
     }),
     responses: {
       200: z.array(unifiedMessageDataSchema),
