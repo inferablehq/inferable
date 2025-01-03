@@ -16,7 +16,8 @@ It is used to start and interact with [Inferable runs](https://docs.inferable.ai
 
 This is a demo of a chat experience built with the Inferable hooks. See [instructions here](#running-the-demo) to spin this up locally.
 
-<video src='https://a.inferable.ai/react.mp4' width=600/>
+<video src='https://a.inferable.ai/react.mp4' width=600>
+</video>
 
 ## Installation
 
