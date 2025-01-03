@@ -14,9 +14,7 @@ It is used to start and interact with [Inferable runs](https://docs.inferable.ai
 
 ## Demo
 
-<video width="100%" controls>
-  <source src="https://a.inferable.ai/react.mp4" type="video/mp4">
-</video>
+[![Watch the video]()](./demo/react.mp4)
 
 ## Installation
 
