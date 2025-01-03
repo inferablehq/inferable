@@ -109,12 +109,12 @@ export const editHumanMessage = async ({
 export const getRunMessagesForDisplay = async ({
   clusterId,
   runId,
-  last = 50,
+  limit = 50,
   after = "0",
 }: {
   clusterId: string;
   runId: string;
-  last?: number;
+  limit?: number;
   after?: string;
 }): Promise<UnifiedMessage[]> => {
   const messages = await db
@@ -138,7 +138,7 @@ export const getRunMessagesForDisplay = async ({
         ne(workflowMessages.type, "result" as any)
       )
     )
-    .limit(last);
+    .limit(limit);
 
   return messages
     .map(message => {
@@ -187,21 +187,22 @@ export const getRunMessagesForDisplay = async ({
 export const getRunMessagesForDisplayWithPolling = async ({
   clusterId,
   runId,
-  last = 100,
+  timeout = 20_000,
+  limit = 100,
   after = "0",
 }: {
   clusterId: string;
   runId: string;
-  last?: number;
+  limit?: number;
   after?: string;
+  timeout?: number
 }): Promise<UnifiedMessage[]> => {
   let rowsCount = 0;
   const delay = 200;
-  const timeout = 20_000;
   const startTime = Date.now();
 
   do {
-    const messages = await getRunMessagesForDisplay({ clusterId, runId, last, after });
+    const messages = await getRunMessagesForDisplay({ clusterId, runId, limit, after });
     rowsCount = messages.length;
 
     if (rowsCount > 0) {
@@ -218,12 +219,12 @@ export const getRunMessagesForDisplayWithPolling = async ({
 export const getWorkflowMessages = async ({
   clusterId,
   runId,
-  last = 100,
+  limit = 100,
   after = "0",
 }: {
   clusterId: string;
   runId: string;
-  last?: number;
+  limit?: number;
   after?: string;
 }): Promise<UnifiedMessage[]> => {
   const messages = await db
@@ -245,7 +246,7 @@ export const getWorkflowMessages = async ({
         gt(workflowMessages.id, after)
       )
     )
-    .limit(last)
+    .limit(limit)
     .then(messages => messages.reverse());
 
   return messages

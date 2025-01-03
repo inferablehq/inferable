@@ -141,6 +141,7 @@ export function useRun<T extends z.ZodObject<any>>(
             params: { clusterId: inferable.clusterId, runId: runId },
             query: {
               after: lastMessageId.current ?? "0",
+              waitTime: 20,
             },
           }),
           inferable.client.getRun({

@@ -286,7 +286,8 @@ export const router = initServer().router(contract, {
       clusterId,
       runId,
       after: request.query.after,
-      last: request.query.last,
+      limit: request.query.limit,
+      timeout: request.query.waitTime * 1000,
     });
 
     return {

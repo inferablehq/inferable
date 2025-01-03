@@ -562,7 +562,7 @@ export const assertRunReady = async (input: { runId: string; clusterId: string }
   const [lastMessage] = await getWorkflowMessages({
     clusterId: run.clusterId,
     runId: run.id,
-    last: 1,
+    limit: 1,
   });
 
   if (!lastMessage) {

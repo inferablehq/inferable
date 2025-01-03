@@ -663,14 +663,20 @@ export const definition = {
     headers: z.object({
       authorization: z.string(),
     }),
+    query: z.object({
+      waitTime: z.coerce
+        .number()
+        .min(0)
+        .max(20)
+        .default(0)
+        .describe("Time in seconds to keep the request open waiting for a response"),
+      after: z.string().default("0"),
+      last: z.coerce.number().min(10).max(50).default(50),
+    }),
     responses: {
       200: z.array(unifiedMessageDataSchema),
       401: z.undefined(),
     },
-    query: z.object({
-      last: z.coerce.number().min(10).max(50).default(50),
-      after: z.string().default("0"),
-    }),
   },
   listRuns: {
     method: "GET",
