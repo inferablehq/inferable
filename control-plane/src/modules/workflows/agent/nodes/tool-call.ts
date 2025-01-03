@@ -142,7 +142,7 @@ const _handleToolCall = async (
       messages: [
         {
           id: ulid(),
-          type: "invocation-result",
+          type: "invocation-result" as const,
           data: {
             result: {
               message: `Failed to find tool: ${toolName}. This might mean that the service that provides this tool is down. Human must be prompted to ask the devs whether to tool "toolName" is connected.`,
@@ -152,6 +152,7 @@ const _handleToolCall = async (
           },
           runId: workflow.id,
           clusterId: workflow.clusterId,
+          createdAt: new Date(),
         },
       ],
     };
@@ -223,6 +224,7 @@ const _handleToolCall = async (
             },
             runId: workflow.id,
             clusterId: workflow.clusterId,
+            createdAt: new Date(),
           },
         ],
       };
@@ -254,6 +256,7 @@ const _handleToolCall = async (
             },
             runId: workflow.id,
             clusterId: workflow.clusterId,
+            createdAt: new Date(),
           },
         ],
       };
@@ -305,6 +308,7 @@ const _handleToolCall = async (
             },
             runId: workflow.id,
             clusterId: workflow.clusterId,
+            createdAt: new Date(),
           },
         ],
       };
@@ -352,6 +356,7 @@ const _handleToolCall = async (
           },
           runId: workflow.id,
           clusterId: workflow.clusterId,
+          createdAt: new Date(),
         },
       ],
     };

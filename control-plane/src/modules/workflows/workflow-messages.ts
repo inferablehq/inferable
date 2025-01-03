@@ -2,20 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { and, desc, eq, gt, InferSelectModel, ne, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { z } from "zod";
-import { unifiedMessageDataSchema } from "../contract";
+import { UnifiedMessage, unifiedMessageDataSchema } from "../contract";
 import { db, RunMessageMetadata, workflowMessages } from "../data";
 import { events } from "../observability/events";
 import { resumeRun } from "./workflows";
+import { logger } from "../observability/logger";
 
 export type TypedMessage = z.infer<typeof unifiedMessageDataSchema>;
-
-export type TypedMessageWithMeta = {
-  id: string;
-  data: TypedMessage;
-  createdAt: Date;
-  pending: boolean;
-  displayableContext: Record<string, string> | null;
-};
 
 /**
  * A structured response from the agent.
@@ -35,13 +28,7 @@ export type GenericMessage = Extract<
   { type: "human" | "template" | "supervisor" | "agent-invalid" }
 >;
 
-export type RunMessage = TypedMessage & {
-  id: string;
-  clusterId: string;
-  runId: string;
-  createdAt: Date;
-  updatedAt?: Date | null;
-};
+export type RunMessage = z.infer<typeof unifiedMessageDataSchema>;
 
 export const insertRunMessage = async ({
   clusterId,
@@ -68,7 +55,8 @@ export const insertRunMessage = async ({
       cluster_id: clusterId,
       workflow_id: runId,
       metadata,
-      ...unifiedMessageDataSchema.parse({ data, type }),
+      type,
+      data,
     })
     .returning({
       id: workflowMessages.id,
@@ -128,7 +116,7 @@ export const getRunMessagesForDisplay = async ({
   runId: string;
   last?: number;
   after?: string;
-}): Promise<TypedMessageWithMeta[]> => {
+}): Promise<UnifiedMessage[]> => {
   const messages = await db
     .select({
       id: workflowMessages.id,
@@ -171,30 +159,28 @@ export const getRunMessagesForDisplay = async ({
       return message;
     })
     .map(message => {
-      const { success, data, error } = unifiedMessageDataSchema.safeParse({
-        type: message.type,
-        data: message.data,
-      });
+      const { success, data, error } = unifiedMessageDataSchema.safeParse(message);
 
-      const messageWithType = !success
-        ? {
-            type: "supervisor" as const,
-            data: {
-              message: "Invalid message data",
-              details: {
-                error: error?.message,
-              },
+      if (!success) {
+        logger.error("Invalid message data. Returning supervisor message", {
+          message,
+          error: error?.message,
+        });
+
+        return {
+          id: ulid(),
+          type: "supervisor" as const,
+          data: {
+            message: "Invalid message data",
+            details: {
+              error: error?.message,
             },
-          }
-        : data;
+          },
+          createdAt: new Date(),
+        };
+      }
 
-      return {
-        id: message.id,
-        data: messageWithType,
-        createdAt: message.createdAt,
-        pending: false,
-        displayableContext: message.metadata?.displayable ?? null,
-      };
+      return data;
     });
 };
 
@@ -208,7 +194,7 @@ export const getWorkflowMessages = async ({
   runId: string;
   last?: number;
   after?: string;
-}): Promise<RunMessage[]> => {
+}): Promise<UnifiedMessage[]> => {
   const messages = await db
     .select({
       id: workflowMessages.id,

@@ -144,32 +144,53 @@ const agentDataSchema = z
   })
   .strict();
 
+const peripheralMessageDataSchema = z.object({
+  id: z.string(),
+  createdAt: z.date().optional(),
+  pending: z.boolean().optional(),
+  displayableContext: z.record(z.string()).optional().nullable(),
+});
+
 export const unifiedMessageDataSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("agent"),
-    data: agentDataSchema,
-  }),
-  z.object({
-    type: z.literal("invocation-result"),
-    data: resultDataSchema,
-  }),
-  z.object({
-    type: z.literal("human"),
-    data: genericMessageDataSchema,
-  }),
-  z.object({
-    type: z.literal("template"),
-    data: genericMessageDataSchema,
-  }),
-  z.object({
-    type: z.literal("supervisor"),
-    data: genericMessageDataSchema,
-  }),
-  z.object({
-    type: z.literal("agent-invalid"),
-    data: genericMessageDataSchema,
-  }),
+  z
+    .object({
+      type: z.literal("agent"),
+      data: agentDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("invocation-result"),
+      data: resultDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("human"),
+      data: genericMessageDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("template"),
+      data: genericMessageDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("supervisor"),
+      data: genericMessageDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
+  z
+    .object({
+      type: z.literal("agent-invalid"),
+      data: genericMessageDataSchema,
+    })
+    .merge(peripheralMessageDataSchema),
 ]);
+
+export type UnifiedMessage = z.infer<typeof unifiedMessageDataSchema>;
 
 export const FunctionConfigSchema = z.object({
   cache: z
@@ -643,16 +664,7 @@ export const definition = {
       authorization: z.string(),
     }),
     responses: {
-      200: z.array(
-        z
-          .object({
-            id: z.string(),
-            createdAt: z.date(),
-            pending: z.boolean().default(false),
-            displayableContext: z.record(z.string()).nullable(),
-          })
-          .merge(z.object({ data: unifiedMessageDataSchema }))
-      ),
+      200: z.array(unifiedMessageDataSchema),
       401: z.undefined(),
     },
   },
@@ -946,15 +958,7 @@ export const definition = {
     responses: {
       404: z.undefined(),
       200: z.object({
-        messages: z.array(
-          z.object({
-            id: z.string(),
-            data: unifiedMessageDataSchema,
-            createdAt: z.date(),
-            pending: z.boolean().default(false),
-            displayableContext: z.record(z.string()).nullable(),
-          })
-        ),
+        messages: z.array(unifiedMessageDataSchema),
         activity: z.array(
           z.object({
             id: z.string(),

@@ -1,14 +1,15 @@
-import { InferSelectModel } from "drizzle-orm";
-import { Run } from "../workflows";
-import { workflows } from "../../data";
 import { StateGraphArgs } from "@langchain/langgraph";
-import { TypedMessage, RunMessage } from "../workflow-messages";
+import { InferSelectModel } from "drizzle-orm";
+import { UnifiedMessage } from "../../contract";
+import { RunMessageMetadata, workflows } from "../../data";
+import { Run } from "../workflows";
 
-export type WorkflowAgentStateMessage = Pick<
-  RunMessage,
-  "id" | "clusterId" | "runId"
-> &
-  TypedMessage & { persisted?: true };
+export type WorkflowAgentStateMessage = UnifiedMessage & {
+  persisted?: true;
+  clusterId: string;
+  runId: string;
+  metadata?: RunMessageMetadata;
+};
 
 export type WorkflowAgentState = {
   status: InferSelectModel<typeof workflows>["status"];

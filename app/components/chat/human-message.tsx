@@ -1,5 +1,5 @@
 import { client } from "@/client/client";
-import { genericMessageDataSchema } from "@/client/contract";
+import { unifiedMessageDataSchema } from "@/client/contract";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
@@ -18,9 +18,7 @@ export function HumanMessage({
   id: messageId,
   pending,
   createdAt,
-}: MessageContainerProps) {
-  data = genericMessageDataSchema.parse(data);
-
+}: MessageContainerProps<"human">) {
   const [editing, setEditing] = useState(false);
   const [editedValue, setEditedValue] = useState(data.message);
   const { getToken } = useAuth();
@@ -42,14 +40,14 @@ export function HumanMessage({
           messageId,
         },
       })
-      .then((result) => {
+      .then(result => {
         if (result.status === 200) {
           toast.success("Success!");
         } else {
           createErrorToast(result, "Failed to update message");
         }
       })
-      .catch((error) => {
+      .catch(error => {
         createErrorToast(error, "Failed to update message");
       });
   }, [editedValue, clusterId, runId, messageId, getToken]);
@@ -88,8 +86,8 @@ export function HumanMessage({
         <div className="rounded-xl bg-primary p-4 shadow-sm">
           <Textarea
             value={editedValue}
-            onChange={(e) => setEditedValue(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setEditedValue(e.target.value)}
+            onKeyDown={e => {
               if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
                 e.preventDefault();
                 onSubmit();
@@ -125,6 +123,7 @@ export function HumanMessage({
 
   return (
     <div className="mx-4">
+      {JSON.stringify(data)}
       <div
         className={`rounded-xl bg-primary p-4 shadow-sm hover:shadow-md transition-all duration-200 ${
           pending ? `animate-pulse` : ``
@@ -136,11 +135,9 @@ export function HumanMessage({
               <div className="text-primary-foreground font-medium">H</div>
             </div>
             <div>
-              <div className="text-sm font-medium text-primary-foreground">
-                Human
-              </div>
+              <div className="text-sm font-medium text-primary-foreground">Human</div>
               <div className="text-xs text-primary-foreground/70">
-                {formatRelative(createdAt, new Date())}
+                {createdAt ? formatRelative(createdAt, new Date()) : "unknown"}
               </div>
             </div>
           </div>

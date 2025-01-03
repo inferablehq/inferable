@@ -156,7 +156,10 @@ export const processRun = async (run: Run, metadata?: Record<string, string>) =>
 
       // Insert messages in a loop to ensure they are created with differing timestamps
       for (const message of state.messages.filter(m => !m.persisted)) {
-        await Promise.all([insertRunMessage(message), notifyNewMessage({ message, runMetadata: metadata })]);
+        await Promise.all([
+          insertRunMessage(message),
+          notifyNewMessage({ message, runMetadata: metadata }),
+        ]);
         message.persisted = true;
       }
     },

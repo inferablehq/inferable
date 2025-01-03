@@ -5,11 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ReadOnlyJSON } from "../read-only-json";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "../ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Button } from "../ui/button";
 import toast from "react-hot-toast";
 import { MessageContainerProps } from "./workflow-event";
@@ -23,7 +19,7 @@ export function TemplateMessage({
   clusterId,
   id: messageId,
   runId,
-}: MessageContainerProps & { runId: string }) {
+}: MessageContainerProps<"template">) {
   let templateId;
   let templateName;
   if (displayableContext && "templateId" in displayableContext) {
@@ -38,11 +34,7 @@ export function TemplateMessage({
   const { getToken } = useAuth();
 
   const handleRetry = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to retry? This will delete the current result."
-      )
-    ) {
+    if (window.confirm("Are you sure you want to retry? This will delete the current result.")) {
       setIsRetrying(true);
       try {
         const token = await getToken();
@@ -75,9 +67,7 @@ export function TemplateMessage({
             {templateId && templateName ? (
               <Link href={`/clusters/${clusterId}/prompts/${templateId}/edit`}>
                 <div className="flex flex-row space-x-1">
-                  <p className="text-muted-foreground font-normal">
-                    Triggered by
-                  </p>
+                  <p className="text-muted-foreground font-normal">Triggered by</p>
                   <p>{templateName}</p>
                 </div>
               </Link>
@@ -85,7 +75,7 @@ export function TemplateMessage({
               <p>Prompt Template</p>
             )}
             <p className="text-muted-foreground font-normal">
-              {formatRelative(createdAt, new Date())}
+              {createdAt ? formatRelative(createdAt, new Date()) : "unknown"}
             </p>
           </div>
           <Button
@@ -100,40 +90,30 @@ export function TemplateMessage({
           </Button>
         </CardTitle>
       </CardHeader>
-      {Object.entries({ ...data, ...displayableContext }).map(
-        ([key, value]) => (
-          <CardContent className="flex flex-col" key={key}>
-            {key === "message" ? (
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center cursor-pointer">
-                  <p className="text-sm text-muted-foreground mr-2">
-                    {startCase(key)}
-                  </p>
-                  <ChevronDown className="w-4 h-4" />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <p className="text-sm whitespace-pre-wrap mt-2">
-                    {value as string}
-                  </p>
-                </CollapsibleContent>
-              </Collapsible>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  {startCase(key)}
-                </p>
-                {typeof value === "object" ? (
-                  <ReadOnlyJSON json={value as object} />
-                ) : (
-                  <p className="text-sm whitespace-pre-wrap">
-                    {value as string}
-                  </p>
-                )}
-              </>
-            )}
-          </CardContent>
-        )
-      )}
+      {Object.entries({ ...data, ...displayableContext }).map(([key, value]) => (
+        <CardContent className="flex flex-col" key={key}>
+          {key === "message" ? (
+            <Collapsible>
+              <CollapsibleTrigger className="flex items-center cursor-pointer">
+                <p className="text-sm text-muted-foreground mr-2">{startCase(key)}</p>
+                <ChevronDown className="w-4 h-4" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <p className="text-sm whitespace-pre-wrap mt-2">{value as string}</p>
+              </CollapsibleContent>
+            </Collapsible>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">{startCase(key)}</p>
+              {typeof value === "object" ? (
+                <ReadOnlyJSON json={value as object} />
+              ) : (
+                <p className="text-sm whitespace-pre-wrap">{value as string}</p>
+              )}
+            </>
+          )}
+        </CardContent>
+      ))}
     </Card>
   );
 }
