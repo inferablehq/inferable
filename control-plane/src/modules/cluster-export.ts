@@ -3,14 +3,14 @@ import { BadRequestError } from "../utilities/errors";
 import { getClusterDetails } from "./cluster";
 import { editClusterDetails } from "./management";
 import { versionedTexts } from "./versioned-text";
-import { upsertRunConfig, listRunConfigs } from "./prompt-templates";
+import { upsertAgent, listAgents } from "./agents";
 
 const clusterExportSchema = z.object({
   cluster: z.object({
     name: z.string(),
     description: z.string(),
     additionalContext: versionedTexts.nullable(),
-    runConfigs: z.array(
+    agents: z.array(
       z.object({
         id: z.string(),
         name: z.string(),
@@ -31,7 +31,7 @@ export const produceClusterExport = async ({
 }) => {
   const clusterMeta = await getClusterDetails(clusterId);
 
-  const promptTemplates = await listRunConfigs({
+  const agents = await listAgents({
     clusterId,
   });
 
@@ -40,7 +40,7 @@ export const produceClusterExport = async ({
       name: clusterMeta.name,
       description: `${clusterMeta.description} (exported from ${clusterMeta.id})`,
       additionalContext: clusterMeta.additional_context,
-      runConfigs: promptTemplates.map((template) => ({
+      agents: agents.map((template) => ({
         id: template.id,
         name: template.name,
         initialPrompt: template.initialPrompt,
@@ -79,8 +79,8 @@ export const consumeClusterExport = async ({
     clusterId,
   });
 
-  for (const template of exportData.data.cluster.runConfigs) {
-    await upsertRunConfig({
+  for (const template of exportData.data.cluster.agents) {
+    await upsertAgent({
       id: template.id,
       clusterId,
       name: template.name,

@@ -1401,6 +1401,20 @@
       "when": 1735853703261,
       "tag": "0200_organic_terror",
       "breakpoints": true
+    },
+    {
+      "idx": 201,
+      "version": "7",
+      "when": 1735957677735,
+      "tag": "0201_clumsy_human_torch",
+      "breakpoints": true
+    },
+    {
+      "idx": 202,
+      "version": "7",
+      "when": 1735958735361,
+      "tag": "0202_daffy_baron_zemo",
+      "breakpoints": true
     }
   ]
 }

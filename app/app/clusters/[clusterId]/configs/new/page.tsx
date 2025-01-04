@@ -32,7 +32,7 @@ export default function NewPromptTemplate({
     }
 
     try {
-      const response = await client.createRunConfig({
+      const response = await client.createAgent({
         params: { clusterId: params.clusterId },
         body: {
           name: formData.name,

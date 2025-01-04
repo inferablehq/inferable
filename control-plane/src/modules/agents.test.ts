@@ -1,18 +1,18 @@
 import { ulid } from "ulid";
 import { createOwner } from "./test/util";
 import {
-  getRunConfig,
-  mergeRunConfigOptions,
-  upsertRunConfig,
-} from "./prompt-templates";
+  getAgent,
+  mergeAgentOptions,
+  upsertAgent,
+} from "./agents";
 
-describe("prompt-templates", () => {
-  describe("upsertPromptTemplate", () => {
+describe("agents", () => {
+  describe("opsertAgent", () => {
     it("should create a new prompt template", async () => {
       const owner = await createOwner();
       const id = ulid();
 
-      const template = await upsertRunConfig({
+      const template = await upsertAgent({
         id,
         clusterId: owner.clusterId,
         name: "test template",
@@ -35,7 +35,7 @@ describe("prompt-templates", () => {
       const owner = await createOwner();
       const id = ulid();
 
-      await upsertRunConfig({
+      await upsertAgent({
         id,
         clusterId: owner.clusterId,
         name: "test template",
@@ -44,7 +44,7 @@ describe("prompt-templates", () => {
         resultSchema: { foo: "bar" },
       });
 
-      await upsertRunConfig({
+      await upsertAgent({
         id,
         clusterId: owner.clusterId,
         name: "new name",
@@ -53,7 +53,7 @@ describe("prompt-templates", () => {
         resultSchema: { foo: "baz" },
       });
 
-      const updated = await getRunConfig({
+      const updated = await getAgent({
         id,
         clusterId: owner.clusterId,
       });
@@ -75,14 +75,14 @@ describe("prompt-templates", () => {
       const id = ulid();
 
       await expect(
-        upsertRunConfig({
+        upsertAgent({
           id,
           clusterId: owner.clusterId,
         }),
       ).rejects.toThrow();
 
       await expect(
-        upsertRunConfig({
+        upsertAgent({
           id,
           clusterId: owner.clusterId,
           initialPrompt: "test prompt",
@@ -91,8 +91,8 @@ describe("prompt-templates", () => {
     });
   });
 
-  describe("mergeRunConfigOptions", () => {
-    it("should merge options with run config", () => {
+  describe("mergeAgentOptions", () => {
+    it("should merge options with agent", () => {
       const options = {
         interactive: true,
         reasoningTraces: true,
@@ -108,7 +108,7 @@ describe("prompt-templates", () => {
         attachedFunctions: ["test_fn"],
       } as any;
 
-      const result = mergeRunConfigOptions(options, runConfig);
+      const result = mergeAgentOptions(options, runConfig);
 
       expect(result.error).toBeNull();
       expect(result.options).toEqual({
@@ -147,7 +147,7 @@ describe("prompt-templates", () => {
         attachedFunctions: ["test_fn"],
       } as any;
 
-      const result = mergeRunConfigOptions(options, runConfig);
+      const result = mergeAgentOptions(options, runConfig);
 
       expect(result.error).toBeNull();
       expect(result.options).toEqual({
@@ -186,7 +186,7 @@ describe("prompt-templates", () => {
         },
       } as any;
 
-      const result = mergeRunConfigOptions(options, runConfig);
+      const result = mergeAgentOptions(options, runConfig);
 
       expect(result.error).toEqual({
         status: 400,

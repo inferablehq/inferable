@@ -87,7 +87,7 @@ export function RunTab({
   useEffect(() => {
     getToken()
       .then((token) => {
-        return client.listRunConfigs({
+        return client.listAgents({
           headers: {
             authorization: `Bearer ${token}`,
           },
@@ -202,7 +202,7 @@ function RunPill({
                   }}
                 />
               )}
-              {workflow.configId && (
+              {workflow.agentId && (
                 <Tag
                   label={<FileTextIcon className="h-3 w-3" />}
                   onClick={(e) => {
@@ -210,13 +210,13 @@ function RunPill({
                     router.push(
                       `/clusters/${clusterId}/runs?filters=${encodeURIComponent(
                         JSON.stringify({
-                          configId: workflow.configId,
+                          agentId: workflow.agentId,
                         })
                       )}`
                     );
                   }}
                   value={
-                    templates.find((t) => t.id === workflow.configId)?.name ??
+                    templates.find((t) => t.id === workflow.agentId)?.name ??
                     "unknown"
                   }
                 />

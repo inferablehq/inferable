@@ -39,7 +39,7 @@ const createEmbedding = async ({
 
 export const embedEntity = async <Entity>(
   clusterId: string,
-  type: "service-function" | "prompt-template" | "knowledgebase-artifact",
+  type: "service-function" | "knowledgebase-artifact",
   groupId: string,
   entityId: string,
   entity: Entity,
@@ -133,7 +133,7 @@ export const embedSearchQuery = async (query: string): Promise<number[]> => {
 
 export const findSimilarEntities = async <Entity>(
   clusterId: string,
-  type: "service-function" | "prompt-template" | "knowledgebase-artifact",
+  type: "service-function" | "knowledgebase-artifact",
   query: string,
   limit: number = 10,
   tag?: string,
@@ -177,7 +177,7 @@ export const findSimilarEntities = async <Entity>(
 
 export const deleteEmbeddings = async <Entity>(
   clusterId: string,
-  type: "service-function" | "prompt-template" | "knowledgebase-artifact",
+  type: "service-function" | "knowledgebase-artifact",
   groupId: string,
 ) => {
   await db
@@ -193,7 +193,7 @@ export const deleteEmbeddings = async <Entity>(
 
 export const deleteEmbedding = async <Entity>(
   clusterId: string,
-  type: "service-function" | "prompt-template" | "knowledgebase-artifact",
+  type: "service-function" | "knowledgebase-artifact",
   entityId: string,
 ) =>
   await db
@@ -208,7 +208,7 @@ export const deleteEmbedding = async <Entity>(
 
 export const getEmbeddingsGroup = async <Entity>(
   clusterId: string,
-  type: "service-function" | "prompt-template" | "knowledgebase-artifact",
+  type: "service-function" | "knowledgebase-artifact",
   groupId: string,
 ) =>
   await db
@@ -224,7 +224,7 @@ export const getEmbeddingsGroup = async <Entity>(
 
 export const getEntity = async <Entity>(
   clusterId: string,
-  type: "service-function" | "prompt-template" | "knowledgebase-artifact",
+  type: "service-function" | "knowledgebase-artifact",
   id: string,
 ): Promise<(Entity & { tags: string[] }) | undefined> => {
   const [entity] = await db
@@ -254,7 +254,7 @@ export const getEntity = async <Entity>(
 
 export const getAllEmbeddings = async <Entity>(
   clusterId: string,
-  type: "service-function" | "prompt-template" | "knowledgebase-artifact",
+  type: "service-function"| "knowledgebase-artifact",
 ) =>
   await db
     .select({
@@ -277,7 +277,7 @@ export const getAllEmbeddings = async <Entity>(
 
 export const getAllUniqueTags = async (
   clusterId: string,
-  type: "service-function" | "prompt-template" | "knowledgebase-artifact",
+  type: "service-function" | "knowledgebase-artifact",
 ) => {
   return db
     .select({

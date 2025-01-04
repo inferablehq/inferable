@@ -11,7 +11,6 @@ import * as events from "./observability/events";
 import {
   assertMessageOfType,
   editHumanMessage,
-  getRunMessagesForDisplay,
   getRunMessagesForDisplayWithPolling,
 } from "./workflows/workflow-messages";
 import { addMessageAndResume, assertRunReady } from "./workflows/workflows";
@@ -24,13 +23,12 @@ import { posthog } from "./posthog";
 import { upsertUserDefinedContext, getToolMetadata, deleteToolMetadata } from "./tool-metadata";
 import { BadRequestError, NotFoundError } from "../utilities/errors";
 import {
-  upsertRunConfig,
-  getRunConfig,
-  deleteRunConfig,
-  listRunConfigs,
-  searchRunConfigs,
+  upsertAgent,
+  getAgent,
+  deleteAgent,
+  listAgents,
   validateSchema,
-} from "./prompt-templates";
+} from "./agents";
 import {
   createClusterKnowledgeArtifact,
   getKnowledge,
@@ -136,7 +134,6 @@ export const router = initServer().router(contract, {
       debug,
       enableCustomAuth,
       handleCustomAuthFunction,
-      enableRunConfigs,
       enableKnowledgebase,
     } = request.body;
 
@@ -149,7 +146,6 @@ export const router = initServer().router(contract, {
       debug,
       enableCustomAuth,
       handleCustomAuthFunction,
-      enableRunConfigs,
       enableKnowledgebase,
     });
 
@@ -542,14 +538,14 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createRunConfig: async request => {
+  createAgent: async request => {
     const { clusterId } = request.params;
     const { name, initialPrompt, systemPrompt, attachedFunctions, resultSchema, inputSchema } =
       request.body;
 
     const auth = request.request.getAuth();
     await auth.canManage({ cluster: { clusterId } });
-    auth.canCreate({ config: true });
+    auth.canCreate({ agent: true });
 
     if (resultSchema) {
       const validationError = validateSchema({
@@ -571,7 +567,7 @@ export const router = initServer().router(contract, {
       }
     }
 
-    const result = await upsertRunConfig({
+    const result = await upsertAgent({
       id: ulid(),
       clusterId,
       name,
@@ -584,14 +580,14 @@ export const router = initServer().router(contract, {
 
     posthog?.capture({
       distinctId: auth.entityId,
-      event: "api:run_config_create",
+      event: "api:agent_create",
       groups: {
         organization: auth.organizationId,
         cluster: clusterId,
       },
       properties: {
         cluster_id: clusterId,
-        config_id: result.id,
+        agent_id: result.id,
         cli_version: request.headers["x-cli-version"],
         user_agent: request.headers["user-agent"],
       },
@@ -603,18 +599,18 @@ export const router = initServer().router(contract, {
     };
   },
 
-  upsertRunConfig: async request => {
-    const { configId, clusterId } = request.params;
+  upsertAgent: async request => {
+    const { agentId, clusterId } = request.params;
     const { name, initialPrompt, systemPrompt, attachedFunctions, resultSchema, inputSchema } =
       request.body;
 
     const auth = request.request.getAuth();
 
     await auth.canManage({ cluster: { clusterId } });
-    if (configId) {
-      await auth.canManage({ config: { configId, clusterId } });
+    if (agentId) {
+      await auth.canManage({ agent: { agentId, clusterId } });
     } else {
-      auth.canCreate({ config: true });
+      auth.canCreate({ agent: true });
     }
 
     if (resultSchema) {
@@ -637,8 +633,8 @@ export const router = initServer().router(contract, {
       }
     }
 
-    const result = await upsertRunConfig({
-      id: configId,
+    const result = await upsertAgent({
+      id: agentId,
       clusterId,
       name,
       initialPrompt,
@@ -650,14 +646,14 @@ export const router = initServer().router(contract, {
 
     posthog?.capture({
       distinctId: auth.entityId,
-      event: "api:run_config_upsert",
+      event: "api:agent_upsert",
       groups: {
         organization: auth.organizationId,
         cluster: clusterId,
       },
       properties: {
         cluster_id: clusterId,
-        config_id: result.id,
+        agent_id: result.id,
         cli_version: request.headers["x-cli-version"],
         user_agent: request.headers["user-agent"],
       },
@@ -669,16 +665,16 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getRunConfig: async request => {
-    const { clusterId, configId } = request.params;
+  getAgent: async request => {
+    const { clusterId, agentId } = request.params;
     const { withPreviousVersions } = request.query;
 
     const user = request.request.getAuth();
     await user.canAccess({ cluster: { clusterId } });
 
-    const template = await getRunConfig({
+    const template = await getAgent({
       clusterId,
-      id: configId,
+      id: agentId,
       withPreviousVersions: withPreviousVersions === "true",
     });
 
@@ -688,27 +684,27 @@ export const router = initServer().router(contract, {
     };
   },
 
-  deleteRunConfig: async request => {
-    const { clusterId, configId } = request.params;
+  deleteAgent: async request => {
+    const { clusterId, agentId } = request.params;
 
     const auth = request.request.getAuth();
-    await auth.canManage({ config: { clusterId, configId } });
+    await auth.canManage({ agent: { clusterId, agentId } });
 
-    await deleteRunConfig({
+    await deleteAgent({
       clusterId,
-      id: configId,
+      id: agentId,
     });
 
     posthog?.capture({
       distinctId: auth.entityId,
-      event: "api:run_config_delete",
+      event: "api:agent_delete",
       groups: {
         organization: auth.organizationId,
         cluster: clusterId,
       },
       properties: {
         cluster_id: clusterId,
-        config_id: configId,
+        agent_id: agentId,
         cli_version: request.headers["x-cli-version"],
         user_agent: request.headers["user-agent"],
       },
@@ -720,32 +716,17 @@ export const router = initServer().router(contract, {
     };
   },
 
-  listRunConfigs: async request => {
+  listAgents: async request => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
 
-    const templates = await listRunConfigs({ clusterId });
+    const templates = await listAgents({ clusterId });
 
     return {
       status: 200,
       body: templates,
-    };
-  },
-
-  searchRunConfigs: async request => {
-    const { clusterId } = request.params;
-    const { search } = request.query;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
-
-    const results = await searchRunConfigs(clusterId, search);
-
-    return {
-      status: 200,
-      body: results,
     };
   },
 

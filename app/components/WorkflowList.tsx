@@ -4,7 +4,6 @@ import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
@@ -15,14 +14,13 @@ import { z } from "zod";
 import { Badge } from "./ui/badge";
 import { RunTab } from "./workflow-tab";
 import { ServerConnectionStatus } from "./server-connection-pane";
-import Link from "next/link";
 
 type WorkflowListProps = {
   clusterId: string;
 };
 
 const runFiltersSchema = z.object({
-  configId: z.string().optional(),
+  agentId: z.string().optional(),
   test: z.boolean().optional(),
 });
 
@@ -86,7 +84,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
         test: runFilters.test ? "true" : undefined,
         userId: (runToggle === "mine" ? `clerk:${userId}` : undefined) ?? undefined,
         limit: Math.min(limit, 500), // Ensure limit doesn't exceed 500
-        configId: runFilters.configId,
+        agentId: runFilters.agentId,
       },
       params: {
         clusterId: clusterId,
@@ -113,16 +111,16 @@ export function RunList({ clusterId }: WorkflowListProps) {
   ]);
 
   useEffect(() => {
-    if (runFilters?.configId) {
+    if (runFilters?.agentId) {
       fetchWorkflows();
     }
-  }, [runFilters?.configId, fetchWorkflows]);
+  }, [runFilters?.agentId, fetchWorkflows]);
 
   useEffect(() => {
     fetchWorkflows();
     const interval = setInterval(fetchWorkflows, 5000);
     return () => clearInterval(interval);
-  }, [fetchWorkflows, runFilters?.configId]);
+  }, [fetchWorkflows, runFilters?.agentId]);
 
   const loadMore = () => {
     if (limit < 50) {
@@ -134,9 +132,9 @@ export function RunList({ clusterId }: WorkflowListProps) {
 
   return (
       <ScrollArea className="rounded-md bg-white shadow-sm hover:shadow-lg transition-all duration-200 overflow-y-auto h-[300px] lg:h-[calc(100vh-16rem)] p-2 border border-border/50">
-        {(!!runFilters.configId || !!runFilters.test) && (
+        {(!!runFilters.agentId || !!runFilters.test) && (
           <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
-            {runFilters.configId && (
+            {runFilters.agentId && (
               <Badge
                 className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
                 onClick={() => {

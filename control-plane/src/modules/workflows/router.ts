@@ -2,7 +2,7 @@ import { initServer } from "@ts-rest/fastify";
 import { dereferenceSync } from "dereference-json-schema";
 import { JsonSchemaInput } from "inferable/bin/types";
 import { ulid } from "ulid";
-import { AuthenticationError, NotFoundError } from "../../utilities/errors";
+import { NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
 import { contract } from "../contract";
 import { getJobReferences } from "../jobs/jobs";
@@ -10,10 +10,10 @@ import * as events from "../observability/events";
 import { posthog } from "../posthog";
 import {
   RunOptions,
-  getRunConfig,
-  mergeRunConfigOptions,
+  getAgent,
+  mergeAgentOptions,
   validateSchema,
-} from "../prompt-templates";
+} from "../agents";
 import { normalizeFunctionReference } from "../service-definitions";
 import { timeline } from "../timeline";
 import { getRunsByMetadata } from "./metadata";
@@ -23,10 +23,11 @@ import {
   createRun,
   deleteRun,
   getClusterWorkflows,
-  getRunConfigMetrics,
+  getAgentMetrics,
   getWorkflowDetail,
   updateWorkflow,
 } from "./workflows";
+import { logger } from "../observability/logger";
 
 export const runsRouter = initServer().router(
   {
@@ -36,7 +37,7 @@ export const runsRouter = initServer().router(
     createFeedback: contract.createFeedback,
     listRuns: contract.listRuns,
     getRunTimeline: contract.getRunTimeline,
-    getRunConfigMetrics: contract.getRunConfigMetrics,
+    getAgentMetrics: contract.getAgentMetrics,
     listRunReferences: contract.listRunReferences,
     createRunRetry: contract.createRunRetry,
   },
@@ -114,19 +115,27 @@ export const runsRouter = initServer().router(
         input: body.input,
       };
 
-      const runConfig = body.configId
-        ? await getRunConfig({
+      const agentId = body.agentId ?? body.configId;
+
+      if (!!body.configId) {
+        logger.warn(
+          "Deprecated configId usage in createRun",
+        )
+      }
+
+      const agent = agentId
+        ? await getAgent({
             clusterId,
-            id: body.configId,
+            id: agentId
           })
         : undefined;
 
-      if (runConfig) {
-        if (!runConfig) {
-          throw new NotFoundError("Run configuration not found");
+      if (agentId) {
+        if (!agent) {
+          throw new NotFoundError("Agent not found");
         }
 
-        const merged = mergeRunConfigOptions(runOptions, runConfig);
+        const merged = mergeAgentOptions(runOptions, agent);
 
         if (merged.error) {
           return merged.error;
@@ -151,7 +160,7 @@ export const runsRouter = initServer().router(
         testMocks: body.test?.mocks,
         metadata: body.metadata,
 
-        configId: runConfig?.id,
+        agentId: agent?.id,
 
         // Customer Auth context (In the future all auth types should inject context into the run)
         authContext: customAuth?.context,
@@ -178,7 +187,7 @@ export const runsRouter = initServer().router(
           clusterId,
           runId: workflow.id,
           message: runOptions.initialPrompt,
-          type: runConfig ? "template" : "human",
+          type: agentId ? "template" : "human",
           metadata: runOptions.messageMetadata,
           skipAssert: true,
         });
@@ -194,7 +203,7 @@ export const runsRouter = initServer().router(
         properties: {
           cluster_id: clusterId,
           run_id: workflow.id,
-          config_id: workflow.configId,
+          agent_id: workflow.agentId,
           cli_version: request.headers["x-cli-version"],
           user_agent: request.headers["user-agent"],
         },
@@ -284,7 +293,7 @@ export const runsRouter = initServer().router(
     },
     listRuns: async request => {
       const { clusterId } = request.params;
-      const { test, limit, metadata, configId } = request.query;
+      const { test, limit, metadata, agentId } = request.query;
       let { userId } = request.query;
 
       const auth = request.request.getAuth();
@@ -313,7 +322,7 @@ export const runsRouter = initServer().router(
           key,
           value,
           limit,
-          configId,
+          agentId,
           userId
         });
 
@@ -329,7 +338,7 @@ export const runsRouter = initServer().router(
         userId,
         test: test ?? false,
         limit,
-        configId: configId,
+        agentId,
       });
 
       return {
@@ -373,15 +382,15 @@ export const runsRouter = initServer().router(
         },
       };
     },
-    getRunConfigMetrics: async request => {
-      const { clusterId, configId } = request.params;
+    getAgentMetrics: async request => {
+      const { clusterId, agentId } = request.params;
 
       const auth = request.request.getAuth();
       await auth.canAccess({ cluster: { clusterId } });
 
-      const result = await getRunConfigMetrics({
+      const result = await getAgentMetrics({
         clusterId,
-        configId,
+        agentId,
       });
 
       return {

@@ -1,23 +1,17 @@
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import assert from "assert";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { BadRequestError, NotFoundError } from "../utilities/errors";
-import { RunMessageMetadata, db, promptTemplates } from "./data";
-import { embeddableEntitiy } from "./embeddings/embeddings";
+import { RunMessageMetadata, db, agents } from "./data";
 import { logger } from "./observability/logger";
 import { VersionedEntity } from "./versioned-entities";
 import { validateFunctionSchema } from "inferable";
 import { JsonSchemaInput } from "inferable/bin/types";
 import { ChatIdentifiers } from "./models/routing";
 
-export const embeddableServiceFunction = embeddableEntitiy<{
-  name: string;
-  prompt: string;
-}>();
-
-export const versionedRunConfig = new VersionedEntity(
+export const versionedAgentConfig = new VersionedEntity(
   z.object({
     name: z.string(),
     initialPrompt: z.string().optional(),
@@ -29,7 +23,7 @@ export const versionedRunConfig = new VersionedEntity(
   "prompt_template"
 );
 
-export async function upsertRunConfig({
+export async function upsertAgent({
   id,
   clusterId,
   name,
@@ -50,8 +44,8 @@ export async function upsertRunConfig({
 }) {
   const [existing] = await db
     .select()
-    .from(promptTemplates)
-    .where(and(eq(promptTemplates.cluster_id, clusterId), eq(promptTemplates.id, id)))
+    .from(agents)
+    .where(and(eq(agents.cluster_id, clusterId), eq(agents.id, id)))
     .limit(1);
 
   if (initialPrompt === "" || initialPrompt === undefined) {
@@ -75,7 +69,7 @@ export async function upsertRunConfig({
   }
 
   const [upserted] = await db
-    .insert(promptTemplates)
+    .insert(agents)
     .values({
       id,
       cluster_id: clusterId,
@@ -87,7 +81,7 @@ export async function upsertRunConfig({
       input_schema: inputSchema,
     })
     .onConflictDoUpdate({
-      target: [promptTemplates.id, promptTemplates.cluster_id],
+      target: [agents.id, agents.cluster_id],
       set: {
         name,
         initial_prompt: initialPrompt,
@@ -99,22 +93,22 @@ export async function upsertRunConfig({
       },
     })
     .returning({
-      id: promptTemplates.id,
-      clusterId: promptTemplates.cluster_id,
-      name: promptTemplates.name,
-      initialPrompt: promptTemplates.initial_prompt,
-      systemPrompt: promptTemplates.system_prompt,
-      attachedFunctions: promptTemplates.attached_functions,
-      resultSchema: promptTemplates.result_schema,
-      inputSchema: promptTemplates.input_schema,
-      createdAt: promptTemplates.created_at,
-      updatedAt: promptTemplates.updated_at,
+      id: agents.id,
+      clusterId: agents.cluster_id,
+      name: agents.name,
+      initialPrompt: agents.initial_prompt,
+      systemPrompt: agents.system_prompt,
+      attachedFunctions: agents.attached_functions,
+      resultSchema: agents.result_schema,
+      inputSchema: agents.input_schema,
+      createdAt: agents.created_at,
+      updatedAt: agents.updated_at,
     });
 
   assert(upserted?.id, "Failed to create or update run configuration");
 
   if (existing) {
-    await versionedRunConfig.create(clusterId, id, {
+    await versionedAgentConfig.create(clusterId, id, {
       name: existing.name,
       initialPrompt: existing.initial_prompt ?? undefined,
       systemPrompt: existing.system_prompt,
@@ -124,15 +118,10 @@ export async function upsertRunConfig({
     });
   }
 
-  await embeddableServiceFunction.embedEntity(clusterId, "prompt-template", "global", upserted.id, {
-    name: upserted.name,
-    prompt: upserted.initialPrompt ?? name,
-  });
-
   return upserted;
 }
 
-export async function getRunConfig({
+export async function getAgent({
   clusterId,
   id,
   withPreviousVersions = false,
@@ -143,25 +132,25 @@ export async function getRunConfig({
 }) {
   const [template] = await db
     .select({
-      id: promptTemplates.id,
-      name: promptTemplates.name,
-      initialPrompt: promptTemplates.initial_prompt,
-      systemPrompt: promptTemplates.system_prompt,
-      attachedFunctions: promptTemplates.attached_functions,
-      resultSchema: promptTemplates.result_schema,
-      inputSchema: promptTemplates.input_schema,
-      createdAt: promptTemplates.created_at,
-      updatedAt: promptTemplates.updated_at,
-      clusterId: promptTemplates.cluster_id,
+      id: agents.id,
+      name: agents.name,
+      initialPrompt: agents.initial_prompt,
+      systemPrompt: agents.system_prompt,
+      attachedFunctions: agents.attached_functions,
+      resultSchema: agents.result_schema,
+      inputSchema: agents.input_schema,
+      createdAt: agents.created_at,
+      updatedAt: agents.updated_at,
+      clusterId: agents.cluster_id,
     })
-    .from(promptTemplates)
-    .where(and(eq(promptTemplates.cluster_id, clusterId), eq(promptTemplates.id, id)));
+    .from(agents)
+    .where(and(eq(agents.cluster_id, clusterId), eq(agents.id, id)));
 
   if (!template) {
     throw new NotFoundError("Prompt template not found");
   }
 
-  const versions = withPreviousVersions ? await versionedRunConfig.get(clusterId, id) : [];
+  const versions = withPreviousVersions ? await versionedAgentConfig.get(clusterId, id) : [];
 
   return {
     ...template,
@@ -179,94 +168,34 @@ export async function getRunConfig({
   };
 }
 
-export async function deleteRunConfig({ clusterId, id }: { clusterId: string; id: string }) {
+export async function deleteAgent({ clusterId, id }: { clusterId: string; id: string }) {
   const [deleted] = await db
-    .delete(promptTemplates)
-    .where(and(eq(promptTemplates.cluster_id, clusterId), eq(promptTemplates.id, id)))
+    .delete(agents)
+    .where(and(eq(agents.cluster_id, clusterId), eq(agents.id, id)))
     .returning({
-      id: promptTemplates.id,
+      id: agents.id,
     });
-
-  await embeddableServiceFunction.deleteEmbedding(clusterId, "prompt-template", id);
 
   if (!deleted) {
     throw new NotFoundError("Prompt template not found");
   }
 }
 
-export async function listRunConfigs({ clusterId }: { clusterId: string }) {
+export async function listAgents({ clusterId }: { clusterId: string }) {
   return db
     .select({
-      id: promptTemplates.id,
-      name: promptTemplates.name,
-      initialPrompt: promptTemplates.initial_prompt,
-      systemPrompt: promptTemplates.system_prompt,
-      attachedFunctions: promptTemplates.attached_functions,
-      resultSchema: promptTemplates.result_schema,
-      createdAt: promptTemplates.created_at,
-      updatedAt: promptTemplates.updated_at,
-      clusterId: promptTemplates.cluster_id,
+      id: agents.id,
+      name: agents.name,
+      initialPrompt: agents.initial_prompt,
+      systemPrompt: agents.system_prompt,
+      attachedFunctions: agents.attached_functions,
+      resultSchema: agents.result_schema,
+      createdAt: agents.created_at,
+      updatedAt: agents.updated_at,
+      clusterId: agents.cluster_id,
     })
-    .from(promptTemplates)
-    .where(eq(promptTemplates.cluster_id, clusterId));
-}
-
-export async function searchRunConfigs(clusterId: string, search: string) {
-  const searchResults = await embeddableServiceFunction.findSimilarEntities(
-    clusterId,
-    "prompt-template",
-    search,
-    10
-  );
-
-  if (searchResults.length === 0) {
-    return [];
-  }
-
-  const templates = await db
-    .select({
-      id: promptTemplates.id,
-      name: promptTemplates.name,
-      initialPrompt: promptTemplates.initial_prompt,
-      attachedFunctions: promptTemplates.attached_functions,
-      resultSchema: promptTemplates.result_schema,
-      createdAt: promptTemplates.created_at,
-      updatedAt: promptTemplates.updated_at,
-      clusterId: promptTemplates.cluster_id,
-    })
-    .from(promptTemplates)
-    .where(
-      inArray(
-        promptTemplates.id,
-        searchResults.map(r => r.embeddingId)
-      )
-    );
-
-  return searchResults
-    .map(r => {
-      const template = templates.find(t => t.id === r.embeddingId);
-
-      if (!template) {
-        logger.error("Template not found for embedding", r);
-        return null;
-      }
-
-      return {
-        ...template,
-        similarity: r.similarity,
-      };
-    })
-    .filter(t => t !== null) as {
-    id: string;
-    name: string;
-    initialPrompt: string;
-    attachedFunctions: string[];
-    resultSchema: unknown;
-    createdAt: Date;
-    updatedAt: Date;
-    clusterId: string;
-    similarity: number;
-  }[];
+    .from(agents)
+    .where(eq(agents.cluster_id, clusterId));
 }
 
 export const validateSchema = ({ schema, name }: { schema: any; name: string }) => {
@@ -343,14 +272,14 @@ export type RunOptions = {
   messageMetadata?: RunMessageMetadata;
 };
 
-type RunConfig = Awaited<ReturnType<typeof getRunConfig>>;
+type Agent = Awaited<ReturnType<typeof getAgent>>;
 
-export const mergeRunConfigOptions = (options: RunOptions, runConfig: RunConfig) => {
+export const mergeAgentOptions = (options: RunOptions, agent: Agent) => {
   const mergedOptions: RunOptions = {
-    initialPrompt: runConfig.initialPrompt ?? options.initialPrompt,
-    systemPrompt: runConfig.systemPrompt ?? options.systemPrompt,
-    attachedFunctions: runConfig.attachedFunctions ?? options.attachedFunctions,
-    resultSchema: runConfig.resultSchema ?? options.resultSchema,
+    initialPrompt: agent.initialPrompt ?? options.initialPrompt,
+    systemPrompt: agent.systemPrompt ?? options.systemPrompt,
+    attachedFunctions: agent.attachedFunctions ?? options.attachedFunctions,
+    resultSchema: agent.resultSchema ?? options.resultSchema,
 
     interactive: options.interactive,
     reasoningTraces: options.reasoningTraces,
@@ -360,21 +289,21 @@ export const mergeRunConfigOptions = (options: RunOptions, runConfig: RunConfig)
     input: options.input,
   };
 
-  if (runConfig.inputSchema) {
+  if (agent.inputSchema) {
     if (!options.input) {
       return {
         options: null,
         error: {
           status: 400 as const,
           body: {
-            message: "Run configuration requires input object",
+            message: "Agent requires input object",
           },
         },
       };
     }
 
     const validationError = validateInput({
-      schema: runConfig.inputSchema,
+      schema: agent.inputSchema,
       input: options.input,
     });
 
@@ -388,8 +317,8 @@ export const mergeRunConfigOptions = (options: RunOptions, runConfig: RunConfig)
 
   mergedOptions.messageMetadata = {
     displayable: {
-      templateName: runConfig.name,
-      templateId: runConfig.id,
+      templateName: agent.name,
+      templateId: agent.id,
       ...options.input,
     },
   };

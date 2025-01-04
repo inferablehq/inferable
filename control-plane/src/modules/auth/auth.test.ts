@@ -204,7 +204,7 @@ describe("extractAuthState", () => {
 
             expect(() =>
               result!.canManage({
-                config: { clusterId: "cluster_1", configId: "template_1" },
+                agent: { clusterId: "cluster_1", agentId: "template_1" },
               }),
             ).toBeDefined();
           });
@@ -242,7 +242,7 @@ describe("extractAuthState", () => {
             });
 
             const result = await extractAuthState("");
-            expect(() => result!.canCreate({ config: true })).toBeDefined();
+            expect(() => result!.canCreate({ agent: true })).toBeDefined();
           });
         });
       });
@@ -765,7 +765,7 @@ describe("extractCustomAuthState", () => {
 
         await expect(
           result!.canManage({
-            config: { clusterId: "cluster_1", configId: "template_1" },
+            agent: { clusterId: "cluster_1", agentId: "template_1" },
           }),
         ).rejects.toThrow();
       });
@@ -799,7 +799,7 @@ describe("extractCustomAuthState", () => {
           "abc123",
           owner.clusterId,
         );
-        expect(() => result!.canCreate({ config: true })).toThrow();
+        expect(() => result!.canCreate({ agent: true })).toThrow();
       });
     });
 

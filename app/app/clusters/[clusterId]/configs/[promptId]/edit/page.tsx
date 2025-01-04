@@ -30,7 +30,7 @@ export default function EditPromptTemplate({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [promptTemplate, setPromptTemplate] = useState<ClientInferResponseBody<
-    typeof contract.getRunConfig,
+    typeof contract.getAgent,
     200
   > | null>(null);
   const { getToken } = useAuth();
@@ -38,13 +38,13 @@ export default function EditPromptTemplate({
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
 
   const [metrics, setMetrics] = useState<ClientInferResponseBody<
-    typeof contract.getRunConfigMetrics
+    typeof contract.getAgentMetrics
   > | null>(null);
 
   const fetchPromptTemplate = useCallback(async () => {
     try {
-      const response = await client.getRunConfig({
-        params: { clusterId: params.clusterId, configId: params.promptId },
+      const response = await client.getAgent({
+        params: { clusterId: params.clusterId, agentId: params.promptId },
         query: {
           withPreviousVersions: "true",
         },
@@ -81,8 +81,8 @@ export default function EditPromptTemplate({
     inputSchema?: string;
   }) => {
     try {
-      const response = await client.upsertRunConfig({
-        params: { clusterId: params.clusterId, configId: params.promptId },
+      const response = await client.upsertAgent({
+        params: { clusterId: params.clusterId, agentId: params.promptId },
         body: {
           initialPrompt:
             formData.initialPrompt === "" ? undefined : formData.initialPrompt,
@@ -118,8 +118,8 @@ export default function EditPromptTemplate({
 
   useEffect(() => {
     const fetchMetrics = async () => {
-      const response = await client.getRunConfigMetrics({
-        params: { clusterId: params.clusterId, configId: params.promptId },
+      const response = await client.getAgentMetrics({
+        params: { clusterId: params.clusterId, agentId: params.promptId },
         headers: {
           authorization: `Bearer ${await getToken()}`,
         },
@@ -212,7 +212,7 @@ export default function EditPromptTemplate({
                 router.push(
                   `/clusters/${params.clusterId}/runs?filters=${encodeURIComponent(
                     JSON.stringify({
-                      configId: params.promptId,
+                      agentId: params.promptId,
                     }),
                   )}`,
                 );

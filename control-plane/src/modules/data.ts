@@ -133,7 +133,6 @@ export const clusters = pgTable(
     handle_custom_auth_function: varchar("handle_custom_auth_function", { length: 1024 })
       .default("default_handleCustomAuth")
       .notNull(),
-    enable_run_configs: boolean("enable_run_configs").notNull().default(false),
     enable_knowledgebase: boolean("enable_knowledgebase").notNull().default(false),
     description: varchar("description", { length: 1024 }),
     organization_id: varchar("organization_id"),
@@ -282,8 +281,8 @@ export const workflows = pgTable(
       .default({}),
     feedback_comment: text("feedback_comment"),
     feedback_score: integer("feedback_score"),
-    config_id: varchar("config_id", { length: 128 }),
-    config_version: integer("config_version"),
+    agent_id: varchar("agent_id", { length: 128 }),
+    agent_version: integer("agent_version"),
     reasoning_traces: boolean("reasoning_traces").default(true).notNull(),
     interactive: boolean("interactive").default(true).notNull(),
     enable_summarization: boolean("enable_summarization").default(false).notNull(),
@@ -353,7 +352,7 @@ export const embeddings = pgTable(
       .defaultNow()
       .notNull(),
     type: text("type", {
-      enum: ["service-function", "prompt-template", "knowledgebase-artifact"],
+      enum: ["service-function", "knowledgebase-artifact"],
     }).notNull(),
     embedding_1024: vector("embedding_1024", {
       dimensions: 1024, // for embed-english-v3.0
@@ -478,8 +477,8 @@ export const versionedEntities = pgTable(
   })
 );
 
-export const promptTemplates = pgTable(
-  "prompt_templates",
+export const agents = pgTable(
+  "agents",
 
   {
     id: varchar("id", { length: 1024 }).notNull(),
@@ -552,7 +551,7 @@ export const db = drizzle(pool, {
   schema: {
     workflows,
     toolMetadata,
-    promptTemplates,
+    promptTemplates: agents,
     events,
   },
 });

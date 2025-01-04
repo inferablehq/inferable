@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type Prompt = ClientInferResponseBody<
-  typeof contract.listRunConfigs,
+  typeof contract.listAgents,
   200
 >[number];
 
@@ -89,10 +89,10 @@ const columns: ColumnDef<Prompt>[] = [
             const token = await getToken();
             if (!token) throw new Error("No token available");
 
-            const response = await client.deleteRunConfig({
+            const response = await client.deleteAgent({
               params: {
                 clusterId: row.original.clusterId,
-                configId: row.original.id,
+                agentId: row.original.id,
               },
               headers: { authorization: token },
             });
@@ -145,7 +145,7 @@ const columns: ColumnDef<Prompt>[] = [
 export default function Page({ params }: { params: { clusterId: string } }) {
   const { getToken } = useAuth();
   const [prompts, setPrompts] = useState<
-    ClientInferResponseBody<typeof contract.listRunConfigs, 200>
+    ClientInferResponseBody<typeof contract.listAgents, 200>
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -157,7 +157,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
       try {
         const token = await getToken();
 
-        const response = await client.listRunConfigs({
+        const response = await client.listAgents({
           params: { clusterId: params.clusterId },
           headers: { authorization: `Bearer ${token}` },
         });

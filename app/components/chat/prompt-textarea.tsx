@@ -81,7 +81,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       const body: ClientInferRequest<typeof contract.createRun>["body"] = {};
 
       if (config.template?.id) {
-        body.configId = config.template.id;
+        body.agentId = config.template.id;
 
         body.input = Object.fromEntries(
           Object.entries(config.template.input).map(([key, value]) => [
@@ -218,14 +218,14 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const promptQuery = searchParams?.get("prompt");
 
   useEffect(() => {
-    const fetchPrompt = async (configId: string) => {
-      const result = await client.getRunConfig({
+    const fetchPrompt = async (agentId: string) => {
+      const result = await client.getAgent({
         headers: {
           authorization: `Bearer ${await getToken()}`,
         },
         params: {
           clusterId: clusterId,
-          configId,
+          agentId,
         },
       });
 

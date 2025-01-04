@@ -52,11 +52,9 @@ export async function ClusterBreadcrumbs({
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
         <PlayCircle className="h-4 w-4" /> Runs
       </Link>
-      {clusterDetails.body.enableRunConfigs && (
-        <Link href={`/clusters/${clusterId}/configs`} className={linkStyles}>
-          <Hammer className="h-4 w-4" /> Run Configs
-        </Link>
-      )}
+      <Link href={`/clusters/${clusterId}/configs`} className={linkStyles}>
+        <Hammer className="h-4 w-4" /> Run Configs
+      </Link>
       {clusterDetails.body.enableKnowledgebase && (
         <Link href={`/clusters/${clusterId}/knowledge`} className={linkStyles}>
           <BookOpen className="h-4 w-4" /> Knowledge
