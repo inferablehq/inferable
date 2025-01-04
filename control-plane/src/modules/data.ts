@@ -51,10 +51,10 @@ pool.on("remove", () => {
 });
 
 // by default jobs have a:
-// - timeoutIntervalSeconds: 300
+// - timeoutIntervalSeconds: 30
 // - maxAttempts: 1
 export const jobDefaults = {
-  timeoutIntervalSeconds: 300,
+  timeoutIntervalSeconds: 30,
   maxAttempts: 1,
 };
 
