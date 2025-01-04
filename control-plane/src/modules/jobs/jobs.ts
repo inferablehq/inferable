@@ -7,11 +7,11 @@ import * as data from "../data";
 import * as events from "../observability/events";
 import { packer } from "../packer";
 import { resumeRun } from "../workflows/workflows";
-import { selfHealJobs as selfHealCalls } from "./persist-result";
 import { notifyApprovalRequest } from "../workflows/notify";
+import { selfHealCalls } from "./self-heal-jobs";
 
 export { createJob } from "./create-job";
-export { acknowledgeJob, persistJobResult } from "./persist-result";
+export { acknowledgeJob, persistJobResult } from "./job-results";
 
 export type ResultType = "resolution" | "rejection" | "interrupt";
 

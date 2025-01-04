@@ -2,10 +2,10 @@ import { upsertMachine } from "../machines";
 import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
 import { createJob, getJobStatusSync, persistJobResult } from "./jobs";
-import { acknowledgeJob, selfHealJobs } from "./persist-result";
+import { acknowledgeJob } from "./job-results";
 import * as redis from "../redis";
 import { getClusterBackgroundRun } from "../workflows/workflows";
-
+import { selfHealCalls } from "./self-heal-jobs";
 jest.mock("../service-definitions", () => ({
   ...jest.requireActual("../service-definitions"),
   parseJobArgs: jest.fn(),
@@ -63,67 +63,6 @@ describe("persistJobResult", () => {
       service: "testService",
       status: "success",
     });
-  });
-
-  it("should auto retry when a machine is stalled", async () => {
-    const owner = await createOwner();
-    const targetFn = "machineStallTestFn";
-    const targetArgs = "testTargetArgs";
-    const service = "testService";
-
-    await upsertServiceDefinition({
-      service: "testService",
-      definition: {
-        name: service,
-        functions: [
-          {
-            name: targetFn,
-            config: {
-              retryCountOnStall: 1,
-            },
-          },
-        ],
-      },
-      owner,
-    });
-
-    const createJobResult = await createJob({
-      targetFn,
-      targetArgs,
-      owner,
-      service,
-      runId: getClusterBackgroundRun(owner.clusterId),
-    });
-
-    await upsertMachine({
-      clusterId: owner.clusterId,
-      machineId: "testMachineId",
-      sdkVersion: "1.0.0",
-      sdkLanguage: "typescript",
-      ip: "1.1.1.1",
-    });
-
-    // last ping will be now
-    await acknowledgeJob({
-      jobId: createJobResult.id,
-      clusterId: owner.clusterId,
-      machineId: "testMachineId",
-    });
-
-    const machineStallTimeout = 1;
-
-    // wait 1s for the machine to stall
-    await new Promise(resolve => setTimeout(resolve, machineStallTimeout * 1000));
-
-    // self heal jobs with machine stall timeout of 1s
-    const healedJobs = await selfHealJobs({ machineStallTimeout });
-
-    expect(
-      healedJobs.stalledMachines.some(
-        x => x.id === "testMachineId" && x.clusterId === owner.clusterId
-      )
-    ).toBe(true);
-    expect(healedJobs.stalledRecovered).toContain(createJobResult.id);
   });
 
   it("should only accept the machine that's assigned to the job", async () => {

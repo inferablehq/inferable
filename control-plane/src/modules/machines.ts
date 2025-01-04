@@ -19,7 +19,7 @@ export async function upsertMachine({
   ip?: string;
 }) {
   if (xForwardedFor && xForwardedFor.split(",").length > 0) {
-    const hops = xForwardedFor.split(",").map((ip) => ip.trim());
+    const hops = xForwardedFor.split(",").map(ip => ip.trim());
 
     if (hops.length > 0 && hops[0]) {
       ip = hops[0];
@@ -53,19 +53,14 @@ export async function upsertMachine({
           sdk_version: sdkVersion,
           sdk_language: sdkLanguage,
           cluster_id: clusterId,
-          status: "active",
         })
         .onConflictDoUpdate({
           target: [data.machines.id, data.machines.cluster_id],
           set: {
             last_ping_at: sql`excluded.last_ping_at`,
             ip: sql`excluded.ip`,
-            status: sql`excluded.status`,
           },
-          where: and(
-            eq(data.machines.cluster_id, clusterId),
-            eq(data.machines.id, machineId),
-          ),
-        }),
+          where: and(eq(data.machines.cluster_id, clusterId), eq(data.machines.id, machineId)),
+        })
   );
 }

@@ -3,7 +3,8 @@ import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
 import { createJob, pollJobs, getJob, requestApproval, submitApproval } from "./jobs";
-import { acknowledgeJob, persistJobResult, selfHealJobs } from "./persist-result";
+import { acknowledgeJob, persistJobResult } from "./job-results";
+import { selfHealCalls } from "./self-heal-jobs";
 import * as redis from "../redis";
 import { getClusterBackgroundRun } from "../workflows/workflows";
 
@@ -50,7 +51,7 @@ describe("createJob", () => {
   });
 });
 
-describe("selfHealJobs", () => {
+describe("selfHealCalls", () => {
   beforeAll(async () => {
     await redis.start();
   });
@@ -104,7 +105,7 @@ describe("selfHealJobs", () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
-    const healedJobs = await selfHealJobs();
+    const healedJobs = await selfHealCalls();
 
     expect(healedJobs.stalledFailedByTimeout).toContain(createJobResult.id);
     expect(healedJobs.stalledRecovered).toContain(createJobResult.id);
@@ -158,7 +159,7 @@ describe("selfHealJobs", () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
-    const healedJobs = await selfHealJobs();
+    const healedJobs = await selfHealCalls();
 
     expect(healedJobs.stalledFailedByTimeout).not.toContain(createJobResult.id);
     expect(healedJobs.stalledRecovered).not.toContain(createJobResult.id);
@@ -214,7 +215,7 @@ describe("selfHealJobs", () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
-    const healedJobs = await selfHealJobs();
+    const healedJobs = await selfHealCalls();
 
     expect(healedJobs.stalledFailedByTimeout).toContain(createJobResult.id);
     expect(healedJobs.stalledRecovered).not.toContain(createJobResult.id);

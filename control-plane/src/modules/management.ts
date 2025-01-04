@@ -185,7 +185,8 @@ export const getClusterMachines = async ({ clusterId }: { clusterId: string }) =
       id: data.machines.id,
       lastPingAt: data.machines.last_ping_at,
       ip: data.machines.ip,
-      status: data.machines.status,
+      sdkVersion: data.machines.sdk_version,
+      sdkLanguage: data.machines.sdk_language,
     })
     .from(data.machines)
     .where(eq(data.machines.cluster_id, clusterId));

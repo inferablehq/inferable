@@ -1,6 +1,6 @@
 import { AuthenticationError } from "../../utilities/errors";
 import { pollJobs } from "../jobs/jobs";
-import { acknowledgeJob, persistJobResult } from "../jobs/persist-result";
+import { acknowledgeJob, persistJobResult } from "../jobs/job-results";
 import { editClusterDetails } from "../management";
 import { packer } from "../packer";
 import { upsertServiceDefinition } from "../service-definitions";

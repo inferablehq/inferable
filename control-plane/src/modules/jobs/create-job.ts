@@ -10,6 +10,7 @@ import { injectTraceContext } from "../observability/tracer";
 import { logger } from "../observability/logger";
 import { sqs } from "../sqs";
 import { externalServices } from "../integrations/constants";
+import { jobDefaults } from "../data";
 
 type CreateJobParams = {
   jobId: string;
@@ -24,8 +25,6 @@ type CreateJobParams = {
   authContext?: unknown;
   runContext?: unknown;
 };
-
-const DEFAULT_RETRY_COUNT_ON_STALL = 0;
 
 const extractCacheKeyFromJsonPath = (path: string, args: unknown) => {
   try {
@@ -82,8 +81,10 @@ export const createJob = async (params: {
   });
 
   const jobConfig = {
-    timeoutIntervalSeconds: config?.timeoutSeconds,
-    maxAttempts: (config?.retryCountOnStall ?? DEFAULT_RETRY_COUNT_ON_STALL) + 1,
+    timeoutIntervalSeconds: config?.timeoutSeconds ?? jobDefaults.timeoutIntervalSeconds,
+    maxAttempts: config?.retryCountOnStall
+      ? config?.retryCountOnStall + 1
+      : jobDefaults.maxAttempts,
     jobId: params.toolCallId ?? ulid(),
   };
 

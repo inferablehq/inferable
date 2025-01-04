@@ -50,6 +50,14 @@ pool.on("remove", () => {
   logger.debug("Database connection removed");
 });
 
+// by default jobs have a:
+// - timeoutIntervalSeconds: 300
+// - maxAttempts: 1
+export const jobDefaults = {
+  timeoutIntervalSeconds: 300,
+  maxAttempts: 1,
+};
+
 export const jobs = pgTable(
   "jobs",
   {
@@ -69,13 +77,15 @@ export const jobs = pgTable(
       enum: ["resolution", "rejection", "interrupt"],
     }),
     executing_machine_id: text("executing_machine_id"),
-    remaining_attempts: integer("remaining_attempts").notNull(),
+    remaining_attempts: integer("remaining_attempts").notNull().default(jobDefaults.maxAttempts),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     resulted_at: timestamp("resulted_at", { withTimezone: true }),
     last_retrieved_at: timestamp("last_retrieved_at", { withTimezone: true }),
     function_execution_time_ms: integer("function_execution_time_ms"),
-    timeout_interval_seconds: integer("timeout_interval_seconds").notNull().default(300),
+    timeout_interval_seconds: integer("timeout_interval_seconds")
+      .notNull()
+      .default(jobDefaults.timeoutIntervalSeconds),
     service: varchar("service", { length: 1024 }).notNull(),
     workflow_id: varchar("workflow_id", { length: 1024 }).notNull(),
     auth_context: json("auth_context"),
@@ -111,9 +121,6 @@ export const machines = pgTable(
     sdk_language: varchar("sdk_language", { length: 128 }),
     ip: varchar("ip", { length: 1024 }).notNull(),
     cluster_id: varchar("cluster_id").notNull(),
-    status: text("status", {
-      enum: ["active", "inactive"],
-    }).default("active"),
   },
   table => ({
     pk: primaryKey({

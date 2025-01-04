@@ -1,10 +1,7 @@
 import { upsertMachine } from "./machines";
 import { createCluster, getClusterMachines } from "./management";
 import * as redis from "./redis";
-import {
-  getServiceDefinitions,
-  upsertServiceDefinition,
-} from "./service-definitions";
+import { getServiceDefinitions, upsertServiceDefinition } from "./service-definitions";
 
 describe("machines", () => {
   beforeAll(async () => {
@@ -14,7 +11,7 @@ describe("machines", () => {
     redis.stop();
   });
   describe("upsertMachine", () => {
-    it("should record machine details", async () => {
+    it("should record machine metadata", async () => {
       const { id } = await createCluster({
         organizationId: Math.random().toString(),
         description: "description",
@@ -25,7 +22,7 @@ describe("machines", () => {
       const services = ["service1", "service2"];
 
       await Promise.all(
-        services.map((service) =>
+        services.map(service =>
           upsertServiceDefinition({
             service,
             definition: {
@@ -33,8 +30,8 @@ describe("machines", () => {
               functions: [],
             },
             owner: { clusterId: id },
-          }),
-        ),
+          })
+        )
       );
 
       const timeBeforePing = Date.now();
@@ -54,14 +51,12 @@ describe("machines", () => {
       expect(machines).toHaveLength(1);
       expect(machines[0].id).toBe(machineId);
       expect(machines[0].lastPingAt).toBeInstanceOf(Date);
-      expect(machines[0].lastPingAt?.getTime()).toBeGreaterThanOrEqual(
-        timeBeforePing,
-      );
+      expect(machines[0].lastPingAt?.getTime()).toBeGreaterThanOrEqual(timeBeforePing);
 
       expect(
         await getServiceDefinitions({
           clusterId: id,
-        }).then((services) => services.map((s) => s.service)),
+        }).then(services => services.map(s => s.service))
       ).toEqual(services);
     });
   });
