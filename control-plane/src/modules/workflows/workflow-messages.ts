@@ -124,7 +124,7 @@ export const getRunMessagesForDisplay = async ({
       type: workflowMessages.type,
       createdAt: workflowMessages.created_at,
       metadata: workflowMessages.metadata,
-      displayableContext: workflowMessages.metadata,
+      displayableContext: sql<Record<string, string> | null>`metadata->>'displayable'`,
     })
     .from(workflowMessages)
     .orderBy(desc(workflowMessages.created_at))
@@ -195,7 +195,7 @@ export const getRunMessagesForDisplayWithPolling = async ({
   runId: string;
   limit?: number;
   after?: string;
-  timeout?: number
+  timeout?: number;
 }): Promise<UnifiedMessage[]> => {
   let rowsCount = 0;
   const delay = 200;
