@@ -36,7 +36,6 @@ const formSchema = z.object({
   description: z.string().default(""),
   debug: z.boolean().default(false),
   enableCustomAuth: z.boolean().default(false),
-  enableRunConfigs: z.boolean().default(false),
   enableKnowledgebase: z.boolean().default(false),
   handleCustomAuthFunction: z.string().default(""),
 });
@@ -70,10 +69,6 @@ export default function DetailsPage({
           details.body.enableCustomAuth ?? false,
         );
         form.setValue(
-          "enableRunConfigs",
-          details.body.enableRunConfigs ?? false,
-        );
-        form.setValue(
           "enableKnowledgebase",
           details.body.enableKnowledgebase ?? false,
         );
@@ -102,7 +97,6 @@ export default function DetailsPage({
             description: data.description,
             debug: data.debug,
             enableCustomAuth: data.enableCustomAuth,
-            enableRunConfigs: data.enableRunConfigs,
             enableKnowledgebase: data.enableKnowledgebase,
             handleCustomAuthFunction: data.handleCustomAuthFunction,
           },
@@ -161,30 +155,6 @@ export default function DetailsPage({
             <div className="space-y-6">
               <div className="text-lg font-medium">Features</div>
               <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="enableRunConfigs"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-sm">
-                          Run Config UI
-                        </FormLabel>
-                        <FormDescription>
-                          Create and edit templates for runs directly in the UI.
-                          This allows you to  <Link className="underline" href="https://docs.inferable.ai/pages/run-configs">create and edit configurations</Link> for runs from the UI.
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="enableKnowledgebase"

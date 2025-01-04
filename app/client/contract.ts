@@ -406,7 +406,6 @@ export const definition = {
           "Enable additional logging (Including prompts and results) for use by Inferable support"
         ),
       enableCustomAuth: z.boolean().optional(),
-      enableRunConfigs: z.boolean().optional(),
       enableKnowledgebase: z.boolean().optional(),
       handleCustomAuthFunction: z.string().optional(),
     }),
@@ -427,7 +426,6 @@ export const definition = {
         debug: z.boolean(),
         enableCustomAuth: z.boolean(),
         handleCustomAuthFunction: z.string(),
-        enableRunConfigs: z.boolean(),
         enableKnowledgebase: z.boolean(),
         lastPingAt: z.date().nullable(),
       }),
@@ -591,12 +589,13 @@ export const definition = {
         })
         .optional()
         .describe("When provided, the run will be marked as as a test / evaluation"),
-      configId: z.string().optional().describe("The run configuration ID to use"),
+      configId: z.string().optional().describe("DEPRECATED"),
+      agentId: z.string().optional().describe("The agent ID to use"),
       input: z
         .object({})
         .passthrough()
         .describe(
-          "Structured input arguments to merge with the initial prompt. The schema must match the run configuration input schema if defined"
+          "Structured input arguments to merge with the initial prompt. The schema must match the agent input schema if defined"
         )
         .optional(),
       context: anyObject
@@ -673,6 +672,16 @@ export const definition = {
     headers: z.object({
       authorization: z.string(),
     }),
+    query: z.object({
+      waitTime: z.coerce
+        .number()
+        .min(0)
+        .max(20)
+        .default(0)
+        .describe("Time in seconds to keep the request open waiting for a response"),
+      after: z.string().default("0"),
+      limit: z.coerce.number().min(10).max(50).default(50),
+    }),
     responses: {
       200: z.array(unifiedMessageDataSchema),
       401: z.undefined(),
@@ -692,7 +701,7 @@ export const definition = {
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
       metadata: z.string().optional().describe("Filter runs by a metadata value (value:key)"),
-      configId: z.string().optional(),
+      agentId: z.string().optional(),
     }),
     responses: {
       200: z.array(
@@ -703,8 +712,8 @@ export const definition = {
           createdAt: z.date(),
           status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
           test: z.boolean(),
-          configId: z.string().nullable(),
-          configVersion: z.number().nullable(),
+          agentId: z.string().nullable(),
+          agentVersion: z.number().nullable(),
           feedbackScore: z.number().nullable(),
         })
       ),
@@ -1077,9 +1086,9 @@ export const definition = {
       401: z.undefined(),
     },
   },
-  getRunConfig: {
+  getAgent: {
     method: "GET",
-    path: "/clusters/:clusterId/run-configs/:configId",
+    path: "/clusters/:clusterId/agents/:agentId",
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.object({
@@ -1110,15 +1119,15 @@ export const definition = {
     },
     pathParams: z.object({
       clusterId: z.string(),
-      configId: z.string(),
+      agentId: z.string(),
     }),
     query: z.object({
       withPreviousVersions: z.enum(["true", "false"]).default("false"),
     }),
   },
-  createRunConfig: {
+  createAgent: {
     method: "POST",
-    path: "/clusters/:clusterId/run-configs",
+    path: "/clusters/:clusterId/agents",
     headers: z.object({ authorization: z.string() }),
     body: z.object({
       name: z.string(),
@@ -1136,13 +1145,13 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
-  upsertRunConfig: {
+  upsertAgent: {
     method: "PUT",
-    path: "/clusters/:clusterId/run-configs/:configId",
+    path: "/clusters/:clusterId/agents/:agentId",
     headers: z.object({ authorization: z.string() }),
     pathParams: z.object({
       clusterId: z.string(),
-      configId: z.string().regex(userDefinedIdRegex),
+      agentId: z.string().regex(userDefinedIdRegex),
     }),
     body: z.object({
       name: z.string().optional(),
@@ -1168,9 +1177,9 @@ export const definition = {
       404: z.object({ message: z.string() }),
     },
   },
-  deleteRunConfig: {
+  deleteAgent: {
     method: "DELETE",
-    path: "/clusters/:clusterId/run-configs/:configId",
+    path: "/clusters/:clusterId/agent/:agentId",
     headers: z.object({ authorization: z.string() }),
     responses: {
       204: z.undefined(),
@@ -1180,12 +1189,12 @@ export const definition = {
     body: z.undefined(),
     pathParams: z.object({
       clusterId: z.string(),
-      configId: z.string(),
+      agentId: z.string(),
     }),
   },
-  listRunConfigs: {
+  listAgents: {
     method: "GET",
-    path: "/clusters/:clusterId/run-configs",
+    path: "/clusters/:clusterId/agents",
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.array(
@@ -1207,36 +1216,9 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
-  searchRunConfigs: {
+  getAgentMetrics: {
     method: "GET",
-    path: "/clusters/:clusterId/run-configs/search",
-    headers: z.object({ authorization: z.string() }),
-    query: z.object({
-      search: z.string(),
-    }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          clusterId: z.string(),
-          name: z.string(),
-          initialPrompt: z.string(),
-          attachedFunctions: z.array(z.string()),
-          resultSchema: z.unknown().nullable(),
-          createdAt: z.date(),
-          updatedAt: z.date(),
-          similarity: z.number(),
-        })
-      ),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  getRunConfigMetrics: {
-    method: "GET",
-    path: "/clusters/:clusterId/run-configs/:configId/metrics",
+    path: "/clusters/:clusterId/agents/:agentId/metrics",
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.array(
@@ -1251,7 +1233,7 @@ export const definition = {
     },
     pathParams: z.object({
       clusterId: z.string(),
-      configId: z.string(),
+      agentId: z.string(),
     }),
   },
   createClusterKnowledgeArtifact: {

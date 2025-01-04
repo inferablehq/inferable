@@ -192,6 +192,16 @@ export const unifiedMessageDataSchema = z.discriminatedUnion("type", [
 
 export type UnifiedMessage = z.infer<typeof unifiedMessageDataSchema>;
 
+export type MessageTypes =
+  | "agent"
+  | "human"
+  | "template"
+  | "invocation-result"
+  | "supervisor"
+  | "agent-invalid";
+
+export type UnifiedMessageOfType<T extends MessageTypes> = Extract<UnifiedMessage, { type: T }>;
+
 export const FunctionConfigSchema = z.object({
   cache: z
     .object({

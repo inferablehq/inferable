@@ -1,4 +1,3 @@
-import { unifiedMessageDataSchema } from "@/client/contract";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatRelative } from "date-fns";
 import { startCase } from "lodash";
@@ -7,7 +6,6 @@ import { z } from "zod";
 import { JSONDisplay } from "../JSONDisplay";
 import { Markdown } from "./markdown";
 import { MessageContainerProps } from "./workflow-event";
-import assert from "assert";
 
 const basicResultSchema = z.record(z.string());
 

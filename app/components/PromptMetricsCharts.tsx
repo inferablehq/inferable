@@ -61,7 +61,7 @@ const jobChartConfig = {
 } satisfies ChartConfig;
 
 type PromptMetrics = ClientInferResponseBody<
-  typeof contract.getRunConfigMetrics
+  typeof contract.getAgentMetrics
 >;
 
 function formatTime(seconds: number): string {
