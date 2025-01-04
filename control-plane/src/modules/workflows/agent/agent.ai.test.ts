@@ -70,10 +70,12 @@ describe("Agent", () => {
       const outputState = await app.invoke({
         messages: [
           {
+            type: "human",
             data: {
               message: "echo the word 'hello'",
             },
-            type: "human",
+            id: "test-msg-1",
+            createdAt: new Date(),
           },
         ],
       });
@@ -112,10 +114,12 @@ describe("Agent", () => {
       const outputState = await app.invoke({
         messages: [
           {
+            type: "human",
             data: {
               message: "echo the word 'hello' and then the word 'goodbye'",
             },
-            type: "human",
+            id: "test-msg-1",
+            createdAt: new Date(),
           },
         ],
       });
@@ -152,10 +156,12 @@ describe("Agent", () => {
       const outputState = await app.invoke({
         messages: [
           {
+            type: "human",
             data: {
               message: "echo the word 'hello'",
             },
-            type: "human",
+            id: "test-msg-1",
+            createdAt: new Date(),
           },
         ],
       });
@@ -209,6 +215,8 @@ describe("Agent", () => {
           data: {
             message: "Return the word 'hello'",
           },
+          id: "test-msg-1",
+          createdAt: new Date(),
         },
       ];
 
@@ -239,6 +247,8 @@ describe("Agent", () => {
           data: {
             message: "echo the word 'hello' and then the word 'goodbye'",
           },
+          id: "test-msg-1",
+          createdAt: new Date(),
         },
         {
           type: "agent",
@@ -254,6 +264,8 @@ describe("Agent", () => {
               },
             ],
           },
+          id: "test-msg-2",
+          createdAt: new Date(),
         },
         // Something caused the workflow to interrupt (request approval / host crashed, etc)
       ];
@@ -302,6 +314,8 @@ describe("Agent", () => {
           data: {
             message: "Echo the word 'hello' and then 'goodbye'",
           },
+          id: "test-msg-1",
+          createdAt: new Date(),
         },
         {
           type: "agent",
@@ -315,10 +329,14 @@ describe("Agent", () => {
               },
             ],
           },
+          id: "test-msg-2",
+          createdAt: new Date(),
         },
         {
           type: "invocation-result",
           data: { id: "123", result: { output: "hello" } },
+          id: "test-msg-3",
+          createdAt: new Date(),
         },
         {
           type: "agent",
@@ -332,6 +350,8 @@ describe("Agent", () => {
               },
             ],
           },
+          id: "test-msg-4",
+          createdAt: new Date(),
         },
         // Something caused the workflow to interrupt (request approval / host crashed, etc)
       ];
@@ -432,10 +452,12 @@ describe("Agent", () => {
       const outputState = await app.invoke({
         messages: [
           {
+            type: "human",
             data: {
               message: "What is the special word?",
             },
-            type: "human",
+            id: "test-msg-1",
+            createdAt: new Date(),
           },
         ],
       });
