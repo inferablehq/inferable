@@ -78,7 +78,7 @@ function formatTime(seconds: number): string {
   return parts.slice(0, 2).join(" ");
 }
 
-export function PromptMetricsCharts({ metrics }: { metrics: PromptMetrics }) {
+export function AgentMetricsCharts({ metrics }: { metrics: PromptMetrics }) {
   const [activeChart, setActiveChart] =
     React.useState<keyof typeof chartConfig>("runCount");
 

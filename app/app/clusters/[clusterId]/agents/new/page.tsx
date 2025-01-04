@@ -1,7 +1,7 @@
 "use client";
 
 import { client } from "@/client/client";
-import { PromptTemplateForm } from "@/components/chat/prompt-template-form";
+import { AgentForm } from "@/components/chat/agent-form";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
-export default function NewPromptTemplate({
+export default function NewAgent({
   params,
 }: {
   params: { clusterId: string };
@@ -27,7 +27,7 @@ export default function NewPromptTemplate({
   }) => {
     setIsLoading(true);
     if (formData.name === "") {
-      toast.error("Please enter a name for the Run Configuration");
+      toast.error("Please enter a name for the Agent");
       return;
     }
 
@@ -57,16 +57,16 @@ export default function NewPromptTemplate({
       });
 
       if (response.status === 201) {
-        toast.success("Run Configuration created successfully");
+        toast.success("Agent created successfully");
         router.push(
-          `/clusters/${params.clusterId}/configs/${response.body.id}/edit`,
+          `/clusters/${params.clusterId}/agents/${response.body.id}/edit`,
         );
       } else {
-        createErrorToast(response, "Failed to create Run Configuration");
+        createErrorToast(response, "Failed to create Agent");
       }
     } catch (error) {
       toast.error(
-        `An error occurred while creating the Run Configuration: ${error}`,
+        `An error occurred while creating the Agent: ${error}`,
       );
     } finally {
       setIsLoading(false);
@@ -75,20 +75,20 @@ export default function NewPromptTemplate({
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-xl">Create New Run Configuration</h1>
+      <h1 className="text-xl">Create New Agent</h1>
       <p className="text-muted-foreground mb-4">
         <br />
         Please see our{" "}
         <Link
-          href="https://docs.inferable.ai/pages/run-configs"
+          href="https://docs.inferable.ai/pages/agents"
           target="_blank"
           className="underline"
         >
           docs
         </Link>{" "}
-        for more information
+        for more information on how to use Agents.
       </p>
-      <PromptTemplateForm
+      <AgentForm
         initialData={{
           name: "",
           initialPrompt: "",

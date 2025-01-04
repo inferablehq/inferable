@@ -4,9 +4,9 @@ import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import {
   JobMetricsCharts,
-  PromptMetricsCharts,
-} from "@/components/PromptMetricsCharts";
-import { PromptTemplateForm } from "@/components/chat/prompt-template-form";
+  AgentMetricsCharts,
+} from "@/components/AgentMetrticsCharts";
+import { AgentForm } from "@/components/chat/agent-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,14 +22,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
-export default function EditPromptTemplate({
+export default function EditAgent({
   params,
 }: {
-  params: { clusterId: string; promptId: string };
+  params: { clusterId: string; agentId: string };
 }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [promptTemplate, setPromptTemplate] = useState<ClientInferResponseBody<
+  const [agent, setAgent] = useState<ClientInferResponseBody<
     typeof contract.getAgent,
     200
   > | null>(null);
@@ -41,10 +41,10 @@ export default function EditPromptTemplate({
     typeof contract.getAgentMetrics
   > | null>(null);
 
-  const fetchPromptTemplate = useCallback(async () => {
+  const fetchAgent = useCallback(async () => {
     try {
       const response = await client.getAgent({
-        params: { clusterId: params.clusterId, agentId: params.promptId },
+        params: { clusterId: params.clusterId, agentId: params.agentId },
         query: {
           withPreviousVersions: "true",
         },
@@ -54,23 +54,23 @@ export default function EditPromptTemplate({
       });
 
       if (response.status === 200) {
-        setPromptTemplate(response.body);
+        setAgent(response.body);
         setSelectedVersion(null);
       } else {
-        createErrorToast(response, "Failed to fetch prompt template");
+        createErrorToast(response, "Failed to fetch Agent");
       }
     } catch (error) {
       toast.error(
-        `An error occurred while fetching the prompt template: ${error}`,
+        `An error occurred while fetching the Agent: ${error}`,
       );
     } finally {
       setIsLoading(false);
     }
-  }, [params.clusterId, params.promptId, getToken]);
+  }, [params.clusterId, params.agentId, getToken]);
 
   useEffect(() => {
-    fetchPromptTemplate();
-  }, [fetchPromptTemplate]);
+    fetchAgent();
+  }, [fetchAgent]);
 
   const handleSubmit = async (formData: {
     name: string;
@@ -82,7 +82,7 @@ export default function EditPromptTemplate({
   }) => {
     try {
       const response = await client.upsertAgent({
-        params: { clusterId: params.clusterId, agentId: params.promptId },
+        params: { clusterId: params.clusterId, agentId: params.agentId },
         body: {
           initialPrompt:
             formData.initialPrompt === "" ? undefined : formData.initialPrompt,
@@ -106,20 +106,20 @@ export default function EditPromptTemplate({
       });
 
       if (response.status === 200) {
-        toast.success("Run config updated successfully");
-        router.push(`/clusters/${params.clusterId}/configs`);
+        toast.success("Agent updated successfully");
+        router.push(`/clusters/${params.clusterId}/agetns`);
       } else {
-        toast.error(`Failed to update prompt template: ${response.status}`);
+        toast.error(`Failed to update Agent: ${response.status}`);
       }
     } catch (error) {
-      toast.error(`An error occurred while updating the run config: ${error}`);
+      toast.error(`An error occurred while updating the Agent: ${error}`);
     }
   };
 
   useEffect(() => {
     const fetchMetrics = async () => {
       const response = await client.getAgentMetrics({
-        params: { clusterId: params.clusterId, agentId: params.promptId },
+        params: { clusterId: params.clusterId, agentId: params.agentId },
         headers: {
           authorization: `Bearer ${await getToken()}`,
         },
@@ -133,13 +133,13 @@ export default function EditPromptTemplate({
     };
 
     fetchMetrics();
-  }, [params.clusterId, params.promptId, getToken]);
+  }, [params.clusterId, params.agentId, getToken]);
 
   if (isLoading) {
     return <div className="">Loading...</div>;
   }
 
-  if (!promptTemplate) {
+  if (!agent) {
     return <div className="">Prompt template not found</div>;
   }
 
@@ -147,11 +147,11 @@ export default function EditPromptTemplate({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card className="lg:col-span-1">
         <CardHeader>
-          <CardTitle>Update Run Configuration</CardTitle>
+          <CardTitle>Update Agent</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-gray-600 mb-4">
-            Modify your run configuration below.
+            Modify your Agent below.
           </p>
           <div className="flex space-x-2 mb-4">
             <Popover>
@@ -166,13 +166,13 @@ export default function EditPromptTemplate({
                     variant="ghost"
                     className="w-full justify-start"
                     onClick={() => {
-                      fetchPromptTemplate();
+                      fetchAgent();
                       toast.success("Switched to current version");
                     }}
                   >
                     Current
                   </Button>
-                  {promptTemplate.versions
+                  {agent.versions
                     .sort((a, b) => b.version - a.version)
                     .map((version) => (
                       <Button
@@ -185,8 +185,8 @@ export default function EditPromptTemplate({
                             : "",
                         )}
                         onClick={() => {
-                          setPromptTemplate({
-                            ...promptTemplate,
+                          setAgent({
+                            ...agent,
                             name: version.name,
                             initialPrompt: version.initialPrompt,
                             systemPrompt: version.systemPrompt,
@@ -212,7 +212,7 @@ export default function EditPromptTemplate({
                 router.push(
                   `/clusters/${params.clusterId}/runs?filters=${encodeURIComponent(
                     JSON.stringify({
-                      agentId: params.promptId,
+                      agentId: params.agentId,
                     }),
                   )}`,
                 );
@@ -221,18 +221,18 @@ export default function EditPromptTemplate({
               Show runs
             </Button>
           </div>
-          <PromptTemplateForm
+          <AgentForm
             key={selectedVersion ?? "latest"}
             initialData={{
-              name: promptTemplate.name,
-              initialPrompt: promptTemplate.initialPrompt ?? undefined,
-              systemPrompt: promptTemplate.systemPrompt ?? undefined,
-              attachedFunctions: promptTemplate.attachedFunctions,
-              resultSchema: promptTemplate.resultSchema
-                ? promptTemplate.resultSchema
+              name: agent.name,
+              initialPrompt: agent.initialPrompt ?? undefined,
+              systemPrompt: agent.systemPrompt ?? undefined,
+              attachedFunctions: agent.attachedFunctions,
+              resultSchema: agent.resultSchema
+                ? agent.resultSchema
                 : undefined,
-              inputSchema: promptTemplate.inputSchema
-                ? promptTemplate.inputSchema
+              inputSchema: agent.inputSchema
+                ? agent.inputSchema
                 : undefined,
             }}
             onSubmit={handleSubmit}
@@ -244,7 +244,7 @@ export default function EditPromptTemplate({
       <div className="lg:col-span-1">
         {metrics ? (
           <>
-            <PromptMetricsCharts metrics={metrics} />
+            <AgentMetricsCharts metrics={metrics} />
             <div className="h-8" />
             <JobMetricsCharts metrics={metrics} />
           </>

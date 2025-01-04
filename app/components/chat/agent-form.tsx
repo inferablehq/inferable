@@ -28,7 +28,7 @@ const formSchema = z.object({
   inputSchema: z.string().optional(),
 });
 
-type PromptTemplateFormProps = {
+type AgentFormPrompts = {
   initialData: {
     name: string;
     initialPrompt?: string;
@@ -41,11 +41,11 @@ type PromptTemplateFormProps = {
   isLoading: boolean;
 };
 
-export function PromptTemplateForm({
+export function AgentForm({
   initialData,
   onSubmit,
   isLoading,
-}: PromptTemplateFormProps) {
+}: AgentFormPrompts) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -90,7 +90,7 @@ export function PromptTemplateForm({
                 <Input {...field} />
               </FormControl>
               <FormDescription>
-                The name of the Run Configuration
+                The name of the Agent
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -101,7 +101,7 @@ export function PromptTemplateForm({
           name="initialPrompt"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prompt</FormLabel>
+              <FormLabel>Initial Prompt (Optional)</FormLabel>
               <FormControl>
                 <Textarea
                   {...field}
@@ -110,8 +110,8 @@ export function PromptTemplateForm({
                 />
               </FormControl>
               <FormDescription>
-                Prompt which defines the first &quot;human&quot; message in the
-                Run
+                An Initial Prompt which defines the first &quot;human&quot; message in the
+                Run.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -122,7 +122,7 @@ export function PromptTemplateForm({
           name="systemPrompt"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>System Prompt</FormLabel>
+              <FormLabel>System Prompt (Optional)</FormLabel>
               <FormControl>
                 <Textarea
                   {...field}
@@ -131,7 +131,7 @@ export function PromptTemplateForm({
                 />
               </FormControl>
               <FormDescription>
-                System prompt to attach to the Run
+                System prompt, used to provide context for the Agent to follow.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -142,7 +142,7 @@ export function PromptTemplateForm({
           name="attachedFunctions"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Attached Functions (comma-separated)</FormLabel>
+              <FormLabel>Attached Functions (comma-separated, optional)</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -162,7 +162,7 @@ export function PromptTemplateForm({
                     </AlertDescription>
                   </Alert>
                 ) : (
-                  "No function has been explicitly attached."
+                  "No function has been explicitly attached. All functions in the cluster will be available for use (including the standard library)."
                 )}
               </FormDescription>
               <FormMessage />
@@ -170,21 +170,13 @@ export function PromptTemplateForm({
           )}
         />
         <div>
-          <p className="font-semibold">Result Schema</p>
+          <p className="font-semibold">Result Schema (Optional)</p>
           <p className="text-xs text-gray-500 mb-2 mt-1">
-            Sets the{" "}
-            <Link
-              href="https://docs.inferable.ai/pages/runs#resultschema"
-              target="_blank"
-              className="underline"
-            >
-              result schema
-            </Link>{" "}
-            for all Runs using this configuration
+            Enforce that Runs produce a structured result that conforms to this JSON schema.
             <br />
             Please see our{" "}
             <Link
-              href="https://docs.inferable.ai/pages/runs#config"
+              href="https://docs.inferable.ai/pages/runs#resultschema"
               target="_blank"
               className="underline"
             >
@@ -209,22 +201,13 @@ export function PromptTemplateForm({
           />
         </div>
         <div>
-          <p className="font-semibold">Input Schema</p>
+          <p className="font-semibold">Input Schema (Optional)</p>
           <p className="text-xs text-gray-500 mb-2 mt-1">
-            Enforce that all Runs using this configuration must provide an{" "}
-            <Link
-              href="https://docs.inferable.ai/pages/runs#config"
-              target="_blank"
-              className="underline"
-            >
-              {" "}
-              input object
-            </Link>{" "}
-            the schema.
+            Enforce that Runs must be invoked with an input object that matches this JSON schema.
             <br />
             Please see our{" "}
             <Link
-              href="https://docs.inferable.ai/pages/run-configs#structured-input"
+              href="https://docs.inferable.ai/pages/agents#structured-input"
               target="_blank"
               className="underline"
             >
@@ -249,7 +232,7 @@ export function PromptTemplateForm({
           />
         </div>
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Run Configuration"}
+          {isLoading ? "Saving..." : "Save Agent"}
         </Button>
       </form>
     </Form>

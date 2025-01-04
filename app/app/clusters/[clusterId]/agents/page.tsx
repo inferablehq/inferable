@@ -4,6 +4,7 @@ import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { isFeatureEnabled } from "@/lib/features";
 import { useAuth } from "@clerk/nextjs";
 import { ColumnDef } from "@tanstack/react-table";
 import { ClientInferResponseBody } from "@ts-rest/core";
@@ -27,7 +28,7 @@ const columns: ColumnDef<Prompt>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Name
+          Agent Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -55,7 +56,7 @@ const columns: ColumnDef<Prompt>[] = [
   },
   {
     id: "id",
-    header: "Configuration ID",
+    header: "Agent ID",
     cell: ({ row }) => (
       <pre className="text-sm text-gray-500">{row.original.id}</pre>
     ),
@@ -82,7 +83,7 @@ const columns: ColumnDef<Prompt>[] = [
 
       const handleDelete = async () => {
         if (
-          confirm("Are you sure you want to delete this Run Configuration?")
+          confirm("Are you sure you want to delete this Agent?")
         ) {
           setIsDeleting(true);
           try {
@@ -98,13 +99,13 @@ const columns: ColumnDef<Prompt>[] = [
             });
 
             if (response.status !== 204) {
-              throw new Error("Failed to delete Run Configuration");
+              throw new Error("Failed to delete Agent");
             } else {
               router.refresh();
             }
           } catch (err) {
             console.error(err);
-            alert("An error occurred while deleting the Run Configuration");
+            alert("An error occurred while deleting the Agent");
           } finally {
             setIsDeleting(false);
           }
@@ -115,7 +116,7 @@ const columns: ColumnDef<Prompt>[] = [
         <div className="flex flex-row gap-2">
           <Button size="sm" asChild>
             <Link
-              href={`/clusters/${row.original.clusterId}/runs?configId=${row.original.id}`}
+              href={`/clusters/${row.original.clusterId}/runs?agentId=${row.original.id}`}
               target="_blank"
             >
               Run
@@ -123,7 +124,7 @@ const columns: ColumnDef<Prompt>[] = [
           </Button>
           <Button variant="secondary" size="sm" asChild>
             <Link
-              href={`/clusters/${row.original.clusterId}/configs/${row.original.id}/edit`}
+              href={`/clusters/${row.original.clusterId}/agents/${row.original.id}/edit`}
             >
               Edit
             </Link>
@@ -163,13 +164,13 @@ export default function Page({ params }: { params: { clusterId: string } }) {
         });
 
         if (response.status !== 200) {
-          throw new Error("Failed to fetch run configs");
+          throw new Error("Failed to fetch agents");
         }
 
         setPrompts(response.body);
         setError(null);
       } catch (err) {
-        setError("An error occurred while fetching run configs");
+        setError("An error occurred while fetching agents");
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -180,7 +181,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
   }, [params.clusterId, getToken]);
 
   if (isLoading) {
-    return <div>Loading run configurations...</div>;
+    return <div>Loading Agents...</div>;
   }
 
   if (error) {
@@ -189,30 +190,28 @@ export default function Page({ params }: { params: { clusterId: string } }) {
 
   return (
     <div className="ml-0 max-w-[1200px]">
-      <h1 className="text-xl">Saved Run Configurations</h1>
-      <p className="text-sm text-gray-500 mb-4">
-        Saved run configurations are reusable configurations that can be used in
-        your next run.
-      </p>
+      <h1 className="text-xl">Agents</h1>
       <div className="flex space-x-4 mb-4">
         <Button
           variant="secondary"
           onClick={() => {
-            router.push(`/clusters/${params.clusterId}/configs/new`);
+            router.push(`/clusters/${params.clusterId}/agents/new`);
           }}
         >
           <PlusIcon className="mr-2 h-4 w-4" />
-          Create New Run Configuration
+          Create New Agent
         </Button>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            router.push(`/clusters/${params.clusterId}/configs/global`);
-          }}
-        >
-          <Globe className="mr-2 h-4 w-4" />
-          Global Context
-        </Button>
+        {isFeatureEnabled("feature.cluster_context") && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              router.push(`/clusters/${params.clusterId}/agents/global`);
+            }}
+          >
+            <Globe className="mr-2 h-4 w-4" />
+            Global Context
+          </Button>
+        )}
       </div>
       <DataTable columns={columns} data={prompts} />
     </div>

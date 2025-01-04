@@ -39,7 +39,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inputs, setInputs] = useState<string[]>([]);
   const [prompt, setPrompt] = useState<string>("");
-  const [selectedTemplate, setSelectedTemplate] = useState<{
+  const [selectedAgent, setSelectedTemplate] = useState<{
     id: string;
     name: string;
   } | null>(null);
@@ -56,7 +56,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     setInputs(newInputs);
   }, [prompt]);
 
-  const [runConfig, setRunConfig] = useState({
+  const [agent, setAgent] = useState({
     attachedFunctions: [] as string[],
     resultSchema: null as string | null,
     reasoningTraces: true,
@@ -71,7 +71,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     runContext: string | null;
     enableResultGrounding: boolean;
   }) => {
-    setRunConfig(newConfig);
+    setAgent(newConfig);
   };
 
   const [storedInputs, setStoredInputs] = useState<Record<string, string>>({});
@@ -135,7 +135,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         setPrompt("");
         setSelectedTemplate(null);
         setStoredInputs({});
-        setRunConfig({
+        setAgent({
           attachedFunctions: [],
           resultSchema: null,
           reasoningTraces: true,
@@ -152,7 +152,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const submit = () => {
     let updatedPrompt = prompt;
 
-    if (!selectedTemplate) {
+    if (!selectedAgent) {
       updatedPrompt = prompt;
 
       Object.entries(storedInputs).forEach(([input, inputValue]) => {
@@ -168,18 +168,18 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     }
 
     onSubmit({
-      attachedFunctions: runConfig.attachedFunctions,
-      resultSchema: runConfig.resultSchema,
-      reasoningTraces: runConfig.reasoningTraces,
+      attachedFunctions: agent.attachedFunctions,
+      resultSchema: agent.resultSchema,
+      reasoningTraces: agent.reasoningTraces,
       prompt: updatedPrompt,
-      runContext: runConfig.runContext,
-      template: selectedTemplate
+      runContext: agent.runContext,
+      template: selectedAgent
         ? {
-            id: selectedTemplate.id,
+            id: selectedAgent.id,
             input: storedInputs,
           }
         : undefined,
-      enableResultGrounding: runConfig.enableResultGrounding,
+      enableResultGrounding: agent.enableResultGrounding,
     });
   };
 
@@ -197,7 +197,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     structuredOutput?: unknown;
     initialPrompt?: string | null;
   }) => {
-    setRunConfig({
+    setAgent({
       attachedFunctions: template.attachedFunctions,
       resultSchema: template.structuredOutput
         ? JSON.stringify(template.structuredOutput)
@@ -317,9 +317,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           onKeyDown={handleKeyDown}
           className="resize-none overflow-hidden"
         />
-        {selectedTemplate && (
+        {selectedAgent && (
           <p className="text-xs text-muted-foreground ml-1">
-            Using run config: {selectedTemplate.name}
+            Using agent: {selectedAgent.name}
           </p>
         )}
       </div>
@@ -363,7 +363,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             )}
             <span className="font-medium">Attached Functions</span>
             <span className="text-[11px] text-muted-foreground ml-2">
-              {runConfig.attachedFunctions.length} selected
+              {agent.attachedFunctions.length} selected
             </span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
@@ -373,10 +373,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           </p>
           <div className={cn("mt-2", collapsedSections.functions && "hidden")}>
             <MultiSelect
-              value={runConfig.attachedFunctions}
+              value={agent.attachedFunctions}
               onChange={(value) =>
                 handleConfigChange({
-                  ...runConfig,
+                  ...agent,
                   attachedFunctions: value,
                 })
               }
@@ -413,22 +413,22 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             )}
           >
             <Textarea
-              value={runConfig.resultSchema || ""}
+              value={agent.resultSchema || ""}
               onChange={(e) =>
                 handleConfigChange({
-                  ...runConfig,
+                  ...agent,
                   resultSchema: e.target.value,
                 })
               }
               placeholder="Enter JSON schema..."
               className="font-mono text-xs bg-white/50"
             />
-            {runConfig.resultSchema && (
+            {agent.resultSchema && (
               <div className="rounded-md overflow-hidden border border-gray-100">
                 {(() => {
                   try {
-                    JSON.parse(runConfig.resultSchema);
-                    return <ReadOnlyJSON json={runConfig.resultSchema} />;
+                    JSON.parse(agent.resultSchema);
+                    return <ReadOnlyJSON json={agent.resultSchema} />;
                   } catch (e) {
                     return (
                       <div className="text-[11px] text-red-600 bg-red-50 p-2 border-t">
@@ -471,22 +471,22 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             )}
           >
             <Textarea
-              value={runConfig.runContext || ""}
+              value={agent.runContext || ""}
               onChange={(e) =>
                 handleConfigChange({
-                  ...runConfig,
+                  ...agent,
                   runContext: e.target.value,
                 })
               }
               placeholder="Enter context as JSON..."
               className="font-mono text-xs bg-white/50"
             />
-            {runConfig.runContext && (
+            {agent.runContext && (
               <div className="rounded-md overflow-hidden border border-gray-100">
                 {(() => {
                   try {
-                    JSON.parse(runConfig.runContext);
-                    return <ReadOnlyJSON json={runConfig.runContext} />;
+                    JSON.parse(agent.runContext);
+                    return <ReadOnlyJSON json={agent.runContext} />;
                   } catch (e) {
                     return (
                       <div className="text-[11px] text-red-600 bg-red-50 p-2 border-t">
@@ -525,10 +525,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           >
             <div className="flex items-center space-x-2">
               <Switch
-                checked={runConfig.reasoningTraces}
+                checked={agent.reasoningTraces}
                 onCheckedChange={(checked) =>
                   handleConfigChange({
-                    ...runConfig,
+                    ...agent,
                     reasoningTraces: checked,
                   })
                 }
@@ -541,10 +541,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             {isFeatureEnabled("feature.result_grounding") && (
               <div className={"flex items-center space-x-2"}>
                 <Switch
-                  checked={runConfig.enableResultGrounding}
+                  checked={agent.enableResultGrounding}
                   onCheckedChange={(checked) =>
                     handleConfigChange({
-                      ...runConfig,
+                      ...agent,
                       enableResultGrounding: checked,
                     })
                   }
@@ -570,8 +570,8 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           <Commands
             clusterId={clusterId}
             config={{
-              attachedFunctions: runConfig.attachedFunctions,
-              resultSchema: runConfig.resultSchema,
+              attachedFunctions: agent.attachedFunctions,
+              resultSchema: agent.resultSchema,
               prompt,
             }}
           />

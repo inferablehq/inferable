@@ -100,7 +100,7 @@ export function RunTab({
         if (results.status === 200) {
           setTemplates(results.body);
         } else {
-          createErrorToast(results, "Failed to fetch Run Configurations");
+          createErrorToast(results, "Failed to fetch Agents");
         }
       });
   }, [clusterId, getToken]);

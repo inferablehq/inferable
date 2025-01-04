@@ -6,9 +6,9 @@ import {
   Network,
   PlayCircle,
   Settings,
-  Hammer,
   NetworkIcon,
   BarChart2,
+  Bot,
 } from "lucide-react";
 import Link from "next/link";
 import ErrorDisplay from "./error-display";
@@ -52,8 +52,8 @@ export async function ClusterBreadcrumbs({
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
         <PlayCircle className="h-4 w-4" /> Runs
       </Link>
-      <Link href={`/clusters/${clusterId}/configs`} className={linkStyles}>
-        <Hammer className="h-4 w-4" /> Run Configs
+      <Link href={`/clusters/${clusterId}/agents`} className={linkStyles}>
+        <Bot className="h-4 w-4" /> Agents
       </Link>
       {clusterDetails.body.enableKnowledgebase && (
         <Link href={`/clusters/${clusterId}/knowledge`} className={linkStyles}>
