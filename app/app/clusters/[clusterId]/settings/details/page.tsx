@@ -224,7 +224,7 @@ export default function DetailsPage({
                         Custom Auth
                       </FormLabel>
                       <FormDescription>
-                        Allow this cluster to be authenticated with <Link className="underline" href="https://docs.inferable.ai/pages/auth#customer-provided-secrets">custom authentication tokens</Link>.
+                        Allow this cluster to be authenticated with <Link className="underline" href="https://docs.inferable.ai/pages/custom-auth">custom authentication tokens</Link>.
                       </FormDescription>
                     </div>
                     <FormControl>
