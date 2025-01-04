@@ -6,6 +6,7 @@ export const getRunsByMetadata = async ({
   key,
   value,
   limit = 10,
+  userId,
   configId,
 }: {
   clusterId: string;
@@ -13,6 +14,7 @@ export const getRunsByMetadata = async ({
   value: string;
   limit?: number;
   configId?: string;
+  userId?: string
 }) => {
   return await db
     .select({
@@ -36,6 +38,7 @@ export const getRunsByMetadata = async ({
         eq(workflowMetadata.key, key),
         eq(workflowMetadata.value, value),
         ...(configId ? [eq(workflows.config_id, configId)] : []),
+        ...(userId ? [eq(workflows.user_id, userId)] : []),
       ),
     )
     .rightJoin(workflows, eq(workflowMetadata.workflow_id, workflows.id))

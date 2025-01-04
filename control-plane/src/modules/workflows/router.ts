@@ -2,7 +2,7 @@ import { initServer } from "@ts-rest/fastify";
 import { dereferenceSync } from "dereference-json-schema";
 import { JsonSchemaInput } from "inferable/bin/types";
 import { ulid } from "ulid";
-import { NotFoundError } from "../../utilities/errors";
+import { AuthenticationError, NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
 import { contract } from "../contract";
 import { getJobReferences } from "../jobs/jobs";
@@ -153,7 +153,7 @@ export const runsRouter = initServer().router(
 
         configId: runConfig?.id,
 
-        // Customer Auth
+        // Customer Auth context (In the future all auth types should inject context into the run)
         authContext: customAuth?.context,
 
         context: body.context,
@@ -284,10 +284,16 @@ export const runsRouter = initServer().router(
     },
     listRuns: async request => {
       const { clusterId } = request.params;
-      const { userId, test, limit, metadata, configId } = request.query;
+      const { test, limit, metadata, configId } = request.query;
+      let { userId } = request.query;
 
       const auth = request.request.getAuth();
       await auth.canAccess({ cluster: { clusterId } });
+
+      // Custom auth can only access their own Runs
+      if (auth.type === "custom") {
+        userId = auth.entityId
+      }
 
       if (metadata) {
         // ?meta=key:value
@@ -308,6 +314,7 @@ export const runsRouter = initServer().router(
           value,
           limit,
           configId,
+          userId
         });
 
         return {
@@ -315,6 +322,7 @@ export const runsRouter = initServer().router(
           body: result,
         };
       }
+
 
       const result = await getClusterWorkflows({
         clusterId,

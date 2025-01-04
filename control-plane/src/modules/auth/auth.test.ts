@@ -276,7 +276,7 @@ describe("extractAuthState", () => {
 
       const result = await extractAuthState("");
       expect(result).toMatchObject({
-        entityId: "cluster_1",
+        entityId: "clerk:cluster_1",
         organizationId: "org_1",
         organizationRole: "org:member",
         canAccess: expect.any(Function),
@@ -296,7 +296,7 @@ describe("extractAuthState", () => {
 
       const result = await extractAuthState("");
       expect(result).toMatchObject({
-        entityId: owner.userId,
+        entityId: `clerk:${owner.userId}`,
         organizationId: owner.organizationId,
         organizationRole: "org:member",
         canAccess: expect.any(Function),
@@ -337,7 +337,7 @@ describe("extractAuthState", () => {
 
         owner1AuthState = await extractAuthState("");
         expect(owner1AuthState).toMatchObject({
-          entityId: owner1.userId,
+          entityId: `clerk:${owner1.userId}`,
           organizationId: owner1.organizationId,
           organizationRole: "org:member",
           canAccess: expect.any(Function),
@@ -353,7 +353,7 @@ describe("extractAuthState", () => {
 
         owner2AuthState = await extractAuthState("");
         expect(owner2AuthState).toMatchObject({
-          entityId: owner2.userId,
+          entityId: `clerk:${owner2.userId}`,
           organizationId: owner2.organizationId,
           organizationRole: "org:member",
           canAccess: expect.any(Function),
@@ -426,7 +426,7 @@ describe("extractAuthState", () => {
 
           const ownerAuthState = await extractAuthState("");
           expect(ownerAuthState).toMatchObject({
-            entityId: admin.userId,
+            entityId: `clerk:${admin.userId}`,
             organizationId: admin.organizationId,
             organizationRole: "org:admin",
             canAccess: expect.any(Function),
@@ -464,7 +464,7 @@ describe("extractAuthState", () => {
 
           const ownerAuthState = await extractAuthState("");
           expect(ownerAuthState).toMatchObject({
-            entityId: admin.userId,
+            entityId: `clerk:${admin.userId}`,
             organizationId: admin.organizationId,
             organizationRole: "org:admin",
             canAccess: expect.any(Function),

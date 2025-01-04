@@ -84,7 +84,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
       },
       query: {
         test: runFilters.test ? "true" : undefined,
-        userId: (runToggle === "mine" ? userId : undefined) ?? undefined,
+        userId: (runToggle === "mine" ? `clerk:${userId}` : undefined) ?? undefined,
         limit: Math.min(limit, 500), // Ensure limit doesn't exceed 500
         configId: runFilters.configId,
       },
