@@ -123,7 +123,6 @@ export function HumanMessage({
 
   return (
     <div className="mx-4">
-      {JSON.stringify(data)}
       <div
         className={`rounded-xl bg-primary p-4 shadow-sm hover:shadow-md transition-all duration-200 ${
           pending ? `animate-pulse` : ``
