@@ -7,13 +7,13 @@ export const getRunsByMetadata = async ({
   value,
   limit = 10,
   userId,
-  configId,
+  agentId,
 }: {
   clusterId: string;
   key: string;
   value: string;
   limit?: number;
-  configId?: string;
+  agentId?: string;
   userId?: string
 }) => {
   return await db
@@ -27,8 +27,8 @@ export const getRunsByMetadata = async ({
       failureReason: workflows.failure_reason,
       debug: workflows.debug,
       test: workflows.test,
-      configId: workflows.config_id,
-      configVersion: workflows.config_version,
+      agentId: workflows.agent_id,
+      agentVersion: workflows.agent_version,
       feedbackScore: workflows.feedback_score,
     })
     .from(workflowMetadata)
@@ -37,7 +37,7 @@ export const getRunsByMetadata = async ({
         eq(workflowMetadata.cluster_id, clusterId),
         eq(workflowMetadata.key, key),
         eq(workflowMetadata.value, value),
-        ...(configId ? [eq(workflows.config_id, configId)] : []),
+        ...(agentId ? [eq(workflows.agent_id, agentId)] : []),
         ...(userId ? [eq(workflows.user_id, userId)] : []),
       ),
     )

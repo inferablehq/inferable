@@ -1,0 +1,1 @@
+ALTER TABLE "clusters" DROP COLUMN IF EXISTS "enable_run_configs";

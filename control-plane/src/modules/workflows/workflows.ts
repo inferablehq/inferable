@@ -41,7 +41,7 @@ export type Run = {
   clusterId: string;
   status?: "pending" | "running" | "paused" | "done" | "failed" | null;
   name?: string | null;
-  configId?: string | null;
+  agentId?: string | null;
   systemPrompt?: string | null;
   failureReason?: string | null;
   debug?: boolean;
@@ -73,8 +73,8 @@ export const createRun = async ({
   resultSchema,
   metadata,
   attachedFunctions,
-  configId,
-  configVersion,
+  agentId,
+  agentVersion,
   interactive,
   reasoningTraces,
   enableSummarization,
@@ -99,8 +99,8 @@ export const createRun = async ({
   resultSchema?: unknown;
   metadata?: Record<string, string>;
   attachedFunctions?: string[];
-  configId?: string;
-  configVersion?: number;
+  agentId?: string;
+  agentVersion?: number;
   interactive?: boolean;
   reasoningTraces?: boolean;
   enableSummarization?: boolean;
@@ -139,8 +139,8 @@ export const createRun = async ({
           on_status_change: onStatusChange,
           result_schema: resultSchema,
           attached_functions: attachedFunctions,
-          config_id: configId,
-          config_version: configVersion,
+          agent_id: agentId,
+          agent_version: agentVersion,
           model_identifier: modelIdentifier,
           auth_context: authContext,
           context: context,
@@ -237,7 +237,7 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
       id: workflows.id,
       name: workflows.name,
       userId: workflows.user_id,
-      configId: workflows.config_id,
+      agentId: workflows.agent_id,
       clusterId: workflows.cluster_id,
       systemPrompt: workflows.system_prompt,
       status: workflows.status,
@@ -269,13 +269,13 @@ export const getClusterWorkflows = async ({
   userId,
   test,
   limit = 50,
-  configId,
+  agentId,
 }: {
   clusterId: string;
   test: boolean;
   userId?: string;
   limit?: number;
-  configId?: string;
+  agentId?: string;
 }) => {
   const result = await db
     .select({
@@ -289,8 +289,8 @@ export const getClusterWorkflows = async ({
       failureReason: workflows.failure_reason,
       debug: workflows.debug,
       test: workflows.test,
-      configId: workflows.config_id,
-      configVersion: workflows.config_version,
+      agentId: workflows.agent_id,
+      agentVersion : workflows.agent_version,
       feedbackScore: workflows.feedback_score,
       modelIdentifier: workflows.model_identifier,
       authContext: workflows.auth_context,
@@ -303,7 +303,7 @@ export const getClusterWorkflows = async ({
         eq(workflows.cluster_id, clusterId),
         eq(workflows.test, test),
         ...(userId ? [eq(workflows.user_id, userId)] : []),
-        ...(configId ? [eq(workflows.config_id, configId)] : [])
+        ...(agentId ? [eq(workflows.agent_id, agentId)] : [])
       )
     )
     .orderBy(desc(workflows.created_at))
@@ -477,8 +477,8 @@ export const createRunWithMessage = async ({
   resultSchema,
   metadata,
   attachedFunctions,
-  configId,
-  configVersion,
+  agentId,
+  agentVersion,
   reasoningTraces,
   interactive,
   enableSummarization,
@@ -500,8 +500,8 @@ export const createRunWithMessage = async ({
     attachedFunctions,
     resultSchema,
     metadata,
-    configId,
-    configVersion,
+    agentId,
+    agentVersion,
     reasoningTraces,
     interactive,
     enableSummarization,
@@ -609,12 +609,12 @@ export const getWaitingJobIds = async ({
   return waitingJobs.map(job => job.id);
 };
 
-export const getRunConfigMetrics = async ({
+export const getAgentMetrics = async ({
   clusterId,
-  configId,
+  agentId,
 }: {
   clusterId: string;
-  configId: string;
+  agentId: string;
 }) => {
   return db
     .select({
@@ -634,7 +634,7 @@ export const getRunConfigMetrics = async ({
     .from(workflows)
     .leftJoin(jobs, eq(workflows.id, jobs.workflow_id))
     .leftJoin(workflowMessages, eq(workflows.id, workflowMessages.workflow_id))
-    .where(and(eq(workflows.cluster_id, clusterId), eq(workflows.config_id, configId)))
+    .where(and(eq(workflows.cluster_id, clusterId), eq(workflows.agent_id, agentId)))
     .groupBy(workflows.id, workflows.created_at, workflows.feedback_score)
     .limit(1000);
 };

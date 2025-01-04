@@ -79,7 +79,6 @@ export const editClusterDetails = async ({
   debug,
   enableCustomAuth,
   handleCustomAuthFunction,
-  enableRunConfigs,
   enableKnowledgebase,
 }: {
   organizationId: string;
@@ -90,7 +89,6 @@ export const editClusterDetails = async ({
   debug?: boolean;
   enableCustomAuth?: boolean;
   handleCustomAuthFunction?: string;
-  enableRunConfigs?: boolean;
   enableKnowledgebase?: boolean;
 }) => {
   const clusters = await data.db
@@ -102,7 +100,6 @@ export const editClusterDetails = async ({
       debug,
       enable_custom_auth: enableCustomAuth,
       handle_custom_auth_function: handleCustomAuthFunction,
-      enable_run_configs: enableRunConfigs,
       enable_knowledgebase: enableKnowledgebase,
     })
     .where(and(eq(data.clusters.id, clusterId), eq(data.clusters.organization_id, organizationId)))
@@ -130,7 +127,6 @@ export const getClusterDetails = async ({
   debug: boolean;
   enableCustomAuth: boolean;
   handleCustomAuthFunction: string;
-  enableRunConfigs: boolean;
   enableKnowledgebase: boolean;
 }> => {
   const [clusters, machines] = await Promise.all([
@@ -144,7 +140,6 @@ export const getClusterDetails = async ({
         debug: data.clusters.debug,
         enableCustomAuth: data.clusters.enable_custom_auth,
         handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
-        enableRunConfigs: data.clusters.enable_run_configs,
         enableKnowledgebase: data.clusters.enable_knowledgebase,
       })
       .from(data.clusters)
@@ -180,7 +175,6 @@ export const getClusterDetails = async ({
     lastPingAt: machines[0]?.maxLastPingAt,
     enableCustomAuth: cluster.enableCustomAuth,
     handleCustomAuthFunction: cluster.handleCustomAuthFunction,
-    enableRunConfigs: cluster.enableRunConfigs,
     enableKnowledgebase: cluster.enableKnowledgebase,
   };
 };
