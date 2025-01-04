@@ -4,12 +4,12 @@ import { randomBytes } from "crypto";
 import { logger } from "../observability/logger";
 import { createCache, hashFromSecret } from "../../utilities/cache";
 
-const apiKeyContextCache = createCache<{
+const clusterKeyContextCache = createCache<{
   clusterId: string;
   id: string;
   organizationId: string;
 }>(
-  Symbol("apiKeyContextCache"),
+  Symbol("clusterKeyContextCache"),
 );
 
 export const isApiSecret = (authorization: string): boolean =>
@@ -22,7 +22,7 @@ export const verify = async (
 > => {
   const secretHash = hashFromSecret(secret);
 
-  const cached = await apiKeyContextCache.get(secretHash);
+  const cached = await clusterKeyContextCache.get(secretHash);
 
   if (cached) {
     return cached;
@@ -56,7 +56,7 @@ export const verify = async (
     return undefined;
   }
 
-  await apiKeyContextCache.set(secretHash, {
+  await clusterKeyContextCache.set(secretHash, {
     clusterId: result.clusterId,
     id: result.id,
     organizationId: result.organizationId,
