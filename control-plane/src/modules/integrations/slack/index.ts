@@ -319,14 +319,14 @@ export const start = async (fastify: FastifyInstance) => {
 
       if (hasThread(event)) {
         await handleExistingThread({
-          userId: user?.id,
+          userId: user?.userId,
           event,
           client,
           clusterId: integration.cluster_id,
         });
       } else {
         await handleNewThread({
-          userId: user?.id,
+          userId: user?.userId,
           event,
           client,
           clusterId: integration.cluster_id,

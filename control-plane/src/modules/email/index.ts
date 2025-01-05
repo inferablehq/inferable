@@ -240,7 +240,7 @@ async function handleEmailIngestion(raw: unknown) {
     }
 
     return await handleExistingChain({
-      userId: user.id,
+      userId: user.userId,
       body: message.body,
       clusterId: message.clusterId,
       messageId: message.messageId,
@@ -249,7 +249,7 @@ async function handleEmailIngestion(raw: unknown) {
   }
 
   await handleNewChain({
-    userId: user.id,
+    userId: user.userId,
     body: message.body,
     clusterId: message.clusterId,
     messageId: message.messageId,
@@ -287,7 +287,9 @@ const authenticateUser = async (emailAddress: string, clusterId: string) => {
     throw new AuthenticationError("Could not authenticate Email sender");
   }
 
-  return clerkUser;
+  return {
+    userId: `clerk:${clerkUser.id}`,
+  };
 };
 
 const handleNewChain = async ({
