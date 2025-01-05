@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" ALTER COLUMN "timeout_interval_seconds" SET DEFAULT 30;
