@@ -2,13 +2,13 @@ import Anthropic from "@anthropic-ai/sdk";
 import { and, desc, eq, gt, InferSelectModel, ne, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { z } from "zod";
-import { UnifiedMessage, unifiedMessageDataSchema } from "../contract";
+import { UnifiedMessage, unifiedMessageSchema } from "../contract";
 import { db, RunMessageMetadata, workflowMessages } from "../data";
 import { events } from "../observability/events";
 import { resumeRun } from "./workflows";
 import { logger } from "../observability/logger";
 
-export type TypedMessage = z.infer<typeof unifiedMessageDataSchema>;
+export type TypedMessage = z.infer<typeof unifiedMessageSchema>;
 
 /**
  * A structured response from the agent.
@@ -28,7 +28,7 @@ export type GenericMessage = Extract<
   { type: "human" | "template" | "supervisor" | "agent-invalid" }
 >;
 
-export type RunMessage = z.infer<typeof unifiedMessageDataSchema>;
+export type RunMessage = z.infer<typeof unifiedMessageSchema>;
 
 export const insertRunMessage = async ({
   clusterId,
@@ -158,7 +158,7 @@ export const getRunMessagesForDisplay = async ({
       return message;
     })
     .map(message => {
-      const { success, data, error } = unifiedMessageDataSchema.safeParse(message);
+      const { success, data, error } = unifiedMessageSchema.safeParse(message);
 
       if (!success) {
         logger.error("Invalid message data. Returning supervisor message", {
@@ -268,7 +268,7 @@ export const getWorkflowMessages = async ({
     .map(message => {
       return {
         ...message,
-        ...unifiedMessageDataSchema.parse(message),
+        ...unifiedMessageSchema.parse(message),
       };
     });
 };
@@ -364,7 +364,7 @@ export function hasInvocations(message: AgentMessage): boolean {
 export function assertMessageOfType<
   T extends "agent" | "invocation-result" | "human" | "template" | "supervisor" | "agent-invalid",
 >(type: T, message: unknown) {
-  const result = unifiedMessageDataSchema.safeParse(message);
+  const result = unifiedMessageSchema.safeParse(message);
 
   if (!result.success) {
     throw new Error("Invalid message data");

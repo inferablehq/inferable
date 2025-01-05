@@ -14,7 +14,7 @@ import { workflowMessages } from "../data";
 import { ses } from "../ses";
 import { getMessageByReference, updateMessageReference } from "../workflows/workflow-messages";
 import { ulid } from "ulid";
-import { unifiedMessageDataSchema } from "../contract";
+import { unifiedMessageSchema } from "../contract";
 
 const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
 const EMAIL_SUBJECT_META_KEY = "emailSubject";
@@ -87,7 +87,7 @@ export const handleNewRunMessage = async ({
     return;
   }
 
-  const messageData = unifiedMessageDataSchema.parse(message.data).data;
+  const messageData = unifiedMessageSchema.parse(message).data;
 
   if ("message" in messageData && messageData.message) {
     const result = await ses.sendEmail({

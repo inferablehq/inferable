@@ -144,53 +144,53 @@ const agentDataSchema = z
   })
   .strict();
 
-const peripheralMessageDataSchema = z.object({
+const peripheralMessageSchema = z.object({
   id: z.string(),
   createdAt: z.date().optional(),
   pending: z.boolean().optional(),
   metadata: z.record(z.unknown()).optional().nullable(),
 });
 
-export const unifiedMessageDataSchema = z.discriminatedUnion("type", [
+export const unifiedMessageSchema = z.discriminatedUnion("type", [
   z
     .object({
       type: z.literal("agent"),
       data: agentDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("invocation-result"),
       data: resultDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("human"),
       data: genericMessageDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("template"),
       data: genericMessageDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("supervisor"),
       data: genericMessageDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("agent-invalid"),
       data: genericMessageDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
 ]);
 
-export type UnifiedMessage = z.infer<typeof unifiedMessageDataSchema>;
+export type UnifiedMessage = z.infer<typeof unifiedMessageSchema>;
 
 export type MessageTypes =
   | "agent"
@@ -682,7 +682,7 @@ export const definition = {
       limit: z.coerce.number().min(10).max(50).default(50),
     }),
     responses: {
-      200: z.array(unifiedMessageDataSchema),
+      200: z.array(unifiedMessageSchema),
       401: z.undefined(),
     },
   },
@@ -976,7 +976,7 @@ export const definition = {
     responses: {
       404: z.undefined(),
       200: z.object({
-        messages: z.array(unifiedMessageDataSchema),
+        messages: z.array(unifiedMessageSchema),
         activity: z.array(
           z.object({
             id: z.string(),

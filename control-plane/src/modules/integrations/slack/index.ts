@@ -15,7 +15,7 @@ import { integrationSchema } from "../schema";
 import { z } from "zod";
 import { getUserForCluster } from "../../clerk";
 import { submitApproval } from "../../jobs/jobs";
-import { unifiedMessageDataSchema } from "../../contract";
+import { unifiedMessageSchema } from "../../contract";
 
 const THREAD_META_KEY = "slackThreadTs";
 const CHANNEL_META_KEY = "slackChannel";
@@ -123,7 +123,7 @@ export const handleNewRunMessage = async ({
 
   const client = new webApi.WebClient(token);
 
-  const messageData = unifiedMessageDataSchema.parse(message.data).data;
+  const messageData = unifiedMessageSchema.parse(message).data;
 
   if ("message" in messageData && messageData.message) {
     client?.chat.postMessage({
@@ -575,7 +575,9 @@ const authenticateUser = async (
     throw new AuthenticationError("Could not authenticate Slack user");
   }
 
-  return clerkUser;
+  return {
+    userId: `clerk:${clerkUser.id}`,
+  };
 };
 
 const handleCallApprovalAction = async ({
