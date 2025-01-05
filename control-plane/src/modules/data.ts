@@ -226,7 +226,8 @@ export const integrations = pgTable(
   })
 );
 
-export const workflowMetadata = pgTable(
+export const runTags = pgTable(
+  // TODO: Rename to `run_tags`
   "workflow_metadata",
   {
     cluster_id: varchar("cluster_id").notNull(),
@@ -247,6 +248,7 @@ export const workflowMetadata = pgTable(
   })
 );
 
+// TODO: Rename to Runs
 export const workflows = pgTable(
   "workflows",
   {
@@ -558,7 +560,7 @@ export const db = drizzle(pool, {
   schema: {
     workflows,
     toolMetadata,
-    promptTemplates: agents,
+    agents,
     events,
   },
 });

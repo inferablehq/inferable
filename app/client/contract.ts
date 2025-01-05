@@ -569,10 +569,14 @@ export const definition = {
         })
         .optional()
         .describe("Mechanism for receiving notifications when the run status changes"),
+      tags: z
+        .record(z.string())
+        .optional()
+        .describe("Run tags which can be used to filter runs"),
       metadata: z
         .record(z.string())
         .optional()
-        .describe("Run metadata which can be used to filter runs"),
+        .describe("DEPRECATED"),
       test: z
         .object({
           enabled: z.boolean().default(false),
@@ -700,7 +704,8 @@ export const definition = {
         .transform(value => value === "true")
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
-      metadata: z.string().optional().describe("Filter runs by a metadata value (value:key)"),
+      tags: z.string().optional().describe("Filter runs by a tag value (value:key)"),
+      metadata: z.string().optional().describe("DEPRECATED"),
       agentId: z.string().optional(),
     }),
     responses: {
@@ -738,7 +743,7 @@ export const definition = {
         context: z.any().nullable(),
         authContext: z.any().nullable(),
         result: anyObject.nullable(),
-        metadata: z.record(z.string()).nullable(),
+        tags: z.record(z.string()).nullable(),
         attachedFunctions: z.array(z.string()).nullable(),
       }),
       401: z.undefined(),
@@ -1031,6 +1036,7 @@ export const definition = {
       404: z.undefined(),
     },
   },
+  // TODO: Remove
   upsertFunctionMetadata: {
     method: "PUT",
     path: "/clusters/:clusterId/:service/:function/metadata",
@@ -1050,6 +1056,7 @@ export const definition = {
       401: z.undefined(),
     },
   },
+  // TODO: Remove
   getFunctionMetadata: {
     method: "GET",
     path: "/clusters/:clusterId/:service/:function/metadata",
@@ -1069,6 +1076,7 @@ export const definition = {
       404: z.object({ message: z.string() }),
     },
   },
+  // TOOD: Remove
   deleteFunctionMetadata: {
     method: "DELETE",
     path: "/clusters/:clusterId/:service/:function/metadata",

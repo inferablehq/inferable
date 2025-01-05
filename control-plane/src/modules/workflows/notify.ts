@@ -2,7 +2,7 @@ import { InferSelectModel } from "drizzle-orm";
 import * as jobs from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
-import { getRunMetadata } from "./metadata";
+import { getRunTags } from "./tags";
 import { getClusterBackgroundRun, Run } from "./workflows";
 import { workflowMessages } from "../data";
 import * as slack from "../integrations/slack";
@@ -22,13 +22,13 @@ export const notifyApprovalRequest = async ({
   service: string;
   targetFn: string;
 }) => {
-  const metadata = await getRunMetadata({ clusterId, runId });
-  await slack.handleApprovalRequest({ callId, clusterId, runId, service, targetFn, metadata });
+  const tags = await getRunTags({ clusterId, runId });
+  await slack.handleApprovalRequest({ callId, clusterId, runId, service, targetFn, tags });
 };
 
 export const notifyNewMessage = async ({
   message,
-  runMetadata,
+  tags,
 }: {
   message: {
     id: string;
@@ -37,10 +37,10 @@ export const notifyNewMessage = async ({
     type: InferSelectModel<typeof workflowMessages>["type"];
     data: InferSelectModel<typeof workflowMessages>["data"];
   };
-  runMetadata?: Record<string, string>;
+  tags?: Record<string, string>;
 }) => {
-  await slack.handleNewRunMessage({ message, runMetadata });
-  await email.handleNewRunMessage({ message, runMetadata });
+  await slack.handleNewRunMessage({ message, tags });
+  await email.handleNewRunMessage({ message, tags });
 };
 
 export const notifyStatusChange = async ({
@@ -93,7 +93,7 @@ export const notifyStatusChange = async ({
   }
 
   try {
-    const metadata = await getRunMetadata({
+    const tags = await getRunTags({
       clusterId: run.clusterId,
       runId: run.id,
     });
@@ -101,7 +101,8 @@ export const notifyStatusChange = async ({
     const payload = {
       runId: run.id,
       status,
-      metadata,
+      tags,
+      metadata: tags,
       result: result ?? null,
     };
 

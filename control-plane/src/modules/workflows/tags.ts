@@ -1,7 +1,7 @@
 import { and, eq, desc } from "drizzle-orm";
-import { db, workflowMetadata, workflows } from "../data";
+import { db, runTags, workflows } from "../data";
 
-export const getRunsByMetadata = async ({
+export const getRunsByTag = async ({
   clusterId,
   key,
   value,
@@ -31,42 +31,42 @@ export const getRunsByMetadata = async ({
       agentVersion: workflows.agent_version,
       feedbackScore: workflows.feedback_score,
     })
-    .from(workflowMetadata)
+    .from(runTags)
     .where(
       and(
-        eq(workflowMetadata.cluster_id, clusterId),
-        eq(workflowMetadata.key, key),
-        eq(workflowMetadata.value, value),
+        eq(runTags.cluster_id, clusterId),
+        eq(runTags.key, key),
+        eq(runTags.value, value),
         ...(agentId ? [eq(workflows.agent_id, agentId)] : []),
         ...(userId ? [eq(workflows.user_id, userId)] : []),
       ),
     )
-    .rightJoin(workflows, eq(workflowMetadata.workflow_id, workflows.id))
+    .rightJoin(workflows, eq(runTags.workflow_id, workflows.id))
     .orderBy(desc(workflows.created_at))
     .limit(limit);
 };
 
-export const getRunMetadata = async ({
+export const getRunTags = async ({
   clusterId,
   runId,
 }: {
   clusterId: string;
   runId: string;
 }) => {
-  const metadata = await db
+  const tags = await db
     .select({
-      key: workflowMetadata.key,
-      value: workflowMetadata.value,
+      key: runTags.key,
+      value: runTags.value,
     })
-    .from(workflowMetadata)
+    .from(runTags)
     .where(
       and(
-        eq(workflowMetadata.cluster_id, clusterId),
-        eq(workflowMetadata.workflow_id, runId),
+        eq(runTags.cluster_id, clusterId),
+        eq(runTags.workflow_id, runId),
       ),
     );
 
-  return metadata.reduce(
+  return tags.reduce(
     (acc, { key, value }) => {
       acc[key] = value;
       return acc;

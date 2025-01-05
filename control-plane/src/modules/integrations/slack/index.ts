@@ -3,7 +3,7 @@ import { FastifySlackReceiver } from "./receiver";
 import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
 import { logger } from "../../observability/logger";
-import { getRunsByMetadata } from "../../workflows/metadata";
+import { getRunsByTag } from "../../workflows/tags";
 import { addMessageAndResume, createRunWithMessage } from "../../workflows/workflows";
 import { AuthenticationError } from "../../../utilities/errors";
 import { ulid } from "ulid";
@@ -90,7 +90,7 @@ export const slack: InstallableIntegration = {
 
 export const handleNewRunMessage = async ({
   message,
-  runMetadata,
+  tags,
 }: {
   message: {
     id: string;
@@ -99,13 +99,13 @@ export const handleNewRunMessage = async ({
     type: InferSelectModel<typeof workflowMessages>["type"];
     data: InferSelectModel<typeof workflowMessages>["data"];
   };
-  runMetadata?: Record<string, string>;
+  tags?: Record<string, string>;
 }) => {
   if (message.type !== "agent") {
     return;
   }
 
-  if (!runMetadata?.[THREAD_META_KEY] || !runMetadata?.[CHANNEL_META_KEY]) {
+  if (!tags?.[THREAD_META_KEY] || !tags?.[CHANNEL_META_KEY]) {
     return;
   }
 
@@ -127,8 +127,8 @@ export const handleNewRunMessage = async ({
 
   if ("message" in messageData && messageData.message) {
     client?.chat.postMessage({
-      thread_ts: runMetadata[THREAD_META_KEY],
-      channel: runMetadata[CHANNEL_META_KEY],
+      thread_ts: tags[THREAD_META_KEY],
+      channel: tags[CHANNEL_META_KEY],
       mrkdwn: true,
       text: messageData.message,
     });
@@ -143,16 +143,16 @@ export const handleApprovalRequest = async ({
   clusterId,
   service,
   targetFn,
-  metadata,
+  tags,
 }: {
   callId: string;
   runId: string;
   clusterId: string;
   service: string;
   targetFn: string;
-  metadata?: Record<string, string>;
+  tags?: Record<string, string>;
 }) => {
-  if (!metadata?.[THREAD_META_KEY] || !metadata?.[CHANNEL_META_KEY]) {
+  if (!tags?.[THREAD_META_KEY] || !tags?.[CHANNEL_META_KEY]) {
     return;
   }
 
@@ -173,8 +173,8 @@ export const handleApprovalRequest = async ({
   const text = `I need your approval to call \`${service}.${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`;
 
   client?.chat.postMessage({
-    thread_ts: metadata[THREAD_META_KEY],
-    channel: metadata[CHANNEL_META_KEY],
+    thread_ts: tags[THREAD_META_KEY],
+    channel: tags[CHANNEL_META_KEY],
     mrkdwn: true,
     text,
     blocks: [
@@ -476,7 +476,7 @@ const handleNewThread = async ({ event, client, clusterId, userId }: MessageEven
       clusterId,
       message: event.text,
       type: "human",
-      metadata: {
+      tags: {
         [THREAD_META_KEY]: thread,
         [CHANNEL_META_KEY]: event.channel,
       },
@@ -501,7 +501,7 @@ const handleExistingThread = async ({ event, client, clusterId, userId }: Messag
       throw new Error("Event had no thread_ts");
     }
 
-    const [run] = await getRunsByMetadata({
+    const [run] = await getRunsByTag({
       clusterId,
       key: THREAD_META_KEY,
       value: event.thread_ts,

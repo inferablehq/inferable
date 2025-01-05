@@ -1,5 +1,5 @@
 import { createOwner } from "../test/util";
-import { getRunsByMetadata } from "./metadata";
+import { getRunsByTag } from "./tags";
 import { createRun } from "./workflows";
 
 describe("getWorkflowsByMetadata", () => {
@@ -12,19 +12,19 @@ describe("getWorkflowsByMetadata", () => {
   it("should return workflows with matching metadata", async () => {
     const workflow = await createRun({
       clusterId: owner.clusterId,
-      metadata: {
+      tags: {
         foo: "bar",
       },
     });
 
     await createRun({
       clusterId: owner.clusterId,
-      metadata: {
+      tags: {
         foo: "baz",
       },
     });
 
-    const result = await getRunsByMetadata({
+    const result = await getRunsByTag({
       clusterId: owner.clusterId,
       key: "foo",
       value: "bar",

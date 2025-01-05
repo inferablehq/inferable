@@ -40,7 +40,7 @@ export const onStatusChangeInput = z.object({
   status: z.enum(["pending", "running", "paused", "done", "failed"]),
   result: z.object({}).passthrough().nullable().optional(),
   summary: z.string().nullable().optional(),
-  metadata: z.record(z.string()).nullable().optional(),
+  tags: z.record(z.string()).nullable().optional(),
 });
 
 /**

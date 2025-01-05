@@ -24,7 +24,6 @@ import { DebugEvent } from "./debug-event";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "react-hot-toast";
 import { Blob } from "./chat/blob";
-import { Strait } from "next/font/google";
 
 const messageSkeleton = (
   <div className="flex flex-col items-start space-y-4 p-4" key="skeleton-0">
@@ -381,11 +380,11 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                 </div>
               </div>
 
-              {run.metadata && Object.keys(run.metadata).length > 0 && (
+              {run.tags && Object.keys(run.tags).length > 0 && (
                 <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">Metadata</span>
+                  <span className="text-xs font-medium text-gray-500">Tags</span>
                   <div className="flex flex-wrap gap-1">
-                    {Object.entries(run.metadata).map(([key, value]) => (
+                    {Object.entries(run.tags).map(([key, value]) => (
                       <div
                         key={key}
                         className="bg-gray-100 px-2 py-0.5 rounded text-xs"

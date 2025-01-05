@@ -18,7 +18,7 @@ import {
   jobs,
   RunMessageMetadata,
   workflowMessages,
-  workflowMetadata,
+  runTags,
   workflows,
 } from "../data";
 import { ChatIdentifiers } from "../models/routing";
@@ -32,7 +32,7 @@ import {
   insertRunMessage,
   lastAgentMessage,
 } from "./workflow-messages";
-import { getRunMetadata } from "./metadata";
+import { getRunTags } from "./tags";
 
 export { start, stop } from "./queues";
 
@@ -71,7 +71,7 @@ export const createRun = async ({
   systemPrompt,
   onStatusChange,
   resultSchema,
-  metadata,
+  tags,
   attachedFunctions,
   agentId,
   agentVersion,
@@ -97,7 +97,7 @@ export const createRun = async ({
   >;
   onStatusChange?: string;
   resultSchema?: unknown;
-  metadata?: Record<string, string>;
+  tags?: Record<string, string>;
   attachedFunctions?: string[];
   agentId?: string;
   agentVersion?: number;
@@ -165,9 +165,9 @@ export const createRun = async ({
 
     run = result[0];
 
-    if (!!run && metadata) {
-      await tx.insert(workflowMetadata).values(
-        Object.entries(metadata).map(([key, value]) => ({
+    if (!!run && tags) {
+      await tx.insert(runTags).values(
+        Object.entries(tags).map(([key, value]) => ({
           cluster_id: clusterId,
           workflow_id: run!.id,
           key,
@@ -319,7 +319,7 @@ export const getWorkflowDetail = async ({
   clusterId: string;
   runId: string;
 }) => {
-  const [[workflow], agentMessage, metadata] = await Promise.all([
+  const [[workflow], agentMessage, tags] = await Promise.all([
     db
       .select({
         id: workflows.id,
@@ -342,12 +342,12 @@ export const getWorkflowDetail = async ({
       .from(workflows)
       .where(and(eq(workflows.cluster_id, clusterId), eq(workflows.id, runId))),
     lastAgentMessage({ clusterId, runId }),
-    getRunMetadata({ clusterId, runId }),
+    getRunTags({ clusterId, runId }),
   ]);
 
   return {
     ...workflow,
-    metadata,
+    tags,
     // Current a workflow can have multiple "results".
     // For now, we just use the last result.
     // In the future, we will actually persist the workflow result.
@@ -475,7 +475,7 @@ export const createRunWithMessage = async ({
   testMocks,
   messageMetadata,
   resultSchema,
-  metadata,
+  tags,
   attachedFunctions,
   agentId,
   agentVersion,
@@ -499,7 +499,7 @@ export const createRunWithMessage = async ({
     onStatusChange,
     attachedFunctions,
     resultSchema,
-    metadata,
+    tags,
     agentId,
     agentVersion,
     reasoningTraces,

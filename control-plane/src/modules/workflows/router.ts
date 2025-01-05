@@ -16,7 +16,7 @@ import {
 } from "../agents";
 import { normalizeFunctionReference } from "../service-definitions";
 import { timeline } from "../timeline";
-import { getRunsByMetadata } from "./metadata";
+import { getRunsByTag } from "./tags";
 import {
   addMessageAndResume,
   createRetry,
@@ -150,6 +150,14 @@ export const runsRouter = initServer().router(
 
       const customAuth = auth.type === "custom" ? auth.isCustomAuth() : undefined;
 
+      const tags = body.tags ?? body.metadata;
+
+      if (!!body.metadata) {
+        logger.warn(
+          "Deprecated metadata usage in createRun",
+        )
+      }
+
       const workflow = await createRun({
         runId: runOptions.runId,
         userId: auth.entityId,
@@ -158,7 +166,7 @@ export const runsRouter = initServer().router(
         name: body.name,
         test: body.test?.enabled ?? false,
         testMocks: body.test?.mocks,
-        metadata: body.metadata,
+        tags,
 
         agentId: agent?.id,
 
@@ -294,7 +302,7 @@ export const runsRouter = initServer().router(
     listRuns: async request => {
       const { clusterId } = request.params;
       const { test, limit, metadata, agentId } = request.query;
-      let { userId } = request.query;
+      let { userId, tags } = request.query;
 
       const auth = request.request.getAuth();
       await auth.canAccess({ cluster: { clusterId } });
@@ -304,20 +312,28 @@ export const runsRouter = initServer().router(
         userId = auth.entityId
       }
 
-      if (metadata) {
+      tags = tags ?? metadata;
+
+      if (request.query.metadata) {
+        logger.warn(
+          "Deprecated metadata usage in listRuns",
+        )
+      }
+
+      if (tags) {
         // ?meta=key:value
-        const [key, value] = metadata.split(":");
+        const [key, value] = tags.split(":");
 
         if (!key || !value) {
           return {
             status: 400,
             body: {
-              message: "Invalid metadata filter format",
+              message: "Invalid tag filter format",
             },
           };
         }
 
-        const result = await getRunsByMetadata({
+        const result = await getRunsByTag({
           clusterId,
           key,
           value,

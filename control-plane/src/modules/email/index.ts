@@ -64,7 +64,7 @@ export const stop = async () => {
 
 export const handleNewRunMessage = async ({
   message,
-  runMetadata,
+  tags,
 }: {
   message: {
     id: string;
@@ -73,16 +73,16 @@ export const handleNewRunMessage = async ({
     type: InferSelectModel<typeof workflowMessages>["type"];
     data: InferSelectModel<typeof workflowMessages>["data"];
   };
-  runMetadata?: Record<string, string>;
+  tags?: Record<string, string>;
 }) => {
   if (message.type !== "agent") {
     return;
   }
 
   if (
-    !runMetadata?.[EMAIL_INIT_MESSAGE_ID_META_KEY] ||
-    !runMetadata?.[EMAIL_SUBJECT_META_KEY] ||
-    !runMetadata?.[EMAIL_SOURCE_META_KEY]
+    !tags?.[EMAIL_INIT_MESSAGE_ID_META_KEY] ||
+    !tags?.[EMAIL_SUBJECT_META_KEY] ||
+    !tags?.[EMAIL_SOURCE_META_KEY]
   ) {
     return;
   }
@@ -93,12 +93,12 @@ export const handleNewRunMessage = async ({
     const result = await ses.sendEmail({
       Source: `"Inferable" <${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}>`,
       Destination: {
-        ToAddresses: [runMetadata[EMAIL_SOURCE_META_KEY]],
+        ToAddresses: [tags[EMAIL_SOURCE_META_KEY]],
       },
       Message: {
         Subject: {
           Charset: "UTF-8",
-          Data: `Re: ${runMetadata[EMAIL_SUBJECT_META_KEY]}`,
+          Data: `Re: ${tags[EMAIL_SUBJECT_META_KEY]}`,
         },
         Body: {
           Text: {
@@ -309,7 +309,7 @@ const handleNewChain = async ({
   await createRunWithMessage({
     userId,
     clusterId,
-    metadata: {
+    tags: {
       [EMAIL_INIT_MESSAGE_ID_META_KEY]: messageId,
       [EMAIL_SUBJECT_META_KEY]: subject,
       [EMAIL_SOURCE_META_KEY]: source,

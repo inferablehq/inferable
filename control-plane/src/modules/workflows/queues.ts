@@ -1,7 +1,7 @@
 import { env } from "../../utilities/env";
 import { createMutex } from "../data";
 import { logger } from "../observability/logger";
-import { BaseMessage, baseMessageSchema, sqs, withObservability } from "../sqs";
+import { baseMessageSchema, sqs, withObservability } from "../sqs";
 import { processRun } from "./agent/run";
 import { generateTitle } from "./summarization";
 import { getRun, updateWorkflow } from "./workflows";
@@ -9,7 +9,7 @@ import { getRun, updateWorkflow } from "./workflows";
 import { Consumer } from "sqs-consumer";
 import { z } from "zod";
 import { injectTraceContext } from "../observability/tracer";
-import { getRunMetadata } from "./metadata";
+import { getRunTags } from "./tags";
 
 const runProcessConsumer = Consumer.create({
   queueUrl: env.SQS_RUN_PROCESS_QUEUE_URL,
@@ -88,9 +88,9 @@ async function handleRunProcess(message: unknown) {
   }
 
   try {
-    const [run, metadata] = await Promise.all([
+    const [run, tags] = await Promise.all([
       getRun({ clusterId, runId }),
-      getRunMetadata({ clusterId, runId }),
+      getRunTags({ clusterId, runId }),
     ]);
 
     if (!run) {
@@ -98,7 +98,7 @@ async function handleRunProcess(message: unknown) {
       return;
     }
 
-    await processRun(run, metadata);
+    await processRun(run, tags);
   } finally {
     await unlock();
   }

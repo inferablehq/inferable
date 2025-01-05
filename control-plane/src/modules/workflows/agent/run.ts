@@ -33,7 +33,7 @@ import { buildMockFunctionTool } from "./tools/mock-function";
 /**
  * Run a workflow from the most recent saved state
  **/
-export const processRun = async (run: Run, metadata?: Record<string, string>) => {
+export const processRun = async (run: Run, tags?: Record<string, string>) => {
   logger.info("Running workflow");
 
   // Parallelize fetching additional context and service definitions
@@ -158,7 +158,7 @@ export const processRun = async (run: Run, metadata?: Record<string, string>) =>
       for (const message of state.messages.filter(m => !m.persisted)) {
         await Promise.all([
           insertRunMessage(message),
-          notifyNewMessage({ message, runMetadata: metadata }),
+          notifyNewMessage({ message, tags }),
         ]);
         message.persisted = true;
       }
