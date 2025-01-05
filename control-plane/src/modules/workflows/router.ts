@@ -115,22 +115,14 @@ export const runsRouter = initServer().router(
         input: body.input,
       };
 
-      const agentId = body.agentId ?? body.configId;
-
-      if (!!body.configId) {
-        logger.warn(
-          "Deprecated configId usage in createRun",
-        )
-      }
-
-      const agent = agentId
+      const agent = body.agentId
         ? await getAgent({
             clusterId,
-            id: agentId
+            id: body.agentId,
           })
         : undefined;
 
-      if (agentId) {
+      if (body.agentId) {
         if (!agent) {
           throw new NotFoundError("Agent not found");
         }
@@ -150,14 +142,6 @@ export const runsRouter = initServer().router(
 
       const customAuth = auth.type === "custom" ? auth.isCustomAuth() : undefined;
 
-      const tags = body.tags ?? body.metadata;
-
-      if (!!body.metadata) {
-        logger.warn(
-          "Deprecated metadata usage in createRun",
-        )
-      }
-
       const workflow = await createRun({
         runId: runOptions.runId,
         userId: auth.entityId,
@@ -166,7 +150,7 @@ export const runsRouter = initServer().router(
         name: body.name,
         test: body.test?.enabled ?? false,
         testMocks: body.test?.mocks,
-        tags,
+        tags: body.tags,
 
         agentId: agent?.id,
 
@@ -195,7 +179,7 @@ export const runsRouter = initServer().router(
           clusterId,
           runId: workflow.id,
           message: runOptions.initialPrompt,
-          type: agentId ? "template" : "human",
+          type: body.agentId ? "template" : "human",
           metadata: runOptions.messageMetadata,
           skipAssert: true,
         });
@@ -301,8 +285,8 @@ export const runsRouter = initServer().router(
     },
     listRuns: async request => {
       const { clusterId } = request.params;
-      const { test, limit, metadata, agentId } = request.query;
-      let { userId, tags } = request.query;
+      const { test, limit, tags, agentId } = request.query;
+      let { userId } = request.query;
 
       const auth = request.request.getAuth();
       await auth.canAccess({ cluster: { clusterId } });
@@ -310,14 +294,6 @@ export const runsRouter = initServer().router(
       // Custom auth can only access their own Runs
       if (auth.type === "custom") {
         userId = auth.entityId
-      }
-
-      tags = tags ?? metadata;
-
-      if (request.query.metadata) {
-        logger.warn(
-          "Deprecated metadata usage in listRuns",
-        )
       }
 
       if (tags) {

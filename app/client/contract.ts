@@ -573,10 +573,6 @@ export const definition = {
         .record(z.string())
         .optional()
         .describe("Run tags which can be used to filter runs"),
-      metadata: z
-        .record(z.string())
-        .optional()
-        .describe("DEPRECATED"),
       test: z
         .object({
           enabled: z.boolean().default(false),
@@ -593,7 +589,6 @@ export const definition = {
         })
         .optional()
         .describe("When provided, the run will be marked as as a test / evaluation"),
-      configId: z.string().optional().describe("DEPRECATED"),
       agentId: z.string().optional().describe("The agent ID to use"),
       input: z
         .object({})
@@ -705,7 +700,6 @@ export const definition = {
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
       tags: z.string().optional().describe("Filter runs by a tag value (value:key)"),
-      metadata: z.string().optional().describe("DEPRECATED"),
       agentId: z.string().optional(),
     }),
     responses: {

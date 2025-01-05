@@ -102,7 +102,6 @@ export const notifyStatusChange = async ({
       runId: run.id,
       status,
       tags,
-      metadata: tags,
       result: result ?? null,
     };
 
