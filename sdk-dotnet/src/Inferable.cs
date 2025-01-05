@@ -26,8 +26,8 @@ namespace Inferable
     [JsonPropertyName("result")]
     public T? Result { get; set; }
 
-    [JsonPropertyName("metadata")]
-    public Dictionary<string, string> Metadata { get; set; }
+    [JsonPropertyName("tags")]
+    public Dictionary<string, string> Tags { get; set; }
   }
 
   /// <summary>
