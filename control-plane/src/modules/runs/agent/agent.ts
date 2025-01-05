@@ -38,7 +38,7 @@ export const createRunGraph = async ({
   getTool: ToolFetcher;
   mockModelResponses?: string[];
 }) => {
-  const workflowGraph = new StateGraph<RunGraphState>({
+  const graph = new StateGraph<RunGraphState>({
     channels: createStateGraphChannels({
       run,
       allAvailableTools,
@@ -75,5 +75,5 @@ export const createRunGraph = async ({
       postToolEdge(state, postStepSave),
     );
 
-  return workflowGraph.compile();
+  return graph.compile();
 };

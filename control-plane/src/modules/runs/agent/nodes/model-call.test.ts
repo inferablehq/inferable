@@ -9,7 +9,7 @@ import { handleModelCall } from "./model-call";
 
 describe("handleModelCall", () => {
   const run = {
-    id: "test-workflow",
+    id: "test-run",
     clusterId: "test-cluster",
     reasoningTraces: true,
   };

@@ -248,8 +248,8 @@ export const runTags = pgTable(
   })
 );
 
-// TODO: Rename to Runs
 export const runs = pgTable(
+  // TODO: Rename to runs
   "workflows",
   {
     id: varchar("id", { length: 1024 }).notNull(),
@@ -313,6 +313,7 @@ export type RunMessageMetadata = {
 };
 
 export const runMessages = pgTable(
+  // TODO: Rename to `run_messages`
   "workflow_messages",
   {
     id: varchar("id", { length: 1024 }).notNull(),
@@ -558,7 +559,7 @@ export const analyticsSnapshots = pgTable(
 
 export const db = drizzle(pool, {
   schema: {
-    workflows: runs,
+    runs,
     toolMetadata,
     agents,
     events,

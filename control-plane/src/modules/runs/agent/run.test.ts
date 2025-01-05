@@ -25,7 +25,7 @@ describe("findRelevantTools", () => {
       owner,
     });
 
-    const workflow = {
+    const run = {
       id: Math.random().toString(36).substring(2),
       clusterId: owner.clusterId,
       status: "running" as const,
@@ -33,7 +33,7 @@ describe("findRelevantTools", () => {
     };
 
     const tools = await findRelevantTools({
-      run: workflow,
+      run,
       messages: [
         {
           data: {
@@ -41,7 +41,7 @@ describe("findRelevantTools", () => {
           },
           type: "human" as const,
           clusterId: owner.clusterId,
-          runId: "test-workflow-id",
+          runId: "test-run-id",
           id: ulid(),
         },
       ],

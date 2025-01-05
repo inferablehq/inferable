@@ -344,14 +344,14 @@ export const runsRouter = initServer().router(
       const auth = request.request.getAuth();
       await auth.canAccess({ run: { clusterId, runId } });
 
-      const { messages, activity, jobs, workflow } = await timeline.getRunTimeline({
+      const { messages, activity, jobs, run } = await timeline.getRunTimeline({
         clusterId,
         runId,
         messagesAfter,
         activityAfter,
       });
 
-      if (!workflow) {
+      if (!run) {
         return {
           status: 404,
         };
@@ -368,7 +368,7 @@ export const runsRouter = initServer().router(
           messages,
           activity,
           jobs,
-          run: workflow,
+          run,
           blobs,
         },
       };

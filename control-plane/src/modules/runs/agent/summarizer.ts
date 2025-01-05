@@ -38,7 +38,7 @@ export const summariseJobResultIfNecessary = async (input: {
 
   logger.info(`Summarizing result because it is too large.`, {
     clusterId: input.clusterId,
-    workflowId: input.runId,
+    runId: input.runId,
     targetFn: input.targetFn,
   });
 

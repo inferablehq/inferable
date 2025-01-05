@@ -14,7 +14,7 @@ describe("Agent", () => {
 
   const toolCallback = jest.fn();
 
-  const workflow = {
+  const run = {
     id: "test",
     clusterId: "test",
   };
@@ -53,7 +53,7 @@ describe("Agent", () => {
 
     it("should call a tool and exit", async () => {
       const app = await createRunGraph({
-        run: workflow,
+        run: run,
         findRelevantTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
@@ -82,8 +82,8 @@ describe("Agent", () => {
 
       expect(toolCallback).toHaveBeenCalledWith("hello");
 
-      expect(outputState.workflow).toEqual({
-        ...workflow,
+      expect(outputState.run).toEqual({
+        ...run,
         checkpointData: undefined,
       });
 
@@ -97,7 +97,7 @@ describe("Agent", () => {
 
     it("should call a tool multiple times and exit", async () => {
       const app = await createRunGraph({
-        run: workflow,
+        run: run,
         findRelevantTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
@@ -127,7 +127,7 @@ describe("Agent", () => {
       expect(toolCallback).toHaveBeenNthCalledWith(1, "hello");
       expect(toolCallback).toHaveBeenNthCalledWith(2, "goodbye");
 
-      expect(outputState.workflow).toEqual(workflow);
+      expect(outputState.run).toEqual(run);
 
       expect(outputState.messages).toHaveLength(5);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
@@ -139,7 +139,7 @@ describe("Agent", () => {
 
     it("should present tool failure to agent", async () => {
       const app = await createRunGraph({
-        run: workflow,
+        run: run,
         findRelevantTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
@@ -168,7 +168,7 @@ describe("Agent", () => {
 
       expect(toolCallback).toHaveBeenCalledWith("hello");
 
-      expect(outputState.workflow).toEqual(workflow);
+      expect(outputState.run).toEqual(run);
 
       expect(outputState.messages).toHaveLength(4);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
@@ -194,7 +194,7 @@ describe("Agent", () => {
     it("should result result schema", async () => {
       const app = await createRunGraph({
         run: {
-          ...workflow,
+          ...run,
           resultSchema: {
             type: "object",
             properties: {
@@ -221,7 +221,7 @@ describe("Agent", () => {
       ];
 
       const outputState = await app.invoke({
-        workflow,
+        run,
         messages,
       });
 
@@ -240,7 +240,7 @@ describe("Agent", () => {
     jest.setTimeout(120000);
 
     it("should resume with pending tool call", async () => {
-      // Model requested function call, and workflow was interrupted
+      // Model requested function call, and Run was interrupted
       const messages = [
         {
           type: "human",
@@ -267,11 +267,11 @@ describe("Agent", () => {
           id: "test-msg-2",
           createdAt: new Date(),
         },
-        // Something caused the workflow to interrupt (request approval / host crashed, etc)
+        // Something caused the Run to interrupt (request approval / host crashed, etc)
       ];
 
       const app = await createRunGraph({
-        run: workflow,
+        run: run,
         findRelevantTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
@@ -286,7 +286,7 @@ describe("Agent", () => {
       toolCallback.mockResolvedValue(toolResponse);
 
       const outputState = await app.invoke({
-        workflow,
+        run,
         messages,
       });
 
@@ -294,7 +294,7 @@ describe("Agent", () => {
       expect(toolCallback).toHaveBeenNthCalledWith(1, "hello");
       expect(toolCallback).toHaveBeenNthCalledWith(2, "goodbye");
 
-      expect(outputState.workflow).toEqual(workflow);
+      expect(outputState.run).toEqual(run);
 
       expect(outputState.messages).toHaveLength(6);
 
@@ -307,7 +307,7 @@ describe("Agent", () => {
     });
 
     it("should not recall the same function after resumption", async () => {
-      // Model requested first function call and workflow was interrupted.
+      // Model requested first function call and Run was interrupted.
       const messages = [
         {
           type: "human",
@@ -353,11 +353,11 @@ describe("Agent", () => {
           id: "test-msg-4",
           createdAt: new Date(),
         },
-        // Something caused the workflow to interrupt (request approval / host crashed, etc)
+        // Something caused the Run to interrupt (request approval / host crashed, etc)
       ];
 
       const app = await createRunGraph({
-        run: workflow,
+        run,
         findRelevantTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
@@ -372,7 +372,7 @@ describe("Agent", () => {
       toolCallback.mockResolvedValue(toolResponse);
 
       const outputState = await app.invoke({
-        workflow,
+        run,
         messages,
       });
 
@@ -380,7 +380,7 @@ describe("Agent", () => {
       expect(toolCallback).toHaveBeenCalledTimes(1);
       expect(toolCallback).toHaveBeenNthCalledWith(1, "goodbye");
 
-      expect(outputState.workflow).toEqual(workflow);
+      expect(outputState.run).toEqual(run);
 
       expect(outputState.messages).toHaveLength(6);
 
@@ -406,7 +406,7 @@ describe("Agent", () => {
 
       const app = await createRunGraph({
         run: {
-          ...workflow,
+          ...run,
           resultSchema: {
             type: "object",
             properties: {

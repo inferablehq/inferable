@@ -94,7 +94,7 @@ async function handleRunProcess(message: unknown) {
     ]);
 
     if (!run) {
-      logger.error("Received job for unknown workflow");
+      logger.error("Received job for unknown Run");
       return;
     }
 
@@ -131,9 +131,9 @@ async function handleRunNameGeneration(message: unknown) {
   try {
     logger.info("Running name generation job");
 
-    const workflow = await getRun({ clusterId, runId });
+    const run = await getRun({ clusterId, runId });
 
-    const result = await generateTitle(content, workflow);
+    const result = await generateTitle(content, run);
 
     if (result.summary) {
       await updateRun({

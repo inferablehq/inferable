@@ -13,7 +13,7 @@ const clusterSettingsCache = createCache<{
 }>(Symbol("clusterSettings"));
 
 export type InternalToolBuilder = (
-  workflow: Run,
+  run: Run,
   toolCallId: string
 ) => AgentTool | Promise<AgentTool>;
 

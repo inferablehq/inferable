@@ -38,7 +38,7 @@ export const timeline = {
       await new Promise(resolve => setTimeout(resolve, delay));
     } while (rowsCount === 0 && Date.now() - startTime < timeout);
 
-    const [messages, activity, jobs, workflow] = await Promise.all([
+    const [messages, activity, jobs, run] = await Promise.all([
       getRunMessagesForDisplay({
         clusterId,
         runId,
@@ -63,7 +63,7 @@ export const timeline = {
       messages,
       activity,
       jobs,
-      workflow,
+      run,
     };
   },
 };
