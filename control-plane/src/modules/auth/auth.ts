@@ -5,7 +5,7 @@ import { clusterExists, getClusterDetails } from "../cluster";
 import * as clusterAuth from "./cluster";
 import * as clerkAuth from "./clerk";
 import * as customAuth from "./custom";
-import { getRun } from "../workflows/workflows";
+import { getRun } from "../runs";
 import { logger } from "../observability/logger";
 import { env } from "../../utilities/env";
 
@@ -255,7 +255,7 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
           throw new AuthenticationError("User does not have access to the cluster");
         }
 
-        // If the User has access to the cluster, they also have access to the workflow
+        // If the User has access to the cluster, they also have access to the run
 
         return this;
       },
@@ -276,12 +276,12 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
           await this.canAccess({
             cluster: { clusterId: opts.run.clusterId },
           });
-          const workflow = await getRun({
+          const run = await getRun({
             clusterId: opts.run.clusterId,
             runId: opts.run.runId,
           });
 
-          if (workflow.userId !== this.entityId) {
+          if (run.userId !== this.entityId) {
             // Only admins can manage other users' workflows
             this.isAdmin();
           }

@@ -210,40 +210,6 @@ export const write = (event: Event, syntheticDelay = 0) => {
   });
 };
 
-export const getActivityByWorkflowIdForUserAttentionLevel = async (params: {
-  clusterId: string;
-  runId: string;
-  userAttentionLevel: keyof typeof userAttentionLevels;
-  after?: string;
-}) => {
-  const results = await db
-    .select({
-      id: eventsTable.id,
-      clusterId: eventsTable.cluster_id,
-      type: eventsTable.type,
-      jobId: eventsTable.job_id,
-      machineId: eventsTable.machine_id,
-      service: eventsTable.service,
-      createdAt: eventsTable.created_at,
-      targetFn: eventsTable.target_fn,
-      resultType: eventsTable.result_type,
-      status: eventsTable.status,
-      workflowId: eventsTable.run_id,
-    })
-    .from(eventsTable)
-    .where(
-      and(
-        eq(eventsTable.cluster_id, params.clusterId),
-        eq(eventsTable.run_id, params.runId),
-        gte(eventsTable.attention_level, userAttentionLevels[params.userAttentionLevel])
-      )
-    )
-    .limit(100)
-    .orderBy(desc(eventsTable.created_at));
-
-  return results;
-};
-
 export const getActivityForTimeline = async (params: {
   clusterId: string;
   runId: string;

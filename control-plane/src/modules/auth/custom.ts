@@ -5,7 +5,7 @@ import { getJobStatusSync } from "../jobs/jobs";
 import { getServiceDefinition } from "../service-definitions";
 import { createCache, hashFromSecret } from "../../utilities/cache";
 import { getClusterDetails } from "../management";
-import { getClusterBackgroundRun } from "../workflows/workflows";
+import { getClusterBackgroundRun } from "../runs";
 import { z } from "zod";
 
 const customAuthContextCache = createCache<{

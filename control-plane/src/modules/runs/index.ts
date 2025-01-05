@@ -1,0 +1,664 @@
+import {
+  and,
+  countDistinct,
+  desc,
+  eq,
+  inArray,
+  InferSelectModel,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
+import { ulid } from "ulid";
+import { env } from "../../utilities/env";
+import { BadRequestError, NotFoundError, RunBusyError } from "../../utilities/errors";
+import {
+  clusters,
+  db,
+  jobs,
+  RunMessageMetadata,
+  runMessages,
+  runTags,
+  runs,
+} from "../data";
+import { ChatIdentifiers } from "../models/routing";
+import { logger } from "../observability/logger";
+import { injectTraceContext } from "../observability/tracer";
+import { sqs } from "../sqs";
+import { trackCustomerTelemetry } from "../track-customer-telemetry";
+import {
+  getRunMessages,
+  hasInvocations,
+  insertRunMessage,
+  lastAgentMessage,
+} from "./messages";
+import { getRunTags } from "./tags";
+
+export { start, stop } from "./queues";
+
+export type Run = {
+  id: string;
+  clusterId: string;
+  status?: "pending" | "running" | "paused" | "done" | "failed" | null;
+  name?: string | null;
+  agentId?: string | null;
+  systemPrompt?: string | null;
+  failureReason?: string | null;
+  debug?: boolean;
+  test?: boolean;
+  testMocks?: InferSelectModel<typeof runs>["test_mocks"];
+  feedbackComment?: string | null;
+  feedbackScore?: number | null;
+  resultSchema?: unknown | null;
+  attachedFunctions?: string[] | null;
+  onStatusChange?: string | null;
+  interactive?: boolean;
+  reasoningTraces?: boolean;
+  enableSummarization?: boolean;
+  modelIdentifier?: ChatIdentifiers | null;
+  authContext?: unknown | null;
+  context?: unknown | null;
+  enableResultGrounding?: boolean;
+};
+
+export const createRun = async ({
+  runId,
+  userId,
+  clusterId,
+  name,
+  test,
+  testMocks,
+  systemPrompt,
+  onStatusChange,
+  resultSchema,
+  tags,
+  attachedFunctions,
+  agentId,
+  agentVersion,
+  interactive,
+  reasoningTraces,
+  enableSummarization,
+  modelIdentifier,
+  authContext,
+  context,
+  enableResultGrounding,
+}: {
+  runId?: string;
+  userId?: string;
+  clusterId: string;
+  name?: string;
+  systemPrompt?: string;
+  test?: boolean;
+  testMocks?: Record<
+    string,
+    {
+      output: Record<string, unknown>;
+    }
+  >;
+  onStatusChange?: string;
+  resultSchema?: unknown;
+  tags?: Record<string, string>;
+  attachedFunctions?: string[];
+  agentId?: string;
+  agentVersion?: number;
+  interactive?: boolean;
+  reasoningTraces?: boolean;
+  enableSummarization?: boolean;
+  modelIdentifier?: ChatIdentifiers;
+  authContext?: unknown;
+  context?: unknown;
+  enableResultGrounding?: boolean;
+}): Promise<Run> => {
+  let run: Run | undefined = undefined;
+
+  await db.transaction(async tx => {
+    // TODO: Resolve the run debug value via a subquery and remove the transaction: https://github.com/inferablehq/inferable/issues/389
+    const [debugQuery] = await tx
+      .select({
+        debug: clusters.debug,
+      })
+      .from(clusters)
+      .where(eq(clusters.id, clusterId));
+
+    const result = await tx
+      .insert(runs)
+      .values([
+        {
+          id: runId ?? ulid(),
+          cluster_id: clusterId,
+          status: "pending",
+          user_id: userId ?? "SYSTEM",
+          ...(name ? { name } : {}),
+          debug: debugQuery.debug,
+          system_prompt: systemPrompt,
+          test,
+          test_mocks: testMocks,
+          reasoning_traces: reasoningTraces,
+          interactive: interactive,
+          enable_summarization: enableSummarization,
+          on_status_change: onStatusChange,
+          result_schema: resultSchema,
+          attached_functions: attachedFunctions,
+          agent_id: agentId,
+          agent_version: agentVersion,
+          model_identifier: modelIdentifier,
+          auth_context: authContext,
+          context: context,
+          enable_result_grounding: enableResultGrounding,
+        },
+      ])
+      .returning({
+        id: runs.id,
+        name: runs.name,
+        clusterId: runs.cluster_id,
+        systemPrompt: runs.system_prompt,
+        status: runs.status,
+        debug: runs.debug,
+        test: runs.test,
+        attachedFunctions: runs.attached_functions,
+        modelIdentifier: runs.model_identifier,
+        authContext: runs.auth_context,
+        context: runs.context,
+        interactive: runs.interactive,
+        enableResultGrounding: runs.enable_result_grounding,
+      });
+
+    run = result[0];
+
+    if (!!run && tags) {
+      await tx.insert(runTags).values(
+        Object.entries(tags).map(([key, value]) => ({
+          cluster_id: clusterId,
+          workflow_id: run!.id,
+          key,
+          value,
+        }))
+      );
+    }
+  });
+
+  if (!run) {
+    throw new Error("Failed to create run");
+  }
+
+  return run;
+};
+
+export const deleteRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+  await db
+    .delete(runs)
+    .where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId)));
+};
+
+export const updateRun = async (run: Run): Promise<Run> => {
+  if (run.status && run.status !== "failed") {
+    run.failureReason = null;
+  }
+
+  const [updated] = await db
+    .update(runs)
+    .set({
+      name: !run.name ? undefined : run.name,
+      status: run.status,
+      failure_reason: run.failureReason,
+      feedback_comment: run.feedbackComment,
+      feedback_score: run.feedbackScore,
+    })
+    .where(
+      and(
+        eq(runs.cluster_id, run.clusterId),
+        eq(runs.id, run.id)
+      )
+    )
+    .returning({
+      id: runs.id,
+      name: runs.name,
+      clusterId: runs.cluster_id,
+      status: runs.status,
+      failureReason: runs.failure_reason,
+      debug: runs.debug,
+      attachedFunctions: runs.attached_functions,
+      authContext: runs.auth_context,
+      context: runs.context,
+    });
+
+  // Send telemetry event if feedback was updated
+  if (run.feedbackScore !== undefined && run.feedbackScore !== null) {
+    trackCustomerTelemetry({
+      type: "runFeedback",
+      runId: run.id,
+      clusterId: run.clusterId,
+      score: run.feedbackScore,
+      comment: run.feedbackComment || undefined,
+    });
+  }
+
+  return updated;
+};
+
+export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+  const [run] = await db
+    .select({
+      id: runs.id,
+      name: runs.name,
+      userId: runs.user_id,
+      agentId: runs.agent_id,
+      clusterId: runs.cluster_id,
+      systemPrompt: runs.system_prompt,
+      status: runs.status,
+      failureReason: runs.failure_reason,
+      debug: runs.debug,
+      test: runs.test,
+      testMocks: runs.test_mocks,
+      onStatusChange: runs.on_status_change,
+      resultSchema: runs.result_schema,
+      feedbackComment: runs.feedback_comment,
+      feedbackScore: runs.feedback_score,
+      attachedFunctions: runs.attached_functions,
+      reasoningTraces: runs.reasoning_traces,
+      interactive: runs.interactive,
+      enableSummarization: runs.enable_summarization,
+      modelIdentifier: runs.model_identifier,
+      authContext: runs.auth_context,
+      context: runs.context,
+      enableResultGrounding: runs.enable_result_grounding,
+    })
+    .from(runs)
+    .where(
+      and(
+        eq(runs.cluster_id, clusterId),
+        eq(runs.id, runId)
+      )
+    );
+
+  return run;
+};
+
+export const getClusterRuns = async ({
+  clusterId,
+  userId,
+  test,
+  limit = 50,
+  agentId,
+}: {
+  clusterId: string;
+  test: boolean;
+  userId?: string;
+  limit?: number;
+  agentId?: string;
+}) => {
+  const result = await db
+    .select({
+      id: runs.id,
+      name: runs.name,
+      userId: runs.user_id,
+      clusterId: runs.cluster_id,
+      systemPrompt: runs.system_prompt,
+      status: runs.status,
+      createdAt: runs.created_at,
+      failureReason: runs.failure_reason,
+      debug: runs.debug,
+      test: runs.test,
+      agentId: runs.agent_id,
+      agentVersion : runs.agent_version,
+      feedbackScore: runs.feedback_score,
+      modelIdentifier: runs.model_identifier,
+      authContext: runs.auth_context,
+      context: runs.context,
+      enableResultGrounding: runs.enable_result_grounding,
+    })
+    .from(runs)
+    .where(
+      and(
+        eq(runs.cluster_id, clusterId),
+        eq(runs.test, test),
+        ...(userId ? [eq(runs.user_id, userId)] : []),
+        ...(agentId ? [eq(runs.agent_id, agentId)] : [])
+      )
+    )
+    .orderBy(desc(runs.created_at))
+    .limit(limit);
+
+  return result;
+};
+
+export const getRunDetails = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
+  const [[run], agentMessage, tags] = await Promise.all([
+    db
+      .select({
+        id: runs.id,
+        name: runs.name,
+        userId: runs.user_id,
+        clusterId: runs.cluster_id,
+        status: runs.status,
+        systemPrompt: runs.system_prompt,
+        failureReason: runs.failure_reason,
+        debug: runs.debug,
+        test: runs.test,
+        feedbackComment: runs.feedback_comment,
+        feedbackScore: runs.feedback_score,
+        attachedFunctions: runs.attached_functions,
+        modelIdentifier: runs.model_identifier,
+        authContext: runs.auth_context,
+        context: runs.context,
+        enableResultGrounding: runs.enable_result_grounding,
+      })
+      .from(runs)
+      .where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId))),
+    lastAgentMessage({ clusterId, runId }),
+    getRunTags({ clusterId, runId }),
+  ]);
+
+  return {
+    ...run,
+    tags,
+    // Currently a Run can have multiple "results".
+    // For now, we just use the last result.
+    result: agentMessage?.type === "agent" ? agentMessage.data.result : null,
+  };
+};
+
+export const addMessageAndResume = async ({
+  userId,
+  id,
+  clusterId,
+  runId,
+  message,
+  type,
+  metadata,
+  skipAssert,
+}: {
+  userId?: string;
+  id: string;
+  clusterId: string;
+  runId: string;
+  message: string;
+  type: "human" | "template" | "supervisor";
+  metadata?: RunMessageMetadata;
+  skipAssert?: boolean;
+}) => {
+  if (!skipAssert) {
+    await assertRunReady({ clusterId, runId });
+  }
+
+  await insertRunMessage({
+    userId,
+    clusterId,
+    runId,
+    data: {
+      message,
+    },
+    type,
+    id,
+    metadata,
+  });
+
+  // TODO: Move run name generation to event sourcing (pg-listen) https://github.com/inferablehq/inferable/issues/390
+  await generateRunName(await getRun({ clusterId, runId }), message);
+
+  await resumeRun({
+    clusterId,
+    id: runId,
+  });
+};
+
+export const resumeRun = async (input: Pick<Run, "id" | "clusterId">) => {
+  if (env.NODE_ENV === "test") {
+    logger.warn("Skipping run resume. NODE_ENV is set to 'test'.");
+    return;
+  }
+
+  if (input.id === getClusterBackgroundRun(input.clusterId)) {
+    logger.debug("Skipping background run resume", {
+      runId: input.id,
+      clusterId: input.clusterId,
+    });
+    return;
+  }
+
+  const sqsResult = await sqs.sendMessage({
+    QueueUrl: env.SQS_RUN_PROCESS_QUEUE_URL,
+    MessageBody: JSON.stringify({
+      runId: input.id,
+      clusterId: input.clusterId,
+      ...injectTraceContext(),
+    }),
+  });
+
+  logger.info("Added run processing job to queue", {
+    messageId: sqsResult.MessageId,
+  });
+};
+
+export const generateRunName = async (run: Run, content: string) => {
+  if (env.NODE_ENV === "test") {
+    logger.warn("Skipping run resume. NODE_ENV is set to 'test'.");
+    return;
+  }
+
+  if (run.name) {
+    logger.info("Skipping run name generation. Name already set.", {
+      runId: run.id,
+      name: run.name,
+    });
+    return;
+  }
+
+  const sqsResult = await sqs.sendMessage({
+    QueueUrl: env.SQS_RUN_GENERATE_NAME_QUEUE_URL,
+    MessageBody: JSON.stringify({
+      runId: run.id,
+      clusterId: run.clusterId,
+      content,
+      ...injectTraceContext(),
+    }),
+  });
+
+  logger.info("Added name generation job to queue", {
+    runId: run.id,
+    messageId: sqsResult.MessageId,
+  });
+};
+
+export type RunMessage = {
+  message: string;
+  type: "human" | "template";
+  messageMetadata?: RunMessageMetadata;
+};
+
+export const createRunWithMessage = async ({
+  runId,
+  userId,
+  clusterId,
+  message,
+  systemPrompt,
+  type,
+  name,
+  test,
+  testMocks,
+  messageMetadata,
+  resultSchema,
+  tags,
+  attachedFunctions,
+  agentId,
+  agentVersion,
+  reasoningTraces,
+  interactive,
+  enableSummarization,
+  modelIdentifier,
+  onStatusChange,
+  authContext,
+  context,
+  enableResultGrounding,
+}: Parameters<typeof createRun>[0] & RunMessage) => {
+  const run = await createRun({
+    runId,
+    userId,
+    clusterId,
+    name,
+    test,
+    testMocks,
+    systemPrompt,
+    onStatusChange,
+    attachedFunctions,
+    resultSchema,
+    tags,
+    agentId,
+    agentVersion,
+    reasoningTraces,
+    interactive,
+    enableSummarization,
+    modelIdentifier,
+    authContext,
+    context,
+    enableResultGrounding,
+  });
+
+  await addMessageAndResume({
+    id: ulid(),
+    userId,
+    clusterId,
+    runId: run.id,
+    message,
+    type,
+    metadata: messageMetadata,
+    skipAssert: true,
+  });
+
+  return run;
+};
+
+/**
+ * A background run allows calls that are not associated with a specific run to have a home.
+ * @param clusterId - The cluster ID
+ * @returns A unique ID for the background run
+ */
+export const getClusterBackgroundRun = (clusterId: string) => {
+  return `${clusterId}BACKGROUND`;
+};
+
+export const assertRunReady = async (input: { runId: string; clusterId: string }) => {
+  const run = await getRun(input);
+  if (!run) {
+    throw new NotFoundError("Run not found");
+  }
+
+  logger.info("Asserting run is ready", {
+    runId: run.id,
+    status: run.status,
+  });
+
+  if (!run.interactive) {
+    throw new BadRequestError("Run is not interactive and cannot accept new messages.");
+  }
+
+  const acceptedStatuses = ["done", "failed", "pending", "paused"];
+  if (!acceptedStatuses.includes(run.status ?? "")) {
+    throw new RunBusyError(`Run is not ready for new messages: ${run.status}`);
+  }
+
+  const [lastMessage] = await getRunMessages({
+    clusterId: run.clusterId,
+    runId: run.id,
+    limit: 1,
+  });
+
+  if (!lastMessage) {
+    return;
+  }
+
+  if (lastMessage.type === "agent") {
+    // Only Agent messages without function calls are considered ready
+    if (!hasInvocations(lastMessage)) {
+      return;
+    }
+  }
+
+  logger.info("Run has unprocessed messages. Run will be resumed.", {
+    status: run.status,
+  });
+
+  await resumeRun({
+    clusterId: run.clusterId,
+    id: run.id,
+  });
+
+  throw new RunBusyError("Run is not ready for new messages: Unprocessed messages");
+};
+
+export const getWaitingJobIds = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
+  const waitingJobs = await db
+    .select({
+      id: jobs.id,
+    })
+    .from(jobs)
+    .where(
+      and(
+        eq(jobs.workflow_id, runId),
+        eq(jobs.cluster_id, clusterId),
+        or(
+          inArray(jobs.status, ["pending", "running"]),
+          and(eq(jobs.approval_requested, true), isNull(jobs.approved))
+        )
+      )
+    );
+
+  return waitingJobs.map(job => job.id);
+};
+
+export const getAgentMetrics = async ({
+  clusterId,
+  agentId,
+}: {
+  clusterId: string;
+  agentId: string;
+}) => {
+  return db
+    .select({
+      createdAt: runs.created_at,
+      count: countDistinct(runs.id).as("count"),
+      feedbackScore: runs.feedback_score,
+      jobCount: countDistinct(jobs.id).as("job_count"),
+      jobFailureCount: sql<number>`COUNT(${jobs.id}) FILTER (WHERE ${jobs.status} = 'failure')`.as(
+        "job_failure_count"
+      ),
+      timeToCompletion: sql<number>`
+        EXTRACT(EPOCH FROM (
+          MAX(${runMessages.created_at}) - MIN(${runMessages.created_at})
+        ))
+      `.as("time_to_completion"),
+    })
+    .from(runs)
+    .leftJoin(jobs, eq(runs.id, jobs.workflow_id))
+    .leftJoin(runMessages, eq(runs.id, runMessages.workflow_id))
+    .where(and(eq(runs.cluster_id, clusterId), eq(runs.agent_id, agentId)))
+    .groupBy(runs.id, runs.created_at, runs.feedback_score)
+    .limit(1000);
+};
+
+export const createRetry = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+  await db
+    .update(runs)
+    .set({
+      status: "pending",
+      failure_reason: null,
+    })
+    .where(eq(runs.id, runId));
+
+  await resumeRun({
+    clusterId,
+    id: runId,
+  });
+};

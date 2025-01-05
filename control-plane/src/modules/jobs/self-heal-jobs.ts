@@ -2,7 +2,7 @@ import { and, eq, isNotNull, lt, or, sql } from "drizzle-orm";
 import * as data from "../data";
 import * as events from "../observability/events";
 import { logger } from "../observability/logger";
-import { resumeRun } from "../workflows/workflows";
+import { resumeRun } from "../runs";
 
 export async function selfHealCalls() {
   logger.debug("Running Self-healing job");

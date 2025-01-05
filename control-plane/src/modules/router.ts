@@ -12,9 +12,9 @@ import {
   assertMessageOfType,
   editHumanMessage,
   getRunMessagesForDisplayWithPolling,
-} from "./workflows/workflow-messages";
-import { addMessageAndResume, assertRunReady } from "./workflows/workflows";
-import { runsRouter } from "./workflows/router";
+} from "./runs/messages";
+import { addMessageAndResume, assertRunReady } from "./runs";
+import { runsRouter } from "./runs/router";
 import { machineRouter } from "./machines/router";
 import { authRouter } from "./auth/router";
 import { ulid } from "ulid";

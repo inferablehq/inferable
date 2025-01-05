@@ -2,7 +2,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import * as data from "../data";
 import * as events from "../observability/events";
 import { logger } from "../observability/logger";
-import { resumeRun } from "../workflows/workflows";
+import { resumeRun } from "../runs";
 
 type PersistResultParams = {
   result: string;

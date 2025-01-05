@@ -6,8 +6,8 @@ import * as cron from "../cron";
 import * as data from "../data";
 import * as events from "../observability/events";
 import { packer } from "../packer";
-import { resumeRun } from "../workflows/workflows";
-import { notifyApprovalRequest } from "../workflows/notify";
+import { resumeRun } from "../runs";
+import { notifyApprovalRequest } from "../runs/notify";
 import { selfHealCalls } from "./self-heal-jobs";
 
 export { createJob } from "./create-job";
@@ -140,7 +140,7 @@ export const getLatestJobsResultedByFunctionName = async ({
     .limit(limit);
 };
 
-export const getJobsForWorkflow = async ({
+export const getJobsForRun = async ({
   clusterId,
   runId,
   after = "0",

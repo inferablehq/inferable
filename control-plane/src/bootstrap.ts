@@ -15,7 +15,7 @@ import * as externalCalls from "./modules/jobs/external";
 import * as models from "./modules/models/routing";
 import * as email from "./modules/email";
 import { logContext, logger } from "./modules/observability/logger";
-import * as workflows from "./modules/workflows/workflows";
+import * as runs from "./modules/runs";
 import * as slack from "./modules/integrations/slack";
 import { hdx } from "./modules/observability/hyperdx";
 import { pg } from "./modules/data";
@@ -92,7 +92,7 @@ app.addHook("onRequest", (request, _reply, done) => {
   const attributes = {
     "deployment.version": env.VERSION,
     "cluster.id": request.url.split("clusters/")[1]?.split("/")[0],
-    "workflow.id": request.url.split("workflows/")[1]?.split("/")[0],
+    "run.id": request.url.split("run/")[1]?.split("/")[0],
     "machine.id": request.headers["x-machine-id"],
     "machine.sdk.version": request.headers["x-machine-sdk-version"],
     "machine.sdk.language": request.headers["x-machine-sdk-language"],
@@ -148,7 +148,7 @@ const startTime = Date.now();
     events.initialize(),
     jobs.start(),
     serviceDefinitions.start(),
-    workflows.start(),
+    runs.start(),
     models.start(),
     redis.start(),
     slack.start(app),
@@ -195,7 +195,7 @@ process.on("SIGTERM", async () => {
   });
 
   await Promise.all([
-    workflows.stop(),
+    runs.stop(),
     app.close(),
     pg.stop(),
     flagsmith?.close(),

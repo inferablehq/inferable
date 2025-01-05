@@ -3,12 +3,12 @@ import { FastifySlackReceiver } from "./receiver";
 import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
 import { logger } from "../../observability/logger";
-import { getRunsByTag } from "../../workflows/tags";
-import { addMessageAndResume, createRunWithMessage } from "../../workflows/workflows";
+import { getRunsByTag } from "../../runs/tags";
+import { addMessageAndResume, createRunWithMessage } from "../../runs";
 import { AuthenticationError } from "../../../utilities/errors";
 import { ulid } from "ulid";
 import { and, eq, InferSelectModel, ne, sql } from "drizzle-orm";
-import { db, integrations, workflowMessages } from "../../data";
+import { db, integrations, runMessages } from "../../data";
 import { nango } from "../nango";
 import { InstallableIntegration } from "../types";
 import { integrationSchema } from "../schema";
@@ -96,8 +96,8 @@ export const handleNewRunMessage = async ({
     id: string;
     clusterId: string;
     runId: string;
-    type: InferSelectModel<typeof workflowMessages>["type"];
-    data: InferSelectModel<typeof workflowMessages>["data"];
+    type: InferSelectModel<typeof runMessages>["type"];
+    data: InferSelectModel<typeof runMessages>["data"];
   };
   tags?: Record<string, string>;
 }) => {

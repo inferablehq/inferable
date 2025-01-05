@@ -1,6 +1,6 @@
 import * as jobs from "../jobs/jobs";
 import { createOwner } from "../test/util";
-import { getClusterBackgroundRun } from "../workflows/workflows";
+import { getClusterBackgroundRun } from "../runs";
 import * as events from "./events";
 
 jest.mock("../service-definitions", () => ({

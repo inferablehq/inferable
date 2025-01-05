@@ -1,6 +1,6 @@
 import { ulid } from "ulid";
 import { createOwner } from "../test/util";
-import { Run, createRun, createRunWithMessage } from "../workflows/workflows";
+import { Run, createRun, createRunWithMessage } from "../runs";
 import * as customAuth from "./custom";
 import * as clusterAuth from "./cluster";
 import * as clerkAuth from "./clerk";

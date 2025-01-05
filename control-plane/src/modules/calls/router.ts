@@ -8,7 +8,7 @@ import { createBlob } from "../blobs";
 import { logger } from "../observability/logger";
 import { recordServicePoll } from "../service-definitions";
 import { getJob } from "../jobs/jobs";
-import { getClusterBackgroundRun, resumeRun } from "../workflows/workflows";
+import { getClusterBackgroundRun, resumeRun } from "../runs";
 
 export const callsRouter = initServer().router(
   {

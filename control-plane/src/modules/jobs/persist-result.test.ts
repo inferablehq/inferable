@@ -1,11 +1,8 @@
-import { upsertMachine } from "../machines";
-import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
 import { createJob, getJobStatusSync, persistJobResult } from "./jobs";
 import { acknowledgeJob } from "./job-results";
 import * as redis from "../redis";
-import { getClusterBackgroundRun } from "../workflows/workflows";
-import { selfHealCalls } from "./self-heal-jobs";
+import { getClusterBackgroundRun } from "../runs";
 jest.mock("../service-definitions", () => ({
   ...jest.requireActual("../service-definitions"),
   parseJobArgs: jest.fn(),

@@ -242,14 +242,14 @@ export const runTags = pgTable(
     }),
     workflowReference: foreignKey({
       columns: [table.workflow_id, table.cluster_id],
-      foreignColumns: [workflows.id, workflows.cluster_id],
+      foreignColumns: [runs.id, runs.cluster_id],
     }).onDelete("cascade"),
     index: index("workflowMetadataIndex").on(table.key, table.value, table.cluster_id),
   })
 );
 
 // TODO: Rename to Runs
-export const workflows = pgTable(
+export const runs = pgTable(
   "workflows",
   {
     id: varchar("id", { length: 1024 }).notNull(),
@@ -312,7 +312,7 @@ export type RunMessageMetadata = {
   externalReference?: string;
 };
 
-export const workflowMessages = pgTable(
+export const runMessages = pgTable(
   "workflow_messages",
   {
     id: varchar("id", { length: 1024 }).notNull(),
@@ -342,7 +342,7 @@ export const workflowMessages = pgTable(
     }),
     workflowReference: foreignKey({
       columns: [table.workflow_id, table.cluster_id],
-      foreignColumns: [workflows.id, workflows.cluster_id],
+      foreignColumns: [runs.id, runs.cluster_id],
     }).onDelete("cascade"),
   })
 );
@@ -444,7 +444,7 @@ export const blobs = pgTable(
     }).onDelete("cascade"),
     workflowReference: foreignKey({
       columns: [table.cluster_id, table.workflow_id],
-      foreignColumns: [workflows.cluster_id, workflows.id],
+      foreignColumns: [runs.cluster_id, runs.id],
     }).onDelete("cascade"),
   })
 );
@@ -558,7 +558,7 @@ export const analyticsSnapshots = pgTable(
 
 export const db = drizzle(pool, {
   schema: {
-    workflows,
+    workflows: runs,
     toolMetadata,
     agents,
     events,

@@ -7,12 +7,12 @@ import { safeParse } from "../../utilities/safe-parse";
 import { ParsedMail, simpleParser } from "mailparser";
 import { getUserForCluster } from "../clerk";
 import { AuthenticationError, NotFoundError } from "../../utilities/errors";
-import { addMessageAndResume, createRunWithMessage } from "../workflows/workflows";
+import { addMessageAndResume, createRunWithMessage } from "../runs";
 import { flagsmith } from "../flagsmith";
 import { InferSelectModel } from "drizzle-orm";
-import { workflowMessages } from "../data";
+import { runMessages } from "../data";
 import { ses } from "../ses";
-import { getMessageByReference, updateMessageReference } from "../workflows/workflow-messages";
+import { getMessageByReference, updateMessageReference } from "../runs/messages";
 import { ulid } from "ulid";
 import { unifiedMessageSchema } from "../contract";
 
@@ -70,8 +70,8 @@ export const handleNewRunMessage = async ({
     id: string;
     clusterId: string;
     runId: string;
-    type: InferSelectModel<typeof workflowMessages>["type"];
-    data: InferSelectModel<typeof workflowMessages>["data"];
+    type: InferSelectModel<typeof runMessages>["type"];
+    data: InferSelectModel<typeof runMessages>["data"];
   };
   tags?: Record<string, string>;
 }) => {

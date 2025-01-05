@@ -1,7 +1,7 @@
-import { getJobsForWorkflow } from "./jobs/jobs";
+import { getJobsForRun } from "./jobs/jobs";
 import { getActivityForTimeline } from "./observability/events";
-import { getRunMessagesForDisplay } from "./workflows/workflow-messages";
-import { getRun } from "./workflows/workflows";
+import { getRunMessagesForDisplay } from "./runs/messages";
+import { getRun } from "./runs";
 
 export const timeline = {
   getRunTimeline: async ({
@@ -49,7 +49,7 @@ export const timeline = {
         runId,
         after: activityAfter,
       }),
-      getJobsForWorkflow({
+      getJobsForRun({
         clusterId,
         runId,
       }),

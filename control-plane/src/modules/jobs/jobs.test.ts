@@ -6,7 +6,7 @@ import { createJob, pollJobs, getJob, requestApproval, submitApproval } from "./
 import { acknowledgeJob, persistJobResult } from "./job-results";
 import { selfHealCalls } from "./self-heal-jobs";
 import * as redis from "../redis";
-import { getClusterBackgroundRun } from "../workflows/workflows";
+import { getClusterBackgroundRun } from "../runs";
 
 const mockTargetFn = "testTargetFn";
 const mockTargetArgs = packer.pack({ test: "test" });
