@@ -68,10 +68,10 @@ type InferableOptions struct {
 // Input object for onStatusChange functions
 // https://docs.inferable.ai/pages/runs#onstatuschange
 type OnStatusChangeInput struct {
-	Status   string      `json:"status"`
-	RunId    string      `json:"runId"`
-	Result   interface{} `json:"result"`
-	Metadata interface{} `json:"metadata"`
+	Status string      `json:"status"`
+	RunId  string      `json:"runId"`
+	Result interface{} `json:"result"`
+	Tags   interface{} `json:"tags"`
 }
 
 // Input object for handleCustomAuth functions
