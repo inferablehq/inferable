@@ -134,39 +134,36 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
     if (result.status === 200) {
       if (result.body.messages.length === 0 && result.body.activity.length === 0) {
         console.debug("No new messages or activity");
-        return;
-      }
+        await new Promise(resolve => setTimeout(resolve, 2_000));
+      } else {
+        setRunTimeline(t => {
+          const newTimeline = {
+            ...t,
+            blobs: uniqueBy(result.body.blobs.concat(t?.blobs ?? []), "id"),
+            messages: uniqueBy(result.body.messages.concat(t?.messages ?? []), "id"),
+            activity: uniqueBy(result.body.activity.concat(t?.activity ?? []), "id"),
+            jobs: uniqueBy(result.body.jobs.concat(t?.jobs ?? []), "id"),
+            run: result.body.run ?? t?.run,
+          };
 
-      setRunTimeline(t => {
-        const newTimeline = {
-          ...t,
-          blobs: uniqueBy(result.body.blobs.concat(t?.blobs ?? []), "id"),
-          messages: uniqueBy(result.body.messages.concat(t?.messages ?? []), "id"),
-          activity: uniqueBy(result.body.activity.concat(t?.activity ?? []), "id"),
-          jobs: uniqueBy(result.body.jobs.concat(t?.jobs ?? []), "id"),
-          run: result.body.run ?? t?.run,
-        };
+          return newTimeline;
+        });
 
-        return newTimeline;
-      });
+        const maxMessageId = result.body.messages.sort((a, b) => b.id.localeCompare(a.id))[0]?.id;
+        const maxActivityId = result.body.activity.sort((a, b) => b.id.localeCompare(a.id))[0]?.id;
 
-      const maxMessageId = result.body.messages.sort((a, b) => b.id.localeCompare(a.id))[0]?.id;
-      const maxActivityId = result.body.activity.sort((a, b) => b.id.localeCompare(a.id))[0]?.id;
+        if (maxMessageId) {
+          messagesAfter.current = maxMessageId;
+        }
 
-      if (maxMessageId) {
-        messagesAfter.current = maxMessageId;
-      }
-
-      if (maxActivityId) {
-        activityAfter.current = maxActivityId;
+        if (maxActivityId) {
+          activityAfter.current = maxActivityId;
+        }
       }
     } else {
-      if (result.status === 404) {
-        goToRun(clusterId, "");
-      }
+      createErrorToast(result, "Failed to fetch timeline. Will wait for a bit and retry...");
+      await new Promise(resolve => setTimeout(resolve, 4_000));
     }
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
     return fetchRunTimeline();
   }, [clusterId, runId, getToken, goToRun]);
