@@ -455,12 +455,12 @@ export default function Page({ params }: { params: { clusterId: string } }) {
   }
 
   return (
-    <div className="max-w-6xl p-6 text-sm">
+    <div className="p-6 text-sm">
       <h2 className="text-2xl mb-6">Cluster Overview</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
         <Card className="transition-colors flex flex-col">
           <CardHeader className="flex-grow">
-            <CardTitle className="text-lg">Go to my runs</CardTitle>
+            <CardTitle className="text-lg">Go to Runs</CardTitle>
             <CardDescription>
               View and manage your existing runs or create new ones
             </CardDescription>
@@ -471,7 +471,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
               variant="secondary"
               className="hover:bg-gray-50"
             >
-              View runs
+              View Runs
             </Button>
           </CardContent>
         </Card>
@@ -480,7 +480,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
           <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Configure cluster</CardTitle>
             <CardDescription>
-              Manage API keys, services, and cluster settings
+              Manage API keys, services, and Cluster settings
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -491,7 +491,27 @@ export default function Page({ params }: { params: { clusterId: string } }) {
               variant="secondary"
               className="hover:bg-gray-50"
             >
-              Open settings
+              Open Settings
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="transition-colors flex flex-col">
+          <CardHeader className="flex-grow">
+            <CardTitle className="text-lg">Manage Agents</CardTitle>
+            <CardDescription>
+              Create and manage Agents for your Cluster
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={() =>
+                router.push(`/clusters/${params.clusterId}/agents`)
+              }
+              variant="secondary"
+              className="hover:bg-gray-50"
+            >
+              Open Agents
             </Button>
           </CardContent>
         </Card>
@@ -500,7 +520,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
           <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Read the docs</CardTitle>
             <CardDescription>
-              Learn more about how to use your cluster effectively
+              Learn more about how to use your Cluster effectively
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -509,7 +529,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
               variant="secondary"
               className="hover:bg-gray-50"
             >
-              Open docs
+              Open Docs
             </Button>
           </CardContent>
         </Card>

@@ -130,70 +130,68 @@ export default async function IntegrationsPage({
   }
 
   return (
-    <div className="p-8">
-      <div className="max-w-4xl">
-        <h1 className="text-2xl font-bold mb-2">Integrations</h1>
-        <p className="text-gray-500 mb-6">
-          Connect your Inferable cluster with other tools and services
-        </p>
+    <div className="p-6">
+      <h1 className="text-2xl mb-2">Integrations</h1>
+      <p className="text-gray-500 mb-6">
+        Connect your Inferable cluster with other tools and services
+      </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Object.entries(response.body)
-            .concat([["zapier", null]])
-            .map(([key, integration]) => {
-              const c = config[key as keyof typeof config];
-              if (!c) return null;
-              const Icon = c.icon;
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Object.entries(response.body)
+          .concat([["zapier", null]])
+          .map(([key, integration]) => {
+            const c = config[key as keyof typeof config];
+            if (!c) return null;
+            const Icon = c.icon;
 
-              return (
-                <Card className="flex flex-col" key={key}>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4" />
-                      <CardTitle>{c.name}</CardTitle>
-                      <div className="group relative">
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStageStyles(c.stage)}`}
-                        >
-                          {c.stage}
-                        </span>
-                        <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
-                          {stageDescriptions[c.stage]}
-                        </div>
+            return (
+              <Card className="flex flex-col" key={key}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-4 h-4" />
+                    <CardTitle>{c.name}</CardTitle>
+                    <div className="group relative">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStageStyles(c.stage)}`}
+                      >
+                        {c.stage}
+                      </span>
+                      <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+                        {stageDescriptions[c.stage]}
                       </div>
                     </div>
-                    <CardDescription>{c.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-grow flex items-end">
-                    <div className="w-full flex gap-2">
-                      <Link
-                        href={`/clusters/${clusterId}/integrations/${key}`}
-                        className="flex-grow"
-                      >
-                        <Button className="w-full" variant="outline">
-                          {integration !== null ? "Configure" : "Install"}
-                          <ArrowRight className="w-4 h-4 ml-2" />
+                  </div>
+                  <CardDescription>{c.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow flex items-end">
+                  <div className="w-full flex gap-2">
+                    <Link
+                      href={`/clusters/${clusterId}/integrations/${key}`}
+                      className="flex-grow"
+                    >
+                      <Button className="w-full" variant="outline">
+                        {integration !== null ? "Configure" : "Install"}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+                    {integration !== null && (
+                      <form action={handleUninstall}>
+                        <input type="hidden" name="name" value={key} />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          type="submit"
+                          title="Uninstall integration"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
-                      </Link>
-                      {integration !== null && (
-                        <form action={handleUninstall}>
-                          <input type="hidden" name="name" value={key} />
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            type="submit"
-                            title="Uninstall integration"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </form>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-        </div>
+                      </form>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
       </div>
     </div>
   );

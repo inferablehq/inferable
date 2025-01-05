@@ -43,7 +43,7 @@ export const CreateClusterButton = () => {
       }}
     >
       <PlusIcon className="w-4 h-4 mr-2" />
-      Create a Cluster
+      Create new Cluster
     </Button>
   );
 };

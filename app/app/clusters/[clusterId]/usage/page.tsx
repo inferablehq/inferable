@@ -213,7 +213,7 @@ export default async function UsagePage({
   const costs = calculateCosts();
 
   return (
-    <div className="p-6 max-w-6xl space-y-6 text-sm">
+    <div className="p-6 space-y-6 text-sm">
       <Card>
         <CardHeader>
           <CardTitle>Billing Cycle Information</CardTitle>
