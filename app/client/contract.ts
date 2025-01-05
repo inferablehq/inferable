@@ -148,7 +148,7 @@ const peripheralMessageDataSchema = z.object({
   id: z.string(),
   createdAt: z.date().optional(),
   pending: z.boolean().optional(),
-  displayableContext: z.record(z.string()).optional().nullable(),
+  metadata: z.record(z.unknown()).optional().nullable(),
 });
 
 export const unifiedMessageDataSchema = z.discriminatedUnion("type", [

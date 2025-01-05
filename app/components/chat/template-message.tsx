@@ -8,7 +8,7 @@ import { z } from "zod";
 
 export function TemplateMessage({
   createdAt,
-  displayableContext,
+  metadata,
   data,
 }: MessageContainerProps<"template"> & { runId: string }) {
   return (
@@ -20,7 +20,7 @@ export function TemplateMessage({
           </div>
         </div>
       </div>
-      {Object.entries({ ...data, ...displayableContext }).map(([key, value]) => (
+      {Object.entries({ ...data, ...metadata }).map(([key, value]) => (
         <CardContent className="flex flex-col" key={key}>
           {key === "message" ? (
             <Collapsible>

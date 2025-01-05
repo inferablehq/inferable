@@ -144,7 +144,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
                   }
                 }}
               >
-                Filtering by Prompt
+                Filtering by Agent
                 <XIcon className="h-4 w-4" />
               </Badge>
             )}

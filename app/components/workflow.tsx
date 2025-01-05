@@ -217,7 +217,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
             message: inputPrompt,
           },
           pending: true,
-          displayableContext: null,
+          metadata: null,
           type: "human",
         });
       }

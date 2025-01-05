@@ -1,6 +1,6 @@
 import { formatRelative } from "date-fns";
 import { startCase } from "lodash";
-import { ChevronDown, Workflow, RefreshCw } from "lucide-react";
+import { ChevronDown, RefreshCw, Bot } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ReadOnlyJSON } from "../read-only-json";
@@ -11,23 +11,30 @@ import toast from "react-hot-toast";
 import { MessageContainerProps } from "./workflow-event";
 import { client } from "../../client/client";
 import { useAuth } from "@clerk/nextjs";
+import { z } from "zod";
+
+const displayableMeta = z.object({
+  displayable: z.object({
+    templateId: z.string().optional(),
+    templateName: z.string().optional(),
+  }).optional(),
+}).passthrough();
 
 export function TemplateMessage({
   createdAt,
-  displayableContext,
+  metadata,
   data,
   clusterId,
   id: messageId,
   runId,
 }: MessageContainerProps<"template">) {
+  const parsed = displayableMeta.safeParse(metadata);
+
   let templateId;
   let templateName;
-  if (displayableContext && "templateId" in displayableContext) {
-    templateId = displayableContext.templateId;
-  }
-
-  if (displayableContext && "templateName" in displayableContext) {
-    templateName = displayableContext.templateName;
+  if (parsed.success) {
+    templateId = parsed.data?.displayable?.templateId;
+    templateName = parsed.data?.displayable?.templateName;
   }
 
   const [isRetrying, setIsRetrying] = useState(false);
@@ -62,7 +69,7 @@ export function TemplateMessage({
     <Card className="w-full rounded-none border-none shadow-md">
       <CardHeader>
         <CardTitle className="flex items-center text-sm font-semibold">
-          <Workflow className="w-5 h-5 mr-2" />
+          <Bot className="w-5 h-5 mr-2" />
           <div className="flex flex-row space-x-2">
             {templateId && templateName ? (
               <Link href={`/clusters/${clusterId}/prompts/${templateId}/edit`}>
@@ -90,7 +97,7 @@ export function TemplateMessage({
           </Button>
         </CardTitle>
       </CardHeader>
-      {Object.entries({ ...data, ...displayableContext }).map(([key, value]) => (
+      {Object.entries({ ...data }).map(([key, value]) => (
         <CardContent className="flex flex-col" key={key}>
           {key === "message" ? (
             <Collapsible>

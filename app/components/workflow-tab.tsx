@@ -13,7 +13,7 @@ import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
 import { truncate } from "lodash";
 import {
-  FileTextIcon,
+  Bot,
   TestTubeIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -204,7 +204,7 @@ function RunPill({
               )}
               {workflow.agentId && (
                 <Tag
-                  label={<FileTextIcon className="h-3 w-3" />}
+                  label={<Bot className="h-3 w-3" />}
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(

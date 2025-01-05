@@ -107,7 +107,7 @@ export default function EditAgent({
 
       if (response.status === 200) {
         toast.success("Agent updated successfully");
-        router.push(`/clusters/${params.clusterId}/agetns`);
+        router.push(`/clusters/${params.clusterId}/agents`);
       } else {
         toast.error(`Failed to update Agent: ${response.status}`);
       }

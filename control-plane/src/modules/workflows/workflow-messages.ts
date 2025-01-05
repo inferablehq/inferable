@@ -124,7 +124,6 @@ export const getRunMessagesForDisplay = async ({
       type: workflowMessages.type,
       createdAt: workflowMessages.created_at,
       metadata: workflowMessages.metadata,
-      displayableContext: sql<Record<string, string> | null>`metadata->>'displayable'`,
     })
     .from(workflowMessages)
     .orderBy(desc(workflowMessages.created_at))
@@ -163,7 +162,7 @@ export const getRunMessagesForDisplay = async ({
 
       if (!success) {
         logger.error("Invalid message data. Returning supervisor message", {
-          message,
+          rawMessage: message,
           error: error?.message,
         });
 
