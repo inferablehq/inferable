@@ -131,7 +131,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
   };
 
   return (
-      <ScrollArea className="rounded-md bg-white shadow-sm hover:shadow-lg transition-all duration-200 overflow-y-auto h-[300px] lg:h-[calc(100vh-16rem)] p-2 border border-border/50">
+      <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[300px] lg:h-[calc(100vh-16rem)] p-2 border">
         {(!!runFilters.agentId || !!runFilters.test) && (
           <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
             {runFilters.agentId && (

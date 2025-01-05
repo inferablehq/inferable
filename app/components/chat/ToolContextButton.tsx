@@ -85,19 +85,6 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
     }
   }, [services, service, functionName]);
 
-  // const fetchContext = async () => {
-  //   const token = await getToken();
-  //   try {
-  //     const result = await client.getFunctionMetadata({
-  //       params: { clusterId, service, function: functionName },
-  //       headers: { authorization: `Bearer ${token}` },
-  //     });
-  //   } catch (error) {
-  //     console.error("Error fetching tool context:", error);
-  //     toast.error("Failed to fetch tool context. Please try again.");
-  //   }
-  // };
-
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
@@ -127,26 +114,21 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
           {functionDetails && (
             <Card>
               <CardHeader>
-                <CardTitle>Metadata</CardTitle>
+                <CardTitle>Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="functionName">Function Name</Label>
-                  <Input
-                    id="functionName"
-                    value={functionDetails.name}
-                    readOnly
-                  />
+                  <pre className="p-2">
+                    {functionDetails.name}
+                  </pre>
                 </div>
                 {functionDetails.description && (
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={functionDetails.description}
-                      readOnly
-                      rows={3}
-                    />
+                    <pre className="p-2">
+                      {functionDetails.description}
+                    </pre>
                   </div>
                 )}
                 {functionDetails.schema && (

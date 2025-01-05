@@ -46,14 +46,14 @@ export function ClusterRunsLayout({ clusterId, children }: ClusterRunsLayoutProp
   const isMaximized = isSmallScreen ? !isMinimized : isMinimized;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-6">
+    <div className="flex flex-col lg:flex-row gap-6 p-6 w-full">
       {!isMaximized && (
         <div className="w-full lg:w-[300px] flex-shrink-0 transition-all duration-300">
           <RunList clusterId={clusterId} />
         </div>
       )}
       <div
-        className={`w-full ${!isMaximized ? "max-w-[1024px]" : ""} relative transition-all duration-300`}
+        className={`w-full relative transition-all duration-300`}
       >
         <button
           onClick={() => setIsMinimized(!isMinimized)}
