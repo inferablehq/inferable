@@ -13,7 +13,6 @@ import {
   getServiceDefinitions,
   serviceFunctionEmbeddingId,
 } from "../../service-definitions";
-import { getToolMetadata } from "../../tool-metadata";
 import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { getRunMessages, insertRunMessage } from "../messages";
 import { Run, getWaitingJobIds, updateRun } from "../";
@@ -321,8 +320,7 @@ async function findRelatedFunctionTools(run: Run, search: string) {
 
   const toolContexts = await Promise.all(
     relatedTools.map(async toolDetails => {
-      const [metadata, resolvedJobs, rejectedJobs] = await Promise.all([
-        getToolMetadata(run.clusterId, toolDetails.serviceName, toolDetails.functionName),
+      const [resolvedJobs, rejectedJobs] = await Promise.all([
         getLatestJobsResultedByFunctionName({
           clusterId: run.clusterId,
           service: toolDetails.serviceName,
@@ -359,10 +357,6 @@ async function findRelatedFunctionTools(run: Run, search: string) {
       const failedJobsContext = formatJobsContext(rejectedJobs, "failed");
       if (failedJobsContext) {
         contextArr.push(failedJobsContext);
-      }
-
-      if (metadata?.additionalContext) {
-        contextArr.push(`<context>${metadata.additionalContext}</context>`);
       }
 
       return {

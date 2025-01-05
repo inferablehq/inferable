@@ -1030,64 +1030,6 @@ export const definition = {
       404: z.undefined(),
     },
   },
-  // TODO: Remove
-  upsertFunctionMetadata: {
-    method: "PUT",
-    path: "/clusters/:clusterId/:service/:function/metadata",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      function: z.string(),
-    }),
-    body: z.object({
-      additionalContext: z.string().optional(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-  },
-  // TODO: Remove
-  getFunctionMetadata: {
-    method: "GET",
-    path: "/clusters/:clusterId/:service/:function/metadata",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      function: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        additionalContext: z.string().nullable(),
-      }),
-      401: z.undefined(),
-      404: z.object({ message: z.string() }),
-    },
-  },
-  // TOOD: Remove
-  deleteFunctionMetadata: {
-    method: "DELETE",
-    path: "/clusters/:clusterId/:service/:function/metadata",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      function_name: z.string(),
-    }),
-    body: z.undefined(),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-  },
   getAgent: {
     method: "GET",
     path: "/clusters/:clusterId/agents/:agentId",

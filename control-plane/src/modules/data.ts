@@ -450,25 +450,6 @@ export const blobs = pgTable(
   })
 );
 
-export const toolMetadata = pgTable(
-  "tool_metadata",
-  {
-    cluster_id: varchar("cluster_id")
-      .references(() => clusters.id)
-      .notNull(),
-    service: varchar("service", { length: 1024 }).notNull(),
-    function_name: varchar("function_name", { length: 1024 }).notNull(),
-    user_defined_context: text("user_defined_context"),
-    result_keys: json("result_keys").$type<{ key: string; last_seen: number }[]>().default([]),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.service, table.function_name],
-      name: "tool_metadata_pkey",
-    }),
-  })
-);
-
 export const versionedEntities = pgTable(
   "versioned_entities",
   {
@@ -560,7 +541,6 @@ export const analyticsSnapshots = pgTable(
 export const db = drizzle(pool, {
   schema: {
     runs,
-    toolMetadata,
     agents,
     events,
   },

@@ -1,5 +1,4 @@
 import { client } from "@/client/client";
-import { unifiedMessageDataSchema } from "@/client/contract";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";

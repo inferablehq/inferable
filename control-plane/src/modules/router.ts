@@ -20,8 +20,7 @@ import { authRouter } from "./auth/router";
 import { ulid } from "ulid";
 import { getBlobData } from "./blobs";
 import { posthog } from "./posthog";
-import { upsertUserDefinedContext, getToolMetadata, deleteToolMetadata } from "./tool-metadata";
-import { BadRequestError, NotFoundError } from "../utilities/errors";
+import { BadRequestError } from "../utilities/errors";
 import {
   upsertAgent,
   getAgent,
@@ -478,63 +477,6 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: blob.data,
-    };
-  },
-
-  upsertFunctionMetadata: async request => {
-    const { service, function: functionName, clusterId } = request.params;
-    const { additionalContext } = request.body;
-
-    const auth = request.request.getAuth();
-    await auth.canManage({ cluster: { clusterId } });
-
-    await upsertUserDefinedContext({
-      service,
-      function_name: functionName,
-      cluster_id: clusterId,
-      user_defined_context: additionalContext ?? null,
-    });
-
-    return {
-      status: 204,
-      body: undefined,
-    };
-  },
-
-  getFunctionMetadata: async request => {
-    const { clusterId, service, function: functionName } = request.params;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
-
-    try {
-      const metadata = await getToolMetadata(clusterId, service, functionName);
-      return {
-        status: 200,
-        body: metadata,
-      };
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return {
-          status: 404,
-          body: { message: "Tool metadata not found" },
-        };
-      }
-      throw error;
-    }
-  },
-
-  deleteFunctionMetadata: async request => {
-    const { clusterId, service, function: functionName } = request.params;
-
-    const auth = request.request.getAuth();
-    await auth.canManage({ cluster: { clusterId } });
-
-    await deleteToolMetadata(clusterId, service, functionName);
-
-    return {
-      status: 204,
-      body: undefined,
     };
   },
 

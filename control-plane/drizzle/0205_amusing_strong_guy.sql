@@ -1,0 +1,1 @@
+DROP TABLE "tool_metadata";
