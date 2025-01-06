@@ -2,12 +2,19 @@ import { client } from "@/client/client";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
-import { PencilLineIcon, RefreshCcw } from "lucide-react";
+import { Mail, PencilLineIcon, RefreshCcw, Slack, User } from "lucide-react";
 import { useCallback, useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { MessageContainerProps } from "./workflow-event";
+import { z } from "zod";
+
+const displayableMeta = z.object({
+  displayable: z.object({
+    via: z.string().optional(),
+  }).optional(),
+}).passthrough();
 
 export function HumanMessage({
   clusterId,
@@ -17,10 +24,15 @@ export function HumanMessage({
   id: messageId,
   pending,
   createdAt,
+  metadata,
 }: MessageContainerProps<"human">) {
   const [editing, setEditing] = useState(false);
   const [editedValue, setEditedValue] = useState(data.message);
   const { getToken } = useAuth();
+
+  const parsed  = displayableMeta.safeParse(metadata);
+
+  const via = parsed.success ? parsed.data?.displayable?.via : "playground";
 
   const sendMessage = useCallback(async () => {
     if (!editedValue) return;
@@ -130,10 +142,23 @@ export function HumanMessage({
         <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-primary-foreground/20">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
-              <div className="text-primary-foreground font-medium">H</div>
+              <div className="text-primary-foreground font-medium">
+                {(() => {
+                  switch (via) {
+                    case "slack":
+                      return <Slack />;
+                    case "email":
+                      return <Mail />;
+                    case "playground":
+                      return <User />;
+                    default:
+                      return null;
+                  }
+                })()}
+              </div>
             </div>
             <div>
-              <div className="text-sm font-medium text-primary-foreground">Human</div>
+              <div className="text-sm font-medium text-primary-foreground">Human <span className="text-muted-foreground">via {via}</span></div>
               <div className="text-xs text-primary-foreground/70">
                 {createdAt ? formatRelative(createdAt, new Date()) : "unknown"}
               </div>

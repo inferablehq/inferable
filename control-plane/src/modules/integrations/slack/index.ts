@@ -476,6 +476,11 @@ const handleNewThread = async ({ event, client, clusterId, userId }: MessageEven
       clusterId,
       message: event.text,
       type: "human",
+      messageMetadata: {
+        displayable: {
+          via: "slack",
+        }
+      },
       tags: {
         [THREAD_META_KEY]: thread,
         [CHANNEL_META_KEY]: event.channel,
@@ -516,6 +521,11 @@ const handleExistingThread = async ({ event, client, clusterId, userId }: Messag
         clusterId: run.clusterId,
         runId: run.id,
         message: event.text,
+        metadata: {
+          displayable: {
+            via: "slack",
+          }
+        },
         type: "human",
       });
     } else {

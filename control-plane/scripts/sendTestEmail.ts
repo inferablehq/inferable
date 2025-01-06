@@ -9,7 +9,7 @@ const messageBody = JSON.stringify(buildMessageBody({
   subject: "Which tools?",
   to: [ "01JE9SYD010WFFJ6GVE26WGVVK@run.inferable.ai" ],
   messageId: "<abc123-9054-4BB5-ADA9-C9CB425D3844@johnjcsmith.com>",
-  inReplyTo: "<0100019424f3b264-41907ca3-9529-47d8-8cad-2fd946031d29-000000@email.amazonses.com>"
+  //inReplyTo: "<0100019424f3b264-41907ca3-9529-47d8-8cad-2fd946031d29-000000@email.amazonses.com>"
 }));
 
 // Define the AWS CLI command

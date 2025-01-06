@@ -317,7 +317,9 @@ const handleNewChain = async ({
       [EMAIL_SOURCE_META_KEY]: source,
     },
     messageMetadata: {
-      displayable: {},
+      displayable: {
+        via: "email"
+      },
       externalReference: messageId,
     },
     message: body,
@@ -345,7 +347,9 @@ const handleExistingChain = async ({
     userId,
     runId,
     metadata: {
-      displayable: {},
+      displayable: {
+        via: "email"
+      },
       externalReference: messageId,
     },
     message: body,
