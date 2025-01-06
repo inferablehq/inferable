@@ -115,13 +115,6 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   }, [prompt]);
 
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [prompt]);
-
-  useEffect(() => {
     const queryAgentId = searchParams?.get("agentId");
     if (queryAgentId) {
       setSelectedAgentId(queryAgentId);
