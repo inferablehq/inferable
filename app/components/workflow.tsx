@@ -464,15 +464,12 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
               )}
 
               {run.status === "failed" && (
-                <div className="flex items-center space-x-2 ml-auto">
-                  <div className="bg-red-50 p-1.5 rounded">
-                    <MessageCircleWarning className="h-4 w-4 text-red-500" />
-                  </div>
-                  <span className="text-sm text-red-600">Failed: {run.failureReason}</span>
-                  <Button
+                <div className="flex flex-row">
+                  <MessageCircleWarning className="h-4 w-4 mt-1 text-red-500" />
+                  <span className="text-sm text-red-600 px-2">Failed: {run.failureReason}</span> <Button
                     size="sm"
                     variant="outline"
-                    className="h-7"
+                    className="h-7 align-end ml-auto"
                     onClick={async () => {
                       const loading = toast.loading("Retrying run...");
 

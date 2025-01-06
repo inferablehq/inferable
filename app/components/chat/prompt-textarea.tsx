@@ -8,8 +8,9 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
-import { ClientInferRequest } from "@ts-rest/core";
+import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
 import {
+  Bot,
   ChevronDown,
   ChevronRight,
   PlusCircleIcon,
@@ -18,31 +19,24 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
-import { InputFields } from "./input-fields";
 import Commands from "./sdk-commands";
 import { isFeatureEnabled } from "@/lib/features";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import toast from "react-hot-toast";
 
-export type RunConfiguration = {
+export type RunOptions = {
+  agentId?: string;
   attachedFunctions: string[];
   resultSchema: string | null;
   reasoningTraces: boolean;
-  prompt: string;
-  template?: {
-    id: string;
-    input: Record<string, string>;
-  };
+  initialPrompt: string;
   runContext: string | null;
   enableResultGrounding: boolean;
 };
 
 export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [inputs, setInputs] = useState<string[]>([]);
   const [prompt, setPrompt] = useState<string>("");
-  const [selectedAgent, setSelectedTemplate] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
   const { getToken } = useAuth();
   const router = useRouter();
 
@@ -51,12 +45,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-    // Update inputs when value changes
-    const newInputs = prompt.match(/{{.*?}}/g) || [];
-    setInputs(newInputs);
   }, [prompt]);
 
-  const [agent, setAgent] = useState({
+  const [options, setOptions] = useState({
     attachedFunctions: [] as string[],
     resultSchema: null as string | null,
     reasoningTraces: true,
@@ -64,45 +55,93 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     enableResultGrounding: false,
   });
 
-  const handleConfigChange = (newConfig: {
+  const handleOptionsChange = (newConfig: {
     attachedFunctions: string[];
     resultSchema: string | null;
     reasoningTraces: boolean;
     runContext: string | null;
     enableResultGrounding: boolean;
   }) => {
-    setAgent(newConfig);
+    setOptions(newConfig);
   };
 
-  const [storedInputs, setStoredInputs] = useState<Record<string, string>>({});
+
+  const [agents, setAgents] = useState<ClientInferResponseBody<
+    typeof contract.listAgents,
+    200
+  > | null>(null);
+
+  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(undefined);
+
+  const searchParams = useSearchParams();
+
+
+  useEffect(() => {
+    if (agents) {
+      if (!selectedAgentId) {
+        setOptions({
+          attachedFunctions: [],
+          enableResultGrounding: false,
+          reasoningTraces: true,
+          resultSchema: null,
+          runContext: null,
+        })
+        return
+      }
+
+      const agent = agents.find((agent) => agent.id === selectedAgentId);
+
+      if (!agent) {
+        toast.error("Could not find Agent with ID: " + selectedAgentId);
+        setSelectedAgentId(undefined);
+        return
+      }
+
+      setOptions({
+        attachedFunctions: agent.attachedFunctions || [],
+        enableResultGrounding: false,
+        reasoningTraces: true,
+        resultSchema: agent.resultSchema ? JSON.stringify(agent.resultSchema, null, 2) : null,
+        runContext: null,
+      })
+    }
+  }, [selectedAgentId, agents]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [prompt]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [prompt]);
+
+  useEffect(() => {
+    const queryAgentId = searchParams?.get("agentId");
+    if (queryAgentId) {
+      setSelectedAgentId(queryAgentId);
+    }
+  }, [ searchParams, setSelectedAgentId ]);
 
   const onSubmit = useCallback(
-    async (config: RunConfiguration) => {
+    async (options: RunOptions) => {
       const body: ClientInferRequest<typeof contract.createRun>["body"] = {};
 
-      if (config.template?.id) {
-        body.agentId = config.template.id;
-
-        body.input = Object.fromEntries(
-          Object.entries(config.template.input).map(([key, value]) => [
-            key.replaceAll("{{", "").replaceAll("}}", ""),
-            value,
-          ])
-        );
-      } else {
-        body.initialPrompt = config.prompt.replace(/{{.*?}}/g, "");
+      if (options.runContext) {
+        body.context = JSON.parse(options.runContext);
       }
 
-      if (config.runContext) {
-        body.context = JSON.parse(config.runContext);
+      if (options.resultSchema) {
+        body.resultSchema = JSON.parse(options.resultSchema);
       }
 
-      if (config.resultSchema) {
-        body.resultSchema = JSON.parse(config.resultSchema);
-      }
-
-      if (config.attachedFunctions && config.attachedFunctions.length > 0) {
-        body.attachedFunctions = config.attachedFunctions?.map((fn) => {
+      if (options.attachedFunctions && options.attachedFunctions.length > 0) {
+        body.attachedFunctions = options.attachedFunctions?.map((fn) => {
           const [service, functionName] = fn.split("_");
 
           return {
@@ -112,8 +151,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         });
       }
 
-      body.reasoningTraces = config.reasoningTraces;
-      body.enableResultGrounding = config.enableResultGrounding;
+      body.initialPrompt = options.initialPrompt;
+      body.agentId = options.agentId;
+      body.reasoningTraces = options.reasoningTraces;
+      body.enableResultGrounding = options.enableResultGrounding;
 
       body.interactive = true;
 
@@ -128,14 +169,12 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       });
 
       if (result.status !== 201) {
-        createErrorToast(result, "Failed to create workflow");
+        createErrorToast(result, "Failed to create Run");
         return;
       } else {
         // clear everything
         setPrompt("");
-        setSelectedTemplate(null);
-        setStoredInputs({});
-        setAgent({
+        setOptions({
           attachedFunctions: [],
           resultSchema: null,
           reasoningTraces: true,
@@ -150,36 +189,14 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   );
 
   const submit = () => {
-    let updatedPrompt = prompt;
-
-    if (!selectedAgent) {
-      updatedPrompt = prompt;
-
-      Object.entries(storedInputs).forEach(([input, inputValue]) => {
-        if (inputValue) {
-          updatedPrompt = updatedPrompt.replace(
-            new RegExp(input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
-            `<data>${input.replace(/[{}]/g, "")}: ${inputValue}</data>`
-          );
-        }
-      });
-
-      setPrompt(updatedPrompt);
-    }
-
     onSubmit({
-      attachedFunctions: agent.attachedFunctions,
-      resultSchema: agent.resultSchema,
-      reasoningTraces: agent.reasoningTraces,
-      prompt: updatedPrompt,
-      runContext: agent.runContext,
-      template: selectedAgent
-        ? {
-            id: selectedAgent.id,
-            input: storedInputs,
-          }
-        : undefined,
-      enableResultGrounding: agent.enableResultGrounding,
+      attachedFunctions: options.attachedFunctions,
+      resultSchema: options.resultSchema,
+      reasoningTraces: options.reasoningTraces,
+      initialPrompt: prompt,
+      runContext: options.runContext,
+      enableResultGrounding: options.enableResultGrounding,
+      agentId: selectedAgentId,
     });
   };
 
@@ -189,57 +206,6 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       submit();
     }
   };
-
-  const selectConfig = (template: {
-    id: string;
-    name: string;
-    attachedFunctions: string[];
-    structuredOutput?: unknown;
-    initialPrompt?: string | null;
-  }) => {
-    setAgent({
-      attachedFunctions: template.attachedFunctions,
-      resultSchema: template.structuredOutput
-        ? JSON.stringify(template.structuredOutput)
-        : null,
-      runContext: null,
-      reasoningTraces: true,
-      enableResultGrounding: false,
-    });
-    template.initialPrompt && setPrompt(template.initialPrompt);
-    setSelectedTemplate({
-      id: template.id,
-      name: template.name,
-    });
-  };
-
-  const searchParams = useSearchParams();
-  const promptIdQuery = searchParams?.get("promptId");
-  const promptQuery = searchParams?.get("prompt");
-
-  useEffect(() => {
-    const fetchPrompt = async (agentId: string) => {
-      const result = await client.getAgent({
-        headers: {
-          authorization: `Bearer ${await getToken()}`,
-        },
-        params: {
-          clusterId: clusterId,
-          agentId,
-        },
-      });
-
-      if (result.status === 200) {
-        selectConfig(result.body);
-      }
-    };
-
-    if (promptIdQuery) {
-      fetchPrompt(promptIdQuery);
-    } else if (promptQuery) {
-      setPrompt(promptQuery);
-    }
-  }, [promptIdQuery, promptQuery, clusterId, getToken]);
 
   const [availableFunctions, setAvailableFunctions] = useState<
     Array<{ value: string; label: string }>
@@ -262,11 +228,33 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           }))
         );
         setAvailableFunctions(functions);
+      } else {
+        createErrorToast(result, "Failed to fetch Service Functions");
       }
     };
 
     fetchFunctions();
   }, [clusterId, getToken]);
+
+  useEffect(() => {
+    const fetchAgents = async () => {
+      const result = await client.listAgents({
+        headers: {
+          authorization: `Bearer ${await getToken()}`,
+        },
+        params: { clusterId },
+      });
+
+      if (result.status === 200) {
+        setAgents(result.body);
+      } else {
+        createErrorToast(result, "Failed to fetch Agents");
+      }
+    };
+
+    fetchAgents();
+  }, [clusterId, selectedAgentId, getToken, setAgents]);
+
 
   const [collapsedSections, setCollapsedSections] = useState<
     Record<string, boolean>
@@ -312,16 +300,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           value={prompt}
           onChange={(e) => {
             setPrompt(e.target.value);
-            setSelectedTemplate(null);
           }}
           onKeyDown={handleKeyDown}
           className="resize-none overflow-hidden"
         />
-        {selectedAgent && (
-          <p className="text-xs text-muted-foreground ml-1">
-            Using agent: {selectedAgent.name}
-          </p>
-        )}
       </div>
 
       <div className="space-y-2 border rounded-lg bg-gray-50/30 divide-y divide-gray-100/50">
@@ -350,6 +332,54 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           </p>
         </div>
 
+        {/* Agent Section */}
+        <div className="px-3 py-2">
+          <div
+            className="flex items-center gap-2 w-full text-xs hover:text-primary transition-colors"
+          >
+            <Bot className="h-3.5 w-3.5" />
+            <span className="font-medium">Agent</span>
+          </div>
+          {agents && agents.length > 0 && (
+            <div>
+            <p className="text-xs text-muted-foreground mt-1 mb-2">
+                Configure this Run using an <a className="text-blue-500 hover:underline" href={`/clusters/${clusterId}/agents`}>Agent</a>
+            </p>
+            <Select onValueChange={(selected) => selected == "none" ? setSelectedAgentId(undefined) : setSelectedAgentId(selected)} value={selectedAgentId ?? "none"}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an Agent" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {agents.map((agent) => (
+                    <SelectItem
+                      key={agent.id}
+                      value={agent.id}
+                    >
+                      {agent.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem key="none" value={"none"}>None</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            </div>
+          )}
+
+          {agents && agents.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2">
+              No Agents found for this Cluster. <a className="text-blue-500 hover:underline" href={`/clusters/${clusterId}/agents`}>Create one here</a>.
+            </p>
+          )}
+
+          { !!selectedAgentId && (
+            <p className="text-md text-muted-foreground mt-2">
+              Run options can not be configured when using an Agent.
+              The Run options will be those defined by <a className="text-blue-500 hover:underline" href={`/clusters/${clusterId}/agents/${selectedAgentId}/edit`}>Agent {selectedAgentId}</a>
+            </p>
+          )}
+        </div>
+
         {/* Functions Section */}
         <div className="px-3 py-2">
           <button
@@ -363,7 +393,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             )}
             <span className="font-medium">Attached Functions</span>
             <span className="text-[11px] text-muted-foreground ml-2">
-              {agent.attachedFunctions.length} selected
+              {options.attachedFunctions.length} selected
             </span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
@@ -372,16 +402,24 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             functions.
           </p>
           <div className={cn("mt-2", collapsedSections.functions && "hidden")}>
-            <MultiSelect
-              value={agent.attachedFunctions}
-              onChange={(value) =>
-                handleConfigChange({
-                  ...agent,
-                  attachedFunctions: value,
-                })
-              }
-              options={availableFunctions}
-            />
+            { !!selectedAgentId ? (
+              <pre className="bg-gray-5 border rounded-md p-2">
+                {JSON.stringify(options.attachedFunctions, null, 2)}
+              </pre>
+
+            ) : (
+              <MultiSelect
+                value={options.attachedFunctions}
+                onChange={(value) =>
+                  handleOptionsChange({
+                    ...options,
+                    attachedFunctions: value,
+                  })
+                }
+                options={availableFunctions}
+              />
+            )}
+
           </div>
         </div>
 
@@ -413,22 +451,23 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             )}
           >
             <Textarea
-              value={agent.resultSchema || ""}
+              value={options.resultSchema || ""}
+              disabled={!!selectedAgentId}
               onChange={(e) =>
-                handleConfigChange({
-                  ...agent,
+                handleOptionsChange({
+                  ...options,
                   resultSchema: e.target.value,
                 })
               }
               placeholder="Enter JSON schema..."
               className="font-mono text-xs bg-white/50"
             />
-            {agent.resultSchema && (
+            {options.resultSchema && (
               <div className="rounded-md overflow-hidden border border-gray-100">
                 {(() => {
                   try {
-                    JSON.parse(agent.resultSchema);
-                    return <ReadOnlyJSON json={agent.resultSchema} />;
+                    JSON.parse(options.resultSchema);
+                    return <ReadOnlyJSON json={options.resultSchema} />;
                   } catch (e) {
                     return (
                       <div className="text-[11px] text-red-600 bg-red-50 p-2 border-t">
@@ -471,22 +510,23 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             )}
           >
             <Textarea
-              value={agent.runContext || ""}
+              value={options.runContext || ""}
+              disabled={!!selectedAgentId}
               onChange={(e) =>
-                handleConfigChange({
-                  ...agent,
+                handleOptionsChange({
+                  ...options,
                   runContext: e.target.value,
                 })
               }
               placeholder="Enter context as JSON..."
               className="font-mono text-xs bg-white/50"
             />
-            {agent.runContext && (
+            {options.runContext && (
               <div className="rounded-md overflow-hidden border border-gray-100">
                 {(() => {
                   try {
-                    JSON.parse(agent.runContext);
-                    return <ReadOnlyJSON json={agent.runContext} />;
+                    JSON.parse(options.runContext);
+                    return <ReadOnlyJSON json={options.runContext} />;
                   } catch (e) {
                     return (
                       <div className="text-[11px] text-red-600 bg-red-50 p-2 border-t">
@@ -525,10 +565,11 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
           >
             <div className="flex items-center space-x-2">
               <Switch
-                checked={agent.reasoningTraces}
+                checked={options.reasoningTraces}
+                disabled={!!selectedAgentId}
                 onCheckedChange={(checked) =>
-                  handleConfigChange({
-                    ...agent,
+                  handleOptionsChange({
+                    ...options,
                     reasoningTraces: checked,
                   })
                 }
@@ -541,10 +582,11 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             {isFeatureEnabled("feature.result_grounding") && (
               <div className={"flex items-center space-x-2"}>
                 <Switch
-                  checked={agent.enableResultGrounding}
+                  checked={options.enableResultGrounding}
+                  disabled={!!selectedAgentId}
                   onCheckedChange={(checked) =>
-                    handleConfigChange({
-                      ...agent,
+                    handleOptionsChange({
+                      ...options,
                       enableResultGrounding: checked,
                     })
                   }
@@ -563,15 +605,12 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         <Button size="sm" onClick={submit}>
           Start Run
         </Button>
-        {inputs.length > 0 && (
-          <InputFields inputs={inputs} onApply={setStoredInputs} />
-        )}
         {prompt.length > 3 && (
           <Commands
             clusterId={clusterId}
             config={{
-              attachedFunctions: agent.attachedFunctions,
-              resultSchema: agent.resultSchema,
+              attachedFunctions: options.attachedFunctions,
+              resultSchema: options.resultSchema,
               prompt,
             }}
           />
