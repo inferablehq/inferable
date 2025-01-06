@@ -224,7 +224,7 @@ func (s *service) poll() error {
 	}
 
 	options := client.FetchDataOptions{
-		Path:    fmt.Sprintf("/clusters/%s/calls?acknowledge=true&service=%s&status=pending&limit=10", clusterId, s.Name),
+		Path:    fmt.Sprintf("/clusters/%s/jobs?acknowledge=true&service=%s&status=pending&limit=10", clusterId, s.Name),
 		Method:  "GET",
 		Headers: headers,
 	}
@@ -236,7 +236,7 @@ func (s *service) poll() error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed to poll calls: %v", err)
+		return fmt.Errorf("failed to poll jobs: %v", err)
 	}
 
 	if retryAfter, ok := respHeaders["Retry-After"]; ok {
@@ -352,7 +352,7 @@ func (s *service) persistJobResult(jobID string, result callResult) error {
 	}
 
 	options := client.FetchDataOptions{
-		Path:    fmt.Sprintf("/clusters/%s/calls/%s/result", clusterId, jobID),
+		Path:    fmt.Sprintf("/clusters/%s/jobs/%s/result", clusterId, jobID),
 		Method:  "POST",
 		Headers: headers,
 		Body:    string(payloadJSON),

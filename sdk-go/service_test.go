@@ -173,7 +173,7 @@ func TestServiceStartAndReceiveMessage(t *testing.T) {
 
 	// Use executeJobSync to invoke the function
 	testMessage := "Hello, SQS!"
-	executeCallUrl := fmt.Sprintf("%s/clusters/%s/calls?waitTime=20", apiEndpoint, clusterId)
+	executeCallUrl := fmt.Sprintf("%s/clusters/%s/jobs?waitTime=20", apiEndpoint, clusterId)
 	payload := map[string]interface{}{
 		"service":  "TestServiceSuccess",
 		"function": "TestFunc",
@@ -249,7 +249,7 @@ func TestServiceStartAndReceiveFailingMessage(t *testing.T) {
 
 	// Use executeJobSync to invoke the function
 	testMessage := "Hello, SQS!"
-	executeCallUrl := fmt.Sprintf("%s/clusters/%s/calls?waitTime=20", apiEndpoint, clusterId)
+	executeCallUrl := fmt.Sprintf("%s/clusters/%s/jobs?waitTime=20", apiEndpoint, clusterId)
 	payload := map[string]interface{}{
 		"service":  "TestServiceFail",
 		"function": "FailingFunc",
