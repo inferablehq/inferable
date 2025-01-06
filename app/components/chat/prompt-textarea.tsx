@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
-import { Bot, ChevronDown, ChevronRight, PlusCircleIcon, Settings2Icon } from "lucide-react";
+import { Bot, ChevronDown, ChevronRight, Cog, PlusCircleIcon, Settings2Icon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
@@ -310,7 +310,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             <span className="font-medium uppercase tracking-wider">Configuration</span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Configure how the Agent processes your request and interacts with available tools.
+            Configure how Inferable will process your request and interact with available tools.
           </p>
         </div>
 
@@ -326,20 +326,22 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         >
           <div className="border-b">
             <TabsList className="w-full justify-start bg-transparent h-auto p-0">
-              <TabsTrigger
-                value="custom"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-3 py-2 text-xs"
-              >
-                Custom
-              </TabsTrigger>
               {agents && agents.length > 0 && (
                 <TabsTrigger
                   value="agent"
                   className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-3 py-2 text-xs"
                 >
-                  Use Agent
+                  <Bot className="mr-2 h-3.5 w-3.5" />
+                  Agents
                 </TabsTrigger>
               )}
+              <TabsTrigger
+                value="custom"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-3 py-2 text-xs"
+              >
+                <Cog className="mr-2 h-3.5 w-3.5" />
+                Custom
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -395,7 +397,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                 Define a JSON schema to get structured output from the AI. The agent will format its
                 response to match your specified schema. See the{" "}
                 <a
-                  className="text-blue-500 hover:underline"
+                  className="text-xs text-primary hover:text-primary/90 hover:underline"
                   href="https://docs.inferable.ai/pages/runs#resultschema"
                 >
                   {" "}
@@ -452,7 +454,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                 Provide additional context as JSON that will be passed into all function calls. It
                 is <span className="font-bold">not</span> visible to the agent. See the{" "}
                 <a
-                  className="text-blue-500 hover:underline"
+                  className="text-xs text-primary hover:text-primary/90 hover:underline"
                   href="https://docs.inferable.ai/pages/runs#context"
                 >
                   {" "}
@@ -549,6 +551,11 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
               {agents && agents.length > 0 ? (
                 <div>
                   <div className="mb-6">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Select from one of the Cluster&apos;s existing <a className="text-xs text-primary hover:text-primary/90 hover:underline"
+                                href={`/clusters/${clusterId}/agents`}>Agents</a>.
+
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {agents.map(agent => (
                         <Button
@@ -576,7 +583,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                       if (!agent) return null;
                       return (
                         <div className="space-y-6 bg-muted/30 rounded-lg p-4">
-                          <div className="border-b pb-4">
+                          <div className="border-b">
                             <div className="flex items-start justify-between">
                               <div>
                                 <h3 className="text-sm font-medium">{agent.name}</h3>
@@ -628,7 +635,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                     No Agents found for this Cluster
                   </p>
                   <a
-                    className="text-sm text-primary hover:text-primary/90 hover:underline"
+                    className="text-xs text-primary hover:text-primary/90 hover:underline"
                     href={`/clusters/${clusterId}/agents`}
                   >
                     Create your first agent
