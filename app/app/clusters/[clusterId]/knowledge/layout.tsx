@@ -45,7 +45,7 @@ export default function KnowledgeLayout({
   const fetchArtifacts = useCallback(async () => {
     try {
       const token = await getToken();
-      const response = await client.getKnowledge({
+      const response = await client.listKnowledgeArtifacts({
         params: { clusterId },
         headers: { authorization: token as string },
         query: { query: searchQuery, limit: 20 },

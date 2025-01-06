@@ -3,7 +3,6 @@ import { generateOpenApi } from "@ts-rest/open-api";
 import fs from "fs";
 import path from "path";
 import util from "util";
-import { consumeClusterExport, produceClusterExport } from "./cluster-export";
 import { contract } from "./contract";
 import * as data from "./data";
 import * as management from "./management";
@@ -335,67 +334,6 @@ export const router = initServer().router(contract, {
       body: messages.inserted,
     };
   },
-  getClusterExport: async request => {
-    const { clusterId } = request.params;
-
-    const auth = request.request.getAuth().isAdmin();
-    await auth.canManage({ cluster: { clusterId } });
-
-    const exportData = await produceClusterExport({ clusterId });
-
-    posthog?.capture({
-      distinctId: auth.entityId,
-      event: "api:cluster_export",
-      groups: {
-        organization: auth.organizationId,
-        cluster: clusterId,
-      },
-      properties: {
-        cluster_id: clusterId,
-        cli_version: request.headers["x-cli-version"],
-        user_agent: request.headers["user-agent"],
-      },
-    });
-
-    return {
-      status: 200,
-      body: {
-        data: JSON.stringify(exportData),
-      },
-    };
-  },
-  consumeClusterExport: async request => {
-    const { clusterId } = request.params;
-    const { data } = request.body;
-
-    const auth = request.request.getAuth().isAdmin();
-    await auth.canManage({ cluster: { clusterId } });
-
-    await consumeClusterExport({
-      rawData: data,
-      clusterId,
-      organizationId: auth.organizationId,
-    });
-
-    posthog?.capture({
-      distinctId: auth.entityId,
-      event: "api:cluster_import",
-      groups: {
-        organization: auth.organizationId,
-        cluster: clusterId,
-      },
-      properties: {
-        cluster_id: clusterId,
-        cli_version: request.headers["x-cli-version"],
-        user_agent: request.headers["user-agent"],
-      },
-    });
-
-    return {
-      status: 200,
-      body: { message: "Cluster export consumed successfully" },
-    };
-  },
   oas: async () => {
     const openApiDocument = generateOpenApi(
       contract,
@@ -672,7 +610,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createClusterKnowledgeArtifact: async request => {
+  createKnowledgeArtifact: async request => {
     const { clusterId } = request.params;
     const { artifacts } = request.body;
 
@@ -690,7 +628,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getKnowledge: async request => {
+  listKnowledgeArtifacts: async request => {
     const { clusterId } = request.params;
     const { query, limit, tag } = request.query;
 
@@ -748,7 +686,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getAllKnowledgeArtifacts: async request => {
+  exportKnowledgeArtifacts: async request => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
