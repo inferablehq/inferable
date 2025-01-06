@@ -476,12 +476,9 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            className={cn(
-              "group relative flex items-center w-full px-5 py-6 hover:bg-gray-50/80 border rounded-xl transition-all duration-200 hover:shadow-lg",
-              services.length === 0
-                ? "bg-blue-50/30 border-blue-200 animate-pulse"
-                : "bg-white border-gray-200"
-            )}
+            className={
+              "group relative flex items-center w-full px-5 py-6 hover:bg-gray-50/80 border rounded-xl transition-all duration-200 hover:shadow-lg"
+            }
           >
             <div className="flex items-center gap-4 w-full">
               <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
@@ -489,7 +486,6 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               </div>
               <div className="flex flex-col items-start gap-0.5">
                 <span className="font-semibold text-gray-900">Add Service</span>
-                <span className="text-xs text-gray-500">Create a new service</span>
               </div>
             </div>
           </Button>
@@ -581,9 +577,9 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
             <Cpu className="w-5 h-5 text-gray-600" />
           </div>
           <div>
-            <div className="text-base font-medium text-gray-900">Local Service</div>
+            <div className="text-base font-medium text-gray-900">Local Demo Service</div>
             <div className="text-sm text-gray-500">
-              Run your service locally on your own machine
+              Try out Inferable with our demo service running locally on your machine
             </div>
           </div>
         </div>
@@ -616,6 +612,33 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
               {getStatusText()}
             </span>
           </Button>
+        </div>
+      </div>
+
+      <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200 hover:shadow-md">
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+            <Blocks className="w-5 h-5 text-gray-600" />
+          </div>
+          <div>
+            <div className="text-base font-medium text-gray-900">Custom Local Service</div>
+            <div className="text-sm text-gray-500">
+              Create your own service with custom functions running locally
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <a
+            href="https://docs.inferable.ai/pages/from-scratch"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+          >
+            <Button variant="outline" className="w-full bg-white hover:bg-gray-50 border-gray-200">
+              <span className="text-sm">View Documentation</span>
+            </Button>
+          </a>
         </div>
       </div>
 
