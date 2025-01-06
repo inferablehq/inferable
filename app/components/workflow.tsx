@@ -225,18 +225,18 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
   const submitApproval = useCallback(
     async ({
       approved,
-      callId,
+      jobId,
       clusterId,
     }: {
       approved: boolean;
-      callId: string;
+      jobId: string;
       clusterId: string;
     }) => {
-      if (!clusterId || !callId) {
+      if (!clusterId || !jobId) {
         return;
       }
 
-      const result = await client.createCallApproval({
+      const result = await client.createJobApproval({
         body: {
           approved,
         },
@@ -245,7 +245,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
         },
         params: {
           clusterId,
-          callId,
+          jobId,
         },
       });
 
@@ -287,7 +287,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
             submitApproval={(approved: boolean) => {
               submitApproval({
                 approved,
-                callId: job.id,
+                jobId: job.id,
                 clusterId,
               });
             }}

@@ -42,12 +42,12 @@ export const validateConfig = async (config: z.infer<typeof integrationSchema>) 
 };
 
 const handleCall = async (
-  call: NonNullable<Awaited<ReturnType<typeof getJob>>>,
+  job: NonNullable<Awaited<ReturnType<typeof getJob>>>,
   integrations: z.infer<typeof integrationSchema>
 ) => {
   await acknowledgeJob({
-    jobId: call.id,
-    clusterId: call.clusterId,
+    jobId: job.id,
+    clusterId: job.clusterId,
     machineId: "TOOLHOUSE",
   });
 
@@ -55,22 +55,22 @@ const handleCall = async (
 
   try {
     const result = await invokeToolHouse({
-      input: packer.unpack(call.targetArgs),
-      toolName: call.targetFn,
+      input: packer.unpack(job.targetArgs),
+      toolName: job.targetFn,
       apiKey: integrations.toolhouse.apiKey,
-      callId: call.id,
+      jobId: job.id,
       metadata: {
-        ...(call.authContext instanceof Object ? call.authContext : {}),
-        ...(call.runContext instanceof Object ? call.runContext : {}),
+        ...(job.authContext instanceof Object ? job.authContext : {}),
+        ...(job.runContext instanceof Object ? job.runContext : {}),
       },
     });
 
     await persistJobResult({
       result: packer.pack(result),
       resultType: "resolution",
-      jobId: call.id,
+      jobId: job.id,
       owner: {
-        clusterId: call.clusterId,
+        clusterId: job.clusterId,
       },
       machineId: "TOOLHOUSE",
     });
@@ -78,9 +78,9 @@ const handleCall = async (
     await persistJobResult({
       result: packer.pack(error),
       resultType: "rejection",
-      jobId: call.id,
+      jobId: job.id,
       owner: {
-        clusterId: call.clusterId,
+        clusterId: job.clusterId,
       },
       machineId: "TOOLHOUSE",
     });
@@ -91,13 +91,13 @@ const invokeToolHouse = async ({
   input,
   toolName,
   apiKey,
-  callId,
+  jobId,
   metadata,
 }: {
   input: string;
   toolName: string;
   apiKey: string;
-  callId: string;
+  jobId: string;
   metadata?: Record<string, unknown>;
 }) => {
   const toolhouse = new Toolhouse({
@@ -112,7 +112,7 @@ const invokeToolHouse = async ({
   const result = await toolhouse.runTools({
     content: [
       {
-        id: callId,
+        id: jobId,
         input,
         name: toToolHouseName(toolName),
         type: "tool_use",

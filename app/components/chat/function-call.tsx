@@ -90,7 +90,7 @@ function FunctionCall({
   const [editing, setEditing] = useState(false);
 
   const [job, setJob] = useState<Partial<
-    ClientInferResponseBody<typeof contract.getCall>
+    ClientInferResponseBody<typeof contract.getJob>
   > | null>(null);
 
   const completedWithRejection =
@@ -99,9 +99,9 @@ function FunctionCall({
   const { getToken } = useAuth();
 
   const getJobDetail = useCallback(async () => {
-    const result = await client.getCall({
+    const result = await client.getJob({
       params: {
-        callId: jobId,
+        jobId,
         clusterId,
       },
       headers: {

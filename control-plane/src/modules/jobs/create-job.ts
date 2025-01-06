@@ -266,7 +266,7 @@ const onAfterJobCreated = async ({
         MessageBody: JSON.stringify({
           clusterId: owner.clusterId,
           runId,
-          callId: jobId,
+          jobId,
           service,
           ...injectTraceContext(),
         }),

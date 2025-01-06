@@ -29,7 +29,7 @@ export const stop = async () => {
 async function handleExternalCall(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
-      callId: z.string(),
+      jobId: z.string(),
       service: z.string(),
     })
     .safeParse(message);
@@ -55,7 +55,7 @@ async function handleExternalCall(message: unknown) {
   const [call, integrations] = await Promise.all([
     getJob({
       clusterId: zodResult.data.clusterId,
-      jobId: zodResult.data.callId,
+      jobId: zodResult.data.jobId,
     }),
     getIntegrations({
       clusterId: zodResult.data.clusterId,
@@ -63,9 +63,9 @@ async function handleExternalCall(message: unknown) {
   ]);
 
   if (!call) {
-    logger.error("Could not find call", {
+    logger.error("Could not find Job", {
       clusterId: zodResult.data.clusterId,
-      callId: zodResult.data.callId,
+      jobId: zodResult.data.jobId,
     });
     return;
   }
