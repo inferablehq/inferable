@@ -4,7 +4,7 @@ import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
 import { createJob, pollJobs, getJob, requestApproval, submitApproval } from "./jobs";
 import { acknowledgeJob, persistJobResult } from "./job-results";
-import { selfHealCalls } from "./self-heal-jobs";
+import { selfHealJobs } from "./self-heal-jobs";
 import * as redis from "../redis";
 import { getClusterBackgroundRun } from "../runs";
 
@@ -105,7 +105,7 @@ describe("selfHealCalls", () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
-    const healedJobs = await selfHealCalls();
+    const healedJobs = await selfHealJobs();
 
     expect(healedJobs.stalledFailedByTimeout).toContain(createJobResult.id);
     expect(healedJobs.stalledRecovered).toContain(createJobResult.id);
@@ -151,7 +151,7 @@ describe("selfHealCalls", () => {
     expect(createJobResult.created).toBe(true);
 
     await requestApproval({
-      callId: createJobResult.id,
+      jobId: createJobResult.id,
       clusterId: owner.clusterId,
     });
 
@@ -159,7 +159,7 @@ describe("selfHealCalls", () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
-    const healedJobs = await selfHealCalls();
+    const healedJobs = await selfHealJobs();
 
     expect(healedJobs.stalledFailedByTimeout).not.toContain(createJobResult.id);
     expect(healedJobs.stalledRecovered).not.toContain(createJobResult.id);
@@ -215,7 +215,7 @@ describe("selfHealCalls", () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // run the self heal job
-    const healedJobs = await selfHealCalls();
+    const healedJobs = await selfHealJobs();
 
     expect(healedJobs.stalledFailedByTimeout).toContain(createJobResult.id);
     expect(healedJobs.stalledRecovered).not.toContain(createJobResult.id);
@@ -464,7 +464,7 @@ describe("submitApproval", () => {
 
     await requestApproval({
       clusterId: owner.clusterId,
-      callId: result.id,
+      jobId: result.id,
     });
 
     const retreivedJob1 = await getJob({
@@ -476,7 +476,7 @@ describe("submitApproval", () => {
 
     await submitApproval({
       clusterId: owner.clusterId,
-      callId: retreivedJob1!.id,
+      jobId: retreivedJob1!.id,
       approved: true,
     });
 
@@ -492,7 +492,7 @@ describe("submitApproval", () => {
     // Re-submitting approval should be a no-op
     await submitApproval({
       clusterId: owner.clusterId,
-      callId: retreivedJob1!.id,
+      jobId: retreivedJob1!.id,
       approved: false,
     });
 
@@ -520,7 +520,7 @@ describe("submitApproval", () => {
 
     await requestApproval({
       clusterId: owner.clusterId,
-      callId: result.id,
+      jobId: result.id,
     });
 
     const retreivedJob1 = await getJob({
@@ -532,7 +532,7 @@ describe("submitApproval", () => {
 
     await submitApproval({
       clusterId: owner.clusterId,
-      callId: retreivedJob1!.id,
+      jobId: retreivedJob1!.id,
       approved: false,
     });
 
@@ -548,7 +548,7 @@ describe("submitApproval", () => {
     // Re-submitting approval should be a no-op
     await submitApproval({
       clusterId: owner.clusterId,
-      callId: retreivedJob1!.id,
+      jobId: retreivedJob1!.id,
       approved: true,
     });
 

@@ -282,11 +282,11 @@ export const definition = {
   // Job Endpoints
   getCall: {
     method: "GET",
-    path: "/clusters/:clusterId/calls/:callId",
+    path: "/clusters/:clusterId/calls/:jobId",
     headers: z.object({ authorization: z.string() }),
     pathParams: z.object({
       clusterId: z.string(),
-      callId: z.string(),
+      jobId: z.string(),
     }),
     responses: {
       200: z.object({
@@ -334,14 +334,14 @@ export const definition = {
   },
   createCallResult: {
     method: "POST",
-    path: "/clusters/:clusterId/calls/:callId/result",
+    path: "/clusters/:clusterId/calls/:jobId/result",
     headers: z.object({
       authorization: z.string(),
       ...machineHeaders,
     }),
     pathParams: z.object({
       clusterId: z.string(),
-      callId: z.string(),
+      jobId: z.string(),
     }),
     responses: {
       204: z.undefined(),
@@ -390,13 +390,13 @@ export const definition = {
   },
   createCallApproval: {
     method: "POST",
-    path: "/clusters/:clusterId/calls/:callId/approval",
+    path: "/clusters/:clusterId/calls/:jobId/approval",
     headers: z.object({
       authorization: z.string(),
     }),
     pathParams: z.object({
       clusterId: z.string(),
-      callId: z.string(),
+      jobId: z.string(),
     }),
     responses: {
       204: z.undefined(),
@@ -410,7 +410,7 @@ export const definition = {
   },
   createCallBlob: {
     method: "POST",
-    path: "/clusters/:clusterId/calls/:callId/blobs",
+    path: "/clusters/:clusterId/calls/:jobId/blobs",
     headers: z.object({
       authorization: z.string(),
       "x-machine-id": z.string(),
@@ -421,7 +421,7 @@ export const definition = {
     }),
     pathParams: z.object({
       clusterId: z.string(),
-      callId: z.string(),
+      jobId: z.string(),
     }),
     responses: {
       201: z.object({

@@ -138,14 +138,14 @@ export const handleNewRunMessage = async ({
 };
 
 export const handleApprovalRequest = async ({
-  callId,
+  jobId,
   runId,
   clusterId,
   service,
   targetFn,
   tags,
 }: {
-  callId: string;
+  jobId: string;
   runId: string;
   clusterId: string;
   service: string;
@@ -194,7 +194,7 @@ export const handleApprovalRequest = async ({
               type: "plain_text",
               text: "Approve",
             },
-            value: callId,
+            value: jobId,
             action_id: CALL_APPROVE_ACTION_ID,
           },
           {
@@ -203,7 +203,7 @@ export const handleApprovalRequest = async ({
               type: "plain_text",
               text: "Deny",
             },
-            value: callId,
+            value: jobId,
             action_id: CALL_DENY_ACTION_ID,
           },
         ],
@@ -624,7 +624,7 @@ const handleCallApprovalAction = async ({
 
   await submitApproval({
     approved,
-    callId: action.value,
+    jobId: action.value,
     clusterId: integration.cluster_id,
   });
 
@@ -632,7 +632,7 @@ const handleCallApprovalAction = async ({
     approved,
     channelId,
     messageTs,
-    callId: action.value,
+    jobId: action.value,
   });
 
   const text = `${approved ? "✅" : "❌"} Call \`${action.value}\` was ${approved ? "approved" : "denied"}`;

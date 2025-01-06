@@ -8,7 +8,7 @@ import * as events from "../observability/events";
 import { packer } from "../packer";
 import { resumeRun } from "../runs";
 import { notifyApprovalRequest } from "../runs/notify";
-import { selfHealCalls } from "./self-heal-jobs";
+import { selfHealJobs } from "./self-heal-jobs";
 
 export { createJob } from "./create-job";
 export { acknowledgeJob, persistJobResult } from "./job-results";
@@ -348,10 +348,10 @@ export const pollJobs = async ({
 };
 
 export async function requestApproval({
-  callId,
+  jobId,
   clusterId,
 }: {
-  callId: string;
+  jobId: string;
   clusterId: string;
 }) {
   const [updated] = await data.db
@@ -360,13 +360,13 @@ export async function requestApproval({
       approval_requested: true,
     })
     .returning({
-      callId: data.jobs.id,
+      jobId: data.jobs.id,
       clusterId: data.jobs.cluster_id,
       runId: data.jobs.workflow_id,
       service: data.jobs.service,
       targetFn: data.jobs.target_fn,
     })
-    .where(and(eq(data.jobs.id, callId), eq(data.jobs.cluster_id, clusterId)));
+    .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
 
   if (updated.runId) {
     await notifyApprovalRequest(updated);
@@ -374,11 +374,11 @@ export async function requestApproval({
 }
 
 export async function submitApproval({
-  callId,
+  jobId,
   clusterId,
   approved,
 }: {
-  callId: string;
+  jobId: string;
   clusterId: string;
   approved: boolean;
 }) {
@@ -394,7 +394,7 @@ export async function submitApproval({
       })
       .where(
         and(
-          eq(data.jobs.id, callId),
+          eq(data.jobs.id, jobId),
           eq(data.jobs.cluster_id, clusterId),
           // Do not allow denying a job that has already been approved
           isNull(data.jobs.approved),
@@ -417,7 +417,7 @@ export async function submitApproval({
       })
       .where(
         and(
-          eq(data.jobs.id, callId),
+          eq(data.jobs.id, jobId),
           eq(data.jobs.cluster_id, clusterId),
           // Do not allow denying a job that has already been approved
           isNull(data.jobs.approved),
@@ -435,4 +435,4 @@ export async function submitApproval({
 }
 
 export const start = () =>
-  cron.registerCron(selfHealCalls, "self-heal-calls", { interval: 1000 * 5 }); // 5 seconds
+  cron.registerCron(selfHealJobs, "self-heal-calls", { interval: 1000 * 5 }); // 5 seconds

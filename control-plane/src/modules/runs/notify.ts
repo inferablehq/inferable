@@ -10,20 +10,20 @@ import * as email from "../email";
 
 
 export const notifyApprovalRequest = async ({
-  callId,
+  jobId,
   clusterId,
   runId,
   service,
   targetFn,
 }: {
-  callId: string;
+  jobId: string;
   clusterId: string;
   runId: string;
   service: string;
   targetFn: string;
 }) => {
   const tags = await getRunTags({ clusterId, runId });
-  await slack.handleApprovalRequest({ callId, clusterId, runId, service, targetFn, tags });
+  await slack.handleApprovalRequest({ jobId, clusterId, runId, service, targetFn, tags });
 };
 
 export const notifyNewMessage = async ({

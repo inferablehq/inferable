@@ -35,7 +35,7 @@ import {
   getKnowledgeArtifact,
   getAllKnowledgeArtifacts,
 } from "./knowledge/knowledgebase";
-import { callsRouter } from "./calls/router";
+import { jobsRouter } from "./jobs/router";
 import { buildModel } from "./models";
 import { getServiceDefinitions } from "./service-definitions";
 import { integrationsRouter } from "./integrations/router";
@@ -47,7 +47,7 @@ export const router = initServer().router(contract, {
   ...machineRouter.routes,
   ...runsRouter.routes,
   ...authRouter.routes,
-  ...callsRouter.routes,
+  ...jobsRouter.routes,
   ...integrationsRouter.routes,
   live: async () => {
     await data.isAlive();

@@ -8,9 +8,9 @@ import { createBlob } from "../blobs";
 import { logger } from "../observability/logger";
 import { recordServicePoll } from "../service-definitions";
 import { getJob } from "../jobs/jobs";
-import { getClusterBackgroundRun, resumeRun } from "../runs";
+import { getClusterBackgroundRun } from "../runs";
 
-export const callsRouter = initServer().router(
+export const jobsRouter = initServer().router(
   {
     createCall: contract.createCall,
     createCallResult: contract.createCallResult,
@@ -76,7 +76,7 @@ export const callsRouter = initServer().router(
       };
     },
     createCallResult: async request => {
-      const { clusterId, callId } = request.params;
+      const { clusterId, jobId } = request.params;
       let { result, resultType } = request.body;
       const { meta } = request.body;
 
@@ -98,11 +98,11 @@ export const callsRouter = initServer().router(
 
         if (parsed.data.type === "approval") {
           logger.info("Requesting approval", {
-            callId,
+            jobId,
           });
 
           await jobs.requestApproval({
-            callId: callId,
+            jobId,
             clusterId,
           });
 
@@ -119,14 +119,14 @@ export const callsRouter = initServer().router(
         // Max result size 500kb
         const data = Buffer.from(JSON.stringify(result));
         if (Buffer.byteLength(data) > 500 * 1024) {
-          logger.info("Call result too large, persisting as blob", {
-            callId,
+          logger.info("Job result too large, persisting as blob", {
+            jobId,
           });
 
-          const call = await getJob({ clusterId, jobId: callId });
+          const job = await getJob({ clusterId, jobId });
 
-          if (!call) {
-            throw new NotFoundError("Call not found");
+          if (!job) {
+            throw new NotFoundError("Job not found");
           }
 
           await createBlob({
@@ -134,10 +134,10 @@ export const callsRouter = initServer().router(
             size: Buffer.byteLength(data),
             encoding: "base64",
             type: "application/json",
-            name: "Oversize call result",
+            name: "Oversize Job result",
             clusterId,
-            runId: call.runId ?? undefined,
-            jobId: callId ?? undefined,
+            runId: job.runId ?? undefined,
+            jobId: job.id ?? undefined,
           });
 
           result = {
@@ -168,7 +168,7 @@ export const callsRouter = initServer().router(
           result: packer.pack(result),
           resultType,
           functionExecutionTime: meta?.functionExecutionTime,
-          jobId: callId,
+          jobId,
           machineId,
         }),
       ]);
@@ -247,19 +247,19 @@ export const callsRouter = initServer().router(
       };
     },
     createCallBlob: async request => {
-      const { callId, clusterId } = request.params;
+      const { jobId, clusterId } = request.params;
       const body = request.body;
 
       const machine = request.request.getAuth().isMachine();
       machine.canAccess({ cluster: { clusterId } });
 
-      const call = await jobs.getJob({ clusterId, jobId: callId });
+      const job = await jobs.getJob({ clusterId, jobId });
 
-      if (!call) {
+      if (!job) {
         return {
           status: 404,
           body: {
-            message: "Call not found",
+            message: "Job not found",
           },
         };
       }
@@ -267,8 +267,8 @@ export const callsRouter = initServer().router(
       const blob = await createBlob({
         ...body,
         clusterId,
-        runId: call.runId ?? undefined,
-        jobId: callId ?? undefined,
+        runId: job.runId ?? undefined,
+        jobId: jobId ?? undefined,
       });
 
       return {
@@ -277,52 +277,52 @@ export const callsRouter = initServer().router(
       };
     },
     getCall: async request => {
-      const { clusterId, callId } = request.params;
+      const { clusterId, jobId } = request.params;
 
       const auth = request.request.getAuth();
       await auth.canAccess({ cluster: { clusterId } });
 
-      const call = await jobs.getJob({ clusterId, jobId: callId });
+      const job = await jobs.getJob({ clusterId, jobId });
 
-      if (!call) {
+      if (!job) {
         return {
           status: 404,
           body: {
-            message: "Call not found",
+            message: "Job not found",
           },
         };
       }
 
-      if (call.runId) {
+      if (job.runId) {
         await auth.canAccess({
-          run: { clusterId, runId: call.runId },
+          run: { clusterId, runId: job.runId },
         });
       }
 
       return {
         status: 200,
-        body: call,
+        body: job,
       };
     },
     createCallApproval: async request => {
-      const { clusterId, callId } = request.params;
+      const { clusterId, jobId } = request.params;
 
       const auth = request.request.getAuth();
       await auth.canManage({ cluster: { clusterId } });
 
-      const call = await jobs.getJob({ clusterId, jobId: callId });
+      const job = await jobs.getJob({ clusterId, jobId });
 
-      if (!call) {
+      if (!job) {
         return {
           status: 404,
           body: {
-            message: "Call not found",
+            message: "Job not found",
           },
         };
       }
 
       await jobs.submitApproval({
-        callId,
+        jobId,
         clusterId,
         approved: request.body.approved,
       });

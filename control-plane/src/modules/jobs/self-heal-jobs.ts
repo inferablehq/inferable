@@ -4,8 +4,8 @@ import * as events from "../observability/events";
 import { logger } from "../observability/logger";
 import { resumeRun } from "../runs";
 
-export async function selfHealCalls() {
-  logger.debug("Running Self-healing job");
+export async function selfHealJobs() {
+  logger.debug("Running Job Self-healing");
 
   // Jobs are failed if they are running and have timed out
   const stalledByTimeout = await data.db
