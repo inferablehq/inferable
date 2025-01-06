@@ -248,6 +248,32 @@ export const runTags = pgTable(
   })
 );
 
+export const externalMessages = pgTable(
+  "external_messages",
+  {
+    message_id: varchar("message_id", { length: 1024 }).notNull(),
+    run_id: varchar("run_id", { length: 1024 }).notNull(),
+    cluster_id: varchar("cluster_id").notNull(),
+
+    external_id: varchar("external_id", { length: 1024 }).notNull(),
+
+    channel: text("channel", {
+      enum: ["slack", "email"],
+    })
+  },
+  table => ({
+    pk: primaryKey({
+      columns: [table.cluster_id, table.external_id],
+      name: "external_messages_pkey",
+    }),
+    messageReference: foreignKey({
+      columns: [table.message_id, table.run_id, table.cluster_id],
+      foreignColumns: [runMessages.id, runMessages.workflow_id, runMessages.cluster_id],
+    }),
+    externalMessageIndex: index("externalMessagesIndex").on(table.external_id, table.cluster_id),
+  })
+)
+
 export const runs = pgTable(
   // TODO: Rename to runs
   "workflows",
@@ -309,7 +335,6 @@ export const runs = pgTable(
 
 export type RunMessageMetadata = {
   displayable: Record<string, string>;
-  externalReference?: string;
 };
 
 export const runMessages = pgTable(

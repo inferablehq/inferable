@@ -8,7 +8,6 @@ import { runMessages } from "../data";
 import * as slack from "../integrations/slack";
 import * as email from "../email";
 
-
 export const notifyApprovalRequest = async ({
   jobId,
   clusterId,
@@ -39,8 +38,8 @@ export const notifyNewMessage = async ({
   };
   tags?: Record<string, string>;
 }) => {
-  await slack.handleNewRunMessage({ message, tags });
-  await email.handleNewRunMessage({ message, tags });
+  await slack.notifyNewMessage({ message, tags });
+  await email.notifyNewMessage({ message, tags });
 };
 
 export const notifyStatusChange = async ({

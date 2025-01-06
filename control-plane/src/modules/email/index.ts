@@ -12,9 +12,9 @@ import { flagsmith } from "../flagsmith";
 import { InferSelectModel } from "drizzle-orm";
 import { runMessages } from "../data";
 import { ses } from "../ses";
-import { getMessageByReference, updateMessageReference } from "../runs/messages";
 import { ulid } from "ulid";
 import { unifiedMessageSchema } from "../contract";
+import { createExternalMessage, getExternalMessage } from "../runs/external-messages";
 
 const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
 const EMAIL_SUBJECT_META_KEY = "emailSubject";
@@ -62,7 +62,7 @@ export const stop = async () => {
   emailIngestionConsumer?.stop();
 };
 
-export const handleNewRunMessage = async ({
+export const notifyNewMessage = async ({
   message,
   tags,
 }: {
@@ -113,10 +113,12 @@ export const handleNewRunMessage = async ({
       throw new Error("SES did not return a message ID");
     }
 
-    await updateMessageReference({
-      clusterId: message.clusterId,
+    await createExternalMessage({
+      channel: "email",
+      externalId: `<${result.MessageId}@email.amazonses.com>`,
       messageId: message.id,
-      externalReference: `<${result.MessageId}@email.amazonses.com>`,
+      clusterId: message.clusterId,
+      runId: message.runId,
     });
 
     logger.info("Email sent", {
@@ -234,7 +236,10 @@ async function handleEmailIngestion(raw: unknown) {
 
   const reference = message.inReplyTo || message.references[0];
   if (reference) {
-    const existing = await getMessageByReference(reference, message.clusterId);
+    const existing = await getExternalMessage({
+      clusterId: message.clusterId,
+      externalId: reference,
+    });
     if (!existing) {
       throw new NotFoundError("Ingested email is replying to an unknown message");
     }
@@ -320,7 +325,6 @@ const handleNewChain = async ({
       displayable: {
         via: "email"
       },
-      externalReference: messageId,
     },
     message: body,
     type: "human",
@@ -350,7 +354,6 @@ const handleExistingChain = async ({
       displayable: {
         via: "email"
       },
-      externalReference: messageId,
     },
     message: body,
     type: "human",

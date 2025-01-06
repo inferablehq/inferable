@@ -16,6 +16,8 @@ import { z } from "zod";
 import { getUserForCluster } from "../../clerk";
 import { submitApproval } from "../../jobs/jobs";
 import { unifiedMessageSchema } from "../../contract";
+import { createExternalMessage } from "../../runs/external-messages";
+import { messageDataSchema } from "inferable/bin/contract";
 
 const THREAD_META_KEY = "slackThreadTs";
 const CHANNEL_META_KEY = "slackChannel";
@@ -88,7 +90,7 @@ export const slack: InstallableIntegration = {
   },
 };
 
-export const handleNewRunMessage = async ({
+export const notifyNewMessage = async ({
   message,
   tags,
 }: {
@@ -126,12 +128,24 @@ export const handleNewRunMessage = async ({
   const messageData = unifiedMessageSchema.parse(message).data;
 
   if ("message" in messageData && messageData.message) {
-    client?.chat.postMessage({
+    const result = await client?.chat.postMessage({
       thread_ts: tags[THREAD_META_KEY],
       channel: tags[CHANNEL_META_KEY],
       mrkdwn: true,
       text: messageData.message,
     });
+
+    if (!result.ts) {
+      throw new Error("Failed to create Slack message");
+    }
+
+    await createExternalMessage({
+      channel: "slack",
+      externalId: result.ts,
+      messageId: message.id,
+      clusterId: message.clusterId,
+      runId: message.runId,
+    })
   } else {
     logger.warn("Slack thread message does not have content");
   }
@@ -172,7 +186,7 @@ export const handleApprovalRequest = async ({
 
   const text = `I need your approval to call \`${service}.${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`;
 
-  client?.chat.postMessage({
+  await client?.chat.postMessage({
     thread_ts: tags[THREAD_META_KEY],
     channel: tags[CHANNEL_META_KEY],
     mrkdwn: true,
@@ -267,7 +281,7 @@ export const start = async (fastify: FastifyInstance) => {
   app.event("app_mention", async ({ event, client }) => {
     logger.info("Received mention event. Responding.", event);
 
-    client.chat.postMessage({
+    await client.chat.postMessage({
       thread_ts: event.ts,
       channel: event.channel,
       mrkdwn: true,
@@ -334,7 +348,7 @@ export const start = async (fastify: FastifyInstance) => {
       }
     } catch (error) {
       if (error instanceof AuthenticationError) {
-        client.chat.postMessage({
+        await client.chat.postMessage({
           thread_ts: event.ts,
           channel: event.channel,
           text: `Sorry, I am having trouble authenticating you.\n\nPlease ensure your Inferable account has access to cluster <${env.APP_ORIGIN}/clusters/${integration.cluster_id}|${integration.cluster_id}>.`,
@@ -487,7 +501,7 @@ const handleNewThread = async ({ event, client, clusterId, userId }: MessageEven
       },
     });
 
-    client.chat.postMessage({
+    await client.chat.postMessage({
       thread_ts: thread,
       channel: event.channel,
       mrkdwn: true,
