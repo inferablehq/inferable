@@ -3,7 +3,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Blocks, Cpu, Network, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { SmallLiveGreenCircle } from "./circles";
+import { DeadGrayCircle, LiveGreenCircle, SmallLiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
 
 import { client } from "@/client/client";
@@ -19,12 +19,13 @@ import {
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferResponseBody, ClientInferResponses } from "@ts-rest/core";
-import { formatDistance } from "date-fns";
+import { formatDistance, formatRelative } from "date-fns";
 import { AppWindowIcon } from "lucide-react";
 import ToolContextButton from "./chat/ToolContextButton";
 import { DeadRedCircle } from "./circles";
 import ErrorDisplay from "./error-display";
 import { ServerConnectionStatus } from "./server-connection-pane";
+import { EventsOverlayButton } from "./events-overlay";
 
 function toServiceName(name: string) {
   return <span>{name}</span>;
@@ -733,6 +734,49 @@ function MachinesOverview({ clusterId }: { clusterId: string }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function MachineCard({
+  machine,
+  clusterId,
+}: {
+  machine: ClientInferResponseBody<typeof contract.listMachines, 200>[number];
+  clusterId: string;
+}) {
+  const isLive = Date.now() - new Date(machine.lastPingAt!).getTime() < 1000 * 60;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl p-5 shadow-sm border transition-all duration-200 hover:shadow-md",
+        isLive ? "bg-green-50/30 border-green-100" : "bg-gray-50/30 border-gray-100"
+      )}
+    >
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
+        <div className="flex items-center gap-3">
+          <div>{isLive ? <LiveGreenCircle /> : <DeadGrayCircle />}</div>
+          <div>
+            <div className="text-sm font-medium font-mono">{machine.id}</div>
+            <div className="text-xs text-muted-foreground">{machine.ip}</div>
+          </div>
+        </div>
+        <EventsOverlayButton clusterId={clusterId} query={{ machineId: machine.id }} />
+      </div>
+      <div className="flex items-center gap-2 text-xs">
+        <div
+          className={cn(
+            "px-2 py-1 rounded-full font-medium",
+            isLive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+          )}
+        >
+          {isLive ? "Active" : "Inactive"}
+        </div>
+        <div className="text-muted-foreground">
+          Last heartbeat: {formatRelative(machine.lastPingAt!, new Date())}
+        </div>
       </div>
     </div>
   );
