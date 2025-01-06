@@ -16,7 +16,7 @@ describe("Caching", () => {
   it("should get the cached results when possible", async () => {
     const productId = Math.random().toString();
 
-    const result1 = await client.createCall({
+    const result1 = await client.createJob({
       query: {
         waitTime: 20,
       },
@@ -30,7 +30,7 @@ describe("Caching", () => {
       },
     });
 
-    const result2 = await client.createCall({
+    const result2 = await client.createJob({
       query: {
         waitTime: 20,
       },
@@ -62,7 +62,7 @@ describe("Caching", () => {
   it("should respect cache ttl", async () => {
     const productId = Math.random().toString();
 
-    const result1 = await client.createCall({
+    const result1 = await client.createJob({
       query: {
         waitTime: 20,
       },
@@ -78,7 +78,7 @@ describe("Caching", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 2000)); // wait for cache to expire
 
-    const result2 = await client.createCall({
+    const result2 = await client.createJob({
       query: {
         waitTime: 20,
       },

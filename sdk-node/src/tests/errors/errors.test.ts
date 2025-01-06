@@ -13,7 +13,7 @@ describe("Errors", () => {
   });
 
   it("should get the normal error", async () => {
-    const result = await client.createCall({
+    const result = await client.createJob({
       query: {
         waitTime: 20,
       },
@@ -43,7 +43,7 @@ describe("Errors", () => {
   });
 
   it("should get the custom error", async () => {
-    const result = await client.createCall({
+    const result = await client.createJob({
       query: {
         waitTime: 20,
       },

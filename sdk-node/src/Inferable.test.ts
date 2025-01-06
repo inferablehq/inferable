@@ -138,7 +138,7 @@ describe("Functions", () => {
 
     const results = await Promise.all(
       Array.from({ length: 10 }).map(async (_, i) => {
-        return client.createCall({
+        return client.createJob({
           query: {
             waitTime: 20,
           },
@@ -192,7 +192,7 @@ describe("Functions", () => {
     const service = testService();
     await service.start();
 
-    const result = await client.createCall({
+    const result = await client.createJob({
       query: {
         waitTime: 20,
       },

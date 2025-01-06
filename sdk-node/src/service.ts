@@ -94,7 +94,7 @@ export class Service {
       throw new Error("Failed to poll. Could not find clusterId");
     }
 
-    const pollResult = await this.client.listCalls({
+    const pollResult = await this.client.listJobs({
       params: {
         clusterId: this.clusterId,
       },
@@ -166,7 +166,7 @@ export class Service {
       const contentAndBlobs = extractBlobs(result.content);
 
       const persistResult = this.client
-        .createCallResult({
+        .createJobResult({
           headers: {
             "x-sentinel-unmask-keys": "resultType,functionExecutionTime",
           },
@@ -178,7 +178,7 @@ export class Service {
             },
           },
           params: {
-            callId: call.id,
+            jobId: call.id,
             clusterId: this.clusterId!,
           },
         })
@@ -195,12 +195,12 @@ export class Service {
 
       const persistBlobs = contentAndBlobs.blobs.map((blob) =>
         this.client
-          .createCallBlob({
+          .createJobBlob({
             headers: {
               "x-sentinel-no-mask": "1",
             },
             params: {
-              callId: call.id,
+              jobId: call.id,
               clusterId: this.clusterId!,
             },
             body: blob,

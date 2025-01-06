@@ -16,7 +16,7 @@ describe("retrying", () => {
   it("should not retry a function when attempts is 1", async () => {
     const productId = Math.random().toString();
 
-    const result = await client.createCall({
+    const result = await client.createJob({
       query: {
         waitTime: 20,
       },
@@ -43,7 +43,7 @@ describe("retrying", () => {
   it("should be able to retry a function", async () => {
     const productId = Math.random().toString();
 
-    const result = await client.createCall({
+    const result = await client.createJob({
       query: {
         waitTime: 20,
       },
