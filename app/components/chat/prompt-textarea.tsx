@@ -559,10 +559,11 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                     <div className="flex flex-wrap gap-2">
                       {agents.map(agent => (
                         <Button
+                          size="sm"
                           key={agent.id}
                           variant={selectedAgentId === agent.id ? "default" : "outline"}
                           className={cn(
-                            "cursor-pointer transition-colors py-1 px-3",
+                            "cursor-pointer transition-colors px-4 py-1",
                             selectedAgentId === agent.id
                               ? "hover:bg-primary/90"
                               : "hover:border-primary/50"
