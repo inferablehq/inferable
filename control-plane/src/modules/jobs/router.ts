@@ -12,15 +12,15 @@ import { getClusterBackgroundRun } from "../runs";
 
 export const jobsRouter = initServer().router(
   {
-    createCall: contract.createCall,
-    createCallResult: contract.createCallResult,
-    listCalls: contract.listCalls,
-    createCallBlob: contract.createCallBlob,
-    getCall: contract.getCall,
-    createCallApproval: contract.createCallApproval,
+    createJob: contract.createJob,
+    createJobResult: contract.createJobResult,
+    listJobs: contract.listJobs,
+    createJobBlob: contract.createJobBlob,
+    getJob: contract.getJob,
+    createJobApproval: contract.createJobApproval,
   },
   {
-    createCall: async request => {
+    createJob: async request => {
       const { clusterId } = request.params;
 
       const auth = request.request.getAuth();
@@ -75,7 +75,7 @@ export const jobsRouter = initServer().router(
         },
       };
     },
-    createCallResult: async request => {
+    createJobResult: async request => {
       const { clusterId, jobId } = request.params;
       let { result, resultType } = request.body;
       const { meta } = request.body;
@@ -178,7 +178,7 @@ export const jobsRouter = initServer().router(
         body: undefined,
       };
     },
-    listCalls: async request => {
+    listJobs: async request => {
       const { clusterId } = request.params;
       const { service, limit, acknowledge, status } = request.query;
 
@@ -246,7 +246,7 @@ export const jobsRouter = initServer().router(
         })),
       };
     },
-    createCallBlob: async request => {
+    createJobBlob: async request => {
       const { jobId, clusterId } = request.params;
       const body = request.body;
 
@@ -276,7 +276,7 @@ export const jobsRouter = initServer().router(
         body: blob,
       };
     },
-    getCall: async request => {
+    getJob: async request => {
       const { clusterId, jobId } = request.params;
 
       const auth = request.request.getAuth();
@@ -304,7 +304,7 @@ export const jobsRouter = initServer().router(
         body: job,
       };
     },
-    createCallApproval: async request => {
+    createJobApproval: async request => {
       const { clusterId, jobId } = request.params;
 
       const auth = request.request.getAuth();

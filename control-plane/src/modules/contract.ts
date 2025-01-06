@@ -280,9 +280,9 @@ export const definition = {
   },
 
   // Job Endpoints
-  getCall: {
+  getJob: {
     method: "GET",
-    path: "/clusters/:clusterId/calls/:jobId",
+    path: "/clusters/:clusterId/jobs/:jobId",
     headers: z.object({ authorization: z.string() }),
     pathParams: z.object({
       clusterId: z.string(),
@@ -303,9 +303,9 @@ export const definition = {
       }),
     },
   },
-  createCall: {
+  createJob: {
     method: "POST",
-    path: "/clusters/:clusterId/calls",
+    path: "/clusters/:clusterId/jobs",
     query: z.object({
       waitTime: z.coerce
         .number()
@@ -332,9 +332,9 @@ export const definition = {
       }),
     },
   },
-  createCallResult: {
+  createJobResult: {
     method: "POST",
-    path: "/clusters/:clusterId/calls/:jobId/result",
+    path: "/clusters/:clusterId/jobs/:jobId/result",
     headers: z.object({
       authorization: z.string(),
       ...machineHeaders,
@@ -355,14 +355,14 @@ export const definition = {
       }),
     }),
   },
-  listCalls: {
+  listJobs: {
     method: "GET",
-    path: "/clusters/:clusterId/calls",
+    path: "/clusters/:clusterId/jobs",
     query: z.object({
       service: z.string(),
       status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
       limit: z.coerce.number().min(1).max(20).default(10),
-      acknowledge: z.coerce.boolean().default(false).describe("Should calls be marked as running"),
+      acknowledge: z.coerce.boolean().default(false).describe("Should retrieved Jobs be marked as running"),
     }),
     pathParams: z.object({
       clusterId: z.string(),
@@ -388,9 +388,9 @@ export const definition = {
       ),
     },
   },
-  createCallApproval: {
+  createJobApproval: {
     method: "POST",
-    path: "/clusters/:clusterId/calls/:jobId/approval",
+    path: "/clusters/:clusterId/jobs/:jobId/approval",
     headers: z.object({
       authorization: z.string(),
     }),
@@ -408,9 +408,9 @@ export const definition = {
       approved: z.boolean(),
     }),
   },
-  createCallBlob: {
+  createJobBlob: {
     method: "POST",
-    path: "/clusters/:clusterId/calls/:jobId/blobs",
+    path: "/clusters/:clusterId/jobs/:jobId/blobs",
     headers: z.object({
       authorization: z.string(),
       "x-machine-id": z.string(),
@@ -763,7 +763,7 @@ export const definition = {
         .optional(),
       context: anyObject
         .optional()
-        .describe("Additional context to propogate to all calls in the run"),
+        .describe("Additional context to propogate to all Jobs in the Run"),
       reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
       callSummarization: z
         .boolean()

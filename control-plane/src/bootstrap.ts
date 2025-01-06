@@ -24,9 +24,31 @@ import { flagsmith } from "./modules/flagsmith";
 import { runMigrations } from "./utilities/migrate";
 import { customerTelemetry } from "./modules/customer-telemetry";
 
+let totalRequestRewrites = 0
+
 const app = fastify({
   logger: env.ENABLE_FASTIFY_LOGGER,
-});
+  rewriteUrl: (req) => {
+    if (!req.url) {
+      throw new Error("No URL available in rewriteUrl");
+    }
+
+    if (req.url.match(/\/clusters\/.*\/(calls|jobs).*$/)) {
+      totalRequestRewrites++;
+
+      // Log every 10th rewrite
+      if (totalRequestRewrites % 10 === 0) {
+        logger.info("Rewrote request to deprecated /calls endpoint", {
+          url: req.url,
+          totalRequestRewrites
+        });
+      }
+      return req.url.replace("/calls", "/jobs");
+    };
+
+    return req.url;
+  }
+})
 
 app.register(auth.plugin);
 
