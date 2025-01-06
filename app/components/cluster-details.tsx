@@ -641,30 +641,6 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
           </a>
         </div>
       </div>
-
-      <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200 hover:shadow-md">
-        <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-            <Network className="w-5 h-5 text-gray-600" />
-          </div>
-          <div>
-            <div className="text-base font-medium text-gray-900">Remote Service</div>
-            <div className="text-sm text-gray-500">
-              Deploy your service to run on Inferable's infrastructure
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <Button
-            variant="outline"
-            className="w-full bg-white hover:bg-gray-50 border-gray-200"
-            disabled
-          >
-            <span className="text-sm">Coming Soon</span>
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
