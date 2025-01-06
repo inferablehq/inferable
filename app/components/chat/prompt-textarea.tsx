@@ -279,6 +279,16 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     });
   };
 
+  const [activeTab, setActiveTab] = useState<string>("custom");
+
+  useEffect(() => {
+    const queryAgentId = searchParams?.get("agentId");
+    if (queryAgentId) {
+      setSelectedAgentId(queryAgentId);
+      setActiveTab("agent");
+    }
+  }, [searchParams, setSelectedAgentId]);
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -312,9 +322,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         </div>
 
         <Tabs
-          defaultValue="custom"
+          value={activeTab}
           className="w-full"
           onValueChange={value => {
+            setActiveTab(value);
             if (value === "custom") {
               setSelectedAgentId(undefined);
             }
