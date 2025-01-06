@@ -61,12 +61,12 @@ namespace Inferable.API
       return JsonSerializer.Deserialize<CreateMachineResult>(responseBody);
     }
 
-    async public Task CreateCallResult(string clusterId, string callId, CreateResultInput input)
+    async public Task CreateJobResult(string clusterId, string callId, CreateResultInput input)
     {
       string jsonData = JsonSerializer.Serialize(input);
 
       HttpResponseMessage response = await _client.PostAsync(
-          $"/clusters/{clusterId}/calls/{callId}/result",
+          $"/clusters/{clusterId}/jobs/{callId}/result",
           new StringContent(jsonData, Encoding.UTF8, "application/json")
           );
 
@@ -121,10 +121,10 @@ namespace Inferable.API
       return result;
     }
 
-    async public Task<(List<CallMessage>, int?)> ListCalls(string clusterId, string service)
+    async public Task<(List<CallMessage>, int?)> ListJobs(string clusterId, string service)
     {
       HttpResponseMessage response = await _client.GetAsync(
-          $"/clusters/{clusterId}/calls?service={service}&acknowledge=true"
+          $"/clusters/{clusterId}/jobs?service={service}&acknowledge=true"
           );
 
       try {
@@ -150,12 +150,12 @@ namespace Inferable.API
       return (result, int.Parse(retryAfterHeader));
     }
 
-    async public Task<CreateCallResult> CreateCall(string clusterId, CreateCallInput input)
+    async public Task<CreateCallResult> CreateJob(string clusterId, CreateCallInput input)
     {
       string jsonData = JsonSerializer.Serialize(input);
 
       HttpResponseMessage response = await _client.PostAsync(
-          $"/clusters/{clusterId}/calls?waitTime=20",
+          $"/clusters/{clusterId}/jobs?waitTime=20",
           new StringContent(jsonData, Encoding.UTF8, "application/json")
           );
 

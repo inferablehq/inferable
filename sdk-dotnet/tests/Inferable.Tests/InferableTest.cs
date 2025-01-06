@@ -159,7 +159,7 @@ namespace Inferable.Tests
       {
         await inferable.Default.StartAsync();
 
-        var result = ApiClient.CreateCall(TestClusterId, new CreateCallInput
+        var result = ApiClient.CreateJob(TestClusterId, new CreateCallInput
         {
           Service = "default",
           Function = "successFunction",
@@ -201,7 +201,7 @@ namespace Inferable.Tests
       {
         await inferable.Default.StartAsync();
 
-        var result = ApiClient.CreateCall(TestClusterId, new CreateCallInput
+        var result = ApiClient.CreateJob(TestClusterId, new CreateCallInput
         {
           Service = "default",
           Function = "failureFunction",

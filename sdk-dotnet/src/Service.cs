@@ -94,7 +94,7 @@ namespace Inferable
       List<CallMessage> messages = new List<CallMessage>();
 
       try {
-        var pollResult = await _client.ListCalls(this._clusterId, this._name);
+        var pollResult = await _client.ListJobs(this._clusterId, this._name);
 
         messages = pollResult.Item1;
         if (pollResult.Item2 != null) {
@@ -121,7 +121,7 @@ namespace Inferable
 
         try
         {
-          await this._client.CreateCallResult(this._clusterId, call.Id, result);
+          await this._client.CreateJobResult(this._clusterId, call.Id, result);
         }
         catch (Exception e)
         {
