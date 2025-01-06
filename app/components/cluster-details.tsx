@@ -3,7 +3,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Blocks, Cpu, Network, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { DeadGrayCircle, LiveGreenCircle, SmallLiveGreenCircle } from "./circles";
+import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle, SmallLiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
 
 import { client } from "@/client/client";
@@ -22,10 +22,9 @@ import { ClientInferResponseBody, ClientInferResponses } from "@ts-rest/core";
 import { formatDistance, formatRelative } from "date-fns";
 import { AppWindowIcon } from "lucide-react";
 import ToolContextButton from "./chat/ToolContextButton";
-import { DeadRedCircle } from "./circles";
 import ErrorDisplay from "./error-display";
-import { ServerConnectionStatus } from "./server-connection-pane";
 import { EventsOverlayButton } from "./events-overlay";
+import { ServerConnectionStatus } from "./server-connection-pane";
 
 function toServiceName(name: string) {
   return <span>{name}</span>;
