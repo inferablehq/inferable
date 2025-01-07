@@ -6,6 +6,11 @@ import { AuthenticationError, BadRequestError } from "../../utilities/errors";
 import { getSession, nango, webhookSchema } from "./nango";
 import { env } from "../../utilities/env";
 import { logger } from "../observability/logger";
+import { integrationByConnectionId } from "../email";
+import { getAgent } from "../agents";
+
+// Special value that allows a new connection to be created
+const NEW_CONNECTION_ID = "NEW";
 
 export const integrationsRouter = initServer().router(
   {
@@ -20,6 +25,47 @@ export const integrationsRouter = initServer().router(
 
       if (request.body.slack) {
         throw new BadRequestError("Slack integration details are not editable");
+      }
+
+      if (request.body.email) {
+        const existing = await getIntegrations({ clusterId });
+
+        const connectionId = request.body.email.connectionId;
+        const agentId = request.body.email.agentId;
+
+
+        if (connectionId === NEW_CONNECTION_ID) {
+          const connectionId = crypto.randomUUID();
+          const collision = await integrationByConnectionId(connectionId);
+          if (collision) {
+            // This is so unlikely that we will fail the request if we experience a collision
+            logger.error("Unexpected connectionId collision", {
+              clusterId,
+              connectionId,
+            })
+            throw new Error("Unexpected connectionId collision");
+          }
+
+          request.body.email.connectionId = connectionId;
+        } else if (connectionId !== existing?.email?.connectionId) {
+          throw new BadRequestError("Email connectionId is not user editable");
+        }
+
+        if (agentId && agentId !== existing?.email?.agentId) {
+          const agent = await getAgent({
+            clusterId,
+            id: agentId
+          });
+
+          if (!agent) {
+            logger.warn("Attempted to connect email to non-existent agent", {
+              clusterId,
+              agentId: request.body.email.agentId
+            })
+
+            request.body.email.agentId = undefined;
+          }
+        }
       }
 
       if (request.body.toolhouse) {

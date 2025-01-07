@@ -8,7 +8,7 @@ import {
   toolCallEventSchema,
 } from "./integration-events";
 import { getIntegrations } from "./integrations";
-import { integrationSchema } from "./schema";
+import { integrationSchema } from "../contract";
 
 const langfuseCache = new NodeCache({
   maxKeys: 100,

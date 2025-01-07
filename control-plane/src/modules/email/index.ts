@@ -8,9 +8,8 @@ import { ParsedMail, simpleParser } from "mailparser";
 import { getUserForCluster } from "../clerk";
 import { AuthenticationError, NotFoundError } from "../../utilities/errors";
 import { addMessageAndResume, createRunWithMessage } from "../runs";
-import { flagsmith } from "../flagsmith";
-import { InferSelectModel } from "drizzle-orm";
-import { runMessages } from "../data";
+import { InferSelectModel, sql } from "drizzle-orm";
+import { db, integrations, runMessages } from "../data";
 import { ses } from "../ses";
 import { ulid } from "ulid";
 import { unifiedMessageSchema } from "../contract";
@@ -160,13 +159,13 @@ export async function parseMessage(message: unknown) {
     throw new Error("Found multiple Inferable email addresses in destination");
   }
 
-  const clusterId = ingestionAddresses
+  const connectionId = ingestionAddresses
     .pop()
     ?.replace(env.INFERABLE_EMAIL_DOMAIN, "")
     .replace("@", "");
 
-  if (!clusterId) {
-    throw new Error("Could not extract clusterId from email address");
+  if (!connectionId) {
+    throw new Error("Could not extract connectionId from email address");
   }
 
   const mail = await parseMailContent(sesMessage.data.content);
@@ -181,7 +180,7 @@ export async function parseMessage(message: unknown) {
 
   return {
     body: body ? stripQuoteTail(body) : undefined,
-    clusterId,
+    connectionId,
     ingestionAddresses,
     subject: mail.subject,
     messageId: mail.messageId,
@@ -219,25 +218,21 @@ async function handleEmailIngestion(raw: unknown) {
     return;
   }
 
-  const user = await authenticateUser(message.source, message.clusterId);
+  const connection = await integrationByConnectionId(message.connectionId);
 
-  const flags = await flagsmith?.getIdentityFlags(message.clusterId, {
-    clusterId: message.clusterId,
-  });
-
-  const useEmail = flags?.isFeatureEnabled("experimental_email_trigger");
-
-  if (!useEmail) {
-    logger.info("Email trigger is disabled. Skipping", {
-      clusterId: message.clusterId,
-    });
-    return;
+  if (!connection) {
+    throw new Error("Could not find connection");
   }
+
+  const clusterId = connection.clusterId;
+  let agentId = connection.email?.agentId;
+
+  const user = await authenticateUser(message.source, clusterId);
 
   const reference = message.inReplyTo || message.references[0];
   if (reference) {
     const existing = await getExternalMessage({
-      clusterId: message.clusterId,
+      clusterId: clusterId,
       externalId: reference,
     });
     if (!existing) {
@@ -245,18 +240,18 @@ async function handleEmailIngestion(raw: unknown) {
     }
 
     return await handleExistingChain({
+      clusterId,
       userId: user.userId,
       body: message.body,
-      clusterId: message.clusterId,
-      messageId: message.messageId,
       runId: existing.runId,
     });
   }
 
   await handleNewChain({
+    agentId,
+    clusterId,
     userId: user.userId,
     body: message.body,
-    clusterId: message.clusterId,
     messageId: message.messageId,
     subject: message.subject,
     source: message.source,
@@ -302,6 +297,7 @@ const handleNewChain = async ({
   body,
   clusterId,
   messageId,
+  agentId,
   subject,
   source,
 }: {
@@ -309,6 +305,7 @@ const handleNewChain = async ({
   body: string;
   clusterId: string;
   messageId: string;
+  agentId?: string;
   subject: string;
   source: string;
 }) => {
@@ -316,6 +313,7 @@ const handleNewChain = async ({
   await createRunWithMessage({
     userId,
     clusterId,
+    agentId,
     tags: {
       [EMAIL_INIT_MESSAGE_ID_META_KEY]: messageId,
       [EMAIL_SUBJECT_META_KEY]: subject,
@@ -335,13 +333,11 @@ const handleExistingChain = async ({
   userId,
   body,
   clusterId,
-  messageId,
   runId,
 }: {
   userId: string;
   body: string;
   clusterId: string;
-  messageId: string;
   runId: string;
 }) => {
   logger.info("Continuing existing run from email");
@@ -358,4 +354,16 @@ const handleExistingChain = async ({
     message: body,
     type: "human",
   });
+};
+
+export const integrationByConnectionId = async (connectionId: string) => {
+  const [result] = await db
+    .select({
+      clusterId: integrations.cluster_id,
+      email: integrations.email,
+    })
+    .from(integrations)
+    .where(sql`email->>'connectionId' = ${connectionId}`);
+
+  return result;
 };

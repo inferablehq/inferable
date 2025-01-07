@@ -11,13 +11,11 @@ import { and, eq, InferSelectModel, ne, sql } from "drizzle-orm";
 import { db, integrations, runMessages } from "../../data";
 import { nango } from "../nango";
 import { InstallableIntegration } from "../types";
-import { integrationSchema } from "../schema";
 import { z } from "zod";
 import { getUserForCluster } from "../../clerk";
 import { submitApproval } from "../../jobs/jobs";
-import { unifiedMessageSchema } from "../../contract";
+import { integrationSchema, unifiedMessageSchema } from "../../contract";
 import { createExternalMessage } from "../../runs/external-messages";
-import { messageDataSchema } from "inferable/bin/contract";
 
 const THREAD_META_KEY = "slackThreadTs";
 const CHANNEL_META_KEY = "slackChannel";

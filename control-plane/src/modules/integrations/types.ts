@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { integrationSchema } from "./schema";
 import { getJob } from "../jobs/jobs";
+import { integrationSchema } from "../contract";
 
 export type InstallableIntegration = {
   name: string;

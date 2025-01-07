@@ -6,8 +6,8 @@ import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { valtownIntegration } from "./constants";
-import { integrationSchema } from "./schema";
 import { InstallableIntegration } from "./types";
+import { integrationSchema } from "../contract";
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({

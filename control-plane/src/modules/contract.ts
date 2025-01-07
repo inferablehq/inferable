@@ -89,6 +89,13 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
+  email: z
+  .object({
+    connectionId: z.string(),
+    agentId: z.string().optional(),
+  })
+    .optional()
+    .nullable(),
 });
 
 const genericMessageDataSchema = z

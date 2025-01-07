@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardHeader,
@@ -12,6 +14,7 @@ import {
   BarChartHorizontal,
   FunctionSquare,
   LucideIcon,
+  Mail,
   Search,
   Slack,
   Trash2,
@@ -19,12 +22,25 @@ import {
   Zap,
 } from "lucide-react";
 import { client } from "@/client/client";
-import { auth } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import ErrorDisplay from "@/components/error-display";
-import { revalidatePath } from "next/cache";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState, useCallback, useEffect } from "react";
+import { toast } from "react-hot-toast";
+import { isFeatureEnabled } from "@/lib/features";
 
 type IntegrationConfig = {
-  [K in 'toolhouse' | 'langfuse' | 'tavily' | 'zapier' | 'valtown' | 'slack']: {
+  [K in 'toolhouse' | 'langfuse' | 'tavily' | 'zapier' | 'valtown' | 'slack' | 'email']: {
     name: string;
     description: string;
     icon: LucideIcon;
@@ -68,6 +84,12 @@ const config: IntegrationConfig = {
     name: "Slack",
     description: "Trigger Runs from your Slack workspace",
     icon: Slack,
+    stage: "beta",
+  },
+  email: {
+    name: "Email",
+    description: "Trigger Runs via Email",
+    icon: Mail,
     stage: "alpha",
   },
 };
@@ -89,44 +111,76 @@ const getStageStyles = (stage: "alpha" | "beta" | "stable") => {
   }
 };
 
-export default async function IntegrationsPage({
+export default function IntegrationsPage({
   params: { clusterId },
 }: {
   params: { clusterId: string };
 }) {
-  const { getToken } = auth();
+  const { getToken } = useAuth();
+  const router = useRouter();
+  const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
+  const [integrations, setIntegrations] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<any>(null);
 
-  const response = await client.getIntegrations({
-    headers: {
-      authorization: `Bearer ${await getToken()}`,
-    },
-    params: {
-      clusterId,
-    },
-  });
+  const fetchIntegrations = useCallback(async () => {
+    try {
+      const response = await client.getIntegrations({
+        headers: {
+          authorization: `Bearer ${await getToken()}`,
+        },
+        params: {
+          clusterId,
+        },
+      });
 
-  if (response.status !== 200) {
-    return <ErrorDisplay status={response.status} error={response.body} />;
+      if (response.status !== 200) {
+        setError(response);
+        return;
+      }
+
+      setIntegrations(response.body);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [clusterId, getToken]);
+
+  const handleUninstall = useCallback(async (name: string) => {
+    try {
+      const response = await client.upsertIntegrations({
+        headers: {
+          authorization: `Bearer ${await getToken()}`,
+        },
+        params: { clusterId },
+        body: {
+          [name]: null,
+        },
+      });
+
+      if (response.status === 200) {
+        toast.success(`${name} integration uninstalled successfully`);
+        fetchIntegrations();
+        router.refresh();
+      } else {
+        toast.error(`Failed to uninstall ${name} integration`);
+      }
+    } catch (error) {
+      toast.error(`Failed to uninstall ${name} integration`);
+    }
+  }, [clusterId, getToken, router, fetchIntegrations]);
+
+  useEffect(() => {
+    fetchIntegrations();
+  }, [fetchIntegrations]);
+
+  if (loading) {
+    return <div className="p-6">Loading...</div>;
   }
 
-  async function handleUninstall(formData: FormData) {
-    "use server";
-
-    const name = formData.get("name") as string;
-
-    const { getToken } = auth();
-
-    await client.upsertIntegrations({
-      headers: {
-        authorization: `Bearer ${await getToken()}`,
-      },
-      params: { clusterId },
-      body: {
-        [name]: null,
-      },
-    });
-
-    revalidatePath(`/clusters/${clusterId}/integrations`);
+  if (error) {
+    return <ErrorDisplay status={error.status} error={error.body} />;
   }
 
   return (
@@ -137,8 +191,12 @@ export default async function IntegrationsPage({
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Object.entries(response.body)
+        {Object.entries(integrations)
           .concat([["zapier", null]])
+          .filter(([key]) => {
+            if (key === "email") return isFeatureEnabled("feature.email_integration");
+            return true
+          })
           .map(([key, integration]) => {
             const c = config[key as keyof typeof config];
             if (!c) return null;
@@ -175,17 +233,38 @@ export default async function IntegrationsPage({
                       </Button>
                     </Link>
                     {integration !== null && (
-                      <form action={handleUninstall}>
-                        <input type="hidden" name="name" value={key} />
+                      <AlertDialog open={integrationToDelete === key} onOpenChange={(open) => !open && setIntegrationToDelete(null)}>
                         <Button
                           variant="destructive"
                           size="icon"
-                          type="submit"
+                          onClick={() => setIntegrationToDelete(key)}
                           title="Uninstall integration"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                      </form>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove {c.name} Integration</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to remove the {c.name} integration?
+                              <br /><br />
+                              <b>This will remove all associated configuration.</b>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => {
+                                handleUninstall(key);
+                                setIntegrationToDelete(null);
+                              }}
+                            >
+                              Uninstall
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </div>
                 </CardContent>

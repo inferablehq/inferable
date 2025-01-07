@@ -4,9 +4,9 @@ import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
-import { integrationSchema } from "./schema";
 import { InstallableIntegration } from "./types";
 import { tavilyIntegration } from "./constants";
+import { integrationSchema } from "../contract";
 
 const TavilySearchParamsSchema = z.object({
   query: z.string(),
