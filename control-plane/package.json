@@ -26,6 +26,7 @@
     "@aws-sdk/client-ses": "^3.716.0",
     "@aws-sdk/client-sqs": "^3.637.0",
     "@clerk/backend": "^1.21.4",
+    "@e2b/code-interpreter": "^1.0.4",
     "@fastify/cors": "^8.5.0",
     "@hyperdx/node-opentelemetry": "^0.8.1",
     "@langchain/cohere": "^0.3.1",

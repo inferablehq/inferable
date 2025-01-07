@@ -155,10 +155,7 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
 
       // Insert messages in a loop to ensure they are created with differing timestamps
       for (const message of state.messages.filter(m => !m.persisted)) {
-        await Promise.all([
-          insertRunMessage(message),
-          notifyNewMessage({ message, tags }),
-        ]);
+        await Promise.all([insertRunMessage(message), notifyNewMessage({ message, tags })]);
         message.persisted = true;
       }
     },
@@ -475,9 +472,7 @@ export const buildMockTools = async (run: Run) => {
   }
 
   if (!run.test) {
-    logger.warn(
-      "Run is not marked as test enabled but contains mocks. Mocks will be ignored."
-    );
+    logger.warn("Run is not marked as test enabled but contains mocks. Mocks will be ignored.");
     return mocks;
   }
 

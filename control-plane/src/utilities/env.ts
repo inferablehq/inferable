@@ -78,6 +78,10 @@ const envSchema = z
     POSTHOG_API_KEY: z.string().optional(),
     POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
     ANALYTICS_BUCKET_NAME: z.string().optional(),
+
+    // Sandboxes
+    E2B_ACCESS_TOKEN: z.string().optional(),
+    FIRECRAWL_API_KEY: z.string().optional(),
   })
   .superRefine((value, ctx) => {
     if (!value.MANAGEMENT_API_SECRET && !value.JWKS_URL) {

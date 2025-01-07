@@ -6,7 +6,8 @@ import {
 import { createCache } from "../../../../utilities/cache";
 import { getClusterDetails } from "../../../management";
 import { buildCurrentDateTimeTool, CURRENT_DATE_TIME_TOOL_NAME } from "./date-time";
-import { AgentTool } from "../tool";
+import { AgentTool, AgentToolV2 } from "../tool";
+import { stdlib } from "./stdlib";
 
 const clusterSettingsCache = createCache<{
   enableKnowledgebase: boolean;
@@ -15,7 +16,7 @@ const clusterSettingsCache = createCache<{
 export type InternalToolBuilder = (
   run: Run,
   toolCallId: string
-) => AgentTool | Promise<AgentTool>;
+) => AgentTool | Promise<AgentTool> | AgentToolV2; // TODO: Standardize on AgentToolV2
 
 export const getClusterInternalTools = async (
   clusterId: string
@@ -40,7 +41,9 @@ export const getClusterInternalTools = async (
     tools[ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME] = buildAccessKnowledgeArtifacts;
   }
 
-  tools[CURRENT_DATE_TIME_TOOL_NAME] = buildCurrentDateTimeTool;
+  for (const [name, tool] of Object.entries(stdlib)) {
+    tools[name] = tool.tool;
+  }
 
   return tools;
 };

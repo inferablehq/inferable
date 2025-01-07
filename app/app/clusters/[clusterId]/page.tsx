@@ -6,18 +6,12 @@ import { LiveAmberCircle, LiveGreenCircle } from "@/components/circles";
 import ErrorDisplay from "@/components/error-display";
 import { Loading } from "@/components/loading";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { ClipboardCopy } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import theme from "react-syntax-highlighter/dist/cjs/styles/hljs/tomorrow";
@@ -45,9 +39,7 @@ function OnboardingStep({
       <div className="flex items-start gap-4">
         <div
           className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-            completed
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-gray-700"
+            completed ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
           }`}
         >
           {completed ? "✓" : number}
@@ -64,7 +56,7 @@ function OnboardingStep({
 
 const script = (
   apiKey: string,
-  localhost: boolean = false,
+  localhost: boolean = false
 ) => `echo 'const { Inferable } = require("inferable");
 
 const client = new Inferable({
@@ -85,15 +77,11 @@ export default function Page({ params }: { params: { clusterId: string } }) {
     typeof contract.getCluster,
     200
   > | null>(null);
-  const [runs, setRuns] = useState<
-    ClientInferResponseBody<typeof contract.listRuns, 200>
-  >([]);
-  const [apiKeys, setApiKeys] = useState<
-    ClientInferResponseBody<typeof contract.listApiKeys, 200>
-  >([]);
-  const [error, setError] = useState<{ error: any; status: number } | null>(
-    null,
+  const [runs, setRuns] = useState<ClientInferResponseBody<typeof contract.listRuns, 200>>([]);
+  const [apiKeys, setApiKeys] = useState<ClientInferResponseBody<typeof contract.listApiKeys, 200>>(
+    []
   );
+  const [error, setError] = useState<{ error: any; status: number } | null>(null);
   const [services, setServices] = useState<
     ClientInferResponseBody<typeof contract.listServices, 200>
   >([]);
@@ -177,9 +165,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
   }, [params.clusterId, getToken]);
 
   useEffect(() => {
-    const skipped = localStorage.getItem(
-      `onboarding-skipped-${params.clusterId}`,
-    );
+    const skipped = localStorage.getItem(`onboarding-skipped-${params.clusterId}`);
     if (skipped === "true") {
       setSkippedOnboarding(true);
     }
@@ -288,172 +274,6 @@ export default function Page({ params }: { params: { clusterId: string } }) {
     setSkippedOnboarding(true);
   };
 
-  const skipOnboarding = skippedOnboarding || runs.length > 0;
-
-  if (!skipOnboarding) {
-    return (
-      <div className="max-w-6xl p-6 text-sm">
-        <>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl">Welcome to your new cluster</h2>
-            <Button variant="ghost" size="sm" onClick={handleSkipOnboarding}>
-              Skip onboarding
-            </Button>
-          </div>
-          <div className="space-y-4">
-            <OnboardingStep
-              number={1}
-              title="Name your cluster"
-              description="Give your cluster a memorable name to easily identify it"
-              completed={hasCustomName}
-              grayedOut={false}
-            >
-              <div className="flex flex-col items-start gap-2">
-                <Input
-                  value={clusterName}
-                  placeholder="Cluster name"
-                  onChange={(e) => setClusterName(e.target.value)}
-                />
-                <Button
-                  size="sm"
-                  type="submit"
-                  onClick={() => handleRename(clusterName)}
-                  disabled={clusterName === cluster.name}
-                >
-                  Rename
-                </Button>
-              </div>
-            </OnboardingStep>
-
-            <OnboardingStep
-              number={2}
-              title="Create an API key"
-              description="Generate an API key to authenticate your requests"
-              completed={!!createdApiKey}
-              grayedOut={!hasCustomName}
-            >
-              <div className="flex flex-col items-start gap-2">
-                {createdApiKey ? (
-                  <div className="flex flex-col items-start gap-2">
-                    <p className="text-sm text-gray-600">
-                      We created an API key for you. Copy it to your clipboard,
-                      because you won&apos;t be able to see it later.
-                    </p>
-                    <p className="text-sm text-gray-600 font-mono my-2">
-                      {createdApiKey.key}
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(createdApiKey.key);
-                        toast.success("Copied to clipboard");
-                      }}
-                    >
-                      Copy to clipboard
-                      <ClipboardCopy className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Button size="sm" type="submit" onClick={handleCreateApiKey}>
-                    Create API key
-                  </Button>
-                )}
-              </div>
-            </OnboardingStep>
-
-            <OnboardingStep
-              number={3}
-              title="Connect quickstart function"
-              description="Use the API key you created to connect a sample function."
-              completed={hasQuickstartService}
-              grayedOut={!createdApiKey || !hasCustomName}
-            >
-              <div className="relative">
-                <div className="pb-2">
-                  {hasQuickstartService ? (
-                    <div className="flex space-x-2 items-center">
-                      <LiveGreenCircle />
-                      <p className="text-xs text-gray-600">
-                        Quickstart service has been connected
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex space-x-2 items-center">
-                      <LiveAmberCircle />
-                      <p className="text-xs text-gray-600">
-                        Waiting for quickstart service to connect...
-                      </p>
-                    </div>
-                  )}
-                </div>
-                {createdApiKey && (
-                  <div className="relative">
-                    <SyntaxHighlighter
-                      language="bash"
-                      style={theme}
-                      customStyle={{
-                        padding: "1rem",
-                        borderRadius: "0.5rem",
-                        border: "1px solid #e0e0e0",
-                        backgroundColor: "#fafafa",
-                      }}
-                    >
-                      {script(
-                        createdApiKey?.key ?? "",
-                        window.location.hostname === "localhost",
-                      )}
-                    </SyntaxHighlighter>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        navigator.clipboard.writeText(
-                          script(
-                            createdApiKey?.key ?? "",
-                            window.location.hostname === "localhost",
-                          ),
-                        );
-                        toast.success("Copied to clipboard");
-                      }}
-                    >
-                      <ClipboardCopy className="w-4 h-4" />
-                    </Button>
-                    <p className="mt-2 text-sm text-gray-600">
-                      Copy and paste the script above into your terminal to
-                      connect the quickstart function.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </OnboardingStep>
-
-            <OnboardingStep
-              number={4}
-              title="Create your first run"
-              description="Start using your cluster by creating your first run"
-              completed={hasRuns}
-              grayedOut={
-                !hasQuickstartService || !createdApiKey || !hasCustomName
-              }
-            >
-              <div className="flex flex-col items-start gap-2">
-                <Input
-                  name="name"
-                  placeholder="Run name"
-                  value="Can you summarise my user information?"
-                />
-                <Button size="sm" onClick={handleCreateRun}>
-                  Create run
-                </Button>
-              </div>
-            </OnboardingStep>
-          </div>
-        </>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 text-sm">
       <h2 className="text-2xl mb-6">Cluster Overview</h2>
@@ -461,9 +281,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
         <Card className="transition-colors flex flex-col">
           <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Go to Runs</CardTitle>
-            <CardDescription>
-              View and manage your existing runs or create new ones
-            </CardDescription>
+            <CardDescription>View and manage your existing runs or create new ones</CardDescription>
           </CardHeader>
           <CardContent>
             <Button
@@ -479,15 +297,11 @@ export default function Page({ params }: { params: { clusterId: string } }) {
         <Card className="transition-colors flex flex-col">
           <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Configure cluster</CardTitle>
-            <CardDescription>
-              Manage API keys, services, and Cluster settings
-            </CardDescription>
+            <CardDescription>Manage API keys, services, and Cluster settings</CardDescription>
           </CardHeader>
           <CardContent>
             <Button
-              onClick={() =>
-                router.push(`/clusters/${params.clusterId}/settings`)
-              }
+              onClick={() => router.push(`/clusters/${params.clusterId}/settings`)}
               variant="secondary"
               className="hover:bg-gray-50"
             >
@@ -499,15 +313,11 @@ export default function Page({ params }: { params: { clusterId: string } }) {
         <Card className="transition-colors flex flex-col">
           <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Manage Agents</CardTitle>
-            <CardDescription>
-              Create and manage Agents for your Cluster
-            </CardDescription>
+            <CardDescription>Create and manage Agents for your Cluster</CardDescription>
           </CardHeader>
           <CardContent>
             <Button
-              onClick={() =>
-                router.push(`/clusters/${params.clusterId}/agents`)
-              }
+              onClick={() => router.push(`/clusters/${params.clusterId}/agents`)}
               variant="secondary"
               className="hover:bg-gray-50"
             >
@@ -519,9 +329,7 @@ export default function Page({ params }: { params: { clusterId: string } }) {
         <Card className="transition-colors flex flex-col">
           <CardHeader className="flex-grow">
             <CardTitle className="text-lg">Read the docs</CardTitle>
-            <CardDescription>
-              Learn more about how to use your Cluster effectively
-            </CardDescription>
+            <CardDescription>Learn more about how to use your Cluster effectively</CardDescription>
           </CardHeader>
           <CardContent>
             <Button

@@ -369,7 +369,10 @@ export const definition = {
       service: z.string(),
       status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
       limit: z.coerce.number().min(1).max(20).default(10),
-      acknowledge: z.coerce.boolean().default(false).describe("Should retrieved Jobs be marked as running"),
+      acknowledge: z.coerce
+        .boolean()
+        .default(false)
+        .describe("Should retrieved Jobs be marked as running"),
     }),
     pathParams: z.object({
       clusterId: z.string(),
@@ -486,6 +489,12 @@ export const definition = {
     },
     body: z.object({
       description: z.string().describe("Human readable description of the cluster"),
+      name: z.string().describe("Human readable name of the cluster"),
+      isDemo: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Whether the cluster is a demo cluster"),
     }),
   },
   deleteCluster: {
@@ -740,10 +749,7 @@ export const definition = {
         })
         .optional()
         .describe("Mechanism for receiving notifications when the run status changes"),
-      tags: z
-        .record(z.string())
-        .optional()
-        .describe("Run tags which can be used to filter runs"),
+      tags: z.record(z.string()).optional().describe("Run tags which can be used to filter runs"),
       test: z
         .object({
           enabled: z.boolean().default(false),
@@ -1467,6 +1473,24 @@ export const definition = {
     body: z.object({}).passthrough(),
     responses: {
       200: z.undefined(),
+    },
+  },
+  getStandardLibraryMeta: {
+    method: "GET",
+    path: "/clusters/:clusterId/standard-library",
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    responses: {
+      200: z.object({
+        tools: z.array(
+          z.object({
+            name: z.string(),
+            description: z.string(),
+            enabled: z.boolean(),
+          })
+        ),
+      }),
     },
   },
 } as const;

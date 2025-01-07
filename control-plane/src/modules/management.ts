@@ -35,10 +35,12 @@ export const createCluster = async ({
   name,
   organizationId,
   description,
+  isDemo,
 }: {
   name?: string;
   organizationId: string;
   description: string;
+  isDemo?: boolean;
 }): Promise<{
   id: string;
   name: string;
@@ -53,6 +55,7 @@ export const createCluster = async ({
         name: name || `${randomName(" ")}`,
         organization_id: organizationId,
         description,
+        is_demo: isDemo,
       },
     ])
     .returning({

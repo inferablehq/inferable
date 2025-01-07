@@ -11,9 +11,8 @@ export const buildCurrentDateTimeTool = (): AgentTool =>
     func: async () => {
       return JSON.stringify({
         result: {
-
           iso8601: new Date().toISOString(),
-          unix: new Date().getTime()
+          unix: new Date().getTime(),
         },
         resultType: "resolution",
         status: "success",

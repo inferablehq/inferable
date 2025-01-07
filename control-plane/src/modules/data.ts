@@ -163,6 +163,7 @@ export const clusters = pgTable(
       withTimezone: true,
       precision: 6,
     }),
+    is_demo: boolean("is_demo").notNull().default(false),
   },
   table => ({
     idOrgIndex: index("clusters_id_org_index").on(table.id, table.organization_id),
@@ -263,7 +264,7 @@ export const externalMessages = pgTable(
 
     channel: text("channel", {
       enum: ["slack", "email"],
-    })
+    }),
   },
   table => ({
     pk: primaryKey({
@@ -276,7 +277,7 @@ export const externalMessages = pgTable(
     }),
     externalMessageIndex: index("externalMessagesIndex").on(table.external_id, table.cluster_id),
   })
-)
+);
 
 export const runs = pgTable(
   // TODO: Rename to runs

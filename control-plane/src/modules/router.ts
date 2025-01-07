@@ -20,13 +20,7 @@ import { ulid } from "ulid";
 import { getBlobData } from "./blobs";
 import { posthog } from "./posthog";
 import { BadRequestError } from "../utilities/errors";
-import {
-  upsertAgent,
-  getAgent,
-  deleteAgent,
-  listAgents,
-  validateSchema,
-} from "./agents";
+import { upsertAgent, getAgent, deleteAgent, listAgents, validateSchema } from "./agents";
 import {
   createClusterKnowledgeArtifact,
   getKnowledge,
@@ -37,7 +31,7 @@ import {
 } from "./knowledge/knowledgebase";
 import { jobsRouter } from "./jobs/router";
 import { buildModel } from "./models";
-import { getServiceDefinitions } from "./service-definitions";
+import { getServiceDefinitions, getStandardLibraryToolsMeta } from "./service-definitions";
 import { integrationsRouter } from "./integrations/router";
 import { getServerStats } from "./server-stats";
 
@@ -82,11 +76,13 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth().isAdmin();
     auth.canCreate({ cluster: true });
 
-    const { description } = request.body;
+    const { description, name, isDemo = false } = request.body;
 
     const cluster = await management.createCluster({
+      name,
       organizationId: auth.organizationId,
       description,
+      isDemo,
     });
 
     posthog?.capture({
@@ -765,6 +761,21 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: stats,
+    };
+  },
+  getStandardLibraryMeta: async request => {
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth();
+    await auth.canAccess({ cluster: { clusterId } });
+
+    const tools = getStandardLibraryToolsMeta();
+
+    return {
+      status: 200,
+      body: {
+        tools,
+      },
     };
   },
 });
