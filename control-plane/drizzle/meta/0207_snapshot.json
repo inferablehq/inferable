@@ -1,5 +1,5 @@
 {
-  "id": "aad1f04b-ab2e-49e4-879f-1ee022643f65",
+  "id": "4715423e-790a-41f8-821e-956aa950a7d5",
   "prevId": "26bd076e-2e1e-4eb0-ae4b-8c0121fe3dac",
   "version": "7",
   "dialect": "postgresql",
@@ -409,13 +409,6 @@
           "type": "timestamp (6) with time zone",
           "primaryKey": false,
           "notNull": false
-        },
-        "is_demo": {
-          "name": "is_demo",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         }
       },
       "indexes": {
@@ -853,6 +846,12 @@
         },
         "slack": {
           "name": "slack",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
           "type": "json",
           "primaryKey": false,
           "notNull": false
