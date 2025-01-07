@@ -6,6 +6,7 @@ import { AuthenticationError, BadRequestError } from "../../utilities/errors";
 import { getSession, nango, webhookSchema } from "./nango";
 import { env } from "../../utilities/env";
 import { logger } from "../observability/logger";
+import { integrationByConnectionId } from "../email";
 
 export const integrationsRouter = initServer().router(
   {
@@ -20,6 +21,35 @@ export const integrationsRouter = initServer().router(
 
       if (request.body.slack) {
         throw new BadRequestError("Slack integration details are not editable");
+      }
+
+      if (request.body.email) {
+        const newIds: string[] = [];
+
+        const generateEmailConnectionId = () => {
+          const id = crypto.randomUUID();
+          newIds.push(id);
+          return id;
+        }
+
+        // Generate random IDs for each connectionA
+        const connections = request.body.email.connections.map((c) => ({
+          ...c,
+          id: c.id || generateEmailConnectionId(),
+        }))
+
+        for (const id of newIds) {
+          // This should be very unlikely given the random IDs
+          const existing = await integrationByConnectionId(id);
+          if (existing) {
+            logger.error("Attempted to create duplicate email connection", {
+              existing
+            })
+            throw new BadRequestError("Connection ID already in use");
+          }
+        }
+
+        request.body.email.connections = connections;
       }
 
       if (request.body.toolhouse) {

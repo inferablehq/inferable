@@ -7,7 +7,7 @@ const messageBody = JSON.stringify(buildMessageBody({
   body: "Thanks for that, what time is it?",
   from: "john@johnjcsmith.com",
   subject: "Which tools?",
-  to: [ "01JE9SYD010WFFJ6GVE26WGVVK@run.inferable.ai" ],
+  to: [ "b2e6732a-f4ca-43ee-994d-622c2f2e5aaa@run.inferable.ai" ],
   messageId: "<abc123-9054-4BB5-ADA9-C9CB425D3844@johnjcsmith.com>",
   //inReplyTo: "<0100019424f3b264-41907ca3-9529-47d8-8cad-2fd946031d29-000000@email.amazonses.com>"
 }));

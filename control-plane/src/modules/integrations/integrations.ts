@@ -36,6 +36,7 @@ export const getIntegrations = async ({
       tavily: integrations.tavily,
       valtown: integrations.valtown,
       slack: integrations.slack,
+      email: integrations.email,
     })
     .from(integrations)
     .where(eq(integrations.cluster_id, clusterId))
@@ -47,6 +48,7 @@ export const getIntegrations = async ({
           tavily: null,
           valtown: null,
           slack: null,
+          email: null,
         }
     );
 };

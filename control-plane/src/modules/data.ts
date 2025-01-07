@@ -215,6 +215,15 @@ export const integrations = pgTable(
       botUserId: string;
       teamId: string;
     }>(),
+    email: json("email").$type<{
+      connections: Array<{
+        id: string;
+        destination: {
+          type: "agent" | "cluster";
+          id: string;
+        };
+      }>;
+    }>(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

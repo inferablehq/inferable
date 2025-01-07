@@ -8,9 +8,8 @@ import { ParsedMail, simpleParser } from "mailparser";
 import { getUserForCluster } from "../clerk";
 import { AuthenticationError, NotFoundError } from "../../utilities/errors";
 import { addMessageAndResume, createRunWithMessage } from "../runs";
-import { flagsmith } from "../flagsmith";
-import { InferSelectModel } from "drizzle-orm";
-import { runMessages } from "../data";
+import { InferSelectModel, sql } from "drizzle-orm";
+import { db, integrations, runMessages } from "../data";
 import { ses } from "../ses";
 import { ulid } from "ulid";
 import { unifiedMessageSchema } from "../contract";
@@ -160,13 +159,25 @@ export async function parseMessage(message: unknown) {
     throw new Error("Found multiple Inferable email addresses in destination");
   }
 
-  const clusterId = ingestionAddresses
+  const connectionId = ingestionAddresses
     .pop()
     ?.replace(env.INFERABLE_EMAIL_DOMAIN, "")
     .replace("@", "");
 
-  if (!clusterId) {
-    throw new Error("Could not extract clusterId from email address");
+  if (!connectionId) {
+    throw new Error("Could not extract connectionId from email address");
+  }
+
+  const connection = await integrationByConnectionId(connectionId);
+
+  if (!connection) {
+    throw new Error("Could not find connection");
+  }
+
+  const clusterId = connection.clusterId;
+  let agentId: string | undefined;
+  if (connection.destination.type == "agent") {
+    agentId = connection.destination.id;
   }
 
   const mail = await parseMailContent(sesMessage.data.content);
@@ -180,8 +191,9 @@ export async function parseMessage(message: unknown) {
   }
 
   return {
-    body: body ? stripQuoteTail(body) : undefined,
     clusterId,
+    agentId,
+    body: body ? stripQuoteTail(body) : undefined,
     ingestionAddresses,
     subject: mail.subject,
     messageId: mail.messageId,
@@ -221,19 +233,6 @@ async function handleEmailIngestion(raw: unknown) {
 
   const user = await authenticateUser(message.source, message.clusterId);
 
-  const flags = await flagsmith?.getIdentityFlags(message.clusterId, {
-    clusterId: message.clusterId,
-  });
-
-  const useEmail = flags?.isFeatureEnabled("experimental_email_trigger");
-
-  if (!useEmail) {
-    logger.info("Email trigger is disabled. Skipping", {
-      clusterId: message.clusterId,
-    });
-    return;
-  }
-
   const reference = message.inReplyTo || message.references[0];
   if (reference) {
     const existing = await getExternalMessage({
@@ -256,6 +255,7 @@ async function handleEmailIngestion(raw: unknown) {
   await handleNewChain({
     userId: user.userId,
     body: message.body,
+    agentId: message.agentId,
     clusterId: message.clusterId,
     messageId: message.messageId,
     subject: message.subject,
@@ -302,6 +302,7 @@ const handleNewChain = async ({
   body,
   clusterId,
   messageId,
+  agentId,
   subject,
   source,
 }: {
@@ -309,6 +310,7 @@ const handleNewChain = async ({
   body: string;
   clusterId: string;
   messageId: string;
+  agentId?: string;
   subject: string;
   source: string;
 }) => {
@@ -316,6 +318,7 @@ const handleNewChain = async ({
   await createRunWithMessage({
     userId,
     clusterId,
+    agentId,
     tags: {
       [EMAIL_INIT_MESSAGE_ID_META_KEY]: messageId,
       [EMAIL_SUBJECT_META_KEY]: subject,
@@ -358,4 +361,29 @@ const handleExistingChain = async ({
     message: body,
     type: "human",
   });
+};
+
+export const integrationByConnectionId = async (connectionId: string) => {
+  const [result] = await db
+    .select({
+      cluster_id: integrations.cluster_id,
+      email: integrations.email,
+    })
+    .from(integrations)
+    .where(sql`email->>'connections'::text LIKE '%' || ${connectionId} || '%'`);
+
+  if (!result) {
+    return undefined;
+  }
+
+  const connection = result.email?.connections.find(connection => connection.id === connectionId);
+
+  if (!connection) {
+    return undefined;
+  }
+
+  return {
+    clusterId: result.cluster_id,
+    ...connection
+  }
 };

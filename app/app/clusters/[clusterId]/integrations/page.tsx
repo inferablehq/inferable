@@ -12,6 +12,7 @@ import {
   BarChartHorizontal,
   FunctionSquare,
   LucideIcon,
+  Mail,
   Search,
   Slack,
   Trash2,
@@ -24,7 +25,7 @@ import ErrorDisplay from "@/components/error-display";
 import { revalidatePath } from "next/cache";
 
 type IntegrationConfig = {
-  [K in 'toolhouse' | 'langfuse' | 'tavily' | 'zapier' | 'valtown' | 'slack']: {
+  [K in 'toolhouse' | 'langfuse' | 'tavily' | 'zapier' | 'valtown' | 'slack' | 'email']: {
     name: string;
     description: string;
     icon: LucideIcon;
@@ -68,6 +69,12 @@ const config: IntegrationConfig = {
     name: "Slack",
     description: "Trigger Runs from your Slack workspace",
     icon: Slack,
+    stage: "beta",
+  },
+  email: {
+    name: "Email",
+    description: "Trigger Runs via Email",
+    icon: Mail,
     stage: "alpha",
   },
 };
