@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import { isFeatureEnabled } from "@/lib/features";
 
 type IntegrationConfig = {
   [K in 'toolhouse' | 'langfuse' | 'tavily' | 'zapier' | 'valtown' | 'slack' | 'email']: {
@@ -192,6 +193,10 @@ export default function IntegrationsPage({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Object.entries(integrations)
           .concat([["zapier", null]])
+          .filter(([key]) => {
+            if (key === "email") return isFeatureEnabled("feature.email_integration");
+            return true
+          })
           .map(([key, integration]) => {
             const c = config[key as keyof typeof config];
             if (!c) return null;

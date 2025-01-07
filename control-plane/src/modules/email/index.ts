@@ -168,18 +168,6 @@ export async function parseMessage(message: unknown) {
     throw new Error("Could not extract connectionId from email address");
   }
 
-  const connection = await integrationByConnectionId(connectionId);
-
-  if (!connection) {
-    throw new Error("Could not find connection");
-  }
-
-  const clusterId = connection.clusterId;
-  let agentId: string | undefined;
-  if (connection.destination.type == "agent") {
-    agentId = connection.destination.id;
-  }
-
   const mail = await parseMailContent(sesMessage.data.content);
   if (!mail) {
     throw new Error("Could not parse email content");
@@ -191,9 +179,8 @@ export async function parseMessage(message: unknown) {
   }
 
   return {
-    clusterId,
-    agentId,
     body: body ? stripQuoteTail(body) : undefined,
+    connectionId,
     ingestionAddresses,
     subject: mail.subject,
     messageId: mail.messageId,
@@ -231,12 +218,24 @@ async function handleEmailIngestion(raw: unknown) {
     return;
   }
 
-  const user = await authenticateUser(message.source, message.clusterId);
+  const connection = await integrationByConnectionId(message.connectionId);
+
+  if (!connection) {
+    throw new Error("Could not find connection");
+  }
+
+  const clusterId = connection.clusterId;
+  let agentId: string | undefined;
+  if (connection.destination.type == "agent") {
+    agentId = connection.destination.id;
+  }
+
+  const user = await authenticateUser(message.source, clusterId);
 
   const reference = message.inReplyTo || message.references[0];
   if (reference) {
     const existing = await getExternalMessage({
-      clusterId: message.clusterId,
+      clusterId: clusterId,
       externalId: reference,
     });
     if (!existing) {
@@ -244,19 +243,18 @@ async function handleEmailIngestion(raw: unknown) {
     }
 
     return await handleExistingChain({
+      clusterId,
       userId: user.userId,
       body: message.body,
-      clusterId: message.clusterId,
-      messageId: message.messageId,
       runId: existing.runId,
     });
   }
 
   await handleNewChain({
+    agentId,
+    clusterId,
     userId: user.userId,
     body: message.body,
-    agentId: message.agentId,
-    clusterId: message.clusterId,
     messageId: message.messageId,
     subject: message.subject,
     source: message.source,
@@ -338,13 +336,11 @@ const handleExistingChain = async ({
   userId,
   body,
   clusterId,
-  messageId,
   runId,
 }: {
   userId: string;
   body: string;
   clusterId: string;
-  messageId: string;
   runId: string;
 }) => {
   logger.info("Continuing existing run from email");
