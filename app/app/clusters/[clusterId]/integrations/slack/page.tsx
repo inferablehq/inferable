@@ -2,19 +2,13 @@
 
 import { client } from "@/client/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "@/components/loading";
-import Nango from '@nangohq/frontend';
+import Nango from "@nangohq/frontend";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { ClientInferResponses } from "@ts-rest/core";
@@ -30,10 +24,9 @@ export default function SlackIntegration({
   const { getToken } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [connection, setConnection] = useState<ClientInferResponses<
-  typeof contract.getIntegrations,
-  200
->["body"]["slack"] | null>(null);
+  const [connection, setConnection] = useState<
+    ClientInferResponses<typeof contract.getIntegrations, 200>["body"]["slack"] | null
+  >(null);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -50,7 +43,6 @@ export default function SlackIntegration({
     if (response.status === 200) {
       setConnection(response.body?.slack);
     }
-
   }, [clusterId, getToken]);
 
   const onSlackConnect = async () => {
@@ -63,7 +55,7 @@ export default function SlackIntegration({
       },
       body: {
         integration: "slack",
-      }
+      },
     });
 
     if (response.status !== 200 || !response.body || !response.body.token) {
@@ -73,12 +65,12 @@ export default function SlackIntegration({
 
     nango.openConnectUI({
       sessionToken: response.body.token,
-      onEvent: async (event) => {
+      onEvent: async event => {
         if (event.type === "connect") {
           toast.success("Connected to Slack");
           router.push(`/clusters/${clusterId}/integrations`);
         }
-      }
+      },
     });
   };
 
@@ -109,13 +101,8 @@ export default function SlackIntegration({
             <CardTitle>Configure Slack</CardTitle>
           </div>
           <CardDescription>
-            Connect your Slack workspace to trigger runs in this Cluster.
-            For more information, see{" "}
-            <a
-              href="https://docs.inferable.ai/pages/slack"
-              target="_blank"
-              className="underline"
-            >
+            Connect your Slack workspace to trigger runs in this Cluster. For more information, see{" "}
+            <a href="https://docs.inferable.ai/pages/slack" target="_blank" className="underline">
               our docs
             </a>
             .
@@ -124,19 +111,17 @@ export default function SlackIntegration({
         <CardContent>
           {connection ? (
             <div className="flex items-center gap-2">
-              <h3 className="text-gray-500">Slack Connected (Team: {connection.teamId})</h3>
+              <p className="text-gray-500 text-md font-mono">
+                Slack Connected (Team: {connection?.teamId})
+              </p>
             </div>
           ) : (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={onSlackConnect}
-                >
-                  Connect Slack
-                </Button>
-              </div>
-            )
-          }
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={onSlackConnect}>
+                Connect Slack
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
