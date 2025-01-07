@@ -489,7 +489,7 @@ export const definition = {
     },
     body: z.object({
       description: z.string().describe("Human readable description of the cluster"),
-      name: z.string().describe("Human readable name of the cluster"),
+      name?: z.string().describe("Human readable name of the cluster"),
       isDemo: z
         .boolean()
         .optional()
