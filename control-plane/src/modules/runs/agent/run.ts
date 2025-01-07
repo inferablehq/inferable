@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Run, getWaitingJobIds, updateRun } from "../";
 import { env } from "../../../utilities/env";
 import { NotFoundError } from "../../../utilities/errors";
 import { getClusterContextText } from "../../cluster";
@@ -13,21 +14,16 @@ import {
   getServiceDefinitions,
   serviceFunctionEmbeddingId,
 } from "../../service-definitions";
-import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { getRunMessages, insertRunMessage } from "../messages";
-import { Run, getWaitingJobIds, updateRun } from "../";
+import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { createRunGraph } from "./agent";
 import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
 import { RunGraphState } from "./state";
-import { AgentTool } from "./tool";
+import { AgentTool, AgentToolV2 } from "./tool";
 import { getClusterInternalTools } from "./tools/cluster-internal-tools";
-import { CURRENT_DATE_TIME_TOOL_NAME, buildCurrentDateTimeTool } from "./tools/date-time";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
-import {
-  ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME,
-  buildAccessKnowledgeArtifacts,
-} from "./tools/knowledge-artifacts";
 import { buildMockFunctionTool } from "./tools/mock-function";
+import { stdlib } from "./tools/stdlib";
 
 /**
  * Run a Run from the most recent saved state
@@ -75,7 +71,7 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
     })
   );
 
-  const mockToolsMap: Record<string, AgentTool> = await buildMockTools(run);
+  const mockToolsMap: Record<string, AgentTool | AgentToolV2> = await buildMockTools(run);
 
   let mockModelResponses;
   if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
@@ -398,7 +394,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
   const start = Date.now();
   const run = state.run;
 
-  const tools: AgentTool[] = [];
+  const tools: (AgentTool | AgentToolV2)[] = [];
   const attachedFunctions = run.attachedFunctions ?? [];
 
   // If functions are explicitly attached, skip relevant tools search
@@ -407,13 +403,17 @@ export const findRelevantTools = async (state: RunGraphState) => {
       if (tool.toLowerCase().startsWith("inferable_")) {
         const internalToolName = tool.split("_")[1];
 
-        if (internalToolName === ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME) {
-          tools.push(await buildAccessKnowledgeArtifacts(run));
+        if (internalToolName === stdlib.accessKnowledge.id) {
+          tools.push(await stdlib.accessKnowledge.tool(run)); // TODO: Remove stdlib.accessKnowledge.tool(run) that "colors" this whole loop.
           continue;
-        }
-
-        if (internalToolName === CURRENT_DATE_TIME_TOOL_NAME) {
-          tools.push(buildCurrentDateTimeTool());
+        } else if (internalToolName === stdlib.calculator.id) {
+          tools.push(stdlib.calculator.tool());
+          continue;
+        } else if (internalToolName === stdlib.currentDateTime.id) {
+          tools.push(stdlib.currentDateTime.tool());
+          continue;
+        } else if (internalToolName === stdlib.getUrl.id) {
+          tools.push(stdlib.getUrl.tool());
           continue;
         }
       }
@@ -443,13 +443,14 @@ export const findRelevantTools = async (state: RunGraphState) => {
 
     tools.push(...found);
 
-    const accessKnowledgeArtifactsTool = await buildAccessKnowledgeArtifacts(run);
-
-    const currentDateTimeTool = buildCurrentDateTimeTool();
-
-    // When tools are not specified, attach all internalTools
-    tools.push(accessKnowledgeArtifactsTool);
-    tools.push(currentDateTimeTool);
+    tools.push(
+      ...[
+        await stdlib.accessKnowledge.tool(run),
+        stdlib.currentDateTime.tool(),
+        stdlib.getUrl.tool(),
+        stdlib.calculator.tool(),
+      ]
+    );
 
     events.write({
       type: "functionRegistrySearchCompleted",

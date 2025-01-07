@@ -367,6 +367,10 @@ export function assertMessageOfType<
   const result = unifiedMessageSchema.safeParse(message);
 
   if (!result.success) {
+    logger.error("Invalid message data", {
+      message,
+      error: result.error,
+    });
     throw new Error("Invalid message data");
   }
 

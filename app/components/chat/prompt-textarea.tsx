@@ -26,6 +26,7 @@ import {
 import toast from "react-hot-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Badge } from "../ui/badge";
+import { useClusterState } from "../useClusterState";
 
 export type RunOptions = {
   agentId?: string;
@@ -42,6 +43,20 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const [prompt, setPrompt] = useState<string>("");
   const { getToken } = useAuth();
   const router = useRouter();
+  const { services } = useClusterState(clusterId);
+  const [availableFunctions, setAvailableFunctions] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+
+  useEffect(() => {
+    const functions = services.flatMap(service =>
+      (service.functions || []).map(fn => ({
+        value: `${service.name}_${fn.name}`,
+        label: `${service.name}.${fn.name}`,
+      }))
+    );
+    setAvailableFunctions(functions);
+  }, [services]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -200,54 +215,6 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       submit();
     }
   };
-
-  const [availableFunctions, setAvailableFunctions] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
-
-  useEffect(() => {
-    const fetchFunctions = async () => {
-      const result = await client.listServices({
-        headers: {
-          authorization: `Bearer ${await getToken()}`,
-        },
-        params: { clusterId },
-      });
-
-      if (result.status === 200) {
-        const functions = result.body.flatMap(service =>
-          (service.functions || []).map(fn => ({
-            value: `${service.name}_${fn.name}`,
-            label: `${service.name}.${fn.name}`,
-          }))
-        );
-        setAvailableFunctions(functions);
-      } else {
-        createErrorToast(result, "Failed to fetch Service Functions");
-      }
-    };
-
-    fetchFunctions();
-  }, [clusterId, getToken]);
-
-  useEffect(() => {
-    const fetchAgents = async () => {
-      const result = await client.listAgents({
-        headers: {
-          authorization: `Bearer ${await getToken()}`,
-        },
-        params: { clusterId },
-      });
-
-      if (result.status === 200) {
-        setAgents(result.body);
-      } else {
-        createErrorToast(result, "Failed to fetch Agents");
-      }
-    };
-
-    fetchAgents();
-  }, [clusterId, selectedAgentId, getToken, setAgents]);
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     functions: true,
@@ -552,9 +519,14 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                 <div>
                   <div className="mb-6">
                     <p className="text-sm text-muted-foreground mb-4">
-                      Select from one of the Cluster&apos;s existing <a className="text-xs text-primary hover:text-primary/90 hover:underline"
-                                href={`/clusters/${clusterId}/agents`}>Agents</a>.
-
+                      Select from one of the Cluster&apos;s existing{" "}
+                      <a
+                        className="text-xs text-primary hover:text-primary/90 hover:underline"
+                        href={`/clusters/${clusterId}/agents`}
+                      >
+                        Agents
+                      </a>
+                      .
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {agents.map(agent => (

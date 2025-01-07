@@ -14,6 +14,7 @@ import React, {
   useEffect,
   useImperativeHandle,
   useState,
+  useMemo,
 } from "react";
 import tippy from "tippy.js";
 import { contract } from "@/client/contract";
@@ -24,6 +25,7 @@ import BulletList from "@tiptap/extension-bullet-list";
 import ListItem from "@tiptap/extension-list-item";
 import { Button } from "./ui/button";
 import { BoldIcon, ListIcon } from "lucide-react";
+import { useClusterState } from "./useClusterState";
 
 type ServiceFunction = {
   service: string;
@@ -53,9 +55,7 @@ const MentionList = React.forwardRef<MentionListRef, MentionListProps>(
     };
 
     const upHandler = () => {
-      setSelectedIndex(
-        (selectedIndex + props.items.length - 1) % props.items.length,
-      );
+      setSelectedIndex((selectedIndex + props.items.length - 1) % props.items.length);
     };
 
     const downHandler = () => {
@@ -96,7 +96,7 @@ const MentionList = React.forwardRef<MentionListRef, MentionListProps>(
             <button
               className={cn(
                 index === selectedIndex ? "is-selected" : "",
-                "flex flex-col justify-start items-start mb-2",
+                "flex flex-col justify-start items-start mb-2"
               )}
               key={index}
               onClick={() => selectItem(index)}
@@ -112,21 +112,19 @@ const MentionList = React.forwardRef<MentionListRef, MentionListProps>(
         )}
       </div>
     );
-  },
+  }
 );
 
 const suggestion = (
-  services: Array<{ service: string; function: string; description: string }>,
+  services: Array<{ service: string; function: string; description: string }>
 ): MentionOptions["suggestion"] => ({
   items: ({ query }: { query: string }) => {
     return (
       services
         ?.filter(
-          (item) =>
-            `${item.service}.${item.function}`
-              .toLowerCase()
-              .includes(query.toLowerCase()) ||
-            item.description.toLowerCase().includes(query.toLowerCase()),
+          item =>
+            `${item.service}.${item.function}`.toLowerCase().includes(query.toLowerCase()) ||
+            item.description.toLowerCase().includes(query.toLowerCase())
         )
         ?.slice(0, 10) || []
     );
@@ -137,7 +135,7 @@ const suggestion = (
     let popup: any;
 
     return {
-      onStart: (props) => {
+      onStart: props => {
         component = new ReactRenderer(MentionList, {
           props,
           editor: props.editor,
@@ -249,14 +247,10 @@ const TipTap = ({
   if (!editor) return null;
 
   return (
-    <div
-      className="rich-text-editor"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={handleKeyDown}
-    >
+    <div className="rich-text-editor" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown}>
       <div className="menu-bar">
         <Button
-          onClick={(e) => {
+          onClick={e => {
             editor?.chain().focus().toggleBold().run();
           }}
           className={cn(editor?.isActive("bold") ? "is-active" : "")}
@@ -267,7 +261,7 @@ const TipTap = ({
           <BoldIcon className="h-4 w-4" />
         </Button>
         <Button
-          onClick={(e) => {
+          onClick={e => {
             editor?.chain().focus().toggleBulletList().run();
           }}
           className={cn(editor?.isActive("bulletList") ? "is-active" : "")}
@@ -294,54 +288,22 @@ export const InstructionsEditor = ({
   clusterId: string;
   keyProp: string | null;
 }) => {
-  const [clusterServices, setClusterServices] =
-    useState<ClientInferResponseBody<typeof contract.listServices, 200> | null>(
-      null,
-    );
-
-  const { getToken } = useAuth();
-
-  const getClusterServices = useCallback(async () => {
-    const services = await client.listServices({
-      headers: {
-        authorization: `Bearer ${await getToken()}`,
-      },
-      params: {
-        clusterId,
-      },
-    });
-
-    if (services.status === 200) {
-      setClusterServices(services.body);
-    } else {
-      createErrorToast(services, "Failed to get cluster services");
-    }
-  }, [clusterId, getToken]);
-
-  useEffect(() => {
-    getClusterServices();
-  }, [getClusterServices]);
-
-  const services: ServiceFunction[] =
-    clusterServices?.flatMap(
-      (d) =>
-        d.functions?.map((f) => ({
-          service: d.name,
-          function: f.name,
-          description: f.description ?? "",
-        })) ?? [],
-    ) ?? [];
-
-  if (!services.length) {
-    return <p>No services found. Connect a few services to get started.</p>;
-  }
+  const { services } = useClusterState(clusterId);
+  const serviceFunctions = useMemo(
+    () =>
+      services.flatMap(service =>
+        (service.functions || []).map(fn => ({
+          service: service.name,
+          function: fn.name,
+          description: fn.description || "",
+        }))
+      ),
+    [services]
+  );
 
   return (
-    <TipTap
-      value={value}
-      onChange={onChange}
-      services={services}
-      key={keyProp}
-    />
+    <div className="relative">
+      <TipTap value={value} onChange={onChange} services={serviceFunctions} />
+    </div>
   );
 };

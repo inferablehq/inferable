@@ -16,7 +16,7 @@ export const timeline = {
     activityAfter: string;
   }) => {
     let rowsCount = 0;
-    const delay = 200;
+    const delay = 500;
     const timeout = 20_000;
     const startTime = Date.now();
     do {

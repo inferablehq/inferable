@@ -41,7 +41,9 @@ export const getClusterInternalTools = async (
     tools[ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME] = buildAccessKnowledgeArtifacts;
   }
 
-  for (const [name, tool] of Object.entries(stdlib)) {
+  for (const [name, tool] of Object.entries(stdlib).filter(
+    tool => tool[0] !== ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME
+  )) {
     tools[name] = tool.tool;
   }
 

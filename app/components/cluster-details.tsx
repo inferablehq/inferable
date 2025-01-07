@@ -25,6 +25,7 @@ import ToolContextButton from "./chat/ToolContextButton";
 import ErrorDisplay from "./error-display";
 import { EventsOverlayButton } from "./events-overlay";
 import { ServerConnectionStatus } from "./server-connection-pane";
+import { useClusterState } from "./useClusterState";
 
 function toServiceName(name: string) {
   return <span>{name}</span>;
@@ -59,33 +60,6 @@ function ControlPlaneBox() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function NewServicePill({ hasServices }: { hasServices: boolean }) {
-  return (
-    <div className="relative">
-      <div className="absolute left-8 top-[1.5rem] w-8 h-[2px] bg-border" />
-      <div
-        className={cn(
-          "rounded-xl p-5 shadow-sm border transition-all duration-200 hover:shadow-md ml-16",
-          hasServices ? "bg-white" : "bg-blue-50/30 border-blue-100 animate-pulse"
-        )}
-      >
-        <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Plus className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <div className="text-base font-medium">New Service</div>
-            <div className="text-sm text-muted-foreground">
-              Create a new service in this cluster
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="absolute left-8 bottom-[-1rem] w-[2px] h-4 bg-border" />
     </div>
   );
 }
@@ -202,43 +176,19 @@ function ServiceCard({
 }
 
 export default function ServicesOverview({ clusterId }: { clusterId: string }) {
-  const [services, setServices] = useState<
-    ClientInferResponseBody<typeof contract.listServices, 200>
-  >([]);
-  const { getToken } = useAuth();
-
-  const getClusterServices = useCallback(async () => {
-    const servicesResponse = await client.listServices({
-      headers: {
-        authorization: `Bearer ${await getToken()}`,
-      },
-      params: {
-        clusterId,
-      },
-    });
-
-    if (servicesResponse.status === 200) {
-      setServices(servicesResponse.body);
-    } else {
-      createErrorToast(servicesResponse, "Failed to get cluster services");
-    }
-  }, [clusterId, getToken]);
-
-  useEffect(() => {
-    getClusterServices();
-  }, [getClusterServices]);
-
+  const { services } = useClusterState(clusterId);
   const sortedServices = services.sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div>
       <ControlPlaneBox />
+      {sortedServices.length === 0 && (
+        <div className="text-sm text-muted-foreground ml-8">No services connected yet</div>
+      )}
       <div className="relative grid grid-cols-1 gap-4">
         {sortedServices.length > 0 && (
           <div className="absolute left-8 top-0 w-[2px] h-full bg-border" />
         )}
-
-        <NewServicePill hasServices={sortedServices.length > 0} />
 
         {sortedServices.map((service, index) => (
           <ServiceCard
@@ -259,12 +209,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
   const [clusterDetails, setClusterDetails] = useState<
     ClientInferResponses<typeof contract.getCluster, 200>["body"] | null
   >(null);
-  const [machines, setMachines] = useState<
-    ClientInferResponseBody<typeof contract.listMachines, 200>
-  >([]);
-  const [services, setServices] = useState<
-    ClientInferResponseBody<typeof contract.listServices, 200>
-  >([]);
+  const { machines, services } = useClusterState(clusterId);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [hasInitialDataLoaded, setHasInitialDataLoaded] = useState(false);
 
@@ -280,11 +225,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
         const headers = { authorization: `Bearer ${token}` };
         const params = { clusterId };
 
-        const [clusterResult, machinesResponse, servicesResponse] = await Promise.all([
-          client.getCluster({ headers, params }),
-          client.listMachines({ headers, params }),
-          client.listServices({ headers, params }),
-        ]);
+        const clusterResult = await client.getCluster({ headers, params });
 
         if (clusterResult.status === 200) {
           setClusterDetails(clusterResult.body);
@@ -293,14 +234,6 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
             type: "getCluster",
             success: false,
           });
-        }
-
-        if (machinesResponse.status === 200) {
-          setMachines(machinesResponse.body);
-        }
-
-        if (servicesResponse.status === 200) {
-          setServices(servicesResponse.body);
         }
       } catch (error) {
         console.error("Failed to fetch cluster data:", error);
@@ -646,58 +579,10 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
 }
 
 function MachinesOverview({ clusterId }: { clusterId: string }) {
-  const [machines, setMachines] = useState<
-    ClientInferResponseBody<typeof contract.listMachines, 200>
-  >([]);
-  const [liveMachineCount, setLiveMachineCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const { getToken } = useAuth();
-  const [error, setError] = useState<any>(null);
-
-  const getClusterMachines = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const machinesResponse = await client.listMachines({
-        headers: {
-          authorization: `Bearer ${await getToken()}`,
-        },
-        params: {
-          clusterId,
-        },
-      });
-
-      if (machinesResponse.status === 200) {
-        setMachines(machinesResponse.body);
-        setLiveMachineCount(
-          machinesResponse.body.filter(
-            m => Date.now() - new Date(m.lastPingAt!).getTime() < 1000 * 60
-          ).length
-        );
-      } else {
-        setError(machinesResponse);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [clusterId, getToken]);
-
-  useEffect(() => {
-    getClusterMachines();
-    const interval = setInterval(getClusterMachines, 1000 * 10);
-    return () => clearInterval(interval);
-  }, [getClusterMachines]);
-
-  if (error) {
-    return <ErrorDisplay status={error.status} error={error} />;
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const { machines } = useClusterState(clusterId);
+  const liveMachineCount = machines.filter(
+    m => Date.now() - new Date(m.lastPingAt!).getTime() < 1000 * 60
+  ).length;
 
   return (
     <div className="space-y-6">

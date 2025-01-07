@@ -294,13 +294,6 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth();
     await auth.canManage({ run: { clusterId, runId } });
 
-    assertMessageOfType("human", {
-      type: "human",
-      data: {
-        message,
-      },
-    });
-
     const messages = await editHumanMessage({
       id: messageId,
       userId: auth.entityId,

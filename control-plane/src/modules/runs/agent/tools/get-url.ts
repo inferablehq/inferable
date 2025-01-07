@@ -3,7 +3,7 @@ import { AgentToolV2 } from "../tool";
 import { logger } from "../../../observability/logger";
 import { env } from "../../../../utilities/env";
 
-export const GET_URL_TOOL_NAME = "get_url";
+export const GET_URL_TOOL_NAME = "getUrl";
 
 // TODO: This should be configurable for clusters with a credit card on file
 const allowedHosts = ["https://docs.inferable.ai", "https://news.ycombinator.com"];
@@ -35,11 +35,16 @@ export const buildGetUrlTool = (): AgentToolV2 =>
             Authorization: `Bearer ${env.FIRECRAWL_API_KEY}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ url: input.url, scrapeOptions: ["markdown"] }),
+          body: JSON.stringify({ url: input.url }),
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          logger.info("Failed to fetch URL content", {
+            url: input.url,
+            response: response,
+            apiKey: env.FIRECRAWL_API_KEY.slice(0, 4) + "...",
+          });
+          throw new Error(`HTTP error! status: ${JSON.stringify(response)}`);
         }
 
         const data = await response.json();

@@ -117,19 +117,28 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
   const activityAfter = useRef<string>("0");
 
   const fetchRunTimeline = useCallback(async () => {
-    const result = await client.getRunTimeline({
-      headers: {
-        authorization: `Bearer ${await getToken()}`,
-      },
-      params: {
-        clusterId,
-        runId,
-      },
-      query: {
-        messagesAfter: messagesAfter.current,
-        activityAfter: activityAfter.current,
-      },
-    });
+    const result = await client
+      .getRunTimeline({
+        headers: {
+          authorization: `Bearer ${await getToken()}`,
+        },
+        params: {
+          clusterId,
+          runId,
+        },
+        query: {
+          messagesAfter: messagesAfter.current,
+          activityAfter: activityAfter.current,
+        },
+      })
+      .catch(e => {
+        console.error("Failed to fetch timeline", e);
+
+        return {
+          status: 503,
+          body: null,
+        } as const;
+      });
 
     if (result.status === 200) {
       if (result.body.messages.length === 0 && result.body.activity.length === 0) {
@@ -466,7 +475,10 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
               {run.status === "failed" && (
                 <div className="flex flex-row">
                   <MessageCircleWarning className="h-4 w-4 mt-1 text-red-500" />
-                  <span className="text-sm text-red-600 px-2">Failed: {run.failureReason}</span> <Button
+                  <span className="text-sm text-red-600 px-2">
+                    Failed: {run.failureReason}
+                  </span>{" "}
+                  <Button
                     size="sm"
                     variant="outline"
                     className="h-7 align-end ml-auto"

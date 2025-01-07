@@ -24,11 +24,11 @@ import { flagsmith } from "./modules/flagsmith";
 import { runMigrations } from "./utilities/migrate";
 import { customerTelemetry } from "./modules/customer-telemetry";
 
-let totalRequestRewrites = 0
+let totalRequestRewrites = 0;
 
 const app = fastify({
   logger: env.ENABLE_FASTIFY_LOGGER,
-  rewriteUrl: (req) => {
+  rewriteUrl: req => {
     if (!req.url) {
       throw new Error("No URL available in rewriteUrl");
     }
@@ -36,19 +36,19 @@ const app = fastify({
     if (req.url.match(/\/clusters\/.*\/(calls|jobs).*$/)) {
       totalRequestRewrites++;
 
-      // Log every 10th rewrite
-      if (totalRequestRewrites % 10 === 0) {
+      // Log every 100th rewrite
+      if (totalRequestRewrites % 100 === 0) {
         logger.info("Rewrote request to deprecated /calls endpoint", {
           url: req.url,
-          totalRequestRewrites
+          totalRequestRewrites,
         });
       }
       return req.url.replace("/calls", "/jobs");
-    };
+    }
 
     return req.url;
-  }
-})
+  },
+});
 
 app.register(auth.plugin);
 
@@ -219,15 +219,16 @@ process.on("SIGTERM", async () => {
   await Promise.all([
     runs.stop(),
     app.close(),
-    pg.stop(),
     flagsmith?.close(),
     hdx?.shutdown(),
-    redis.stop(),
     customerTelemetry.stop(),
     externalCalls.stop(),
     slack.stop(),
     email.stop(),
-  ]);
+  ]).then(() => {
+    pg.stop();
+    redis.stop();
+  });
 
   logger.info("Shutdown complete");
 
