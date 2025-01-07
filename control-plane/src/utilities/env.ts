@@ -32,7 +32,7 @@ const envSchema = z
     DATABASE_URL: z.string().url(),
     DATABASE_SSL_DISABLED: truthy.default(false),
     DATABASE_ALLOW_EXIT_ON_IDLE: truthy.default(false),
-    DATABASE_MAX_CONNECTIONS: z.coerce.number().default(10),
+    DATABASE_MAX_CONNECTIONS: z.coerce.number().default(20),
 
     JOB_LONG_POLLING_TIMEOUT: z.number().default(15),
 
