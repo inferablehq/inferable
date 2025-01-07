@@ -426,7 +426,7 @@ const getAccessToken = async (connectionId: string) => {
   return result;
 };
 
-const cleanupConflictingIntegrations = async (
+export const cleanupConflictingIntegrations = async (
   clusterId: string,
   config: z.infer<typeof integrationSchema>
 ) => {
@@ -445,16 +445,9 @@ const cleanupConflictingIntegrations = async (
     );
 
   if (conflicts.length) {
-    logger.info("Removed conflicting Slack integrations", {
+    logger.info("Removing conflicting Slack integrations", {
       conflicts: conflicts.map(conflict => conflict.cluster_id),
     });
-
-    // Cleanup Slack integrations from DB
-    await db
-      .delete(integrations)
-      .where(
-        and(sql`slack->>'teamId' = ${config.slack.teamId}`, ne(integrations.cluster_id, clusterId))
-      );
 
     // Cleanup Nango connections
     await Promise.allSettled(
@@ -464,6 +457,13 @@ const cleanupConflictingIntegrations = async (
         }
       })
     );
+
+    // Cleanup Slack integrations from DB
+    await db
+      .delete(integrations)
+      .where(
+        and(sql`slack->>'teamId' = ${config.slack.teamId}`, ne(integrations.cluster_id, clusterId))
+      );
   }
 };
 
