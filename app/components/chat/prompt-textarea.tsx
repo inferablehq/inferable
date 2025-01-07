@@ -306,8 +306,8 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
               <div>
                 <h3 className="font-medium text-gray-800">No Services Connected</h3>
                 <p className="mt-1 text-sm text-gray-600">
-                  It looks like you haven't connected any services. Connect a service to give your
-                  agent some powers.
+                  It looks like you haven&apos;t connected any services. Connect a service to give
+                  your agent some powers.
                 </p>
               </div>
               <div className="h-4" />
