@@ -56,7 +56,7 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
   allAvailableTools.push(...attachedFunctions);
 
   serviceDefinitions.flatMap(service =>
-    (service.definition.functions ?? []).forEach(f => {
+    (service.definition?.functions ?? []).forEach(f => {
       // Do not attach additional tools if `attachedFunctions` is provided
       if (attachedFunctions.length > 0 || f.config?.private) {
         return;
