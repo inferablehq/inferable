@@ -315,14 +315,6 @@ export const mergeAgentOptions = (options: RunOptions, agent: Agent) => {
     }
   }
 
-  mergedOptions.messageMetadata = {
-    displayable: {
-      templateName: agent.name,
-      templateId: agent.id,
-      ...options.input,
-    },
-  };
-
   return {
     options: mergedOptions,
     error: null,

@@ -128,11 +128,21 @@ export const runsRouter = initServer().router(
 
         const merged = mergeAgentOptions(runOptions, agent);
 
+
+
         if (merged.error) {
           return merged.error;
         }
 
         runOptions = merged.options;
+
+        runOptions.messageMetadata = {
+          displayable: {
+            templateName: agent.name,
+            templateId: agent.id,
+            ...body.input,
+          },
+        };
       }
 
       if (runOptions.input) {

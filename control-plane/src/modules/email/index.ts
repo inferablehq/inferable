@@ -14,6 +14,7 @@ import { ses } from "../ses";
 import { ulid } from "ulid";
 import { unifiedMessageSchema } from "../contract";
 import { createExternalMessage, getExternalMessage } from "../runs/external-messages";
+import { getAgent, mergeAgentOptions } from "../agents";
 
 const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
 const EMAIL_SUBJECT_META_KEY = "emailSubject";
@@ -134,7 +135,9 @@ export const notifyNewMessage = async ({
       messageId: message.id,
     });
   } else {
-    logger.warn("Email thread message does not have content");
+    logger.warn("Email thread message does not have content", {
+      messageId: message.id,
+    });
   }
 };
 
@@ -196,6 +199,8 @@ export async function parseMessage(message: unknown) {
     source: sesMessage.data.mail.source,
     inReplyTo: mail.inReplyTo,
     references: typeof mail.references === "string" ? [mail.references] : (mail.references ?? []),
+    dkimVerdict: sesMessage.data.receipt.dkimVerdict.status,
+    spfVerdict: sesMessage.data.receipt.spfVerdict.status,
   };
 }
 
@@ -227,6 +232,12 @@ async function handleEmailIngestion(raw: unknown) {
     return;
   }
 
+  if (message.dkimVerdict !== "PASS" || message.spfVerdict !== "PASS") {
+    logger.warn("Email did not pass DKIM or SPF checks.", {
+      messageId: message.messageId,
+    });
+  }
+
   const connection = await integrationByConnectionId(message.connectionId);
 
   if (!connection) {
@@ -234,7 +245,7 @@ async function handleEmailIngestion(raw: unknown) {
   }
 
   const clusterId = connection.clusterId;
-  let agentId = connection.email?.agentId;
+  const agentId = connection.email?.agentId;
 
   const user = await authenticateUser(message.source, clusterId);
 
@@ -319,6 +330,26 @@ const handleNewChain = async ({
   source: string;
 }) => {
   logger.info("Creating new run from email");
+
+  let options;
+
+  if (agentId) {
+    const agent = await getAgent({
+      id: agentId,
+      clusterId,
+    });
+    if (!agent) {
+      throw new Error("Could not find agent for email");
+    }
+    options = mergeAgentOptions({}, agent);
+  }
+
+  if (options?.error) {
+    logger.error("Could not merge agent options", {
+      error: options.error,
+    })
+  }
+
   await createRunWithMessage({
     userId,
     clusterId,
@@ -335,6 +366,7 @@ const handleNewChain = async ({
     },
     message: body,
     type: "human",
+    ...options?.options
   });
 };
 

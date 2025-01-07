@@ -119,12 +119,6 @@ describe("agents", () => {
         reasoningTraces: true,
         callSummarization: true,
         modelIdentifier: "claude-3-5-sonnet" as const,
-        messageMetadata: {
-          displayable: {
-            templateId: "test-id",
-            templateName: "test-template",
-          },
-        },
       });
     });
 
@@ -158,12 +152,6 @@ describe("agents", () => {
         reasoningTraces: true,
         callSummarization: true,
         modelIdentifier: "claude-3-5-sonnet" as const,
-        messageMetadata: {
-          displayable: {
-            templateId: "test-id",
-            templateName: "test-template",
-          },
-        },
       });
     });
 
