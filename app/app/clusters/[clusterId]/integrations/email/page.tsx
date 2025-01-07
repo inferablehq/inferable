@@ -18,11 +18,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { contract, integrationSchema } from "@/client/contract";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { z } from "zod";
 import { useCallback, useEffect, useState } from "react";
 import { createErrorToast } from "@/lib/utils";
+import { toast } from "react-hot-toast";
 
 const EMAIL_DOMAIN = "run.inferable.ai";
 const CLUSTER_TARGET_VALUE = "cluster";
@@ -186,8 +197,14 @@ function EmailConnections({
   handleAddConnection,
   handleRemoveConnection,
 }: EmailConnectionsProps) {
-
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(undefined);
+  const [connectionToDelete, setConnectionToDelete] = useState<string | null>(null);
+
+  const getConnectionName = (connection: any) => {
+    return connection.destination.type === CLUSTER_TARGET_VALUE || !connection.destination.id
+      ? 'Cluster'
+      : "Agent: " + agents?.find((a) => a.id === connection.destination.id)?.name || 'Unknown Agent';
+  };
 
   return (
     <div>
@@ -203,21 +220,50 @@ function EmailConnections({
           <TableBody>
             {integration?.connections.map((connection) => (
               <TableRow key={connection.id}>
-                <TableCell className="font-mono">{connection.id}@{EMAIL_DOMAIN}</TableCell>
-                <TableCell>
-                  {connection.destination.type === CLUSTER_TARGET_VALUE || !connection.destination.id
-                    ? 'Cluster'
-                    : "Agent: " + agents?.find((a) => a.id === connection.destination.id)?.name || 'Unknown Agent'
-                  }
+                <TableCell className="font-mono">
+                  <a href={`mailto:${connection.id}@${EMAIL_DOMAIN}`}>{connection.id}@{EMAIL_DOMAIN}</a>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => connection.id && handleRemoveConnection(connection.id)}
+                  {getConnectionName(connection)}
+                </TableCell>
+                <TableCell>
+                  <AlertDialog
+                    open={connectionToDelete === connection.id}
+                    onOpenChange={(open) => !open && setConnectionToDelete(null)}
                   >
-                    Delete
-                  </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setConnectionToDelete(connection.id || null)}
+                    >
+                      Delete
+                    </Button>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Connection</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete <pre>{connection.id}@{EMAIL_DOMAIN}</pre>?
+                          <br /><br />
+                          <b>This action cannot be undone.</b>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => {
+                            if (connection.id) {
+                              handleRemoveConnection(connection.id);
+                              toast.success("Connection deleted successfully");
+                            }
+                            setConnectionToDelete(null);
+                          }}
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </TableCell>
               </TableRow>
             ))}
