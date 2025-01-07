@@ -1,7 +1,7 @@
 "use client";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Blocks, Cpu, Network, Plus } from "lucide-react";
+import { Blocks, Cpu, Network, Plus, PlusCircleIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle, SmallLiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
@@ -278,11 +278,14 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     m => Date.now() - new Date(m.lastPingAt!).getTime() < 1000 * 60
   ).length;
 
+  const noServicesAndMachines = !services.length && !machines.length;
+
   return (
     <div className="flex flex-col space-y-3 w-full">
       <Sheet>
         <SheetTrigger asChild>
           <Button
+            disabled={!machines.length}
             variant="outline"
             className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
           >
@@ -346,6 +349,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
           <Button
             variant="outline"
             className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
+            disabled={!services.length}
           >
             <div className="absolute -top-1.5 -right-1.5">
               {isInitialLoading ? (
@@ -409,16 +413,22 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            className={
-              "group relative flex items-center w-full px-5 py-6 hover:bg-gray-50/80 border rounded-xl transition-all duration-200 hover:shadow-lg"
-            }
+            data-add-services-trigger
+            className={cn(
+              "group relative flex items-center w-full px-5 py-6 hover:bg-gray-50/80 border rounded-xl transition-all duration-200 hover:shadow-lg",
+              noServicesAndMachines && "border-primary duration-2000"
+            )}
           >
             <div className="flex items-center gap-4 w-full">
               <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
-                <Plus className="w-5 h-5 text-gray-700" />
+                <PlusCircleIcon
+                  className={cn(
+                    "w-5 h-5 text-primary/80 transition-all duration-300 group-hover:text-primary"
+                  )}
+                />
               </div>
-              <div className="flex flex-col items-start gap-0.5">
-                <span className="font-semibold text-gray-900">Add Service</span>
+              <div className="flex flex-col items-start gap-0.5 py-2">
+                <span className="font-semibold text-gray-900">Add Services</span>
               </div>
             </div>
           </Button>

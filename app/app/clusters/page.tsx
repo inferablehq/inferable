@@ -19,7 +19,7 @@ async function App() {
         authorization: `Bearer ${await auth().getToken()}`,
       },
     })
-    .catch((e) => {
+    .catch(e => {
       console.error(e);
       error = e;
       return null;
@@ -45,7 +45,7 @@ async function App() {
         </div>
 
         {availableClusters && availableClusters.length > 0 ? (
-          <ClustersTable clusters={availableClusters} />
+          <ClustersTable clusters={[]} />
         ) : (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-medium text-gray-900">

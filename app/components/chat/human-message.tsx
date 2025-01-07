@@ -10,11 +10,15 @@ import { Textarea } from "../ui/textarea";
 import { MessageContainerProps } from "./workflow-event";
 import { z } from "zod";
 
-const displayableMeta = z.object({
-  displayable: z.object({
-    via: z.string().optional(),
-  }).optional(),
-}).passthrough();
+const displayableMeta = z
+  .object({
+    displayable: z
+      .object({
+        via: z.string().optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
 
 export function HumanMessage({
   clusterId,
@@ -30,7 +34,7 @@ export function HumanMessage({
   const [editedValue, setEditedValue] = useState(data.message);
   const { getToken } = useAuth();
 
-  const parsed  = displayableMeta.safeParse(metadata);
+  const parsed = displayableMeta.safeParse(metadata);
 
   const via = parsed.success ? parsed.data?.displayable?.via : "playground";
 
@@ -136,7 +140,7 @@ export function HumanMessage({
     <div className="mx-4">
       <div
         className={`rounded-xl bg-primary p-4 shadow-sm hover:shadow-md transition-all duration-200 ${
-          pending ? `animate-pulse` : ``
+          pending ? `animate-pulse duration-1000` : ``
         }`}
       >
         <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-primary-foreground/20">
@@ -158,7 +162,9 @@ export function HumanMessage({
               </div>
             </div>
             <div>
-              <div className="text-sm font-medium text-primary-foreground">Human <span className="text-muted-foreground">via {via}</span></div>
+              <div className="text-sm font-medium text-primary-foreground">
+                Human <span className="text-muted-foreground">via {via}</span>
+              </div>
               <div className="text-xs text-primary-foreground/70">
                 {createdAt ? formatRelative(createdAt, new Date()) : "unknown"}
               </div>

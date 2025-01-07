@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
 } from "@tanstack/react-table";
 import Link from "next/link";
-import { Eye, Trash2, Settings, Play, ArrowUpDown } from "lucide-react";
+import { Eye, Trash2, Settings, Play, ArrowUpDown, Brain, ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 
@@ -135,6 +135,32 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
     },
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  if (clusters.length === 0) {
+    return (
+      <div className="text-center py-12 bg-gray-50 rounded-lg">
+        <h3 className="text-lg font-medium text-gray-900">
+          <Brain className="w-4 h-4 inline-block mr-2" />
+          Create your first cluster
+        </h3>
+        <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
+          Get started by creating your first cluster to organize your functions and runs.
+        </p>
+        <div className="mt-6 flex gap-4 justify-center">
+          <Button asChild variant="default">
+            <Link href="/setup-demo">
+              Create Demo Cluster <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/clusters/new">
+              Create Empty Cluster <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

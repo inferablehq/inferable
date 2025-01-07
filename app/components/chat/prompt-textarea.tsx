@@ -9,7 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
-import { Bot, ChevronDown, ChevronRight, Cog, PlusCircleIcon, Settings2Icon } from "lucide-react";
+import {
+  Bot,
+  ChevronDown,
+  ChevronRight,
+  Cog,
+  PlusCircleIcon,
+  Settings2Icon,
+  Zap,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
@@ -38,12 +46,30 @@ export type RunOptions = {
   enableResultGrounding: boolean;
 };
 
+const demoServicePrompts = [
+  {
+    text: "Get me data about all the employees at Dunder Mifflin from sqlite",
+    description: "This will result in one or more select statements to SQLite.",
+  },
+  {
+    text: "Move all the Acme Corp employees to Dunder Mifflin in sqlite",
+    description: "This will result a few select statements and a few insert statements to SQLite.",
+  },
+  {
+    text: "Can you give me my system information?",
+    description:
+      "This will run a few commands on the terminal but ask your approval before running them.",
+  },
+] as const;
+
+type DemoPrompt = (typeof demoServicePrompts)[number];
+
 export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [prompt, setPrompt] = useState<string>("");
   const { getToken } = useAuth();
   const router = useRouter();
-  const { services } = useClusterState(clusterId);
+  const { services, machines, isLoading } = useClusterState(clusterId);
   const [availableFunctions, setAvailableFunctions] = useState<
     Array<{ value: string; label: string }>
   >([]);
@@ -216,12 +242,12 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     }
   };
 
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => ({
     functions: true,
     schema: true,
     context: true,
     options: true,
-  });
+  }));
 
   const toggleSection = (section: string) => {
     setCollapsedSections(prev => ({
@@ -249,8 +275,79 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     }
   }, [searchParams, setSelectedAgentId]);
 
+  const noServicesAndMachines = !services.length && !machines.length;
+
+  const isDemoService =
+    services.some(service => service.name === "sqlite") &&
+    services.some(service => service.name === "terminal");
+
+  const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (isDemoService) {
+      setIsConfigCollapsed(true);
+    }
+  }, [isDemoService]);
+
+  const handleDemoPromptClick = (prompt: DemoPrompt) => {
+    setPrompt(prompt.text);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {noServicesAndMachines && !isLoading && (
+        <div className="w-full rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="flex flex-col items-start justify-between">
+            <div className="flex flex-col items-start justify-between">
+              <div>
+                <h3 className="font-medium text-gray-800">No Services Connected</h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  It looks like you haven't connected any services. Connect a service to give your
+                  agent some powers.
+                </p>
+              </div>
+              <div className="h-4" />
+              <Button
+                onClick={() => {
+                  const addServicesButton = document.querySelector("[data-add-services-trigger]");
+                  if (addServicesButton instanceof HTMLElement) {
+                    addServicesButton.click();
+                  }
+                }}
+                size="sm"
+                className="shrink-0"
+              >
+                Connect a Service
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDemoService && (
+        <div className="flex flex-col gap-2">
+          <div className="text-sm text-muted-foreground">Try these example prompts:</div>
+          <div className="flex flex-col gap-2">
+            {demoServicePrompts.map((demoPrompt, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                onClick={() => handleDemoPromptClick(demoPrompt)}
+                className="text-left h-auto flex flex-col items-start p-3"
+              >
+                <span className="font-medium">{demoPrompt.text}</span>
+                <span className="text-xs text-muted-foreground mt-1">{demoPrompt.description}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <PlusCircleIcon className="h-5 w-5 text-gray-600" />
@@ -266,11 +363,25 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             setPrompt(e.target.value);
           }}
           onKeyDown={handleKeyDown}
-          className="resize-none overflow-hidden"
+          className="resize-none overflow-hidden react-joyride-prompt-textarea"
         />
+        {!noServicesAndMachines && (
+          <button
+            onClick={() => setIsConfigCollapsed(!isConfigCollapsed)}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <Settings2Icon className="h-3 w-3" />
+            {isConfigCollapsed ? "Show configuration" : "Hide configuration"}
+          </button>
+        )}
       </div>
 
-      <div className="space-y-2 border rounded-lg bg-gray-50/30">
+      <div
+        className={cn(
+          "space-y-2 border rounded-lg bg-gray-50/30",
+          (noServicesAndMachines || isConfigCollapsed) && "hidden"
+        )}
+      >
         <div className="p-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground w-full">
             <Settings2Icon className="h-3.5 w-3.5" />

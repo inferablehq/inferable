@@ -8,6 +8,7 @@ export interface ClusterState {
   machines: ClientInferResponseBody<typeof contract.listMachines, 200>;
   services: ClientInferResponseBody<typeof contract.listServices, 200>;
   liveMachineCount: number;
+  isLoading: boolean;
 }
 
 export function useClusterState(clusterId: string): ClusterState {
@@ -86,5 +87,6 @@ export function useClusterState(clusterId: string): ClusterState {
     machines,
     services,
     liveMachineCount,
+    isLoading,
   };
 }
