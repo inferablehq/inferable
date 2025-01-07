@@ -89,24 +89,33 @@ export const notifyNewMessage = async ({
   const messageData = unifiedMessageSchema.parse(message).data;
 
   if ("message" in messageData && messageData.message) {
-    const result = await ses.sendEmail({
-      Source: `"Inferable" <${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}>`,
-      Destination: {
-        ToAddresses: [tags[EMAIL_SOURCE_META_KEY]],
-      },
-      Message: {
-        Subject: {
-          Charset: "UTF-8",
-          Data: `Re: ${tags[EMAIL_SUBJECT_META_KEY]}`,
+
+    const originalMessageId = tags[EMAIL_INIT_MESSAGE_ID_META_KEY];
+    const fromEmail = `"Inferable" <${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}>`;
+    const toEmail = tags[EMAIL_SOURCE_META_KEY];
+    const subject = `Re: ${tags[EMAIL_SUBJECT_META_KEY]}`;
+    const bodyText = messageData.message;
+
+    // MIME formatted email
+    const rawMessage = [
+      `From: ${fromEmail}`,
+      `To: ${toEmail}`,
+      `Subject: ${subject}`,
+      `References: ${originalMessageId}`,
+      `In-Reply-To: ${originalMessageId}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/plain; charset=UTF-8`,
+      ``,
+      bodyText, // Email body
+    ].join("\r\n");
+
+    // Send the raw email
+    const result = await ses
+      .sendRawEmail({
+        RawMessage: {
+          Data: Buffer.from(rawMessage),
         },
-        Body: {
-          Text: {
-            Charset: "UTF-8",
-            Data: messageData.message,
-          },
-        },
-      },
-    });
+      })
 
     if (!result.MessageId) {
       throw new Error("SES did not return a message ID");
