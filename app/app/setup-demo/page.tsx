@@ -29,7 +29,7 @@ export default function SetupDemoPage() {
   ]);
 
   useEffect(() => {
-    let timeouts: NodeJS.Timeout[] = [];
+    const timeouts: NodeJS.Timeout[] = [];
 
     // Show second message after 2 seconds
     timeouts.push(
