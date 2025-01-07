@@ -32,7 +32,7 @@ export const integrationsRouter = initServer().router(
           return id;
         }
 
-        // Generate random IDs for each connectionA
+        // Generate random IDs for each connection
         const connections = request.body.email.connections.map((c) => ({
           ...c,
           id: c.id || generateEmailConnectionId(),
