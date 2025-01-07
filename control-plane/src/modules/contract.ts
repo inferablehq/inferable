@@ -90,10 +90,10 @@ export const integrationSchema = z.object({
     .optional()
     .nullable(),
   email: z
-  .object({
-    connectionId: z.string(),
-    agentId: z.string().optional(),
-  })
+    .object({
+      connectionId: z.string(),
+      agentId: z.string().optional(),
+    })
     .optional()
     .nullable(),
 });
@@ -489,7 +489,7 @@ export const definition = {
     },
     body: z.object({
       description: z.string().describe("Human readable description of the cluster"),
-      name?: z.string().describe("Human readable name of the cluster"),
+      name: z.string().optional().describe("Human readable name of the cluster"),
       isDemo: z
         .boolean()
         .optional()
