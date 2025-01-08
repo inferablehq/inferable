@@ -16,24 +16,14 @@ import {
   Cog,
   PlusCircleIcon,
   Settings2Icon,
-  Zap,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import Commands from "./sdk-commands";
 import { isFeatureEnabled } from "@/lib/features";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import toast from "react-hot-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Badge } from "../ui/badge";
 import { useClusterState } from "../useClusterState";
 
 export type RunOptions = {
@@ -117,6 +107,28 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(undefined);
 
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const fetchAgents = async () => {
+      const token = await getToken();
+      if (!token) return;
+      const res = await client.listAgents({
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+        params: {
+          clusterId,
+        },
+      });
+      if (res.status !== 200) {
+        createErrorToast(res, "Error fetching agents");
+        return;
+      }
+
+      setAgents(res.body);
+    };
+    fetchAgents();
+  }, [getToken]);
 
   useEffect(() => {
     if (agents) {
