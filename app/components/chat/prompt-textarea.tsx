@@ -9,14 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
-import {
-  Bot,
-  ChevronDown,
-  ChevronRight,
-  Cog,
-  PlusCircleIcon,
-  Settings2Icon,
-} from "lucide-react";
+import { Bot, ChevronDown, ChevronRight, Cog, PlusCircleIcon, Settings2Icon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
@@ -39,16 +32,25 @@ export type RunOptions = {
 const demoServicePrompts = [
   {
     text: "Get me data about all the employees at Dunder Mifflin from sqlite",
-    description: "This will result in one or more select statements to SQLite.",
+    description: [
+      "Reads the sqlite schema to understand the data structure.",
+      "Queries the sqlite database to get the data.",
+    ],
   },
   {
     text: "Move all the Acme Corp employees to Dunder Mifflin in sqlite",
-    description: "This will result a few select statements and a few insert statements to SQLite.",
+    description: [
+      "Reads the sqlite schema to understand the data structure.",
+      "Queries the sqlite database to get the data.",
+      "Updates the sqlite database to move the data.",
+    ],
   },
   {
     text: "Can you give me my system information?",
-    description:
-      "This will run a few commands on the terminal but ask your approval before running them.",
+    description: [
+      "Selects a command on the terminal from an allow-list.",
+      "Asks for your approval before running it.",
+    ],
   },
 ] as const;
 
@@ -59,7 +61,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const [prompt, setPrompt] = useState<string>("");
   const { getToken } = useAuth();
   const router = useRouter();
-  const { services, machines, isLoading } = useClusterState(clusterId);
+  const { services, machines, isLoading, cluster } = useClusterState(clusterId);
   const [availableFunctions, setAvailableFunctions] = useState<
     Array<{ value: string; label: string }>
   >([]);
@@ -290,6 +292,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const noServicesAndMachines = !services.length && !machines.length;
 
   const isDemoService =
+    cluster?.isDemo &&
     services.some(service => service.name === "sqlite") &&
     services.some(service => service.name === "terminal");
 
@@ -353,7 +356,11 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                 className="text-left h-auto flex flex-col items-start p-3"
               >
                 <span className="font-medium">{demoPrompt.text}</span>
-                <span className="text-xs text-muted-foreground mt-1">{demoPrompt.description}</span>
+                {demoPrompt.description.map((description, index) => (
+                  <span key={index} className="text-xs text-muted-foreground mt-1">
+                    {index + 1}. {description}
+                  </span>
+                ))}
               </Button>
             ))}
           </div>

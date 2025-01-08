@@ -9,6 +9,7 @@ import {
   NetworkIcon,
   BarChart2,
   Bot,
+  Badge,
 } from "lucide-react";
 import Link from "next/link";
 import ErrorDisplay from "./error-display";
@@ -21,33 +22,27 @@ interface ClusterBreadcrumbsProps {
 const linkStyles =
   "flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-slate-50 rounded-sm transition-all gap-2 border border-transparent hover:border-gray-100";
 
-export async function ClusterBreadcrumbs({
-  clusterId,
-}: ClusterBreadcrumbsProps) {
+export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps) {
   const { getToken } = auth();
 
-  const clusterDetails = await client.getCluster({
-    headers: { authorization: `Bearer ${await getToken()}` },
-    params: { clusterId },
-  }).catch(() => {
-    return { status: 500, body: { error: "Failed to fetch cluster details" } } as const;
-  });
+  const clusterDetails = await client
+    .getCluster({
+      headers: { authorization: `Bearer ${await getToken()}` },
+      params: { clusterId },
+    })
+    .catch(() => {
+      return { status: 500, body: { error: "Failed to fetch cluster details" } } as const;
+    });
 
   if (clusterDetails.status !== 200) {
-    return (
-      <ErrorDisplay
-        error={clusterDetails.body}
-        status={clusterDetails.status}
-      />
-    );
+    return <ErrorDisplay error={clusterDetails.body} status={clusterDetails.status} />;
   }
 
   return (
     <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
       <div className="flex items-center gap-2">
-        <h1 className="text-lg text-gray-400 mr-2 tracking-tight">
-          {clusterDetails.body.name}
-        </h1>
+        <h1 className="text-lg text-gray-400 mr-2 tracking-tight">{clusterDetails.body.name}</h1>
+        {clusterDetails.body.isDemo && <Badge>Demo</Badge>}
       </div>
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
         <PlayCircle className="h-4 w-4" /> Runs
@@ -82,11 +77,7 @@ export async function GlobalBreadcrumbs() {
       <Link href={`/clusters`} className={linkStyles}>
         <Network className="h-4 w-4" /> Clusters
       </Link>
-      <Link
-        href={`https://docs.inferable.ai`}
-        target="_blank"
-        className={linkStyles}
-      >
+      <Link href={`https://docs.inferable.ai`} target="_blank" className={linkStyles}>
         <ExternalLink className="h-4 w-4" /> Docs
       </Link>
       <div className="ml-auto">

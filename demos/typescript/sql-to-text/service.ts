@@ -17,12 +17,8 @@ service.register({
     console.log("SQLite: Getting database context");
 
     return {
-      tables: db
-        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-        .all(),
-      schema: db
-        .prepare("SELECT sql FROM sqlite_master WHERE type='table'")
-        .all(),
+      tables: db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all(),
+      schema: db.prepare("SELECT sql FROM sqlite_master WHERE type='table'").all(),
     };
   },
   schema: {
@@ -36,9 +32,7 @@ service.register({
     console.log("SQLite: Executing SQL", input.sql);
 
     const mutation =
-      input.sql.includes("UPDATE") ||
-      input.sql.includes("INSERT") ||
-      input.sql.includes("DELETE");
+      input.sql.includes("UPDATE") || input.sql.includes("INSERT") || input.sql.includes("DELETE");
 
     if (mutation) {
       return db.prepare(input.sql).run();

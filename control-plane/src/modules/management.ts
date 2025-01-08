@@ -3,7 +3,6 @@ import { ulid } from "ulid";
 import * as errors from "../utilities/errors";
 import * as data from "./data";
 import { randomName } from "./names";
-import { storedServiceDefinitionSchema } from "./service-definitions";
 import { VersionedTexts } from "./versioned-text";
 
 export const getClusters = async ({
@@ -16,6 +15,7 @@ export const getClusters = async ({
     name: string;
     createdAt: Date;
     description: string | null;
+    isDemo: boolean;
   }>
 > => {
   const clusters = await data.db
@@ -24,6 +24,7 @@ export const getClusters = async ({
       name: data.clusters.name,
       createdAt: data.clusters.created_at,
       description: data.clusters.description,
+      isDemo: data.clusters.is_demo,
     })
     .from(data.clusters)
     .where(eq(data.clusters.organization_id, organizationId));
@@ -131,6 +132,7 @@ export const getClusterDetails = async ({
   enableCustomAuth: boolean;
   handleCustomAuthFunction: string;
   enableKnowledgebase: boolean;
+  isDemo: boolean;
 }> => {
   const [clusters, machines] = await Promise.all([
     data.db
@@ -144,6 +146,7 @@ export const getClusterDetails = async ({
         enableCustomAuth: data.clusters.enable_custom_auth,
         handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
         enableKnowledgebase: data.clusters.enable_knowledgebase,
+        isDemo: data.clusters.is_demo,
       })
       .from(data.clusters)
       .where(and(eq(data.clusters.id, clusterId))),
@@ -179,6 +182,7 @@ export const getClusterDetails = async ({
     enableCustomAuth: cluster.enableCustomAuth,
     handleCustomAuthFunction: cluster.handleCustomAuthFunction,
     enableKnowledgebase: cluster.enableKnowledgebase,
+    isDemo: cluster.isDemo,
   };
 };
 

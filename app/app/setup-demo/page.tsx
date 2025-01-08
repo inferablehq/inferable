@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { client } from "@/client/client";
-import { useAuth } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Brain } from "lucide-react";
-import { GlobalBreadcrumbs } from "@/components/breadcrumbs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createErrorToast } from "@/lib/utils";
-import toast from "react-hot-toast";
 import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
+import { createErrorToast } from "@/lib/utils";
+import { useAuth } from "@clerk/nextjs";
+import { ArrowRight, Brain } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 export default function SetupDemoPage() {
   const router = useRouter();
@@ -58,8 +55,6 @@ export default function SetupDemoPage() {
   }, []);
 
   const createCluster = useCallback(() => {
-    const toastId = toast.loading("Setting up your demo cluster...");
-
     // Create the cluster
     getToken().then(token => {
       const description = `Created as a demo cluster on ${new Date().toLocaleDateString()}`;
@@ -96,21 +91,17 @@ export default function SetupDemoPage() {
 
             setClusterId(latestCluster.id);
             setIsCreating(false);
-            toast.dismiss(toastId);
-            toast.success("Demo cluster created successfully!");
           }
         })
         .catch(error => {
           console.error("Failed to create demo cluster:", error);
-          createErrorToast(error, "Failed to create demo cluster");
-          toast.dismiss(toastId);
+          createErrorToast(
+            error,
+            "Failed to create demo cluster. Please refresh the page and try again?"
+          );
           router.push("/clusters");
         });
     });
-
-    return () => {
-      toast.dismiss(toastId);
-    };
   }, [router, getToken]);
 
   return (

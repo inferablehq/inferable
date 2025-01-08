@@ -553,6 +553,7 @@ export const definition = {
         handleCustomAuthFunction: z.string(),
         enableKnowledgebase: z.boolean(),
         lastPingAt: z.date().nullable(),
+        isDemo: z.boolean(),
       }),
       401: z.undefined(),
       404: z.undefined(),
