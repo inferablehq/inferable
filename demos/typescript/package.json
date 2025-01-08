@@ -1,0 +1,40 @@
+{
+  "name": "@inferable/demo",
+  "version": "0.0.23",
+  "main": "dist/index.js",
+  "bin": {
+    "run": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx index.ts",
+    "build": "tsc",
+    "prepare": "npm run build && npm version patch && git push"
+  },
+  "keywords": [
+    "inferable",
+    "terminal",
+    "copilot",
+    "sql",
+    "assistant"
+  ],
+  "author": "Inferable",
+  "license": "MIT",
+  "description": "Inferable service demo with SQL and terminal copilot",
+  "dependencies": {
+    "better-sqlite3": "^11.7.2",
+    "inferable": "^0.30.67"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^20.9.0",
+    "@types/sqlite3": "^3.1.11",
+    "tsx": "^4.19.2",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
