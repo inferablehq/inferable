@@ -9,11 +9,11 @@ import {
   NetworkIcon,
   BarChart2,
   Bot,
-  Badge,
 } from "lucide-react";
 import Link from "next/link";
 import ErrorDisplay from "./error-display";
 import { LiveCheck } from "./live-check";
+import { Badge } from "./ui/badge";
 
 interface ClusterBreadcrumbsProps {
   clusterId: string;
@@ -40,9 +40,9 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
 
   return (
     <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
-      <div className="flex items-center gap-2">
-        <h1 className="text-lg text-gray-400 mr-2 tracking-tight">{clusterDetails.body.name}</h1>
-        {clusterDetails.body.isDemo && <Badge>Demo</Badge>}
+      <div className="flex items-center gap-2 mr-2">
+        <h1 className="text-lg text-gray-400 tracking-tight">{clusterDetails.body.name}</h1>
+        {clusterDetails.body.isDemo && <Badge variant="secondary">Demo</Badge>}
       </div>
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
         <PlayCircle className="h-4 w-4" /> Runs
