@@ -181,6 +181,8 @@ describe("handleToolCalls", () => {
             message: 'is not allowed to have the additional property "wrongKey"',
           }),
         ]),
+        resultType: "rejection",
+        status: "success",
       })
     );
   });

@@ -145,15 +145,9 @@ describe("Agent", () => {
         postStepSave: async () => {},
       });
 
-      const toolResponse = JSON.stringify({
-        result: {
-          result: "Failed to echo the word 'hello'",
-          resultType: "rejection",
-          status: "success",
-        },
-        resultType: "resolution",
-        status: "success",
-      });
+      const toolResponse = {
+        message: "Failed to echo the word 'hello'",
+      };
 
       toolCallback.mockResolvedValue(toolResponse);
 
@@ -184,9 +178,9 @@ describe("Agent", () => {
       const topLevelResult = resultMessage.data.result;
       Object.keys(topLevelResult).forEach(key => {
         expect(topLevelResult[key]).toEqual({
-          result: "Failed to echo the word 'hello'",
-          status: "success",
+          message: "Failed to echo the word 'hello'",
           resultType: "rejection",
+          status: "success",
         });
       });
     });
@@ -445,9 +439,9 @@ describe("Agent", () => {
 
       toolCallback.mockResolvedValue(
         JSON.stringify({
-          result: JSON.stringify({
+          result: {
             word: "needle",
-          }),
+          },
           resultType: "resolution",
           status: "success",
         })
