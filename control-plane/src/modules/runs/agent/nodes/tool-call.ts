@@ -8,7 +8,7 @@ import { AgentMessage, assertMessageOfType } from "../../messages";
 import { ToolFetcher } from "../agent";
 import { RunGraphState } from "../state";
 import { SpecialResultTypes, parseFunctionResponse } from "../tools/functions";
-import { AgentTool, AgentToolInputError, AgentToolV2 } from "../tool";
+import { AgentTool, AgentToolInputError } from "../tool";
 import { ChatIdentifiers } from "../../../models/routing";
 
 export const TOOL_CALL_NODE_NAME = "action";
@@ -117,7 +117,7 @@ const _handleToolCall = async (
 ): Promise<Partial<RunGraphState>> => {
   logger.info("Executing tool call");
 
-  let tool: AgentTool | AgentToolV2 | undefined;
+  let tool: AgentTool | undefined;
 
   const toolName = toolCall.toolName;
   const toolInput = toolCall.input;

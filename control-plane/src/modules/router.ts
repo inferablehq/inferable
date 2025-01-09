@@ -12,14 +12,6 @@ import { contract } from "./contract";
 import * as data from "./data";
 import { integrationsRouter } from "./integrations/router";
 import { jobsRouter } from "./jobs/router";
-import {
-  createClusterKnowledgeArtifact,
-  deleteKnowledgeArtifact,
-  getAllKnowledgeArtifacts,
-  getKnowledge,
-  getKnowledgeArtifact,
-  upsertKnowledgeArtifact,
-} from "./knowledge/knowledgebase";
 import { machineRouter } from "./machines/router";
 import * as management from "./management";
 import { buildModel } from "./models";
@@ -604,118 +596,6 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createKnowledgeArtifact: async request => {
-    const { clusterId } = request.params;
-    const { artifacts } = request.body;
-
-    const auth = request.request.getAuth().isAdmin();
-    await auth.canManage({ cluster: { clusterId } });
-
-    await createClusterKnowledgeArtifact({
-      clusterId,
-      artifacts,
-    });
-
-    return {
-      status: 204,
-      body: undefined,
-    };
-  },
-
-  listKnowledgeArtifacts: async request => {
-    const { clusterId } = request.params;
-    const { query, limit, tag } = request.query;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
-
-    const knowledge = await getKnowledge({
-      clusterId,
-      query,
-      limit,
-      tag,
-    });
-
-    return {
-      status: 200,
-      body: knowledge,
-    };
-  },
-
-  upsertKnowledgeArtifact: async request => {
-    const { artifactId, clusterId } = request.params;
-    const { data, tags, title } = request.body;
-
-    const auth = request.request.getAuth().isAdmin();
-    await auth.canManage({ cluster: { clusterId } });
-
-    await upsertKnowledgeArtifact({
-      clusterId,
-      id: artifactId,
-      data,
-      tags,
-      title,
-    });
-
-    return {
-      status: 200,
-      body: { id: artifactId },
-    };
-  },
-
-  deleteKnowledgeArtifact: async request => {
-    const { clusterId, artifactId } = request.params;
-
-    const auth = request.request.getAuth().isAdmin();
-    await auth.canManage({ cluster: { clusterId } });
-
-    await deleteKnowledgeArtifact({
-      clusterId,
-      id: artifactId,
-    });
-
-    return {
-      status: 204,
-      body: undefined,
-    };
-  },
-
-  exportKnowledgeArtifacts: async request => {
-    const { clusterId } = request.params;
-
-    const auth = request.request.getAuth();
-    await auth.canManage({ cluster: { clusterId } });
-
-    const artifacts = await getAllKnowledgeArtifacts({ clusterId });
-
-    return {
-      status: 200,
-      body: artifacts,
-    };
-  },
-
-  getKnowledgeArtifact: async request => {
-    const { clusterId, artifactId } = request.params;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
-
-    const artifact = await getKnowledgeArtifact({
-      clusterId,
-      id: artifactId,
-    });
-
-    if (!artifact) {
-      return {
-        status: 404,
-      };
-    }
-
-    return {
-      status: 200,
-      body: artifact,
-    };
-  },
   createStructuredOutput: async request => {
     const { clusterId } = request.params;
     const { prompt, resultSchema, modelId, temperature } = request.body;

@@ -25,7 +25,6 @@ export type EventTypes =
   | "functionErrored"
   | "workflowFeedbackSubmitted"
   | "resultSummarized"
-  | "knowledgeArtifactsAccessed"
   | "functionRegistrySearchCompleted"
   | "messageRetried";
 
