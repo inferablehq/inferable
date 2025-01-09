@@ -126,7 +126,7 @@ describe("buildMockTools", () => {
 
     const result = await tools["testService_someFunction"].func({ test: "" });
     expect(result).toBeDefined();
-    expect(JSON.parse(result!)).toEqual({
+    expect(JSON.parse(result as any)).toEqual({
       result: {
         foo: "bar",
       },

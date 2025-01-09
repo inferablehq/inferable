@@ -1,43 +1,43 @@
 import { JsonSchema7ObjectType } from "zod-to-json-schema";
 import { RunGraphState } from "../state";
-import { AgentTool } from "../tool";
+import { AgentToolV2 } from "../tool";
 import { ulid } from "ulid";
 import { buildModelSchema } from "./model-output";
 
 describe("buildModelSchema", () => {
   let state: RunGraphState;
-  let relevantSchemas: AgentTool[];
+  let relevantSchemas: AgentToolV2[];
   let resultSchema: JsonSchema7ObjectType | undefined;
 
   beforeEach(() => {
-  state = {
-    messages: [
-      {
-        id: ulid(),
-        clusterId: "test-cluster",
-        runId: "test-run",
-        data: {
-          message: "What are your capabilities?",
+    state = {
+      messages: [
+        {
+          id: ulid(),
+          clusterId: "test-cluster",
+          runId: "test-run",
+          data: {
+            message: "What are your capabilities?",
+          },
+          type: "human",
         },
-        type: "human",
+      ],
+      waitingJobs: [],
+      allAvailableTools: [],
+      run: {
+        id: "test-run",
+        clusterId: "test-cluster",
       },
-    ],
-    waitingJobs: [],
-    allAvailableTools: [],
-    run: {
-      id: "test-run",
-      clusterId: "test-cluster",
-    },
-    additionalContext: "",
-    status: "running",
-  };
-    relevantSchemas = [
-      { name: "localTool1"},
-      { name: "localTool2"},
-      { name: "globalTool1"},
-      { name: "globalTool2"},
-    ] as AgentTool[],
-    resultSchema = undefined;
+      additionalContext: "",
+      status: "running",
+    };
+    (relevantSchemas = [
+      { name: "localTool1" },
+      { name: "localTool2" },
+      { name: "globalTool1" },
+      { name: "globalTool2" },
+    ] as AgentToolV2[]),
+      (resultSchema = undefined);
   });
 
   it("returns a schema with 'message' when resultSchema is not provided", () => {

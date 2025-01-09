@@ -4,7 +4,7 @@ import { Model } from "../../../models";
 import { assertMessageOfType } from "../../messages";
 import { ReleventToolLookup } from "../agent";
 import { RunGraphState } from "../state";
-import { AgentTool } from "../tool";
+import { AgentToolV2 } from "../tool";
 import { handleModelCall } from "./model-call";
 
 describe("handleModelCall", () => {
@@ -46,13 +46,13 @@ describe("handleModelCall", () => {
   const findRelevantTools: ReleventToolLookup = async () => {
     return [
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      new AgentTool({
+      new AgentToolV2({
         name: "testTool",
         description: "A test tool",
         func: functionHandler,
         schema: z.object({}),
       }),
-      new AgentTool({
+      new AgentToolV2({
         name: "notify",
         description: "Send a message",
         func: functionHandler,

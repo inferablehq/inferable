@@ -5,7 +5,7 @@ import { NotFoundError } from "../../../../utilities/errors";
 import { ulid } from "ulid";
 import { RunGraphState } from "../state";
 import { redisClient } from "../../../redis";
-import { AgentTool } from "../tool";
+import { AgentToolV2 } from "../tool";
 import { assertMessageOfType } from "../../messages";
 
 describe("handleToolCalls", () => {
@@ -17,7 +17,7 @@ describe("handleToolCalls", () => {
   const toolHandler = jest.fn();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tool = new AgentTool({
+  const tool = new AgentToolV2({
     description: "Echoes the input",
     func: toolHandler,
     name: "console_echo",

@@ -1,22 +1,14 @@
 import { Run } from "../../";
-import {
-  buildAccessKnowledgeArtifacts,
-  ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME,
-} from "./knowledge-artifacts";
 import { createCache } from "../../../../utilities/cache";
 import { getClusterDetails } from "../../../management";
-import { buildCurrentDateTimeTool, CURRENT_DATE_TIME_TOOL_NAME } from "./date-time";
-import { AgentTool, AgentToolV2 } from "../tool";
+import { AgentToolV2 } from "../tool";
 import { stdlib } from "./stdlib";
 
 const clusterSettingsCache = createCache<{
   enableKnowledgebase: boolean;
 }>(Symbol("clusterSettings"));
 
-export type InternalToolBuilder = (
-  run: Run,
-  toolCallId: string
-) => AgentTool | Promise<AgentTool> | AgentToolV2; // TODO: Standardize on AgentToolV2
+export type InternalToolBuilder = (run: Run, toolCallId: string) => AgentToolV2;
 
 export const getClusterInternalTools = async (
   clusterId: string
@@ -36,14 +28,7 @@ export const getClusterInternalTools = async (
 
   const tools: Record<string, InternalToolBuilder> = {};
 
-  // Only include knowledge artifacts tool if enabled for cluster
-  if (settings.enableKnowledgebase) {
-    tools[ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME] = buildAccessKnowledgeArtifacts;
-  }
-
-  for (const [name, tool] of Object.entries(stdlib).filter(
-    tool => tool[0] !== ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME
-  )) {
+  for (const [name, tool] of Object.entries(stdlib)) {
     tools[name] = tool.tool;
   }
 

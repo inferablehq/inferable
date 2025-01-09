@@ -1,7 +1,7 @@
 import { createRunGraph } from "./agent";
 import { z } from "zod";
 import { redisClient } from "../../redis";
-import { AgentTool } from "./tool";
+import { AgentToolV2 } from "./tool";
 import { assertMessageOfType } from "../messages";
 
 if (process.env.CI) {
@@ -20,7 +20,7 @@ describe("Agent", () => {
   };
 
   const tools = [
-    new AgentTool({
+    new AgentToolV2({
       name: "echo",
       description: "Echoes the input",
       schema: z.object({
@@ -146,8 +146,12 @@ describe("Agent", () => {
       });
 
       const toolResponse = JSON.stringify({
-        result: "Failed to echo the word 'hello'",
-        resultType: "rejection",
+        result: {
+          result: "Failed to echo the word 'hello'",
+          resultType: "rejection",
+          status: "success",
+        },
+        resultType: "resolution",
         status: "success",
       });
 
@@ -394,7 +398,7 @@ describe("Agent", () => {
 
     it("should respect mock responses", async () => {
       const tools = [
-        new AgentTool({
+        new AgentToolV2({
           name: "searchHaystack",
           description: "Search haystack",
           schema: z.object({}).passthrough(),

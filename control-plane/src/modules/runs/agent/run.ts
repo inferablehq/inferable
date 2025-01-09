@@ -19,7 +19,7 @@ import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { createRunGraph } from "./agent";
 import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
 import { RunGraphState } from "./state";
-import { AgentTool, AgentToolV2 } from "./tool";
+import { AgentToolV2 } from "./tool";
 import { getClusterInternalTools } from "./tools/cluster-internal-tools";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
@@ -71,7 +71,7 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
     })
   );
 
-  const mockToolsMap: Record<string, AgentTool | AgentToolV2> = await buildMockTools(run);
+  const mockToolsMap: Record<string, AgentToolV2> = await buildMockTools(run);
 
   let mockModelResponses;
   if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
@@ -394,7 +394,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
   const start = Date.now();
   const run = state.run;
 
-  const tools: (AgentTool | AgentToolV2)[] = [];
+  const tools: AgentToolV2[] = [];
   const attachedFunctions = run.attachedFunctions ?? [];
 
   // If functions are explicitly attached, skip relevant tools search
@@ -403,10 +403,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
       if (tool.toLowerCase().startsWith("inferable_")) {
         const internalToolName = tool.split("_")[1];
 
-        if (internalToolName === stdlib.accessKnowledge.id) {
-          tools.push(await stdlib.accessKnowledge.tool(run)); // TODO: Remove stdlib.accessKnowledge.tool(run) that "colors" this whole loop.
-          continue;
-        } else if (internalToolName === stdlib.calculator.id) {
+        if (internalToolName === stdlib.calculator.id) {
           tools.push(stdlib.calculator.tool());
           continue;
         } else if (internalToolName === stdlib.currentDateTime.id) {
@@ -443,14 +440,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
 
     tools.push(...found);
 
-    tools.push(
-      ...[
-        await stdlib.accessKnowledge.tool(run),
-        stdlib.currentDateTime.tool(),
-        stdlib.getUrl.tool(),
-        stdlib.calculator.tool(),
-      ]
-    );
+    tools.push(...[stdlib.currentDateTime.tool(), stdlib.getUrl.tool(), stdlib.calculator.tool()]);
 
     events.write({
       type: "functionRegistrySearchCompleted",
@@ -467,7 +457,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
 };
 
 export const buildMockTools = async (run: Run) => {
-  const mocks: Record<string, AgentTool> = {};
+  const mocks: Record<string, AgentToolV2> = {};
   if (!run.testMocks || Object.keys(run.testMocks).length === 0) {
     return mocks;
   }
