@@ -64,27 +64,24 @@ export async function recordServicePoll({
   clusterId,
   service,
 }: {
-  clusterId: string;
-  service: string;
-}) {
-  // As we call this on each poll, limit the number of updates that reach the database
-  return withThrottle(`clusters:${clusterId}:services:${service}:throttle`, 60, async () => {
-    const result = await data.db
-      .update(data.services)
-      .set({
-        timestamp: new Date(),
-      })
-      .where(and(eq(data.services.cluster_id, clusterId), eq(data.services.service, service)))
-      .returning({
-        service: data.services.service,
-      });
+    clusterId: string;
+    service: string;
+  }) {
+  const result = await data.db
+    .update(data.services)
+    .set({
+      timestamp: new Date(),
+    })
+    .where(and(eq(data.services.cluster_id, clusterId), eq(data.services.service, service)))
+    .returning({
+      service: data.services.service,
+    });
 
-    if (result.length === 0) {
-      return false;
-    }
+  if (result.length === 0) {
+    return false;
+  }
 
-    return true;
-  });
+  return true;
 }
 
 export async function deleteServiceDefinition({
