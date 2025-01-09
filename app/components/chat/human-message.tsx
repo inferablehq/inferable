@@ -1,5 +1,5 @@
 import { client } from "@/client/client";
-import { createErrorToast } from "@/lib/utils";
+import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
 import { Mail, PencilLineIcon, RefreshCcw, Slack, User } from "lucide-react";
@@ -139,9 +139,10 @@ export function HumanMessage({
   return (
     <div className="mx-4">
       <div
-        className={`rounded-xl bg-primary p-4 shadow-sm hover:shadow-md transition-all duration-200 ${
-          pending ? `animate-pulse duration-1000` : ``
-        }`}
+        className={cn(
+          `rounded-xl bg-primary p-4 shadow-sm hover:shadow-md transition-all duration-200`,
+          pending ? `opacity-70` : ``
+        )}
       >
         <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-primary-foreground/20">
           <div className="flex items-center gap-3">
