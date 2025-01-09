@@ -12,7 +12,7 @@ import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { PHProvider } from "./providers";
-import { Header } from "@/components/header";
+import "@/lib/hyperdx";
 
 const PostHogPageView = dynamic(() => import("@/components/posthog-pageview"), {
   ssr: false,
