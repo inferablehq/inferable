@@ -1,6 +1,9 @@
+import { AgentError } from "../../../../utilities/errors";
 import { logger } from "../../../observability/logger";
-import { serviceFunctionEmbeddingId } from "../../../service-definitions";
-import { AgentToolV2 } from "../tool";
+import {
+  serviceFunctionEmbeddingId,
+} from "../../../service-definitions";
+import { AgentTool } from "../tool";
 
 /**
  * Build a tool from a service function with a handler that immediately returns a mock result
@@ -18,12 +21,14 @@ export const buildMockFunctionTool = ({
   description?: string;
   schema?: string;
   mockResult: unknown;
-}): AgentToolV2 => {
+}): AgentTool => {
   const toolName = serviceFunctionEmbeddingId({ serviceName, functionName });
 
-  return new AgentToolV2({
+  return new AgentTool({
     name: toolName,
-    description: (description ?? `${serviceName}-${functionName} function`).substring(0, 1024),
+    description: (
+      description ?? `${serviceName}-${functionName} function`
+    ).substring(0, 1024),
     schema,
     func: async (input: unknown) => {
       logger.info("Mock tool call", { toolName, input });

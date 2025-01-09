@@ -1,7 +1,10 @@
 import { RunGraphState } from "../state";
-import { AgentToolV2 } from "../tool";
+import { AgentTool, AgentToolV2 } from "../tool";
 
-export const getSystemPrompt = (state: RunGraphState, tools: AgentToolV2[]): string => {
+export const getSystemPrompt = (
+  state: RunGraphState,
+  tools: (AgentTool | AgentToolV2)[]
+): string => {
   const basePrompt = [
     "You are a helpful assistant with access to a set of tools designed to assist in completing tasks.",
     "You do not respond to greetings or small talk, and instead, you return 'done'.",

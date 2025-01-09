@@ -6,7 +6,8 @@ import { logger } from "../../../observability/logger";
 import { packer } from "../../../packer";
 import { getServiceDefinition, serviceFunctionEmbeddingId } from "../../../service-definitions";
 import { summariseJobResultIfNecessary } from "../summarizer";
-import { AgentToolV2 } from "../tool";
+import { AgentTool } from "../tool";
+import { events } from "../../../observability/events";
 
 export const SpecialResultTypes = {
   jobTimeout: "inferableJobTimeout",
@@ -27,10 +28,10 @@ export const buildAbstractServiceFunctionTool = ({
   serviceName: string;
   description?: string;
   schema?: string;
-}): AgentToolV2 => {
+}): AgentTool => {
   const toolName = serviceFunctionEmbeddingId({ serviceName, functionName });
 
-  return new AgentToolV2({
+  return new AgentTool({
     name: toolName,
     description: (description ?? `${serviceName}-${functionName} function`).substring(0, 1024),
     schema,
@@ -63,7 +64,7 @@ export const buildServiceFunctionTool = ({
     authContext?: unknown;
     context?: unknown;
   };
-}): AgentToolV2 => {
+}): AgentTool => {
   const tool = buildAbstractServiceFunctionTool({
     functionName,
     serviceName,

@@ -1,14 +1,17 @@
 import { Run } from "../../";
 import { createCache } from "../../../../utilities/cache";
 import { getClusterDetails } from "../../../management";
-import { AgentToolV2 } from "../tool";
+import { AgentTool, AgentToolV2 } from "../tool";
 import { stdlib } from "./stdlib";
 
 const clusterSettingsCache = createCache<{
   enableKnowledgebase: boolean;
 }>(Symbol("clusterSettings"));
 
-export type InternalToolBuilder = (run: Run, toolCallId: string) => AgentToolV2;
+export type InternalToolBuilder = (
+  run: Run,
+  toolCallId: string
+) => AgentTool | Promise<AgentTool> | AgentToolV2; // TODO: Standardize on AgentToolV2
 
 export const getClusterInternalTools = async (
   clusterId: string

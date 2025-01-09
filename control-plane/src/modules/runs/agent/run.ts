@@ -19,7 +19,7 @@ import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { createRunGraph } from "./agent";
 import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
 import { RunGraphState } from "./state";
-import { AgentToolV2 } from "./tool";
+import { AgentTool, AgentToolV2 } from "./tool";
 import { getClusterInternalTools } from "./tools/cluster-internal-tools";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
@@ -71,7 +71,7 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
     })
   );
 
-  const mockToolsMap: Record<string, AgentToolV2> = await buildMockTools(run);
+  const mockToolsMap: Record<string, AgentTool | AgentToolV2> = await buildMockTools(run);
 
   let mockModelResponses;
   if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
@@ -394,7 +394,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
   const start = Date.now();
   const run = state.run;
 
-  const tools: AgentToolV2[] = [];
+  const tools: (AgentTool | AgentToolV2)[] = [];
   const attachedFunctions = run.attachedFunctions ?? [];
 
   // If functions are explicitly attached, skip relevant tools search
@@ -457,7 +457,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
 };
 
 export const buildMockTools = async (run: Run) => {
-  const mocks: Record<string, AgentToolV2> = {};
+  const mocks: Record<string, AgentTool> = {};
   if (!run.testMocks || Object.keys(run.testMocks).length === 0) {
     return mocks;
   }

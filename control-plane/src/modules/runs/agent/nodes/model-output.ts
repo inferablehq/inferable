@@ -1,5 +1,5 @@
 import { JsonSchema7ObjectType } from "zod-to-json-schema";
-import { AgentToolV2 } from "../tool";
+import { AgentTool, AgentToolV2 } from "../tool";
 import { runs } from "../../../data";
 import { InferSelectModel } from "drizzle-orm";
 import { RunGraphState } from "../state";
@@ -24,7 +24,7 @@ export const buildModelSchema = ({
   resultSchema,
 }: {
   state: RunGraphState;
-  relevantSchemas: AgentToolV2[];
+  relevantSchemas: (AgentToolV2 | AgentTool)[];
   resultSchema?: InferSelectModel<typeof runs>["result_schema"];
 }) => {
   // Build the toolName enum
