@@ -9,7 +9,7 @@ import * as data from "../data";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
-import { upsertServiceDefinition } from "../service-definitions";
+import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { InstallableIntegration } from "./types";
 import { toolhouseIntegration } from "./constants";
 
@@ -161,6 +161,7 @@ const syncToolHouseService = async ({
 
   await upsertServiceDefinition({
     service: toolhouseIntegration,
+    type: "permanent",
     definition: {
       name: toolhouseIntegration,
       functions: tools.map(tool => {
@@ -229,8 +230,13 @@ export const toolhouse: InstallableIntegration = {
       apiKey: config.toolhouse?.apiKey,
     });
   },
-  onDeactivate: async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
-    // TODO: (good-first-issue) Delete the service definition
+  onDeactivate: async (clusterId: string, _: z.infer<typeof integrationSchema>) => {
+    await deleteServiceDefinition({
+      service: toolhouseIntegration,
+      owner: {
+        clusterId,
+      },
+    })
   },
   handleCall,
 };
