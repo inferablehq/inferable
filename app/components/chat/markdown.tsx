@@ -26,7 +26,6 @@ const MarkdownBase = ({ content, className, messages }: MarkdownProps) => {
         remarkPlugins={[remarkGfm]}
         components={{
           a: ({ children, href }) => {
-            console.log(href);
             if (href && /^[0-9A-Z]{26}\./.test(href)) {
               const path = decodeURIComponent(href);
               const [id] = path.split(".");

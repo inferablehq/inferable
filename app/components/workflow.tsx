@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { ulid } from "ulid";
 import { Textarea } from "./ui/textarea";
 
-import { createErrorToast } from "@/lib/utils";
+import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth, useOrganization, useUser } from "@clerk/nextjs";
 import { useQueue } from "@uidotdev/usehooks";
 import { MessageCircleWarning } from "lucide-react";
@@ -115,6 +115,14 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
 
   const messagesAfter = useRef<string>("0");
   const activityAfter = useRef<string>("0");
+
+  const isMounted = useRef<boolean>(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const fetchRunTimeline = useCallback(async () => {
     const result = await client
@@ -368,7 +376,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
   const metadataOptionsHeader = run
     ? {
         element: (
-          <div className="bg-white border-b px-4 py-2 mb-4">
+          <div className="bg-white border-b px-4 py-2 mb-4" key="metadata-options-header">
             <div className="flex flex-col space-y-2">
               <div className="flex items-center space-x-2">
                 {run.test ? (
@@ -574,6 +582,8 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
     }
   }, [elements.length]);
 
+  const composerDisabled = !runTimeline || !isEditable;
+
   return (
     <div className="h-[calc(100vh-16rem)] overflow-hidden rounded-sm">
       <div
@@ -583,56 +593,54 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
         {elements.length > 0 ? <div className="flex flex-col">{elements}</div> : messageSkeleton}
       </div>
       <div ref={messagesEndRef} />
-      <div className="flex flex-col space-y-2 p-2 bg-slate-50 border">
-        {!!runTimeline && isEditable ? (
-          <div className="flex flex-col space-y-2">
-            <Textarea
-              rows={3}
-              placeholder={"Message Inferable"}
-              className="focus-visible:ring-offset-0"
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  onSubmit(prompt);
-                }
-              }}
-            />
-            <div className="flex flex-row space-x-2">
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() => onSubmit(prompt)}
-                  size="sm"
-                  disabled={runTimeline?.run.status === "running"}
-                >
-                  {runTimeline?.run.status === "running" ? (
-                    <>
-                      <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    "Send"
-                  )}
-                </Button>
-              </div>
-              <div className="flex-grow">&nbsp;</div>
-              <FeedbackDialog
-                runId={runId}
-                clusterId={clusterId}
-                comment={runTimeline?.run.feedbackComment}
-                score={runTimeline?.run.feedbackScore}
-                userName={user.user?.emailAddresses.find(e => e.emailAddress)?.emailAddress ?? ""}
-              />
-            </div>
-          </div>
-        ) : (
-          !!runTimeline && (
-            <div>
-              <p className="text-gray-500 text-center">You are not the owner of this workflow.</p>
-            </div>
-          )
+      <div
+        className={cn(
+          "flex flex-col space-y-2 p-2 bg-slate-50 border",
+          composerDisabled ? "opacity-50 animate-pulse" : ""
         )}
+      >
+        <div className="flex flex-col space-y-2">
+          <Textarea
+            disabled={composerDisabled}
+            rows={3}
+            placeholder={"Message Inferable"}
+            className="focus-visible:ring-offset-0"
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                onSubmit(prompt);
+              }
+            }}
+          />
+          <div className="flex flex-row space-x-2">
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => onSubmit(prompt)}
+                size="sm"
+                disabled={runTimeline?.run.status === "running"}
+              >
+                {runTimeline?.run.status === "running" ? (
+                  <>
+                    <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Send"
+                )}
+              </Button>
+            </div>
+            <div className="flex-grow">&nbsp;</div>
+            <FeedbackDialog
+              runId={runId}
+              clusterId={clusterId}
+              comment={runTimeline?.run.feedbackComment}
+              score={runTimeline?.run.feedbackScore}
+              userName={user.user?.emailAddresses.find(e => e.emailAddress)?.emailAddress ?? ""}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
