@@ -182,14 +182,14 @@ describe("assertRunReady", () => {
       clusterId: owner.clusterId,
     });
 
-    await updateRun({
+    const updatedRun = await updateRun({
       ...run,
       status: "done",
     });
 
     await expect(
       assertRunReady({
-        run,
+        run: updatedRun,
         clusterId: owner.clusterId,
       })
     ).rejects.toThrow(RunBusyError);
