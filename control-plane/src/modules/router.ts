@@ -2,38 +2,34 @@ import { initServer } from "@ts-rest/fastify";
 import { generateOpenApi } from "@ts-rest/open-api";
 import fs from "fs";
 import path from "path";
+import { ulid } from "ulid";
 import util from "util";
+import { BadRequestError } from "../utilities/errors";
+import { deleteAgent, getAgent, listAgents, upsertAgent, validateSchema } from "./agents";
+import { authRouter } from "./auth/router";
+import { getBlobData } from "./blobs";
 import { contract } from "./contract";
 import * as data from "./data";
-import * as management from "./management";
-import * as events from "./observability/events";
-import {
-  assertMessageOfType,
-  editHumanMessage,
-  getRunMessagesForDisplayWithPolling,
-} from "./runs/messages";
-import { addMessageAndResume, assertRunReady } from "./runs";
-import { runsRouter } from "./runs/router";
-import { machineRouter } from "./machines/router";
-import { authRouter } from "./auth/router";
-import { ulid } from "ulid";
-import { getBlobData } from "./blobs";
-import { posthog } from "./posthog";
-import { BadRequestError } from "../utilities/errors";
-import { upsertAgent, getAgent, deleteAgent, listAgents, validateSchema } from "./agents";
+import { integrationsRouter } from "./integrations/router";
+import { jobsRouter } from "./jobs/router";
 import {
   createClusterKnowledgeArtifact,
-  getKnowledge,
-  upsertKnowledgeArtifact,
   deleteKnowledgeArtifact,
-  getKnowledgeArtifact,
   getAllKnowledgeArtifacts,
+  getKnowledge,
+  getKnowledgeArtifact,
+  upsertKnowledgeArtifact,
 } from "./knowledge/knowledgebase";
-import { jobsRouter } from "./jobs/router";
+import { machineRouter } from "./machines/router";
+import * as management from "./management";
 import { buildModel } from "./models";
-import { getServiceDefinitions, getStandardLibraryToolsMeta } from "./service-definitions";
-import { integrationsRouter } from "./integrations/router";
+import * as events from "./observability/events";
+import { posthog } from "./posthog";
+import { addMessageAndResume, assertRunReady, getRun } from "./runs";
+import { editHumanMessage, getRunMessagesForDisplayWithPolling } from "./runs/messages";
+import { runsRouter } from "./runs/router";
 import { getServerStats } from "./server-stats";
+import { getServiceDefinitions, getStandardLibraryToolsMeta } from "./service-definitions";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -289,7 +285,8 @@ export const router = initServer().router(contract, {
     const { clusterId, runId, messageId } = request.params;
     const { message } = request.body;
 
-    await assertRunReady({ clusterId, runId });
+    const run = await getRun({ clusterId, runId });
+    await assertRunReady({ clusterId, run });
 
     const auth = request.request.getAuth();
     await auth.canManage({ run: { clusterId, runId } });

@@ -8,17 +8,11 @@ import { contract } from "../contract";
 import { getJobReferences } from "../jobs/jobs";
 import * as events from "../observability/events";
 import { posthog } from "../posthog";
-import {
-  RunOptions,
-  getAgent,
-  mergeAgentOptions,
-  validateSchema,
-} from "../agents";
+import { RunOptions, getAgent, mergeAgentOptions, validateSchema } from "../agents";
 import { normalizeFunctionReference } from "../service-definitions";
 import { timeline } from "../timeline";
 import { getRunsByTag } from "./tags";
 import {
-  addMessageAndResume,
   createRetry,
   createRun,
   deleteRun,
@@ -26,6 +20,7 @@ import {
   getAgentMetrics,
   getRunDetails,
   updateRun,
+  addMessageAndResumeWithRun,
 } from "./";
 
 export const runsRouter = initServer().router(
@@ -128,8 +123,6 @@ export const runsRouter = initServer().router(
 
         const merged = mergeAgentOptions(runOptions, agent);
 
-
-
         if (merged.error) {
           return merged.error;
         }
@@ -182,11 +175,11 @@ export const runsRouter = initServer().router(
       });
 
       if (runOptions.initialPrompt) {
-        await addMessageAndResume({
+        await addMessageAndResumeWithRun({
           id: ulid(),
           userId: auth.entityId,
           clusterId,
-          runId: run.id,
+          run,
           message: runOptions.initialPrompt,
           type: body.agentId ? "template" : "human",
           metadata: runOptions.messageMetadata,
@@ -302,7 +295,7 @@ export const runsRouter = initServer().router(
 
       // Custom auth can only access their own Runs
       if (auth.type === "custom") {
-        userId = auth.entityId
+        userId = auth.entityId;
       }
 
       if (tags) {
@@ -324,7 +317,7 @@ export const runsRouter = initServer().router(
           value,
           limit,
           agentId,
-          userId
+          userId,
         });
 
         return {
@@ -332,7 +325,6 @@ export const runsRouter = initServer().router(
           body: result,
         };
       }
-
 
       const result = await getClusterRuns({
         clusterId,

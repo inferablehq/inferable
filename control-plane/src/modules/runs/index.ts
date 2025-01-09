@@ -12,26 +12,13 @@ import {
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
 import { BadRequestError, NotFoundError, RunBusyError } from "../../utilities/errors";
-import {
-  clusters,
-  db,
-  jobs,
-  RunMessageMetadata,
-  runMessages,
-  runTags,
-  runs,
-} from "../data";
+import { clusters, db, jobs, RunMessageMetadata, runMessages, runTags, runs } from "../data";
 import { ChatIdentifiers } from "../models/routing";
 import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
 import { sqs } from "../sqs";
 import { trackCustomerTelemetry } from "../track-customer-telemetry";
-import {
-  getRunMessages,
-  hasInvocations,
-  insertRunMessage,
-  lastAgentMessage,
-} from "./messages";
+import { getRunMessages, hasInvocations, insertRunMessage, lastAgentMessage } from "./messages";
 import { getRunTags } from "./tags";
 
 export { start, stop } from "./queues";
@@ -109,85 +96,69 @@ export const createRun = async ({
   context?: unknown;
   enableResultGrounding?: boolean;
 }): Promise<Run> => {
-  let run: Run | undefined = undefined;
-
-  await db.transaction(async tx => {
-    // TODO: Resolve the run debug value via a subquery and remove the transaction: https://github.com/inferablehq/inferable/issues/389
-    const [debugQuery] = await tx
-      .select({
-        debug: clusters.debug,
-      })
-      .from(clusters)
-      .where(eq(clusters.id, clusterId));
-
-    const result = await tx
-      .insert(runs)
-      .values([
-        {
-          id: runId ?? ulid(),
-          cluster_id: clusterId,
-          status: "pending",
-          user_id: userId ?? "SYSTEM",
-          ...(name ? { name } : {}),
-          debug: debugQuery.debug,
-          system_prompt: systemPrompt,
-          test,
-          test_mocks: testMocks,
-          reasoning_traces: reasoningTraces,
-          interactive: interactive,
-          enable_summarization: enableSummarization,
-          on_status_change: onStatusChange,
-          result_schema: resultSchema,
-          attached_functions: attachedFunctions,
-          agent_id: agentId,
-          agent_version: agentVersion,
-          model_identifier: modelIdentifier,
-          auth_context: authContext,
-          context: context,
-          enable_result_grounding: enableResultGrounding,
-        },
-      ])
-      .returning({
-        id: runs.id,
-        name: runs.name,
-        clusterId: runs.cluster_id,
-        systemPrompt: runs.system_prompt,
-        status: runs.status,
-        debug: runs.debug,
-        test: runs.test,
-        attachedFunctions: runs.attached_functions,
-        modelIdentifier: runs.model_identifier,
-        authContext: runs.auth_context,
-        context: runs.context,
-        interactive: runs.interactive,
-        enableResultGrounding: runs.enable_result_grounding,
-      });
-
-    run = result[0];
-
-    if (!!run && tags) {
-      await tx.insert(runTags).values(
-        Object.entries(tags).map(([key, value]) => ({
-          cluster_id: clusterId,
-          workflow_id: run!.id,
-          key,
-          value,
-        }))
-      );
-    }
-  });
+  // Insert the run with a subquery for debug value
+  const [run] = await db
+    .insert(runs)
+    .values({
+      id: runId ?? ulid(),
+      cluster_id: clusterId,
+      status: "pending",
+      user_id: userId ?? "SYSTEM",
+      ...(name ? { name } : {}),
+      debug: sql<boolean>`(SELECT debug FROM ${clusters} WHERE id = ${clusterId})`,
+      system_prompt: systemPrompt,
+      test,
+      test_mocks: testMocks,
+      reasoning_traces: reasoningTraces,
+      interactive: interactive,
+      enable_summarization: enableSummarization,
+      on_status_change: onStatusChange,
+      result_schema: resultSchema,
+      attached_functions: attachedFunctions,
+      agent_id: agentId,
+      agent_version: agentVersion,
+      model_identifier: modelIdentifier,
+      auth_context: authContext,
+      context: context,
+      enable_result_grounding: enableResultGrounding,
+    })
+    .returning({
+      id: runs.id,
+      name: runs.name,
+      clusterId: runs.cluster_id,
+      systemPrompt: runs.system_prompt,
+      status: runs.status,
+      debug: runs.debug,
+      test: runs.test,
+      attachedFunctions: runs.attached_functions,
+      modelIdentifier: runs.model_identifier,
+      authContext: runs.auth_context,
+      context: runs.context,
+      interactive: runs.interactive,
+      enableResultGrounding: runs.enable_result_grounding,
+    });
 
   if (!run) {
     throw new Error("Failed to create run");
+  }
+
+  // Insert tags if provided
+  if (tags) {
+    await db.insert(runTags).values(
+      Object.entries(tags).map(([key, value]) => ({
+        cluster_id: clusterId,
+        workflow_id: run.id,
+        key,
+        value,
+      }))
+    );
   }
 
   return run;
 };
 
 export const deleteRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
-  await db
-    .delete(runs)
-    .where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId)));
+  await db.delete(runs).where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId)));
 };
 
 export const updateRun = async (run: Run): Promise<Run> => {
@@ -204,12 +175,7 @@ export const updateRun = async (run: Run): Promise<Run> => {
       feedback_comment: run.feedbackComment,
       feedback_score: run.feedbackScore,
     })
-    .where(
-      and(
-        eq(runs.cluster_id, run.clusterId),
-        eq(runs.id, run.id)
-      )
-    )
+    .where(and(eq(runs.cluster_id, run.clusterId), eq(runs.id, run.id)))
     .returning({
       id: runs.id,
       name: runs.name,
@@ -264,12 +230,7 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
       enableResultGrounding: runs.enable_result_grounding,
     })
     .from(runs)
-    .where(
-      and(
-        eq(runs.cluster_id, clusterId),
-        eq(runs.id, runId)
-      )
-    );
+    .where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId)));
 
   return run;
 };
@@ -300,7 +261,7 @@ export const getClusterRuns = async ({
       debug: runs.debug,
       test: runs.test,
       agentId: runs.agent_id,
-      agentVersion : runs.agent_version,
+      agentVersion: runs.agent_version,
       feedbackScore: runs.feedback_score,
       modelIdentifier: runs.model_identifier,
       authContext: runs.auth_context,
@@ -322,13 +283,7 @@ export const getClusterRuns = async ({
   return result;
 };
 
-export const getRunDetails = async ({
-  clusterId,
-  runId,
-}: {
-  clusterId: string;
-  runId: string;
-}) => {
+export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
   const [[run], agentMessage, tags] = await Promise.all([
     db
       .select({
@@ -364,6 +319,50 @@ export const getRunDetails = async ({
   };
 };
 
+export const addMessageAndResumeWithRun = async ({
+  userId,
+  id,
+  clusterId,
+  message,
+  type,
+  metadata,
+  skipAssert,
+  run,
+}: {
+  userId?: string;
+  id: string;
+  clusterId: string;
+  message: string;
+  type: "human" | "template" | "supervisor";
+  metadata?: RunMessageMetadata;
+  skipAssert?: boolean;
+  run: Run;
+}) => {
+  if (!skipAssert) {
+    await assertRunReady({ clusterId, run });
+  }
+
+  await insertRunMessage({
+    userId,
+    clusterId,
+    runId: run.id,
+    data: {
+      message,
+    },
+    type,
+    id,
+    metadata,
+  });
+
+  // TODO: Move run name generation to event sourcing (pg-listen) https://github.com/inferablehq/inferable/issues/390
+  await generateRunName(run, message);
+
+  await resumeRun({
+    clusterId,
+    id: run.id,
+  });
+};
+
 export const addMessageAndResume = async ({
   userId,
   id,
@@ -383,28 +382,17 @@ export const addMessageAndResume = async ({
   metadata?: RunMessageMetadata;
   skipAssert?: boolean;
 }) => {
-  if (!skipAssert) {
-    await assertRunReady({ clusterId, runId });
-  }
+  const run = await getRun({ clusterId, runId });
 
-  await insertRunMessage({
+  return addMessageAndResumeWithRun({
     userId,
-    clusterId,
-    runId,
-    data: {
-      message,
-    },
-    type,
     id,
-    metadata,
-  });
-
-  // TODO: Move run name generation to event sourcing (pg-listen) https://github.com/inferablehq/inferable/issues/390
-  await generateRunName(await getRun({ clusterId, runId }), message);
-
-  await resumeRun({
     clusterId,
-    id: runId,
+    run,
+    message,
+    type,
+    metadata,
+    skipAssert,
   });
 };
 
@@ -520,11 +508,11 @@ export const createRunWithMessage = async ({
     enableResultGrounding,
   });
 
-  await addMessageAndResume({
+  await addMessageAndResumeWithRun({
     id: ulid(),
     userId,
     clusterId,
-    runId: run.id,
+    run,
     message,
     type,
     metadata: messageMetadata,
@@ -543,8 +531,9 @@ export const getClusterBackgroundRun = (clusterId: string) => {
   return `${clusterId}BACKGROUND`;
 };
 
-export const assertRunReady = async (input: { runId: string; clusterId: string }) => {
-  const run = await getRun(input);
+export const assertRunReady = async (input: { clusterId: string; run: Run }) => {
+  const run = input.run;
+
   if (!run) {
     throw new NotFoundError("Run not found");
   }
