@@ -5,7 +5,7 @@ import { NotFoundError } from "../../../../utilities/errors";
 import { ulid } from "ulid";
 import { RunGraphState } from "../state";
 import { redisClient } from "../../../redis";
-import { AgentToolV2 } from "../tool";
+import { AgentTool } from "../tool";
 import { assertMessageOfType } from "../../messages";
 
 describe("handleToolCalls", () => {
@@ -17,7 +17,7 @@ describe("handleToolCalls", () => {
   const toolHandler = jest.fn();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tool = new AgentToolV2({
+  const tool = new AgentTool({
     description: "Echoes the input",
     func: toolHandler,
     name: "console_echo",
@@ -181,8 +181,6 @@ describe("handleToolCalls", () => {
             message: 'is not allowed to have the additional property "wrongKey"',
           }),
         ]),
-        resultType: "rejection",
-        status: "success",
       })
     );
   });

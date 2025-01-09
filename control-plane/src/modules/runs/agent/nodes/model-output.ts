@@ -24,7 +24,7 @@ export const buildModelSchema = ({
   resultSchema,
 }: {
   state: RunGraphState;
-  relevantSchemas: (AgentToolV2 | AgentTool)[];
+  relevantSchemas: (AgentTool | AgentToolV2)[];
   resultSchema?: InferSelectModel<typeof runs>["result_schema"];
 }) => {
   // Build the toolName enum

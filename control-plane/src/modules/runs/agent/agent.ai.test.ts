@@ -1,7 +1,7 @@
 import { createRunGraph } from "./agent";
 import { z } from "zod";
 import { redisClient } from "../../redis";
-import { AgentToolV2 } from "./tool";
+import { AgentTool } from "./tool";
 import { assertMessageOfType } from "../messages";
 
 if (process.env.CI) {
@@ -20,7 +20,7 @@ describe("Agent", () => {
   };
 
   const tools = [
-    new AgentToolV2({
+    new AgentTool({
       name: "echo",
       description: "Echoes the input",
       schema: z.object({
@@ -145,9 +145,11 @@ describe("Agent", () => {
         postStepSave: async () => {},
       });
 
-      const toolResponse = {
-        message: "Failed to echo the word 'hello'",
-      };
+      const toolResponse = JSON.stringify({
+        result: "Failed to echo the word 'hello'",
+        resultType: "rejection",
+        status: "success",
+      });
 
       toolCallback.mockResolvedValue(toolResponse);
 
@@ -178,9 +180,9 @@ describe("Agent", () => {
       const topLevelResult = resultMessage.data.result;
       Object.keys(topLevelResult).forEach(key => {
         expect(topLevelResult[key]).toEqual({
-          message: "Failed to echo the word 'hello'",
-          resultType: "rejection",
+          result: "Failed to echo the word 'hello'",
           status: "success",
+          resultType: "rejection",
         });
       });
     });
@@ -392,7 +394,7 @@ describe("Agent", () => {
 
     it("should respect mock responses", async () => {
       const tools = [
-        new AgentToolV2({
+        new AgentTool({
           name: "searchHaystack",
           description: "Search haystack",
           schema: z.object({}).passthrough(),
@@ -439,9 +441,9 @@ describe("Agent", () => {
 
       toolCallback.mockResolvedValue(
         JSON.stringify({
-          result: {
+          result: JSON.stringify({
             word: "needle",
-          },
+          }),
           resultType: "resolution",
           status: "success",
         })
