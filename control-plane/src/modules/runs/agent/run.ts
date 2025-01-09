@@ -440,7 +440,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
 
     tools.push(...found);
 
-    tools.push(...[stdlib.currentDateTime.tool(), stdlib.getUrl.tool(), stdlib.calculator.tool()]);
+    tools.push(stdlib.currentDateTime.tool(), stdlib.getUrl.tool(), stdlib.calculator.tool());
 
     events.write({
       type: "functionRegistrySearchCompleted",
