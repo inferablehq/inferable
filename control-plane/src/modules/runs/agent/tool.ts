@@ -1,8 +1,6 @@
 import { Validator, ValidatorResult } from "jsonschema";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { z } from "zod";
-import { logger } from "../../observability/logger";
-import crypto from "crypto";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 const validator = new Validator();
 
@@ -56,60 +54,16 @@ export class AgentTool {
       throw new AgentToolInputError(result);
     }
   }
-}
 
-export class AgentToolV2 {
-  name: string;
-  description: string;
-  func: (input: unknown) => Promise<unknown>;
-  schema?: string;
-
-  constructor({
-    name,
-    description,
-    func,
-    schema,
-  }: {
+  public get metadata(): {
     name: string;
     description: string;
-    func: (input: any) => Promise<unknown>;
-    schema?: string | z.ZodObject<any>;
-  }) {
-    if (!!schema && typeof schema !== "string") {
-      schema = JSON.stringify(zodToJsonSchema(schema));
-    }
-
-    this.name = name;
-    this.description = description;
-    this.func = func;
-    this.schema = schema;
-  }
-
-  public async execute(input: unknown): Promise<string> {
-    try {
-      return JSON.stringify({
-        result: await this.func(input),
-        resultType: "resolution",
-        status: "success",
-      });
-    } catch (error) {
-      const traceId = crypto.randomUUID();
-
-      logger.info("Tool execution failed", {
-        error,
-        input,
-        traceId,
-      });
-
-      return JSON.stringify({
-        result: {
-          error: error instanceof Error ? error : "Unknown error",
-          message: error instanceof Error ? error.message : "Unknown",
-          traceId,
-        },
-        resultType: "rejection",
-        status: "success",
-      });
-    }
+    schema: string;
+  } {
+    return {
+      name: this.name,
+      description: this.description,
+      schema: this.schema ?? "{}",
+    };
   }
 }

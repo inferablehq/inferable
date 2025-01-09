@@ -19,8 +19,7 @@ import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { createRunGraph } from "./agent";
 import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
 import { RunGraphState } from "./state";
-import { AgentTool, AgentToolV2 } from "./tool";
-import { getClusterInternalTools } from "./tools/cluster-internal-tools";
+import { AgentTool } from "./tool";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
 import { stdlib } from "./tools/stdlib";
@@ -37,7 +36,6 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
     serviceDefinitions,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _updateResult,
-    internalToolsMap,
   ] = await Promise.all([
     buildAdditionalContext(run),
     getServiceDefinitions({
@@ -47,7 +45,6 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
       ...run,
       status: "running",
     }),
-    getClusterInternalTools(run.clusterId),
   ]);
 
   const allAvailableTools: string[] = [];
@@ -71,7 +68,7 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
     })
   );
 
-  const mockToolsMap: Record<string, AgentTool | AgentToolV2> = await buildMockTools(run);
+  const mockToolsMap: Record<string, AgentTool> = await buildMockTools(run);
 
   let mockModelResponses;
   if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
@@ -113,10 +110,10 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
         return mockTool;
       }
 
-      const internalTool = internalToolsMap[toolCall.toolName];
+      const internalTool = stdlib[toolCall.toolName];
 
       if (internalTool) {
-        return internalTool(run, toolCall.id);
+        return internalTool;
       }
 
       const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
@@ -394,7 +391,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
   const start = Date.now();
   const run = state.run;
 
-  const tools: (AgentTool | AgentToolV2)[] = [];
+  const tools: AgentTool[] = [];
   const attachedFunctions = run.attachedFunctions ?? [];
 
   // If functions are explicitly attached, skip relevant tools search
@@ -403,14 +400,14 @@ export const findRelevantTools = async (state: RunGraphState) => {
       if (tool.toLowerCase().startsWith("inferable_")) {
         const internalToolName = tool.split("_")[1];
 
-        if (internalToolName === stdlib.calculator.id) {
-          tools.push(stdlib.calculator.tool());
+        if (internalToolName === stdlib.calculator.metadata.name) {
+          tools.push(stdlib.calculator);
           continue;
-        } else if (internalToolName === stdlib.currentDateTime.id) {
-          tools.push(stdlib.currentDateTime.tool());
+        } else if (internalToolName === stdlib.currentDateTime.metadata.name) {
+          tools.push(stdlib.currentDateTime);
           continue;
-        } else if (internalToolName === stdlib.getUrl.id) {
-          tools.push(stdlib.getUrl.tool());
+        } else if (internalToolName === stdlib.getUrl.metadata.name) {
+          tools.push(stdlib.getUrl);
           continue;
         }
       }
@@ -440,7 +437,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
 
     tools.push(...found);
 
-    tools.push(stdlib.currentDateTime.tool(), stdlib.getUrl.tool(), stdlib.calculator.tool());
+    tools.push(stdlib.currentDateTime, stdlib.getUrl, stdlib.calculator);
 
     events.write({
       type: "functionRegistrySearchCompleted",

@@ -6,13 +6,13 @@ import { RunGraphState, createStateGraphChannels } from "./state";
 import { PostStepSave, postModelEdge, postStartEdge, postToolEdge } from "./nodes/edges";
 import { AgentMessage } from "../messages";
 import { buildMockModel, buildModel } from "../../models";
-import { AgentTool, AgentToolV2 } from "./tool";
+import { AgentTool } from "./tool";
 
-export type ReleventToolLookup = (state: RunGraphState) => Promise<(AgentTool | AgentToolV2)[]>;
+export type ReleventToolLookup = (state: RunGraphState) => Promise<AgentTool[]>;
 
 export type ToolFetcher = (
   toolCall: Required<AgentMessage["data"]>["invocations"][number]
-) => Promise<AgentTool | AgentToolV2>;
+) => Promise<AgentTool>;
 
 export const createRunGraph = async ({
   run,
