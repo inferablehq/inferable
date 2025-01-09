@@ -78,6 +78,9 @@ function ServiceCard({
     new Date(service.timestamp) > new Date() ||
     Date.now() - new Date(service.timestamp).getTime() < 1000 * 60;
 
+  const { cluster } = useClusterState(clusterId);
+  const isDemoCluster = cluster?.isDemo === true;
+
   return (
     <div
       className={cn(
@@ -95,7 +98,29 @@ function ServiceCard({
             )}
           </div>
           <div>
-            <div className="text-base font-medium">{toServiceName(service.name)}</div>
+            <div className="text-base font-medium flex items-center justify-between gap-2 mb-2">
+              <span>{toServiceName(service.name)}</span>
+              {isDemoCluster && service.name === "sqlite" && (
+                <a
+                  href="https://github.com/inferablehq/inferable/blob/main/demos/typescript/sql-to-text/service.ts"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-3 py-1 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors duration-200"
+                >
+                  View Demo Source →
+                </a>
+              )}
+              {isDemoCluster && service.name === "terminal" && (
+                <a
+                  href="https://github.com/inferablehq/inferable/blob/main/demos/typescript/terminal-copilot/service.ts"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-3 py-1 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors duration-200"
+                >
+                  View Demo Source →
+                </a>
+              )}
+            </div>
             <div className="text-sm text-muted-foreground font-mono flex items-center gap-2">
               <span>
                 {service.functions?.length || 0} Function
@@ -236,7 +261,10 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     services,
     isLoading: isInitialLoading,
     liveMachineCount,
+    cluster,
   } = useClusterState(clusterId);
+
+  const isDemoCluster = cluster?.isDemo === true;
 
   return (
     <div className="flex flex-col space-y-3 w-full">

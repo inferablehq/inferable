@@ -9,7 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
-import { Bot, ChevronDown, ChevronRight, Cog, PlusCircleIcon, Settings2Icon } from "lucide-react";
+import {
+  Bot,
+  ChevronDown,
+  ChevronRight,
+  Cog,
+  ExternalLinkIcon,
+  PlusCircleIcon,
+  Settings2Icon,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
@@ -345,7 +353,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
 
       {isDemoService && (
         <div className="flex flex-col gap-2">
-          <div className="text-sm text-muted-foreground">Try these example prompts:</div>
+          <div className="text-sm font-medium">Some prompts to try:</div>
           <div className="flex flex-col gap-2">
             {demoServicePrompts.map((demoPrompt, index) => (
               <Button
