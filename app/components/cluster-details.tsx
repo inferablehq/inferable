@@ -26,6 +26,7 @@ import ErrorDisplay from "./error-display";
 import { EventsOverlayButton } from "./events-overlay";
 import { ServerConnectionStatus } from "./server-connection-pane";
 import { useClusterState } from "./useClusterState";
+import toast from "react-hot-toast";
 
 function toServiceName(name: string) {
   return <span>{name}</span>;
@@ -480,8 +481,11 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
 
       setActualCommand(newCommand);
       setDisplayCommand(redactedCommand);
-      await navigator.clipboard.writeText(newCommand);
-      setStatus("created");
+      toast.success("Copied to clipboard");
+      setTimeout(() => {
+        navigator.clipboard.writeText(newCommand);
+        setStatus("created");
+      }, 0)
     } else {
       setStatus("error");
       createErrorToast(result, "Failed to create API key");
@@ -503,7 +507,7 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200 hover:shadow-md">
+      <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200">
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
             <Cpu className="w-5 h-5 text-gray-600" />
@@ -547,7 +551,7 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
         </div>
       </div>
 
-      <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200 hover:shadow-md">
+      <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200">
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
             <Blocks className="w-5 h-5 text-gray-600" />

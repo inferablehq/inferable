@@ -44,22 +44,7 @@ async function App() {
           <CreateClusterButton />
         </div>
 
-        {availableClusters && availableClusters.length > 0 ? (
-          <ClustersTable clusters={availableClusters} />
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-medium text-gray-900">
-              <Lightbulb className="w-4 h-4 inline-block mr-2" />
-              Create your first cluster
-            </h3>
-            <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-              Clusters help you group your functions, machines, and runs.
-            </p>
-            <div className="mt-6">
-              <CreateClusterButton />
-            </div>
-          </div>
-        )}
+        <ClustersTable clusters={availableClusters} />
       </div>
     </>
   );

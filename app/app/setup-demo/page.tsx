@@ -112,7 +112,7 @@ export default function SetupDemoPage() {
           <h1 className="text-2xl">Welcome to Inferable</h1>
         </div>
 
-        <div className="space-y-6 max-w-2xl">
+        <div className="space-y-6">
           <div className="space-y-3">
             {messages.map(
               (message, index) =>
@@ -151,7 +151,7 @@ export default function SetupDemoPage() {
           {!isCreating && (
             <>
               <div>
-                <div className="rounded-xl bg-white p-4 shadow-sm border border-border/50 hover:shadow-md transition-all duration-200">
+                <div className="rounded-xl bg-white p-4 shadow-sm border border-border/50 transition-all duration-200">
                   <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                       <Brain size={18} className="text-primary" />
