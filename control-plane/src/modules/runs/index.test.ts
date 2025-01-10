@@ -28,14 +28,14 @@ describe("assertRunReady", () => {
       clusterId: owner.clusterId,
     });
 
-    await updateRun({
+    const updatedRun = await updateRun({
       ...run,
       status: "running",
     });
 
     await expect(
       assertRunReady({
-        run,
+        run: updatedRun,
         clusterId: owner.clusterId,
       })
     ).rejects.toThrow(RunBusyError);
@@ -80,14 +80,14 @@ describe("assertRunReady", () => {
       runId: run.id,
     });
 
-    await updateRun({
+    const updatedRun = await updateRun({
       ...run,
       status: "done",
     });
 
     await expect(
       assertRunReady({
-        run,
+        run: updatedRun,
         clusterId: owner.clusterId,
       })
     ).resolves.not.toThrow();
@@ -108,14 +108,14 @@ describe("assertRunReady", () => {
       runId: run.id,
     });
 
-    await updateRun({
+    const updatedRun = await updateRun({
       ...run,
       status: "done",
     });
 
     await expect(
       assertRunReady({
-        run,
+        run: updatedRun,
         clusterId: owner.clusterId,
       })
     ).rejects.toThrow(RunBusyError);
