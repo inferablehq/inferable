@@ -19,8 +19,8 @@ import {
   getClusterRuns,
   getAgentMetrics,
   getRunDetails,
-  updateRun,
   addMessageAndResumeWithRun,
+  updateRunFeedback,
 } from "./";
 
 export const runsRouter = initServer().router(
@@ -246,12 +246,11 @@ export const runsRouter = initServer().router(
       const auth = request.request.getAuth();
       await auth.canManage({ run: { clusterId, runId } });
 
-      await updateRun({
+      await updateRunFeedback({
         id: runId,
         clusterId,
         feedbackComment: comment ?? undefined,
         feedbackScore: score ?? undefined,
-        status: null,
       });
 
       events.write({

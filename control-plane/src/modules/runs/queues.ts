@@ -1,11 +1,12 @@
 import { env } from "../../utilities/env";
-import { createMutex } from "../data";
+import { createMutex, db, runs } from "../data";
 import { logger } from "../observability/logger";
 import { baseMessageSchema, sqs, withObservability } from "../sqs";
+import { getRun } from "./";
 import { processRun } from "./agent/run";
 import { generateTitle } from "./summarization";
-import { getRun, updateRun } from "./";
 
+import { and, eq, isNull } from "drizzle-orm";
 import { Consumer } from "sqs-consumer";
 import { z } from "zod";
 import { injectTraceContext } from "../observability/tracer";
@@ -140,11 +141,10 @@ async function handleRunNameGeneration(message: unknown) {
     const result = await generateTitle(content, run);
 
     if (result.summary) {
-      await updateRun({
-        id: runId,
-        clusterId,
-        name: result.summary,
-      });
+      await db
+        .update(runs)
+        .set({ name: result.summary })
+        .where(and(eq(runs.id, runId), eq(runs.cluster_id, clusterId), isNull(runs.name)));
     }
   } finally {
     await unlock();

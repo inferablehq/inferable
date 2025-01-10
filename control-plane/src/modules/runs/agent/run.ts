@@ -1,20 +1,22 @@
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { getWaitingJobIds, updateRun } from "../";
+import { getWaitingJobIds } from "../";
 import { env } from "../../../utilities/env";
 import { NotFoundError } from "../../../utilities/errors";
 import { getClusterContextText } from "../../cluster";
-import { runs } from "../../data";
+import { db, runs } from "../../data";
 import { embedSearchQuery } from "../../embeddings/embeddings";
 import { flagsmith } from "../../flagsmith";
 import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
+import { ChatIdentifiers } from "../../models/routing";
 import { events } from "../../observability/events";
 import { logger } from "../../observability/logger";
 import {
   embeddableServiceFunction,
   getServiceDefinitions,
-  serviceFunctionEmbeddingId,
   ServiceDefinition,
   ServiceDefinitionFunction,
+  serviceFunctionEmbeddingId,
 } from "../../service-definitions";
 import { getRunMessages, insertRunMessage } from "../messages";
 import { notifyNewMessage, notifyStatusChange } from "../notify";
@@ -25,7 +27,6 @@ import { AgentTool } from "./tool";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
 import { stdlib } from "./tools/stdlib";
-import { ChatIdentifiers } from "../../models/routing";
 
 /**
  * Run a Run from the most recent saved state
@@ -63,10 +64,7 @@ export const processRun = async (
     getServiceDefinitions({
       clusterId: run.clusterId,
     }),
-    updateRun({
-      ...run,
-      status: "running",
-    }),
+    db.update(runs).set({ status: "running" }).where(eq(runs.id, run.id)),
   ]);
 
   const allAvailableTools: string[] = [];
@@ -217,10 +215,10 @@ export const processRun = async (
       throw new Error("Received unexpected Run output state");
     }
 
-    await updateRun({
-      ...run,
-      status: parsedOutput.data.status,
-    });
+    await db
+      .update(runs)
+      .set({ status: parsedOutput.data.status })
+      .where(and(eq(runs.id, run.id), eq(runs.cluster_id, run.clusterId)));
 
     const waitingJobs = parsedOutput.data.waitingJobs;
 
@@ -256,11 +254,10 @@ export const processRun = async (
       failureReason = error.message;
     }
 
-    await updateRun({
-      ...run,
-      status: "failed",
-      failureReason,
-    });
+    await db
+      .update(runs)
+      .set({ status: "failed", failure_reason: failureReason })
+      .where(and(eq(runs.id, run.id), eq(runs.cluster_id, run.clusterId)));
 
     throw error;
   }
