@@ -121,6 +121,12 @@ async function handleRunNameGeneration(message: unknown) {
 
   const { runId, clusterId, content } = zodResult.data;
 
+  const run = await getRun({ clusterId, runId });
+
+  if (run.name) {
+    return;
+  }
+
   const unlock = await createMutex(`run-generate-name-${runId}`).tryLock();
 
   if (!unlock) {
@@ -130,12 +136,6 @@ async function handleRunNameGeneration(message: unknown) {
 
   try {
     logger.info("Running name generation job");
-
-    const run = await getRun({ clusterId, runId });
-
-    if (run.name) {
-      return;
-    }
 
     const result = await generateTitle(content, run);
 

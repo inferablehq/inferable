@@ -317,7 +317,6 @@ export const addMessageAndResumeWithRun = async ({
   skipAssert?: boolean;
   run: {
     id: string;
-    name: string | null;
     status: string;
     interactive: boolean;
     clusterId: string;
@@ -340,14 +339,15 @@ export const addMessageAndResumeWithRun = async ({
   });
 
   // TODO: Move run name generation to event sourcing (pg-listen) https://github.com/inferablehq/inferable/issues/390
-  await generateRunName(
-    {
-      id: run.id,
-      clusterId: run.clusterId,
-      name: run.name,
-    },
-    message
-  );
+  if (type === "human") {
+    await generateRunName(
+      {
+        id: run.id,
+        clusterId: run.clusterId,
+      },
+      message
+    );
+  }
 
   await resumeRun({
     clusterId,
@@ -420,20 +420,11 @@ export const generateRunName = async (
   run: {
     id: string;
     clusterId: string;
-    name: string | null;
   },
   content: string
 ) => {
   if (env.NODE_ENV === "test") {
     logger.warn("Skipping run resume. NODE_ENV is set to 'test'.");
-    return;
-  }
-
-  if (run.name) {
-    logger.info("Skipping run name generation. Name already set.", {
-      runId: run.id,
-      name: run.name,
-    });
     return;
   }
 
