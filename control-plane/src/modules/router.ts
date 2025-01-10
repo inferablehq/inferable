@@ -17,8 +17,8 @@ import * as management from "./management";
 import { buildModel } from "./models";
 import * as events from "./observability/events";
 import { posthog } from "./posthog";
-import { addMessageAndResume, assertRunReady, getRun } from "./runs";
-import { editHumanMessage, getRunMessagesForDisplayWithPolling } from "./runs/messages";
+import { addMessageAndResume } from "./runs";
+import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { runsRouter } from "./runs/router";
 import { getServiceDefinitions, getStandardLibraryToolsMeta } from "./service-definitions";
 import { unqualifiedEntityId } from "./auth/auth";
@@ -288,53 +288,7 @@ export const router = initServer().router(contract, {
       body: messages,
     };
   },
-  updateMessage: async request => {
-    const { clusterId, runId, messageId } = request.params;
-    const { message } = request.body;
 
-    const run = await getRun({ clusterId, runId });
-    await assertRunReady({
-      clusterId,
-      run: {
-        id: run.id,
-        status: run.status,
-        interactive: run.interactive,
-        clusterId: run.clusterId,
-      },
-    });
-
-    const auth = request.request.getAuth();
-    await auth.canManage({ run: { clusterId, runId } });
-
-    const messages = await editHumanMessage({
-      id: messageId,
-      userId: auth.entityId,
-      clusterId,
-      runId,
-      message,
-    });
-
-    posthog?.capture({
-      distinctId: unqualifiedEntityId(auth.entityId),
-      event: "api:message_update",
-      groups: {
-        organization: auth.organizationId,
-        cluster: clusterId,
-      },
-      properties: {
-        cluster_id: clusterId,
-        run_id: runId,
-        message_id: messageId,
-        cli_version: request.headers["x-cli-version"],
-        user_agent: request.headers["user-agent"],
-      },
-    });
-
-    return {
-      status: 200,
-      body: messages.inserted,
-    };
-  },
   oas: async () => {
     const openApiDocument = generateOpenApi(
       contract,

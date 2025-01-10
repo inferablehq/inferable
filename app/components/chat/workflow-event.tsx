@@ -12,7 +12,6 @@ export type MessageContainerProps<T extends MessageTypes> = UnifiedMessageOfType
   jobs: WorkflowJob[];
   clusterId: string;
   runId: string;
-  isEditable: boolean;
   showMeta: boolean;
   pending?: boolean;
 };

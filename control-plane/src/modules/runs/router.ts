@@ -13,7 +13,6 @@ import { normalizeFunctionReference } from "../service-definitions";
 import { timeline } from "../timeline";
 import { getRunsByTag } from "./tags";
 import {
-  createRetry,
   createRun,
   deleteRun,
   getClusterRuns,
@@ -35,7 +34,6 @@ export const runsRouter = initServer().router(
     getRunTimeline: contract.getRunTimeline,
     getAgentMetrics: contract.getAgentMetrics,
     listRunReferences: contract.listRunReferences,
-    createRunRetry: contract.createRunRetry,
   },
   {
     getRun: async request => {
@@ -413,22 +411,6 @@ export const runsRouter = initServer().router(
       return {
         status: 200,
         body: jobReferences,
-      };
-    },
-    createRunRetry: async request => {
-      const { clusterId, runId } = request.params;
-
-      const user = request.request.getAuth().isAdmin();
-      await user.canAccess({ cluster: { clusterId } });
-
-      await createRetry({
-        clusterId,
-        runId,
-      });
-
-      return {
-        status: 204,
-        body: undefined,
       };
     },
   }

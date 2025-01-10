@@ -888,19 +888,6 @@ export const definition = {
       200: z.unknown(),
     },
   },
-  createRunRetry: {
-    method: "POST",
-    path: "/clusters/:clusterId/runs/:runId/retry",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      messageId: z.string(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-  },
-
   // Message Endpoints
   createMessage: {
     method: "POST",
@@ -946,24 +933,6 @@ export const definition = {
       200: z.array(unifiedMessageSchema),
       401: z.undefined(),
     },
-  },
-  updateMessage: {
-    method: "PUT",
-    path: "/clusters/:clusterId/runs/:runId/messages/:messageId",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({ message: z.string() }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-      }),
-      404: z.object({ message: z.string() }),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-      runId: z.string(),
-      messageId: z.string(),
-    }),
   },
 
   listRunReferences: {

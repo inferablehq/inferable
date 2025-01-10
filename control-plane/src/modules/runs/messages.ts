@@ -63,49 +63,6 @@ export const insertRunMessage = async ({
     });
 };
 
-export const editHumanMessage = async ({
-  clusterId,
-  runId,
-  userId,
-  message,
-  id,
-}: {
-  clusterId: string;
-  userId?: string;
-  runId: string;
-  message: string;
-  id: string;
-}) => {
-  const [inserted] = await insertRunMessage({
-    clusterId,
-    userId,
-    runId,
-    data: {
-      message,
-    },
-    type: "human",
-    id: ulid(),
-  });
-
-  events.write({
-    clusterId,
-    workflowId: runId,
-    type: "messageRetried",
-    meta: {
-      messageId: id,
-    },
-  });
-
-  await resumeRun({
-    clusterId,
-    id: runId,
-  });
-
-  return {
-    inserted,
-  };
-};
-
 export const getRunMessagesForDisplay = async ({
   clusterId,
   runId,

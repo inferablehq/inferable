@@ -10,7 +10,6 @@ import { RefreshCcw, TestTube2Icon, WorkflowIcon } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useRouter } from "next/navigation";
 import { ulid } from "ulid";
 import { Textarea } from "./ui/textarea";
 
@@ -22,7 +21,6 @@ import { FeedbackDialog } from "./bug-report-dialog";
 import { DebugEvent } from "./debug-event";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "react-hot-toast";
 import { Blob } from "./chat/blob";
 
 const messageSkeleton = (
@@ -71,15 +69,6 @@ function smoothScrollToBottom(element: HTMLElement) {
 }
 
 export function Run({ clusterId, runId }: { clusterId: string; runId: string }) {
-  const router = useRouter();
-
-  const goToRun = useCallback(
-    (c: string, w?: string) => {
-      router.push(`/clusters/${c}/runs/${w ?? ""}`);
-    },
-    [router]
-  );
-
   const { getToken } = useAuth();
 
   const [prompt, setPrompt] = useState("");
@@ -183,7 +172,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
     }
 
     return fetchRunTimeline();
-  }, [clusterId, runId, getToken, goToRun]);
+  }, [clusterId, runId, getToken]);
 
   useEffect(() => {
     fetchRunTimeline();
@@ -329,7 +318,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
             <RunEvent
               {...m}
               key={m.id}
-              isEditable={isAdmin || isOwner}
               showMeta={false}
               clusterId={clusterId}
               jobs={runTimeline?.jobs ?? []}
@@ -486,47 +474,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                   <span className="text-sm text-red-600 px-2">
                     Failed: {run.failureReason}
                   </span>{" "}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 align-end ml-auto hidden"
-                    onClick={async () => {
-                      const loading = toast.loading("Retrying run...");
-
-                      if (!runTimeline?.messages[0].id) {
-                        toast.error("No message ID found");
-                        return;
-                      }
-
-                      await client
-                        .createRunRetry({
-                          headers: {
-                            authorization: `Bearer ${await getToken()}`,
-                          },
-                          params: {
-                            clusterId,
-                            runId,
-                          },
-                          body: {
-                            messageId: runTimeline?.messages[0].id,
-                          },
-                        })
-                        .then(() => {
-                          toast.success("Run retried", {
-                            id: loading,
-                          });
-                        })
-                        .catch(e => {
-                          createErrorToast(e, "Failed to retry run");
-                        })
-                        .finally(() => {
-                          toast.remove(loading);
-                        });
-                    }}
-                  >
-                    <RefreshCcw className="h-3 w-3 mr-1" />
-                    Retry
-                  </Button>
                 </div>
               )}
             </div>
@@ -545,7 +492,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
             <RunEvent
               {...m}
               key={m.id}
-              isEditable={isAdmin || isOwner}
               showMeta={false}
               clusterId={clusterId}
               jobs={runTimeline?.jobs ?? []}
