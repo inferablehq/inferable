@@ -144,7 +144,7 @@ async function handleRunNameGeneration(message: unknown) {
       await db
         .update(runs)
         .set({ name: result.summary })
-        .where(and(eq(runs.id, runId), eq(runs.cluster_id, clusterId), isNull(runs.name)));
+        .where(and(eq(runs.id, runId), eq(runs.cluster_id, clusterId)));
     }
   } finally {
     await unlock();

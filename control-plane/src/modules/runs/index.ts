@@ -357,15 +357,13 @@ export const addMessageAndResumeWithRun = async ({
   });
 
   // TODO: Move run name generation to event sourcing (pg-listen) https://github.com/inferablehq/inferable/issues/390
-  if (type === "human") {
-    await generateRunName(
-      {
-        id: run.id,
-        clusterId: run.clusterId,
-      },
-      message
-    );
-  }
+  await generateRunName(
+    {
+      id: run.id,
+      clusterId: run.clusterId,
+    },
+    message
+  );
 
   await resumeRun({
     clusterId,
