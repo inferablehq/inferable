@@ -362,14 +362,16 @@ export async function requestApproval({ jobId, clusterId }: { jobId: string; clu
     })
     .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
 
-  events.write({
-    type: "approvalRequested",
-    jobId,
-    clusterId,
-    workflowId: updated.runId,
-    service: updated.service,
-    targetFn: updated.targetFn,
-  });
+  if (updated) {
+    events.write({
+      type: "approvalRequested",
+      jobId,
+      clusterId,
+      workflowId: updated.runId,
+      service: updated.service,
+      targetFn: updated.targetFn,
+    });
+  }
 
   if (updated.runId) {
     await notifyApprovalRequest(updated);
@@ -410,14 +412,16 @@ export async function submitApproval({
         targetFn: data.jobs.target_fn,
       });
 
-    events.write({
-      type: "approvalGranted",
-      jobId,
-      clusterId,
-      workflowId: updated.runId,
-      service: updated.service,
-      targetFn: updated.targetFn,
-    });
+    if (updated) {
+      events.write({
+        type: "approvalGranted",
+        jobId,
+        clusterId,
+        workflowId: updated.runId,
+        service: updated.service,
+        targetFn: updated.targetFn,
+      });
+    }
   } else {
     const [updated] = await data.db
       .update(data.jobs)
@@ -445,14 +449,16 @@ export async function submitApproval({
         )
       );
 
-    events.write({
-      type: "approvalDenied",
-      jobId,
-      clusterId,
-      workflowId: updated.runId,
-      service: updated.service,
-      targetFn: updated.targetFn,
-    });
+    if (updated) {
+      events.write({
+        type: "approvalDenied",
+        jobId,
+        clusterId,
+        workflowId: updated.runId,
+        service: updated.service,
+        targetFn: updated.targetFn,
+      });
+    }
 
     if (updated?.runId) {
       await resumeRun({
