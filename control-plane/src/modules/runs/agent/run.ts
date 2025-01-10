@@ -64,7 +64,7 @@ export const processRun = async (
     getServiceDefinitions({
       clusterId: run.clusterId,
     }),
-    db.update(runs).set({ status: "running" }).where(eq(runs.id, run.id)),
+    db.update(runs).set({ status: "running", failure_reason: "" }).where(eq(runs.id, run.id)),
   ]);
 
   const allAvailableTools: string[] = [];
