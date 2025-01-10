@@ -242,23 +242,6 @@ export const definition = {
     },
   },
 
-  getServerStats: {
-    method: "GET",
-    path: "/stats",
-    responses: {
-      200: z.object({
-        functionCalls: z.object({
-          count: z.number(),
-        }),
-        tokenUsage: z.object({
-          input: z.number(),
-          output: z.number(),
-        }),
-        refreshedAt: z.number(),
-      }),
-    },
-  },
-
   createStructuredOutput: {
     method: "POST",
     path: "/clusters/:clusterId/structured-output",

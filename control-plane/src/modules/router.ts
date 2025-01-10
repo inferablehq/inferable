@@ -633,14 +633,6 @@ export const router = initServer().router(contract, {
       body: result.structured,
     };
   },
-  getServerStats: async () => {
-    const stats = await getServerStats();
-
-    return {
-      status: 200,
-      body: stats,
-    };
-  },
   getStandardLibraryMeta: async request => {
     const { clusterId } = request.params;
 
