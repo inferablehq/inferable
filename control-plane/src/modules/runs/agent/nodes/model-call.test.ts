@@ -19,7 +19,7 @@ describe("handleModelCall", () => {
     systemPrompt: null,
     testMocks: {},
     test: false,
-    reasoningTraces: false,
+    reasoningTraces: true,
     enableResultGrounding: false,
   };
   const state: RunGraphState = {
