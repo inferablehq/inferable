@@ -31,7 +31,7 @@ type Function struct {
 type ContextInput struct {
 	AuthContext interface{} `json:"authContext,omitempty"`
 	RunContext  interface{} `json:"runContext,omitempty"`
-	approved    bool        `json:"approved"`
+	Approved    bool        `json:"approved"`
 }
 
 type service struct {
@@ -285,18 +285,34 @@ func (s *service) handleMessage(msg callMessage) error {
 	inputJson, err := json.Marshal(msg.Input)
 
 	if err != nil {
-		return fmt.Errorf("failed to marshal input: %v", err)
+    result := callResult{
+      Result:     err.Error(),
+      ResultType: "rejection",
+    }
+
+    // Persist the job result
+    if err := s.persistJobResult(msg.Id, result); err != nil {
+      return fmt.Errorf("failed to persist job result: %v", err)
+    }
 	}
 
 	err = json.Unmarshal(inputJson, argPtr.Interface())
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal input: %v", err)
+    result := callResult{
+      Result:     err.Error(),
+      ResultType: "rejection",
+    }
+
+    // Persist the job result
+    if err := s.persistJobResult(msg.Id, result); err != nil {
+      return fmt.Errorf("failed to persist job result: %v", err)
+    }
 	}
 
 	context := ContextInput{
 		AuthContext: msg.AuthContext,
 		RunContext:  msg.RunContext,
-		approved:    msg.Approved,
+		Approved:    msg.Approved,
 	}
 
 	start := time.Now()
@@ -307,15 +323,30 @@ func (s *service) handleMessage(msg callMessage) error {
 	resultType := "resolution"
 	resultValue := returnValues[0].Interface()
 
-	// Check if ANY of the return values is an error
 	for _, v := range returnValues {
+    // Check if ANY of the return values is an error
 		if v.Type().AssignableTo(reflect.TypeOf((*error)(nil)).Elem()) && v.Interface() != nil {
 			resultType = "rejection"
 			// Serialize the error
 			resultValue = v.Interface().(error).Error()
 			break
 		}
-	}
+
+    // Check if ANY of the return values is an interrupt
+    if v.CanInterface() {
+      val := v.Interface()
+      switch t := val.(type) {
+      case Interrupt:
+        resultType = "interrupt"
+        resultValue = t
+      case *Interrupt:
+        if t != nil {
+          resultType = "interrupt"
+          resultValue = *t
+        }
+      }
+    }
+  }
 
 	result := callResult{
 		Result:     resultValue,
