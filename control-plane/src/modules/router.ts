@@ -20,7 +20,6 @@ import { posthog } from "./posthog";
 import { addMessageAndResume, assertRunReady, getRun } from "./runs";
 import { editHumanMessage, getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { runsRouter } from "./runs/router";
-import { getServerStats } from "./server-stats";
 import { getServiceDefinitions, getStandardLibraryToolsMeta } from "./service-definitions";
 
 const readFile = util.promisify(fs.readFile);
