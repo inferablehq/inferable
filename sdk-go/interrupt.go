@@ -3,19 +3,19 @@ package inferable
 type VALID_INTERRUPT_TYPES string
 
 const (
-  APPROVAL VALID_INTERRUPT_TYPES = "approval"
+	APPROVAL VALID_INTERRUPT_TYPES = "approval"
 )
 
 type Interrupt struct {
-  Type VALID_INTERRUPT_TYPES `json:"type"`
+	Type VALID_INTERRUPT_TYPES `json:"type"`
 }
 
 func NewInterrupt(typ VALID_INTERRUPT_TYPES) *Interrupt {
-  return &Interrupt{
-    Type: typ,
-  }
+	return &Interrupt{
+		Type: typ,
+	}
 }
 
 func ApprovalInterrupt() *Interrupt {
-  return NewInterrupt(APPROVAL)
+	return NewInterrupt(APPROVAL)
 }

@@ -285,28 +285,28 @@ func (s *service) handleMessage(msg callMessage) error {
 	inputJson, err := json.Marshal(msg.Input)
 
 	if err != nil {
-    result := callResult{
-      Result:     err.Error(),
-      ResultType: "rejection",
-    }
+		result := callResult{
+			Result:     err.Error(),
+			ResultType: "rejection",
+		}
 
-    // Persist the job result
-    if err := s.persistJobResult(msg.Id, result); err != nil {
-      return fmt.Errorf("failed to persist job result: %v", err)
-    }
+		// Persist the job result
+		if err := s.persistJobResult(msg.Id, result); err != nil {
+			return fmt.Errorf("failed to persist job result: %v", err)
+		}
 	}
 
 	err = json.Unmarshal(inputJson, argPtr.Interface())
 	if err != nil {
-    result := callResult{
-      Result:     err.Error(),
-      ResultType: "rejection",
-    }
+		result := callResult{
+			Result:     err.Error(),
+			ResultType: "rejection",
+		}
 
-    // Persist the job result
-    if err := s.persistJobResult(msg.Id, result); err != nil {
-      return fmt.Errorf("failed to persist job result: %v", err)
-    }
+		// Persist the job result
+		if err := s.persistJobResult(msg.Id, result); err != nil {
+			return fmt.Errorf("failed to persist job result: %v", err)
+		}
 	}
 
 	context := ContextInput{
@@ -324,7 +324,7 @@ func (s *service) handleMessage(msg callMessage) error {
 	resultValue := returnValues[0].Interface()
 
 	for _, v := range returnValues {
-    // Check if ANY of the return values is an error
+		// Check if ANY of the return values is an error
 		if v.Type().AssignableTo(reflect.TypeOf((*error)(nil)).Elem()) && v.Interface() != nil {
 			resultType = "rejection"
 			// Serialize the error
@@ -332,21 +332,21 @@ func (s *service) handleMessage(msg callMessage) error {
 			break
 		}
 
-    // Check if ANY of the return values is an interrupt
-    if v.CanInterface() {
-      val := v.Interface()
-      switch t := val.(type) {
-      case Interrupt:
-        resultType = "interrupt"
-        resultValue = t
-      case *Interrupt:
-        if t != nil {
-          resultType = "interrupt"
-          resultValue = *t
-        }
-      }
-    }
-  }
+		// Check if ANY of the return values is an interrupt
+		if v.CanInterface() {
+			val := v.Interface()
+			switch t := val.(type) {
+			case Interrupt:
+				resultType = "interrupt"
+				resultValue = t
+			case *Interrupt:
+				if t != nil {
+					resultType = "interrupt"
+					resultValue = *t
+				}
+			}
+		}
+	}
 
 	result := callResult{
 		Result:     resultValue,
