@@ -145,7 +145,7 @@ export const updateRun = async (run: {
   };
 
   if (run.status && run.status !== "failed") {
-    delete updateSet.failure_reason;
+    updateSet.failure_reason = "";
   }
 
   const [updated] = await db

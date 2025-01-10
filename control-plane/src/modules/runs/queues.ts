@@ -133,6 +133,10 @@ async function handleRunNameGeneration(message: unknown) {
 
     const run = await getRun({ clusterId, runId });
 
+    if (run.name) {
+      return;
+    }
+
     const result = await generateTitle(content, run);
 
     if (result.summary) {
