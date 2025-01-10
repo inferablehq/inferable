@@ -39,28 +39,22 @@ export async function upsertMachine({
     return;
   }
 
-  // As we call this on each ping / poll, limit the number of updates that reach the database
-  return withThrottle(
-    `clusters:${clusterId}:machines:${machineId}:throttle`,
-    60,
-    async () =>
-      await data.db
-        .insert(data.machines)
-        .values({
-          id: machineId,
-          last_ping_at: sql`now()`,
-          ip,
-          sdk_version: sdkVersion,
-          sdk_language: sdkLanguage,
-          cluster_id: clusterId,
-        })
-        .onConflictDoUpdate({
-          target: [data.machines.id, data.machines.cluster_id],
-          set: {
-            last_ping_at: sql`excluded.last_ping_at`,
-            ip: sql`excluded.ip`,
-          },
-          where: and(eq(data.machines.cluster_id, clusterId), eq(data.machines.id, machineId)),
-        })
-  );
+  return await data.db
+    .insert(data.machines)
+    .values({
+      id: machineId,
+      last_ping_at: sql`now()`,
+      ip,
+      sdk_version: sdkVersion,
+      sdk_language: sdkLanguage,
+      cluster_id: clusterId,
+    })
+    .onConflictDoUpdate({
+      target: [data.machines.id, data.machines.cluster_id],
+      set: {
+        last_ping_at: sql`excluded.last_ping_at`,
+        ip: sql`excluded.ip`,
+      },
+      where: and(eq(data.machines.cluster_id, clusterId), eq(data.machines.id, machineId)),
+    });
 }

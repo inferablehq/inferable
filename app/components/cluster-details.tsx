@@ -273,7 +273,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
             </div>
           </Button>
         </SheetTrigger>
-        <SheetContent style={{ minWidth: 800 }} className="overflow-y-auto h-screen">
+        <SheetContent className="overflow-y-auto h-screen min-w-[800px]">
           <SheetHeader className="pb-6">
             <SheetTitle>
               <div className="flex items-center gap-3">
