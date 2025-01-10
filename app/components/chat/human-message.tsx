@@ -177,7 +177,7 @@ export function HumanMessage({
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground transition-colors duration-200"
+                className="h-7 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground transition-colors duration-200 hidden"
                 onClick={() => setEditing(true)}
               >
                 <PencilLineIcon className="h-3.5 w-3.5 mr-1" />
@@ -186,7 +186,7 @@ export function HumanMessage({
               <Button
                 size="sm"
                 variant="secondary"
-                className="h-7 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground"
+                className="h-7 bg-primary-foreground/10 hover:bg-primary-foreground/20 text-primary-foreground hidden"
                 onClick={retryMessage}
               >
                 <RefreshCcw className="h-3.5 w-3.5 mr-1" />

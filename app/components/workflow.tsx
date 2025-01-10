@@ -489,7 +489,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 align-end ml-auto"
+                    className="h-7 align-end ml-auto hidden"
                     onClick={async () => {
                       const loading = toast.loading("Retrying run...");
 
