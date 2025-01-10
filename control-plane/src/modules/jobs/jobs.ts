@@ -347,13 +347,7 @@ export const pollJobs = async ({
   return jobs;
 };
 
-export async function requestApproval({
-  jobId,
-  clusterId,
-}: {
-  jobId: string;
-  clusterId: string;
-}) {
+export async function requestApproval({ jobId, clusterId }: { jobId: string; clusterId: string }) {
   const [updated] = await data.db
     .update(data.jobs)
     .set({
@@ -367,6 +361,15 @@ export async function requestApproval({
       targetFn: data.jobs.target_fn,
     })
     .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
+
+  events.write({
+    type: "approvalRequested",
+    jobId,
+    clusterId,
+    workflowId: updated.runId,
+    service: updated.service,
+    targetFn: updated.targetFn,
+  });
 
   if (updated.runId) {
     await notifyApprovalRequest(updated);
@@ -383,7 +386,7 @@ export async function submitApproval({
   approved: boolean;
 }) {
   if (approved) {
-    await data.db
+    const [updated] = await data.db
       .update(data.jobs)
       .set({
         approved: true,
@@ -400,7 +403,21 @@ export async function submitApproval({
           isNull(data.jobs.approved),
           eq(data.jobs.approval_requested, true)
         )
-      );
+      )
+      .returning({
+        runId: data.jobs.workflow_id,
+        service: data.jobs.service,
+        targetFn: data.jobs.target_fn,
+      });
+
+    events.write({
+      type: "approvalGranted",
+      jobId,
+      clusterId,
+      workflowId: updated.runId,
+      service: updated.service,
+      targetFn: updated.targetFn,
+    });
   } else {
     const [updated] = await data.db
       .update(data.jobs)
@@ -414,6 +431,9 @@ export async function submitApproval({
       })
       .returning({
         runId: data.jobs.workflow_id,
+        service: data.jobs.service,
+        targetFn: data.jobs.target_fn,
+        resultType: data.jobs.result_type,
       })
       .where(
         and(
@@ -424,6 +444,15 @@ export async function submitApproval({
           eq(data.jobs.approval_requested, true)
         )
       );
+
+    events.write({
+      type: "approvalDenied",
+      jobId,
+      clusterId,
+      workflowId: updated.runId,
+      service: updated.service,
+      targetFn: updated.targetFn,
+    });
 
     if (updated?.runId) {
       await resumeRun({

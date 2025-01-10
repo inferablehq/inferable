@@ -26,7 +26,10 @@ export type EventTypes =
   | "workflowFeedbackSubmitted"
   | "resultSummarized"
   | "functionRegistrySearchCompleted"
-  | "messageRetried";
+  | "messageRetried"
+  | "approvalRequested"
+  | "approvalGranted"
+  | "approvalDenied";
 
 type Event = {
   clusterId: string;
