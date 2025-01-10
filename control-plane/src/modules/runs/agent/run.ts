@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Run, getWaitingJobIds, updateRun } from "../";
+import { getWaitingJobIds, updateRun } from "../";
 import { env } from "../../../utilities/env";
 import { NotFoundError } from "../../../utilities/errors";
 import { getClusterContextText } from "../../cluster";
@@ -13,6 +13,8 @@ import {
   embeddableServiceFunction,
   getServiceDefinitions,
   serviceFunctionEmbeddingId,
+  ServiceDefinition,
+  ServiceDefinitionFunction,
 } from "../../service-definitions";
 import { getRunMessages, insertRunMessage } from "../messages";
 import { notifyNewMessage, notifyStatusChange } from "../notify";
@@ -24,11 +26,31 @@ import { getClusterInternalTools } from "./tools/cluster-internal-tools";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
 import { stdlib } from "./tools/stdlib";
+import { ChatIdentifiers } from "../../models/routing";
 
 /**
  * Run a Run from the most recent saved state
  **/
-export const processRun = async (run: Run, tags?: Record<string, string>) => {
+export const processRun = async (
+  run: {
+    id: string;
+    clusterId: string;
+    modelIdentifier: ChatIdentifiers | null;
+    resultSchema: unknown | null;
+    debug: boolean;
+    attachedFunctions: string[] | null;
+    status: string;
+    systemPrompt: string | null;
+    testMocks: Record<string, { output: Record<string, unknown> }> | null;
+    test: boolean;
+    reasoningTraces: boolean;
+    enableResultGrounding: boolean;
+    onStatusChange: string | null;
+    authContext: unknown | null;
+    context: unknown | null;
+  },
+  tags?: Record<string, string>
+) => {
   logger.info("Processing Run");
 
   // Parallelize fetching additional context and service definitions
@@ -55,8 +77,8 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
 
   allAvailableTools.push(...attachedFunctions);
 
-  serviceDefinitions.flatMap(service =>
-    (service.definition?.functions ?? []).forEach(f => {
+  serviceDefinitions.flatMap((service: { service: string; definition: ServiceDefinition }) =>
+    (service.definition?.functions ?? []).forEach((f: ServiceDefinitionFunction) => {
       // Do not attach additional tools if `attachedFunctions` is provided
       if (attachedFunctions.length > 0 || f.config?.private) {
         return;
@@ -206,7 +228,14 @@ export const processRun = async (run: Run, tags?: Record<string, string>) => {
     const waitingJobs = parsedOutput.data.waitingJobs;
 
     await notifyStatusChange({
-      run,
+      run: {
+        id: run.id,
+        clusterId: run.clusterId,
+        onStatusChange: run.onStatusChange,
+        status: parsedOutput.data.status,
+        authContext: run.authContext,
+        context: run.context,
+      },
       status: parsedOutput.data.status,
       result: parsedOutput.data.result,
     });
@@ -288,7 +317,16 @@ export const formatJobsContext = (
   return `<previous_jobs status="${status}">\n${jobEntries}\n</previous_jobs>`;
 };
 
-async function findRelatedFunctionTools(run: Run, search: string) {
+async function findRelatedFunctionTools(
+  run: {
+    id: string;
+    clusterId: string;
+    modelIdentifier: ChatIdentifiers | null;
+    resultSchema: unknown | null;
+    debug: boolean;
+  },
+  search: string
+) {
   const flags = await flagsmith?.getIdentityFlags(run.clusterId, {
     clusterId: run.clusterId,
   });
@@ -380,7 +418,11 @@ async function findRelatedFunctionTools(run: Run, search: string) {
   return selectedTools;
 }
 
-const buildAdditionalContext = async (run: Run) => {
+const buildAdditionalContext = async (run: {
+  id: string;
+  clusterId: string;
+  systemPrompt: string | null;
+}) => {
   let context = "";
 
   context += await getClusterContextText(run.clusterId);
@@ -466,7 +508,12 @@ export const findRelevantTools = async (state: RunGraphState) => {
   return tools;
 };
 
-export const buildMockTools = async (run: Run) => {
+export const buildMockTools = async (run: {
+  id: string;
+  clusterId: string;
+  testMocks: Record<string, { output: Record<string, unknown> }> | null;
+  test: boolean;
+}) => {
   const mocks: Record<string, AgentTool> = {};
   if (!run.testMocks || Object.keys(run.testMocks).length === 0) {
     return mocks;

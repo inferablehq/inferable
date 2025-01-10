@@ -1,12 +1,10 @@
-import { Run } from "../../";
-import {
-  buildAccessKnowledgeArtifacts,
-  ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME,
-} from "./knowledge-artifacts";
 import { createCache } from "../../../../utilities/cache";
 import { getClusterDetails } from "../../../management";
-import { buildCurrentDateTimeTool, CURRENT_DATE_TIME_TOOL_NAME } from "./date-time";
 import { AgentTool, AgentToolV2 } from "../tool";
+import {
+  ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME,
+  buildAccessKnowledgeArtifacts,
+} from "./knowledge-artifacts";
 import { stdlib } from "./stdlib";
 
 const clusterSettingsCache = createCache<{
@@ -14,7 +12,7 @@ const clusterSettingsCache = createCache<{
 }>(Symbol("clusterSettings"));
 
 export type InternalToolBuilder = (
-  run: Run,
+  run: any,
   toolCallId: string
 ) => AgentTool | Promise<AgentTool> | AgentToolV2; // TODO: Standardize on AgentToolV2
 

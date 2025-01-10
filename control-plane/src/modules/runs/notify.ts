@@ -3,7 +3,7 @@ import * as jobs from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { getRunTags } from "./tags";
-import { getClusterBackgroundRun, Run } from "./";
+import { getClusterBackgroundRun } from "./";
 import { runMessages } from "../data";
 import * as slack from "../integrations/slack";
 import * as email from "../email";
@@ -47,7 +47,14 @@ export const notifyStatusChange = async ({
   status,
   result,
 }: {
-  run: Run;
+  run: {
+    id: string;
+    clusterId: string;
+    onStatusChange: string | null;
+    status: string;
+    authContext: unknown;
+    context: unknown;
+  };
   status: string;
   result?: unknown;
 }) => {

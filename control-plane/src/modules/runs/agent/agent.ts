@@ -1,5 +1,4 @@
 import { START, StateGraph } from "@langchain/langgraph";
-import { type Run } from "../";
 import { MODEL_CALL_NODE_NAME, handleModelCall } from "./nodes/model-call";
 import { TOOL_CALL_NODE_NAME, handleToolCalls } from "./nodes/tool-call";
 import { RunGraphState, createStateGraphChannels } from "./state";
@@ -7,6 +6,7 @@ import { PostStepSave, postModelEdge, postStartEdge, postToolEdge } from "./node
 import { AgentMessage } from "../messages";
 import { buildMockModel, buildModel } from "../../models";
 import { AgentTool, AgentToolV2 } from "./tool";
+import { ChatIdentifiers } from "../../models/routing";
 
 export type ReleventToolLookup = (state: RunGraphState) => Promise<(AgentTool | AgentToolV2)[]>;
 
@@ -23,7 +23,20 @@ export const createRunGraph = async ({
   getTool,
   mockModelResponses,
 }: {
-  run: Run;
+  run: {
+    id: string;
+    clusterId: string;
+    modelIdentifier: ChatIdentifiers | null;
+    resultSchema: unknown | null;
+    debug: boolean;
+    attachedFunctions: string[] | null;
+    status: string;
+    systemPrompt: string | null;
+    testMocks: Record<string, { output: Record<string, unknown> }> | null;
+    test: boolean;
+    reasoningTraces: boolean;
+    enableResultGrounding: boolean;
+  };
   additionalContext?: string;
   allAvailableTools?: string[];
   postStepSave: PostStepSave;

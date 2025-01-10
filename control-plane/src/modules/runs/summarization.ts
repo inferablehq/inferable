@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { Run } from "./";
 import { logger } from "../observability/logger";
 import { RetryableError } from "../../utilities/errors";
 import { buildModel } from "../models";
@@ -7,8 +6,12 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 
 export const generateTitle = async (
   message: string,
-  run: Run,
-  words: number = 10,
+  run: {
+    id: string;
+    clusterId: string;
+    name: string | null;
+  },
+  words: number = 10
 ): Promise<{ summary: string }> => {
   const system = [
     `You are a title generation assistant that is capable of succintly summarizing a set of messages in a single sentence. The title should be no more than ${words} words. Generate title for the following messages. Use identifying information such as names, dates, and locations if necessary. Good examples:

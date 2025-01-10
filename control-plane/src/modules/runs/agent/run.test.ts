@@ -1,4 +1,3 @@
-import { Run } from "../";
 import { buildMockTools, findRelevantTools, formatJobsContext } from "./run";
 import { upsertServiceDefinition } from "../../service-definitions";
 import { createOwner } from "../../test/util";
@@ -30,6 +29,14 @@ describe("findRelevantTools", () => {
       clusterId: owner.clusterId,
       status: "running" as const,
       attachedFunctions: ["testService_someFunction"],
+      modelIdentifier: null,
+      resultSchema: null,
+      debug: false,
+      systemPrompt: null,
+      testMocks: {},
+      test: false,
+      reasoningTraces: false,
+      enableResultGrounding: false,
     };
 
     const tools = await findRelevantTools({
@@ -65,7 +72,7 @@ const mockTargetSchema = JSON.stringify({
 });
 
 describe("buildMockTools", () => {
-  let run: Run;
+  let run: any;
 
   const service = "testService";
   beforeAll(async () => {

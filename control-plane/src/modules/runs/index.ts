@@ -1,14 +1,4 @@
-import {
-  and,
-  countDistinct,
-  desc,
-  eq,
-  inArray,
-  InferSelectModel,
-  isNull,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
 import { BadRequestError, NotFoundError, RunBusyError } from "../../utilities/errors";
@@ -22,31 +12,6 @@ import { getRunMessages, hasInvocations, insertRunMessage, lastAgentMessage } fr
 import { getRunTags } from "./tags";
 
 export { start, stop } from "./queues";
-
-export type Run = {
-  id: string;
-  clusterId: string;
-  status?: "pending" | "running" | "paused" | "done" | "failed" | null;
-  name?: string | null;
-  agentId?: string | null;
-  systemPrompt?: string | null;
-  failureReason?: string | null;
-  debug?: boolean;
-  test?: boolean;
-  testMocks?: InferSelectModel<typeof runs>["test_mocks"];
-  feedbackComment?: string | null;
-  feedbackScore?: number | null;
-  resultSchema?: unknown | null;
-  attachedFunctions?: string[] | null;
-  onStatusChange?: string | null;
-  interactive?: boolean;
-  reasoningTraces?: boolean;
-  enableSummarization?: boolean;
-  modelIdentifier?: ChatIdentifiers | null;
-  authContext?: unknown | null;
-  context?: unknown | null;
-  enableResultGrounding?: boolean;
-};
 
 export const createRun = async ({
   runId,
@@ -95,7 +60,7 @@ export const createRun = async ({
   authContext?: unknown;
   context?: unknown;
   enableResultGrounding?: boolean;
-}): Promise<Run> => {
+}) => {
   // Insert the run with a subquery for debug value
   const [run] = await db
     .insert(runs)
@@ -136,6 +101,7 @@ export const createRun = async ({
       context: runs.context,
       interactive: runs.interactive,
       enableResultGrounding: runs.enable_result_grounding,
+      agentId: runs.agent_id,
     });
 
   if (!run) {
@@ -161,20 +127,30 @@ export const deleteRun = async ({ clusterId, runId }: { clusterId: string; runId
   await db.delete(runs).where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId)));
 };
 
-export const updateRun = async (run: Run): Promise<Run> => {
+export const updateRun = async (run: {
+  id: string;
+  clusterId: string;
+  name?: string;
+  status?: "pending" | "running" | "paused" | "done" | "failed" | null;
+  failureReason?: string;
+  feedbackComment?: string;
+  feedbackScore?: number;
+}) => {
+  const updateSet = {
+    name: run.name ?? undefined,
+    status: run.status ?? undefined,
+    failure_reason: run.failureReason ?? undefined,
+    feedback_comment: run.feedbackComment ?? undefined,
+    feedback_score: run.feedbackScore ?? undefined,
+  };
+
   if (run.status && run.status !== "failed") {
-    run.failureReason = null;
+    delete updateSet.failure_reason;
   }
 
   const [updated] = await db
     .update(runs)
-    .set({
-      name: !run.name ? undefined : run.name,
-      status: run.status,
-      failure_reason: run.failureReason,
-      feedback_comment: run.feedbackComment,
-      feedback_score: run.feedbackScore,
-    })
+    .set(updateSet)
     .where(and(eq(runs.cluster_id, run.clusterId), eq(runs.id, run.id)))
     .returning({
       id: runs.id,
@@ -186,6 +162,8 @@ export const updateRun = async (run: Run): Promise<Run> => {
       attachedFunctions: runs.attached_functions,
       authContext: runs.auth_context,
       context: runs.context,
+      interactive: runs.interactive,
+      enableResultGrounding: runs.enable_result_grounding,
     });
 
   // Send telemetry event if feedback was updated
@@ -336,7 +314,13 @@ export const addMessageAndResumeWithRun = async ({
   type: "human" | "template" | "supervisor";
   metadata?: RunMessageMetadata;
   skipAssert?: boolean;
-  run: Run;
+  run: {
+    id: string;
+    name: string | null;
+    status: string;
+    interactive: boolean;
+    clusterId: string;
+  };
 }) => {
   if (!skipAssert) {
     await assertRunReady({ clusterId, run });
@@ -355,7 +339,14 @@ export const addMessageAndResumeWithRun = async ({
   });
 
   // TODO: Move run name generation to event sourcing (pg-listen) https://github.com/inferablehq/inferable/issues/390
-  await generateRunName(run, message);
+  await generateRunName(
+    {
+      id: run.id,
+      clusterId: run.clusterId,
+      name: run.name,
+    },
+    message
+  );
 
   await resumeRun({
     clusterId,
@@ -396,7 +387,7 @@ export const addMessageAndResume = async ({
   });
 };
 
-export const resumeRun = async (input: Pick<Run, "id" | "clusterId">) => {
+export const resumeRun = async (input: { id: string; clusterId: string }) => {
   if (env.NODE_ENV === "test") {
     logger.warn("Skipping run resume. NODE_ENV is set to 'test'.");
     return;
@@ -424,7 +415,14 @@ export const resumeRun = async (input: Pick<Run, "id" | "clusterId">) => {
   });
 };
 
-export const generateRunName = async (run: Run, content: string) => {
+export const generateRunName = async (
+  run: {
+    id: string;
+    clusterId: string;
+    name: string | null;
+  },
+  content: string
+) => {
   if (env.NODE_ENV === "test") {
     logger.warn("Skipping run resume. NODE_ENV is set to 'test'.");
     return;
@@ -531,7 +529,15 @@ export const getClusterBackgroundRun = (clusterId: string) => {
   return `${clusterId}BACKGROUND`;
 };
 
-export const assertRunReady = async (input: { clusterId: string; run: Run }) => {
+export const assertRunReady = async (input: {
+  clusterId: string;
+  run: {
+    id: string;
+    status: string;
+    interactive: boolean;
+    clusterId: string;
+  };
+}) => {
   const run = input.run;
 
   if (!run) {

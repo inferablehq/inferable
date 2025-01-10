@@ -1,14 +1,10 @@
 import { ulid } from "ulid";
 import { createOwner } from "../test/util";
-import { Run, createRun, createRunWithMessage } from "../runs";
+import { createRun, createRunWithMessage } from "../runs";
 import * as customAuth from "./custom";
 import * as clusterAuth from "./cluster";
 import * as clerkAuth from "./clerk";
-import {
-  Auth,
-  extractAuthState,
-  extractCustomAuthState,
-} from "./auth";
+import { Auth, extractAuthState, extractCustomAuthState } from "./auth";
 import { redisClient } from "../redis";
 
 jest.mock("../../utilities/env");
@@ -21,10 +17,7 @@ const mockClusterAuth = {
 
 // Mocking custom auth verification
 const mockCustomAuth = {
-  verify: jest.spyOn(
-    customAuth,
-    "verify",
-  ),
+  verify: jest.spyOn(customAuth, "verify"),
 };
 
 const mockClerkAuth = {
@@ -102,7 +95,7 @@ describe("extractAuthState", () => {
 
             const result = await extractAuthState("");
             await expect(
-              result!.canAccess({ cluster: { clusterId: "cluster_1" } }),
+              result!.canAccess({ cluster: { clusterId: "cluster_1" } })
             ).resolves.toBeDefined();
           });
 
@@ -116,7 +109,7 @@ describe("extractAuthState", () => {
 
             const result = await extractAuthState("");
             await expect(
-              result!.canAccess({ cluster: { clusterId: "cluster_2" } }),
+              result!.canAccess({ cluster: { clusterId: "cluster_2" } })
             ).rejects.toThrow();
           });
         });
@@ -139,7 +132,7 @@ describe("extractAuthState", () => {
                   clusterId: "cluster_1",
                   runId: "run_1",
                 },
-              }),
+              })
             ).resolves.toBeDefined();
           });
         });
@@ -165,7 +158,7 @@ describe("extractAuthState", () => {
                   clusterId: "cluster_1",
                   runId: "run_1",
                 },
-              }),
+              })
             ).resolves.toBeDefined();
           });
         });
@@ -183,7 +176,7 @@ describe("extractAuthState", () => {
 
             const result = await extractAuthState("");
             await expect(
-              result!.canManage({ cluster: { clusterId: "cluster_1" } }),
+              result!.canManage({ cluster: { clusterId: "cluster_1" } })
             ).rejects.toThrow();
           });
         });
@@ -205,7 +198,7 @@ describe("extractAuthState", () => {
             expect(() =>
               result!.canManage({
                 agent: { clusterId: "cluster_1", agentId: "template_1" },
-              }),
+              })
             ).toBeDefined();
           });
         });
@@ -307,13 +300,11 @@ describe("extractAuthState", () => {
       await expect(
         result?.canAccess({
           cluster: { clusterId: owner.clusterId },
-        }),
+        })
       ).resolves.toBeDefined();
 
       // Incorrect cluster ID
-      await expect(
-        result?.canAccess({ cluster: { clusterId: "cluster_2" } }),
-      ).rejects.toThrow();
+      await expect(result?.canAccess({ cluster: { clusterId: "cluster_2" } })).rejects.toThrow();
     });
 
     describe("runs", () => {
@@ -321,8 +312,8 @@ describe("extractAuthState", () => {
       let owner2: Awaited<ReturnType<typeof createOwner>>;
       let owner1AuthState: Auth | undefined;
       let owner2AuthState: Auth | undefined;
-      let run1: Run;
-      let run2: Run;
+      let run1: any;
+      let run2: any;
       const organizationId = Math.random().toString();
 
       beforeAll(async () => {
@@ -384,7 +375,7 @@ describe("extractAuthState", () => {
                 runId: run1.id,
                 clusterId: run1.clusterId,
               },
-            }),
+            })
           ).resolves.toBeDefined();
 
           await expect(
@@ -393,7 +384,7 @@ describe("extractAuthState", () => {
                 runId: run2.id,
                 clusterId: run2.clusterId,
               },
-            }),
+            })
           ).rejects.toThrow();
 
           await expect(
@@ -402,7 +393,7 @@ describe("extractAuthState", () => {
                 runId: run2.id,
                 clusterId: run2.clusterId,
               },
-            }),
+            })
           ).resolves.toBeDefined();
 
           await expect(
@@ -411,7 +402,7 @@ describe("extractAuthState", () => {
                 runId: run1.id,
                 clusterId: run1.clusterId,
               },
-            }),
+            })
           ).rejects.toThrow();
         });
 
@@ -440,7 +431,7 @@ describe("extractAuthState", () => {
                 runId: run1.id,
                 clusterId: run1.clusterId,
               },
-            }),
+            })
           ).resolves.toBeDefined();
 
           await expect(
@@ -449,7 +440,7 @@ describe("extractAuthState", () => {
                 runId: run2.id,
                 clusterId: run2.clusterId,
               },
-            }),
+            })
           ).resolves.toBeDefined();
         });
 
@@ -478,7 +469,7 @@ describe("extractAuthState", () => {
                 runId: run1.id,
                 clusterId: run1.clusterId,
               },
-            }),
+            })
           ).rejects.toThrow();
 
           await expect(
@@ -487,7 +478,7 @@ describe("extractAuthState", () => {
                 runId: run2.id,
                 clusterId: run2.clusterId,
               },
-            }),
+            })
           ).rejects.toThrow();
         });
       });
@@ -538,9 +529,10 @@ describe("extractCustomAuthState", () => {
       userId: "someValue",
     });
 
-    await expect(extractCustomAuthState("abc123", owner.clusterId)).rejects.toThrow("Custom auth is not enabled for this cluster");
+    await expect(extractCustomAuthState("abc123", owner.clusterId)).rejects.toThrow(
+      "Custom auth is not enabled for this cluster"
+    );
   });
-
 
   describe("isUser", () => {
     it("should throw", async () => {
@@ -561,12 +553,9 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
         await expect(
-          result!.canAccess({ cluster: { clusterId: owner.clusterId } }),
+          result!.canAccess({ cluster: { clusterId: owner.clusterId } })
         ).resolves.toBeDefined();
       });
 
@@ -575,12 +564,9 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
         await expect(
-          result!.canAccess({ cluster: { clusterId: "some_other_cluster" } }),
+          result!.canAccess({ cluster: { clusterId: "some_other_cluster" } })
         ).rejects.toThrow();
       });
     });
@@ -597,17 +583,14 @@ describe("extractCustomAuthState", () => {
           userId: "custom:someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
         await expect(
           result!.canAccess({
             run: {
               clusterId: owner.clusterId,
               runId: run.id,
             },
-          }),
+          })
         ).resolves.toBeDefined();
       });
 
@@ -620,17 +603,14 @@ describe("extractCustomAuthState", () => {
           clusterId: owner.clusterId,
         });
 
-        const result = await extractCustomAuthState(
-          "def456",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("def456", owner.clusterId);
         await expect(
           result!.canAccess({
             run: {
               clusterId: owner.clusterId,
               runId: run.id,
             },
-          }),
+          })
         ).rejects.toThrow();
       });
 
@@ -643,17 +623,14 @@ describe("extractCustomAuthState", () => {
           clusterId: owner.clusterId,
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
         await expect(
           result!.canAccess({
             run: {
               clusterId: owner.clusterId,
               runId: run.id,
             },
-          }),
+          })
         ).rejects.toThrow();
       });
     });
@@ -672,10 +649,7 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
 
         await expect(
           result!.canManage({
@@ -683,7 +657,7 @@ describe("extractCustomAuthState", () => {
               clusterId: owner.clusterId,
               runId: run.id,
             },
-          }),
+          })
         ).resolves.toBeDefined();
       });
 
@@ -696,10 +670,7 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "def456",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("def456", owner.clusterId);
 
         await expect(
           result!.canManage({
@@ -707,7 +678,7 @@ describe("extractCustomAuthState", () => {
               clusterId: owner.clusterId,
               runId: run.id,
             },
-          }),
+          })
         ).rejects.toThrow();
       });
       it("should throw if run is not customer authenticated", async () => {
@@ -719,10 +690,7 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
 
         await expect(
           result!.canManage({
@@ -730,7 +698,7 @@ describe("extractCustomAuthState", () => {
               clusterId: owner.clusterId,
               runId: run.id,
             },
-          }),
+          })
         ).rejects.toThrow();
       });
     });
@@ -741,12 +709,9 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
         await expect(
-          result!.canManage({ cluster: { clusterId: owner.clusterId } }),
+          result!.canManage({ cluster: { clusterId: owner.clusterId } })
         ).rejects.toThrow();
       });
     });
@@ -758,15 +723,12 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
 
         await expect(
           result!.canManage({
             agent: { clusterId: "cluster_1", agentId: "template_1" },
-          }),
+          })
         ).rejects.toThrow();
       });
     });
@@ -780,10 +742,7 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
         expect(() => result!.canCreate({ cluster: true })).toThrow();
       });
     });
@@ -795,10 +754,7 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
         expect(() => result!.canCreate({ agent: true })).toThrow();
       });
     });
@@ -810,10 +766,7 @@ describe("extractCustomAuthState", () => {
           userId: "someValue",
         });
 
-        const result = await extractCustomAuthState(
-          "abc123",
-          owner.clusterId,
-        );
+        const result = await extractCustomAuthState("abc123", owner.clusterId);
         expect(() => result!.canCreate({ run: true })).toBeDefined();
       });
     });

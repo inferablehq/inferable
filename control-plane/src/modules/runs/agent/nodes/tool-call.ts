@@ -5,11 +5,11 @@ import { logger } from "../../../observability/logger";
 import { addAttributes, withSpan } from "../../../observability/tracer";
 import { trackCustomerTelemetry } from "../../../track-customer-telemetry";
 import { AgentMessage, assertMessageOfType } from "../../messages";
-import { Run } from "../../";
 import { ToolFetcher } from "../agent";
 import { RunGraphState } from "../state";
 import { SpecialResultTypes, parseFunctionResponse } from "../tools/functions";
 import { AgentTool, AgentToolInputError, AgentToolV2 } from "../tool";
+import { ChatIdentifiers } from "../../../models/routing";
 
 export const TOOL_CALL_NODE_NAME = "action";
 
@@ -88,7 +88,13 @@ const _handleToolCalls = async (
 
 const handleToolCall = (
   toolCall: Required<AgentMessage["data"]>["invocations"][number],
-  run: Run,
+  run: {
+    id: string;
+    clusterId: string;
+    modelIdentifier: ChatIdentifiers | null;
+    resultSchema: unknown | null;
+    debug: boolean;
+  },
   getTool: ToolFetcher
 ) =>
   withSpan("run.toolCall", () => _handleToolCall(toolCall, run, getTool), {
@@ -100,7 +106,13 @@ const handleToolCall = (
 
 const _handleToolCall = async (
   toolCall: Required<AgentMessage["data"]>["invocations"][number],
-  run: Run,
+  run: {
+    id: string;
+    clusterId: string;
+    modelIdentifier: ChatIdentifiers | null;
+    resultSchema: unknown | null;
+    debug: boolean;
+  },
   getTool: ToolFetcher
 ): Promise<Partial<RunGraphState>> => {
   logger.info("Executing tool call");

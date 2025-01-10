@@ -12,6 +12,16 @@ describe("handleToolCalls", () => {
   const run = {
     id: "test",
     clusterId: "test",
+    modelIdentifier: null,
+    resultSchema: null,
+    debug: false,
+    attachedFunctions: null,
+    status: "running",
+    systemPrompt: null,
+    testMocks: {},
+    test: false,
+    reasoningTraces: false,
+    enableResultGrounding: false,
   };
 
   const toolHandler = jest.fn();

@@ -10,34 +10,44 @@ describe("buildModelSchema", () => {
   let resultSchema: JsonSchema7ObjectType | undefined;
 
   beforeEach(() => {
-  state = {
-    messages: [
-      {
-        id: ulid(),
-        clusterId: "test-cluster",
-        runId: "test-run",
-        data: {
-          message: "What are your capabilities?",
+    state = {
+      messages: [
+        {
+          id: ulid(),
+          clusterId: "test-cluster",
+          runId: "test-run",
+          data: {
+            message: "What are your capabilities?",
+          },
+          type: "human",
         },
-        type: "human",
+      ],
+      waitingJobs: [],
+      allAvailableTools: [],
+      run: {
+        id: "test-run",
+        clusterId: "test-cluster",
+        modelIdentifier: null,
+        resultSchema: null,
+        debug: false,
+        attachedFunctions: null,
+        status: "running",
+        systemPrompt: null,
+        testMocks: {},
+        test: false,
+        reasoningTraces: false,
+        enableResultGrounding: false,
       },
-    ],
-    waitingJobs: [],
-    allAvailableTools: [],
-    run: {
-      id: "test-run",
-      clusterId: "test-cluster",
-    },
-    additionalContext: "",
-    status: "running",
-  };
-    relevantSchemas = [
-      { name: "localTool1"},
-      { name: "localTool2"},
-      { name: "globalTool1"},
-      { name: "globalTool2"},
-    ] as AgentTool[],
-    resultSchema = undefined;
+      additionalContext: "",
+      status: "running",
+    };
+    (relevantSchemas = [
+      { name: "localTool1" },
+      { name: "localTool2" },
+      { name: "globalTool1" },
+      { name: "globalTool2" },
+    ] as AgentTool[]),
+      (resultSchema = undefined);
   });
 
   it("returns a schema with 'message' when resultSchema is not provided", () => {

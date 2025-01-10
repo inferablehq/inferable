@@ -304,7 +304,9 @@ export const runs = pgTable(
       .notNull(),
     status: text("status", {
       enum: ["pending", "running", "paused", "done", "failed"],
-    }).default("pending"),
+    })
+      .default("pending")
+      .notNull(),
     failure_reason: text("failure_reason"),
     debug: boolean("debug").notNull().default(false),
     attached_functions: json("attached_functions").$type<string[]>().notNull().default([]),
@@ -327,7 +329,7 @@ export const runs = pgTable(
     interactive: boolean("interactive").default(true).notNull(),
     enable_summarization: boolean("enable_summarization").default(false).notNull(),
     enable_result_grounding: boolean("enable_result_grounding").default(false).notNull(),
-    auth_context: json("auth_context"),
+    auth_context: json("auth_context").$type<unknown>(),
     context: json("context"),
   },
   table => ({

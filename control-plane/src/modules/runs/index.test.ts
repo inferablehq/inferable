@@ -183,13 +183,19 @@ describe("assertRunReady", () => {
     });
 
     const updatedRun = await updateRun({
-      ...run,
+      id: run.id,
+      clusterId: owner.clusterId,
       status: "done",
     });
 
     await expect(
       assertRunReady({
-        run: updatedRun,
+        run: {
+          id: updatedRun.id,
+          status: updatedRun.status,
+          interactive: updatedRun.interactive,
+          clusterId: owner.clusterId,
+        },
         clusterId: owner.clusterId,
       })
     ).rejects.toThrow(RunBusyError);

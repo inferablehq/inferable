@@ -1,25 +1,18 @@
 import { z } from "zod";
 import { logger } from "../../../observability/logger";
 import { getKnowledge } from "../../../knowledge/knowledgebase";
-import { Run } from "../../";
 import * as events from "../../../observability/events";
 import { getAllUniqueTags } from "../../../embeddings/embeddings";
 import { AgentTool } from "../tool";
 
 export const ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME = "accessKnowledgeArtifacts";
 
-export const buildAccessKnowledgeArtifacts = async (
-  run: Run,
-): Promise<AgentTool> => {
-  const tags = await getAllUniqueTags(
-    run.clusterId,
-    "knowledgebase-artifact",
-  );
+export const buildAccessKnowledgeArtifacts = async (run: any): Promise<AgentTool> => {
+  const tags = await getAllUniqueTags(run.clusterId, "knowledgebase-artifact");
 
   return new AgentTool({
     name: ACCESS_KNOWLEDGE_ARTIFACTS_TOOL_NAME,
-    description:
-      "Retrieves relevant knowledge artifacts based on a given query.",
+    description: "Retrieves relevant knowledge artifacts based on a given query.",
     schema: z.object({
       query: z.string().describe("The query to search for knowledge artifacts"),
       tag:
@@ -27,7 +20,7 @@ export const buildAccessKnowledgeArtifacts = async (
           ? z
               .enum(tags as [string, ...string[]])
               .describe(
-                "The tag to filter the knowledge artifacts by. If not provided, all artifacts are returned.",
+                "The tag to filter the knowledge artifacts by. If not provided, all artifacts are returned."
               )
               .optional()
           : z.undefined().optional(),
@@ -48,8 +41,8 @@ export const buildAccessKnowledgeArtifacts = async (
           workflowId: run.id,
           meta: {
             artifacts: artifacts.map(
-              (artifact) =>
-                `# ${artifact.title} (${Math.round(artifact.similarity * 100)}%) \n ${artifact.data} \n\n`,
+              artifact =>
+                `# ${artifact.title} (${Math.round(artifact.similarity * 100)}%) \n ${artifact.data} \n\n`
             ),
           },
         });

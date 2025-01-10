@@ -2,7 +2,7 @@ import { StateGraphArgs } from "@langchain/langgraph";
 import { InferSelectModel } from "drizzle-orm";
 import { UnifiedMessage } from "../../contract";
 import { RunMessageMetadata, runs } from "../../data";
-import { Run } from "../";
+import { ChatIdentifiers } from "../../models/routing";
 
 export type RunGraphStateMessage = UnifiedMessage & {
   persisted?: true;
@@ -15,7 +15,20 @@ export type RunGraphState = {
   status: InferSelectModel<typeof runs>["status"];
   messages: RunGraphStateMessage[];
   additionalContext?: string;
-  run: Run;
+  run: {
+    id: string;
+    clusterId: string;
+    modelIdentifier: ChatIdentifiers | null;
+    resultSchema: unknown | null;
+    debug: boolean;
+    attachedFunctions: string[] | null;
+    status: string;
+    systemPrompt: string | null;
+    testMocks: Record<string, { output: Record<string, unknown> }> | null;
+    test: boolean;
+    reasoningTraces: boolean;
+    enableResultGrounding: boolean;
+  };
   waitingJobs: string[];
   allAvailableTools: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,7 +40,20 @@ export const createStateGraphChannels = ({
   additionalContext,
   allAvailableTools,
 }: {
-  run: Run;
+  run: {
+    id: string;
+    clusterId: string;
+    modelIdentifier: ChatIdentifiers | null;
+    resultSchema: unknown | null;
+    debug: boolean;
+    attachedFunctions: string[] | null;
+    status: string;
+    systemPrompt: string | null;
+    testMocks: Record<string, { output: Record<string, unknown> }> | null;
+    test: boolean;
+    reasoningTraces: boolean;
+    enableResultGrounding: boolean;
+  };
   allAvailableTools: string[];
   additionalContext?: string;
 }): StateGraphArgs<RunGraphState>["channels"] => {

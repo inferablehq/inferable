@@ -286,7 +286,15 @@ export const router = initServer().router(contract, {
     const { message } = request.body;
 
     const run = await getRun({ clusterId, runId });
-    await assertRunReady({ clusterId, run });
+    await assertRunReady({
+      clusterId,
+      run: {
+        id: run.id,
+        status: run.status,
+        interactive: run.interactive,
+        clusterId: run.clusterId,
+      },
+    });
 
     const auth = request.request.getAuth();
     await auth.canManage({ run: { clusterId, runId } });

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { redisClient } from "../../redis";
 import { AgentTool } from "./tool";
 import { assertMessageOfType } from "../messages";
+import { ChatIdentifiers } from "../../models/routing";
 
 if (process.env.CI) {
   jest.retryTimes(3);
@@ -17,6 +18,16 @@ describe("Agent", () => {
   const run = {
     id: "test",
     clusterId: "test",
+    modelIdentifier: "claude-3-5-sonnet" as ChatIdentifiers,
+    resultSchema: null,
+    debug: false,
+    attachedFunctions: null,
+    status: "pending",
+    systemPrompt: null,
+    testMocks: {},
+    test: false,
+    reasoningTraces: false,
+    enableResultGrounding: false,
   };
 
   const tools = [

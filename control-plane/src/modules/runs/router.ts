@@ -249,8 +249,9 @@ export const runsRouter = initServer().router(
       await updateRun({
         id: runId,
         clusterId,
-        feedbackComment: comment,
-        feedbackScore: score,
+        feedbackComment: comment ?? undefined,
+        feedbackScore: score ?? undefined,
+        status: null,
       });
 
       events.write({
