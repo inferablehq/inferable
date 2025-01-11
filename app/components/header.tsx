@@ -11,8 +11,9 @@ const clerkAppearance = {
   elements: {
     rootBox: "flex items-center",
     userButtonBox: "flex items-center",
-    organizationSwitcherTrigger: "flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-  }
+    organizationSwitcherTrigger:
+      "flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200",
+  },
 };
 
 export function Header() {
@@ -24,13 +25,7 @@ export function Header() {
           className="flex items-center space-x-4 transition-transform duration-200 hover:scale-[1.02]"
         >
           <div className="flex items-center space-x-2 -ml-2">
-            <Image
-              src={logo}
-              width={40}
-              height={40}
-              alt={"logo"}
-              className="rounded-lg"
-            />
+            <Image src={logo} width={40} height={40} alt={"logo"} className="rounded-lg" />
             <h1 className="text-2xl font-semibold bg-gradient-to-r from-gray-600 via-gray-800 to-gray-600 bg-clip-text text-transparent tracking-tight">
               Inferable
             </h1>
@@ -41,13 +36,16 @@ export function Header() {
         <UserButton
           appearance={clerkAppearance}
           afterSignOutUrl="/"
+          signInUrl="/sign-in"
           showName
         />
         <div className="h-6 w-[1px] bg-gray-200" />
         <OrganizationSwitcher
           hidePersonal={true}
           appearance={clerkAppearance}
-          afterSelectOrganizationUrl="/switch-org"
+          afterCreateOrganizationUrl="/"
+          afterLeaveOrganizationUrl="/"
+          afterSelectOrganizationUrl="/"
         />
       </div>
     </header>
