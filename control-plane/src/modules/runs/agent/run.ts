@@ -49,7 +49,8 @@ export const processRun = async (
     authContext: unknown | null;
     context: unknown | null;
   },
-  tags?: Record<string, string>
+  tags?: Record<string, string>,
+  mockModelResponses?: string[]
 ) => {
   logger.info("Processing Run");
 
@@ -90,10 +91,7 @@ export const processRun = async (
 
   const mockToolsMap: Record<string, AgentTool> = await buildMockTools(run);
 
-  let mockModelResponses;
   if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
-    logger.info("Mocking model responses for load test");
-
     //https://github.com/inferablehq/inferable/blob/main/load-tests/script.js
     mockModelResponses = [
       JSON.stringify({
@@ -112,6 +110,10 @@ export const processRun = async (
         },
       }),
     ];
+  }
+
+  if (mockModelResponses) {
+    logger.info("Mocking model responses for load test");
   }
 
   const app = await createRunGraph({

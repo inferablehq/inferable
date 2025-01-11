@@ -1,7 +1,116 @@
-import { buildMockTools, findRelevantTools, formatJobsContext } from "./run";
+import { buildMockTools, findRelevantTools, formatJobsContext, processRun } from "./run";
 import { upsertServiceDefinition } from "../../service-definitions";
 import { createOwner } from "../../test/util";
 import { ulid } from "ulid";
+import { db, jobs, runs } from "../../data";
+import { insertRunMessage } from "../messages";
+import { and, eq } from "drizzle-orm";
+
+describe("processRun", () => {
+  it("should call onStatusChange handler", async () => {
+    const owner = await createOwner();
+    await upsertServiceDefinition({
+      service: "testService",
+      definition: {
+        name: "testService",
+        functions: [
+          {
+            name: "someFunction",
+            schema: mockTargetSchema,
+          },
+          {
+            name: "someOtherFunction",
+            schema: mockTargetSchema,
+          },
+        ],
+      },
+      owner,
+    });
+
+    const run = {
+      id: Math.random().toString(36).substring(2),
+      clusterId: owner.clusterId,
+      status: "running" as const,
+      attachedFunctions: ["testService_someFunction"],
+      onStatusChange: "testService_someOtherFunction",
+      modelIdentifier: null,
+      resultSchema: {
+        type: "object",
+        properties: {
+          word: {
+            type: "string",
+          },
+        },
+      },
+      debug: false,
+      systemPrompt: null,
+      testMocks: {
+        testService_someFunction: {
+          output: {
+            test: "test",
+          },
+        }
+      },
+      test: true,
+      reasoningTraces: false,
+      enableResultGrounding: false,
+      authContext: null,
+      context: null,
+    };
+
+    await db
+    .insert(runs)
+    .values({
+      id: run.id,
+      cluster_id: run.clusterId,
+      user_id: "1",
+    });
+
+    await insertRunMessage({
+      id: ulid(),
+      runId: run.id,
+      clusterId: run.clusterId,
+      type: "human",
+      data: {
+        message: "Call someFunction",
+      }
+    });
+
+    const mockModelResponses = [
+      JSON.stringify({
+        done: false,
+        invocations: [
+          {
+            toolName: "testService_someFunction",
+            input: {},
+          },
+        ],
+      }),
+      JSON.stringify({
+        done: true,
+        result: {
+          word: "needle",
+        },
+      }),
+    ];
+
+    await processRun(run, undefined, mockModelResponses);
+
+    // Find the Job in the DB
+    const onStatusChangeJob = await db
+    .select()
+    .from(jobs)
+    .where(
+      and(
+        eq(jobs.cluster_id, run.clusterId),
+        eq(jobs.target_fn, "someOtherFunction")
+      )
+    );
+
+    expect(onStatusChangeJob.length).toBe(1);
+  });
+});
+
 
 describe("findRelevantTools", () => {
   it("should return explicitly attached tools", async () => {
