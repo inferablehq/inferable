@@ -471,3 +471,12 @@ export const extractCustomAuthState = async (
     },
   } as CustomAuth;
 };
+
+export const unqualifiedEntityId = (id: string) => {
+  const parts = id.split(":")
+  if (parts.length > 1) {
+    return parts[1];
+  }
+  return id;
+}
+

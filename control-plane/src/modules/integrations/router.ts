@@ -8,6 +8,8 @@ import { env } from "../../utilities/env";
 import { logger } from "../observability/logger";
 import { integrationByConnectionId } from "../email";
 import { getAgent } from "../agents";
+import { posthog } from "../posthog";
+import { unqualifiedEntityId } from "../auth/auth";
 
 // Special value that allows a new connection to be created
 const NEW_CONNECTION_ID = "NEW";
@@ -22,6 +24,9 @@ export const integrationsRouter = initServer().router(
   {
     upsertIntegrations: async (request) => {
       const { clusterId } = request.params;
+
+      const auth = request.request.getAuth().isAdmin();
+      await auth.canManage({ cluster: { clusterId } });
 
       if (request.body.slack) {
         throw new BadRequestError("Slack integration details are not editable");
@@ -85,6 +90,28 @@ export const integrationsRouter = initServer().router(
         clusterId,
         config: request.body,
       });
+
+      Object.entries(request.body).forEach(([key, value]) => {
+
+        const action = value === null ? "delete" : "update";
+
+        posthog?.capture({
+          distinctId: unqualifiedEntityId(auth.entityId),
+          event: `api:integration_${action}`,
+          groups: {
+            organization: auth.organizationId,
+            cluster: clusterId,
+          },
+          properties: {
+            cluster_id: clusterId,
+            integration: key,
+            cli_version: request.headers["x-cli-version"],
+            user_agent: request.headers["user-agent"],
+          },
+        });
+
+      })
+
 
       return {
         status: 200,

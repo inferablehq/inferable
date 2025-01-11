@@ -2,6 +2,7 @@ import { initServer } from "@ts-rest/fastify";
 import { contract } from "../contract";
 import { createApiKey, listApiKeys, revokeApiKey } from "./cluster";
 import { posthog } from "../posthog";
+import { unqualifiedEntityId } from "./auth";
 
 export const authRouter = initServer().router(
   {
@@ -45,7 +46,7 @@ export const authRouter = initServer().router(
       });
 
       posthog?.capture({
-        distinctId: auth.entityId,
+        distinctId: unqualifiedEntityId(auth.entityId),
         event: "api:api_key_create",
         groups: {
           organization: auth.organizationId,
@@ -87,7 +88,7 @@ export const authRouter = initServer().router(
       await revokeApiKey({ clusterId, keyId });
 
       posthog?.capture({
-        distinctId: auth.entityId,
+        distinctId: unqualifiedEntityId(auth.entityId),
         event: "api:api_key_revoke",
         groups: {
           organization: auth.organizationId,

@@ -22,6 +22,8 @@ import {
   addMessageAndResumeWithRun,
   updateRunFeedback,
 } from "./";
+import { unqualifiedEntityId } from "../auth/auth";
+import { getClusterDetails } from "../cluster";
 
 export const runsRouter = initServer().router(
   {
@@ -187,8 +189,10 @@ export const runsRouter = initServer().router(
         });
       }
 
+      const cluster = await getClusterDetails(clusterId);
+
       posthog?.capture({
-        distinctId: auth.entityId,
+        distinctId: unqualifiedEntityId(auth.entityId),
         event: "api:run_create",
         groups: {
           organization: auth.organizationId,
@@ -196,6 +200,7 @@ export const runsRouter = initServer().router(
         },
         properties: {
           cluster_id: clusterId,
+          is_demo: cluster.is_demo,
           run_id: run.id,
           agent_id: run.agentId,
           cli_version: request.headers["x-cli-version"],
@@ -220,7 +225,7 @@ export const runsRouter = initServer().router(
       });
 
       posthog?.capture({
-        distinctId: auth.entityId,
+        distinctId: unqualifiedEntityId(auth.entityId),
         event: "api:run_delete",
         groups: {
           organization: auth.organizationId,
@@ -265,7 +270,7 @@ export const runsRouter = initServer().router(
       });
 
       posthog?.capture({
-        distinctId: auth.entityId,
+        distinctId: unqualifiedEntityId(auth.entityId),
         event: "api:feedback_create",
         groups: {
           organization: auth.organizationId,

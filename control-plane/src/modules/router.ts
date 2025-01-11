@@ -22,6 +22,7 @@ import { editHumanMessage, getRunMessagesForDisplayWithPolling } from "./runs/me
 import { runsRouter } from "./runs/router";
 import { getServerStats } from "./server-stats";
 import { getServiceDefinitions, getStandardLibraryToolsMeta } from "./service-definitions";
+import { unqualifiedEntityId } from "./auth/auth";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -74,7 +75,7 @@ export const router = initServer().router(contract, {
     });
 
     posthog?.capture({
-      distinctId: auth.entityId,
+      distinctId: unqualifiedEntityId(auth.entityId),
       event: "api:cluster_create",
       groups: {
         organization: auth.organizationId,
@@ -94,10 +95,24 @@ export const router = initServer().router(contract, {
   },
   deleteCluster: async request => {
     const { clusterId } = request.params;
-    const user = request.request.getAuth().isAdmin();
-    await user.canManage({ cluster: { clusterId } });
+    const auth = request.request.getAuth().isAdmin();
+    await auth.canManage({ cluster: { clusterId } });
 
     await management.deleteCluster({ clusterId });
+
+    posthog?.capture({
+      distinctId: unqualifiedEntityId(auth.entityId),
+      event: "api:cluster_delete",
+      groups: {
+        organization: auth.organizationId,
+        cluster: clusterId,
+      },
+      properties: {
+        cluster_id: clusterId,
+        cli_version: request.headers["x-cli-version"],
+        user_agent: request.headers["user-agent"],
+      },
+    });
 
     return {
       status: 204,
@@ -132,7 +147,7 @@ export const router = initServer().router(contract, {
     });
 
     posthog?.capture({
-      distinctId: auth.entityId,
+      distinctId: unqualifiedEntityId(auth.entityId),
       event: "api:cluster_update",
       groups: {
         organization: auth.organizationId,
@@ -236,7 +251,7 @@ export const router = initServer().router(contract, {
     });
 
     posthog?.capture({
-      distinctId: auth.entityId,
+      distinctId: unqualifiedEntityId(auth.entityId),
       event: "api:message_create",
       groups: {
         organization: auth.organizationId,
@@ -300,7 +315,7 @@ export const router = initServer().router(contract, {
     });
 
     posthog?.capture({
-      distinctId: auth.entityId,
+      distinctId: unqualifiedEntityId(auth.entityId),
       event: "api:message_update",
       groups: {
         organization: auth.organizationId,
@@ -445,7 +460,7 @@ export const router = initServer().router(contract, {
     });
 
     posthog?.capture({
-      distinctId: auth.entityId,
+      distinctId: unqualifiedEntityId(auth.entityId),
       event: "api:agent_create",
       groups: {
         organization: auth.organizationId,
@@ -511,7 +526,7 @@ export const router = initServer().router(contract, {
     });
 
     posthog?.capture({
-      distinctId: auth.entityId,
+      distinctId: unqualifiedEntityId(auth.entityId),
       event: "api:agent_upsert",
       groups: {
         organization: auth.organizationId,
@@ -562,7 +577,7 @@ export const router = initServer().router(contract, {
     });
 
     posthog?.capture({
-      distinctId: auth.entityId,
+      distinctId: unqualifiedEntityId(auth.entityId),
       event: "api:agent_delete",
       groups: {
         organization: auth.organizationId,
