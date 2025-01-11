@@ -83,6 +83,7 @@ export const router = initServer().router(contract, {
       },
       properties: {
         cluster_id: cluster.id,
+        is_demo: isDemo,
         cli_version: request.headers["x-cli-version"],
         user_agent: request.headers["user-agent"],
       },
