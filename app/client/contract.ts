@@ -86,6 +86,7 @@ export const integrationSchema = z.object({
       nangoConnectionId: z.string(),
       botUserId: z.string(),
       teamId: z.string(),
+      agentId: z.string().optional(),
     })
     .optional()
     .nullable(),
@@ -239,23 +240,6 @@ export const definition = {
     responses: {
       200: z.object({
         contract: z.string(),
-      }),
-    },
-  },
-
-  getServerStats: {
-    method: "GET",
-    path: "/stats",
-    responses: {
-      200: z.object({
-        functionCalls: z.object({
-          count: z.number(),
-        }),
-        tokenUsage: z.object({
-          input: z.number(),
-          output: z.number(),
-        }),
-        refreshedAt: z.number(),
       }),
     },
   },

@@ -86,6 +86,7 @@ export const integrationSchema = z.object({
       nangoConnectionId: z.string(),
       botUserId: z.string(),
       teamId: z.string(),
+      agentId: z.string().optional(),
     })
     .optional()
     .nullable(),

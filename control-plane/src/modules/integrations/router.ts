@@ -29,7 +29,16 @@ export const integrationsRouter = initServer().router(
       await auth.canManage({ cluster: { clusterId } });
 
       if (request.body.slack) {
-        throw new BadRequestError("Slack integration details are not editable");
+        const integrations = await getIntegrations({ clusterId });
+        if (!integrations.slack) {
+          throw new BadRequestError("Slack integration does not exist");
+        }
+
+        // Only the agentId is editable via the API
+        request.body.slack = {
+          agentId: request.body.slack.agentId,
+          ...integrations.slack
+        }
       }
 
       if (request.body.email) {

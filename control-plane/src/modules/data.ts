@@ -215,6 +215,7 @@ export const integrations = pgTable(
       nangoConnectionId: string;
       botUserId: string;
       teamId: string;
+      agentId?: string;
     }>(),
     email: json("email").$type<{
       connectionId: string;
