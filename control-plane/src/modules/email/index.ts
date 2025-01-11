@@ -137,6 +137,41 @@ export const notifyNewMessage = async ({
   }
 };
 
+export const handleApprovalRequest = async ({
+  runId,
+  clusterId,
+  tags,
+}: {
+  jobId: string;
+  runId: string;
+  clusterId: string;
+  service: string;
+  targetFn: string;
+  tags?: Record<string, string>;
+}) => {
+  if (
+    !tags?.[EMAIL_INIT_MESSAGE_ID_META_KEY] ||
+    !tags?.[EMAIL_SUBJECT_META_KEY] ||
+    !tags?.[EMAIL_SOURCE_META_KEY]
+  ) {
+    return;
+  }
+
+  const integrations = await getIntegrations({ clusterId });
+  if (!integrations.email) {
+    logger.info("No email integration configured. Skipping email notification.");
+    return;
+  }
+
+   const runUrl = `https://app.inferable.ai/clusters/${clusterId}/runs/${runId}`;
+  await sendEmail({
+    fromEmail: `${integrations.email.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
+    toEmail: tags[EMAIL_SOURCE_META_KEY],
+    subject: "Run is waiting for approval",
+    bodyText: "Your run is waiting for approval. Please visit the link below to review it:\n\n" + runUrl,
+  })
+}
+
 export async function parseMessage(message: unknown) {
   const notification = snsNotificationSchema.safeParse(message);
   if (!notification.success) {

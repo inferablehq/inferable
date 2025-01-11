@@ -23,6 +23,7 @@ export const notifyApprovalRequest = async ({
 }) => {
   const tags = await getRunTags({ clusterId, runId });
   await slack.handleApprovalRequest({ jobId, clusterId, runId, service, targetFn, tags });
+  await email.handleApprovalRequest({ jobId, clusterId, runId, service, targetFn, tags });
 };
 
 export const notifyNewMessage = async ({
