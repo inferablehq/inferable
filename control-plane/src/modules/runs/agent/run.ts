@@ -227,7 +227,7 @@ export const processRun = async (
         id: run.id,
         clusterId: run.clusterId,
         onStatusChange: run.onStatusChange,
-        status: parsedOutput.data.status,
+        status: run.status,
         authContext: run.authContext,
         context: run.context,
       },
