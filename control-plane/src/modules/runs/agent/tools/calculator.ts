@@ -34,6 +34,7 @@ export const calculatorTool = new AgentTool({
         error: result.error,
         results: result.results,
         text: result.text,
+        logs: result.logs,
       },
       resultType: "resolution",
       status: "success",
