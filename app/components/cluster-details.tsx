@@ -5,6 +5,14 @@ import { Blocks, Cpu, Network, Plus, PlusCircleIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle, SmallLiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { client } from "@/client/client";
 import { contract } from "@/client/contract";
@@ -452,6 +460,7 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
   const [displayCommand, setDisplayCommand] = useState<string>(
     "npx @inferable/demo@latest run --secret=sk_inf_***"
   );
+  const [showCommandDialog, setShowCommandDialog] = useState(false);
 
   const handleCopy = async () => {
     setStatus("creating");
@@ -482,10 +491,13 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
       setActualCommand(newCommand);
       setDisplayCommand(redactedCommand);
       toast.success("Copied to clipboard");
-      setTimeout(() => {
-        navigator.clipboard.writeText(newCommand);
+      try {
+        await navigator.clipboard.writeText(newCommand);
         setStatus("created");
-      }, 0)
+      } catch (err) {
+        setShowCommandDialog(true);
+        setStatus("error");
+      }
     } else {
       setStatus("error");
       createErrorToast(result, "Failed to create API key");
@@ -549,6 +561,25 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
             </span>
           </Button>
         </div>
+
+        <Dialog open={showCommandDialog} onOpenChange={setShowCommandDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Copy Command</DialogTitle>
+              <DialogDescription>
+                Unable to copy automatically. Please copy the command manually:
+              </DialogDescription>
+            </DialogHeader>
+            <div className="bg-black/90 p-4 rounded-md">
+              <pre className="text-white text-sm font-mono whitespace-pre-wrap break-all">
+                {actualCommand}
+              </pre>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowCommandDialog(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200">
