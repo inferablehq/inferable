@@ -133,6 +133,8 @@ export const getClusterDetails = async ({
   createdAt: Date;
   debug: boolean;
   isDemo: boolean;
+  handleCustomAuthFunction: string;
+  enableCustomAuth: boolean;
   machines: Array<{
     id: string;
     lastPingAt: Date | null;
@@ -159,6 +161,8 @@ export const getClusterDetails = async ({
       createdAt: data.clusters.created_at,
       debug: data.clusters.debug,
       isDemo: data.clusters.is_demo,
+      handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
+      enableCustomAuth: data.clusters.enable_custom_auth,
       machineId: data.machines.id,
       machineLastPingAt: data.machines.last_ping_at,
       machineIp: data.machines.ip,
@@ -184,6 +188,8 @@ export const getClusterDetails = async ({
     createdAt: results[0].createdAt,
     debug: results[0].debug,
     isDemo: results[0].isDemo,
+    handleCustomAuthFunction: results[0].handleCustomAuthFunction,
+    enableCustomAuth: results[0].enableCustomAuth,
     machines: results
       .filter(r => r.machineId !== null)
       .map(r => ({
