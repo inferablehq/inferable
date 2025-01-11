@@ -93,7 +93,7 @@ export const integrationSchema = z.object({
     .object({
       connectionId: z.string(),
       agentId: z.string().optional(),
-      validateSPIFandDKIM: z.boolean().optional(),
+      validateSPFandDKIM: z.boolean().optional(),
     })
     .optional()
     .nullable(),

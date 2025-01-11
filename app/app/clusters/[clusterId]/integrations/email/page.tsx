@@ -36,9 +36,11 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { createErrorToast } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 const formSchema = z.object({
   agentId: z.string().optional(),
+  validateSPFandDKIM: z.boolean().optional().default(false),
 });
 
 // TODO: pull this into env vars
@@ -78,7 +80,8 @@ export default function EmailIntegration({
       body: {
         email: {
           agentId: data.agentId === NO_AGENT_ID_VALUE ? undefined : data.agentId,
-          connectionId: connectionId ?? NEW_CONNECTION_ID_VALUE
+          connectionId: connectionId ?? NEW_CONNECTION_ID_VALUE,
+          validateSPFandDKIM: data.validateSPFandDKIM
         },
       },
     });
@@ -122,6 +125,7 @@ export default function EmailIntegration({
 
     if (integrationsResponse.status === 200 && integrationsResponse.body?.email) {
       form.setValue("agentId", integrationsResponse.body.email.agentId);
+      form.setValue("validateSPFandDKIM", integrationsResponse.body.email.validateSPFandDKIM ?? false);
       setConnectionId(integrationsResponse.body.email.connectionId || null);
     }
   }, [clusterId, getToken, form]);
@@ -211,6 +215,24 @@ export default function EmailIntegration({
                       Select an agent to handle incoming emails, or leave empty to use cluster defaults
                     </FormDescription>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="validateSPFandDKIM"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-sm">Validate SPF and DKIM</FormLabel>
+                      <FormDescription>
+                        Validate the sender&apos;s email address using SPF and DKIM
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
                   </FormItem>
                 )}
               />

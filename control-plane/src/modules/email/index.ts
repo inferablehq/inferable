@@ -222,7 +222,7 @@ async function handleEmailIngestion(raw: unknown) {
   }
 
   if (message.dkimVerdict !== "PASS" || message.spfVerdict !== "PASS") {
-    if (connection?.email?.validateSPIFandDKIM) {
+    if (connection?.email?.validateSPFandDKIM) {
       logger.info("Email did not pass DKIM or SPF checks. Skipping.", {
         messageId: message.messageId,
       });
@@ -246,7 +246,7 @@ async function handleEmailIngestion(raw: unknown) {
   try {
     user = await authenticateUser(message.source, clusterId);
   } catch (e) {
-    logger.info("Could not authenticate email sender", {
+    logger.info("Could not authenticate email sender. Skipping.", {
       error: e,
     })
 
