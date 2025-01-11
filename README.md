@@ -24,7 +24,7 @@ Inferable is an open source platform that helps you build reliable LLM-powered a
 
 ## Quick Start
 
-The easiest way to get started with via following the [Quickstart](https://docs.inferable.ai/pages/quick-start).
+The easiest way to get started is by following the [Quickstart](https://docs.inferable.ai/pages/quick-start).
 
 ## How does it work?
 
