@@ -175,11 +175,11 @@ const startTime = Date.now();
     redis.start(),
     slack.start(app),
     externalCalls.start(),
+    email.start(),
     ...(env.EE_DEPLOYMENT
       ? [
           customerTelemetry.start(),
           toolhouse.start(),
-          email.start(),
           flagsmith?.getEnvironmentFlags(),
           analytics.start(),
         ]

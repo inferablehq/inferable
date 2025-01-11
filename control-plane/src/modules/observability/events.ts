@@ -23,7 +23,7 @@ export type EventTypes =
   | "agentMessage"
   | "callingFunction"
   | "functionErrored"
-  | "workflowFeedbackSubmitted"
+  | "runFeedbackSubmitted"
   | "resultSummarized"
   | "functionRegistrySearchCompleted"
   | "messageRetried"

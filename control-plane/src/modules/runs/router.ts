@@ -259,7 +259,7 @@ export const runsRouter = initServer().router(
       });
 
       events.write({
-        type: "workflowFeedbackSubmitted",
+        type: "runFeedbackSubmitted",
         clusterId,
         workflowId: runId,
         userId: auth.entityId,

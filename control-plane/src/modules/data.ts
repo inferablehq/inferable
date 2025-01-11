@@ -219,6 +219,7 @@ export const integrations = pgTable(
     email: json("email").$type<{
       connectionId: string;
       agentId?: string;
+      validateSPIFandDKIM?: boolean;
     }>(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),

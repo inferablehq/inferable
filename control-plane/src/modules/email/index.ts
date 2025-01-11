@@ -6,7 +6,7 @@ import { logger } from "../observability/logger";
 import { safeParse } from "../../utilities/safe-parse";
 import { ParsedMail, simpleParser } from "mailparser";
 import { getUserForCluster } from "../clerk";
-import { AuthenticationError, NotFoundError } from "../../utilities/errors";
+import { AuthenticationError } from "../../utilities/errors";
 import { addMessageAndResume, createRunWithMessage } from "../runs";
 import { InferSelectModel, sql } from "drizzle-orm";
 import { db, integrations, runMessages } from "../data";
@@ -97,26 +97,13 @@ export const notifyNewMessage = async ({
     const subject = `Re: ${tags[EMAIL_SUBJECT_META_KEY]}`;
     const bodyText = messageData.message;
 
-    // MIME formatted email
-    const rawMessage = [
-      `From: ${fromEmail}`,
-      `To: ${toEmail}`,
-      `Subject: ${subject}`,
-      `References: ${originalMessageId}`,
-      `In-Reply-To: ${originalMessageId}`,
-      `MIME-Version: 1.0`,
-      `Content-Type: text/plain; charset=UTF-8`,
-      ``,
-      bodyText, // Email body
-    ].join("\r\n");
-
-    // Send the raw email
-    const result = await ses
-      .sendRawEmail({
-        RawMessage: {
-          Data: Buffer.from(rawMessage),
-        },
-      })
+    const result = await sendEmail({
+      fromEmail,
+      toEmail,
+      subject,
+      originalMessageId,
+      bodyText,
+    });
 
     if (!result.MessageId) {
       throw new Error("SES did not return a message ID");
@@ -182,7 +169,7 @@ export async function parseMessage(message: unknown) {
 
   const mail = await parseMailContent(sesMessage.data.content);
   if (!mail) {
-    throw new Error("Could not parse email content");
+    throw new Error("Could not parse email body content");
   }
 
   let body = mail.text;
@@ -227,27 +214,51 @@ async function handleEmailIngestion(raw: unknown) {
     return;
   }
 
-  if (!message.subject) {
-    logger.info("Email had no subject. Skipping");
-    return;
-  }
-
-  if (message.dkimVerdict !== "PASS" || message.spfVerdict !== "PASS") {
-    logger.warn("Email did not pass DKIM or SPF checks.", {
-      messageId: message.messageId,
-    });
-  }
-
   const connection = await integrationByConnectionId(message.connectionId);
 
   if (!connection) {
-    throw new Error("Could not find connection");
+    logger.info("Could not find connection for email. Skipping")
+    return
+  }
+
+  if (message.dkimVerdict !== "PASS" || message.spfVerdict !== "PASS") {
+    if (connection?.email?.validateSPIFandDKIM) {
+      logger.info("Email did not pass DKIM or SPF checks. Skipping.", {
+        messageId: message.messageId,
+      });
+
+      await sendEmail({
+        fromEmail: `${message.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
+        toEmail: message.source,
+        subject: "Inferable email ingestion failed",
+        bodyText: "Email did not pass DKIM or SPF checks.\n\nPlease see the https://docs.inferable.ai/pages/email for more information.",
+        originalMessageId: message.messageId,
+      })
+      return;
+    }
   }
 
   const clusterId = connection.clusterId;
   const agentId = connection.email?.agentId;
 
-  const user = await authenticateUser(message.source, clusterId);
+
+  let user: Awaited<ReturnType<typeof authenticateUser>>;
+  try {
+    user = await authenticateUser(message.source, clusterId);
+  } catch (e) {
+    logger.info("Could not authenticate email sender", {
+      error: e,
+    })
+
+    await sendEmail({
+      fromEmail: `${message.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
+      toEmail: message.source,
+      subject: "Inferable email ingestion failed",
+      bodyText: "Could not authenticate email sender.\n\nPlease see the https://docs.inferable.ai/pages/email for more information.",
+      originalMessageId: message.messageId,
+    })
+    return
+  }
 
   const reference = message.inReplyTo || message.references[0];
   if (reference) {
@@ -256,7 +267,16 @@ async function handleEmailIngestion(raw: unknown) {
       externalId: reference,
     });
     if (!existing) {
-      throw new NotFoundError("Ingested email is replying to an unknown message");
+      logger.info("Could not find Run for email chain. Skipping.")
+
+      await sendEmail({
+        fromEmail: `${message.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
+        toEmail: message.source,
+        subject: "Inferable email ingestion failed",
+        bodyText: "Could not find Run for email chain.\n\nPlease see https://docs.inferable.ai/pages/email for more information.",
+        originalMessageId: message.messageId,
+      })
+      return
     }
 
     return await handleExistingChain({
@@ -273,7 +293,7 @@ async function handleEmailIngestion(raw: unknown) {
     userId: user.userId,
     body: message.body,
     messageId: message.messageId,
-    subject: message.subject,
+    subject: message.subject ?? "",
     source: message.source,
   });
 }
@@ -407,4 +427,42 @@ export const integrationByConnectionId = async (connectionId: string) => {
     .where(sql`email->>'connectionId' = ${connectionId}`);
 
   return result;
+};
+
+const sendEmail = async ({
+  fromEmail,
+  toEmail,
+  subject,
+  originalMessageId,
+  bodyText,
+}: {
+  fromEmail: string;
+  toEmail: string;
+  subject: string;
+  originalMessageId?: string;
+  bodyText: string;
+}) => {
+  // MIME formatted email
+  const messageParts = [
+    `From: ${fromEmail}`,
+    `To: ${toEmail}`,
+    `Subject: ${subject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/plain; charset=UTF-8`,
+  ]
+
+  if (originalMessageId) {
+    messageParts.push(`In-Reply-To: ${originalMessageId}`);
+    messageParts.push(`References: ${originalMessageId}`);
+  }
+
+  messageParts.push(``)
+  messageParts.push(bodyText)
+
+  // Send the raw email
+  return await ses.sendRawEmail({
+    RawMessage: {
+      Data: Buffer.from(messageParts.join("\r\n")),
+    },
+  });
 };
