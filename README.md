@@ -15,33 +15,45 @@ Inferable is an open source platform that helps you build reliable LLM-powered a
 ## Key Features
 
 - Managed Agent Runtime - ReAct-like agent runtime powered by your own functions
-- Durable Tool Calling - Recover from failures, load balance across compute, cache results
-- Zero Network Config - No inbound connections or networking required
-- Multiple Language Support - Native SDKs for TypeScript, Go, .NET and more
+- Durable Tool Calling - Recover from failures, load balance tool calls across compute, cache results
+- Zero Network Config - No inbound connections or networking required for distributed tools
+- Multiple Language Support - Native SDKs for TypeScript, Go, .NET and more comping up
 - Fully Open Source - MIT licensed and self-hostable
 
 ![Deployment](./assets/deployment.png)
 
-## Powered by your code
+## Quick Start
 
-Automations are powered by your greenfield or brownfield code. Agent capabilities are defined by your own functions.
+The easiest way to get started with via following the [Quickstart](https://docs.inferable.ai/pages/quick-start).
+
+## How does it work?
+
+Inferable provides an agent runtime that manages agent state, tool calling, routing the tool calls to your functions, and providing you with structured results. To put it simply:
+
+> You bring the functions + we bring the agent runtime = Custom autonomous agent
 
 **1. Define one or more functions that can be called by an automation**
 
 ```typescript
+// a plain old function in your codebase
 async function readWebPage({ url }: { url: string }) {
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.goto(url);
-  return await page.content();
+  return page.content();
 }
 ```
 
 **2. Register the function with Inferable**
 
 ```typescript
-inferable.default.register({
+import Inferable from "inferable";
+
+const client = new Inferable({ apiSecret: "..." });
+
+client.default.register({
   name: "readWebPage",
+  description: "Reads a web page and gets the content"
   func: readWebPage,
   input: z.object({
     url: z.string(),
@@ -49,7 +61,13 @@ inferable.default.register({
 });
 ```
 
-**3. Create a run that uses the function**
+At this point, you have an autonomous agent.
+
+**3. Trigger run!**
+
+You can trigger this agent via our [playground](https://app.inferable.ai), [Slack](https://docs.inferable.ai/pages/slack), your custom code and more.
+
+Here's an example of triggering it via code:
 
 ```typescript
 inferable.run({
@@ -69,9 +87,16 @@ inferable.run({
 });
 ```
 
-## Getting Started
+## What can I build with this?
 
-Check out our [quick start guide](https://docs.inferable.ai/pages/quick-start) for a step-by-step guide on how to get started with creating your first automation.
+Inferable is best for building agents that are multi-step, distributed (tools/functions across multiple computers).
+
+Here are a few demos:
+
+- **[Text to SQL Agent](https://github.com/inferablehq/inferable/blob/main/demos/typescript/sql-to-text/service.ts)**: Let Inferable access a database (read-only or read/write), and ask it to perform actions.
+- **[Terminal Copilot](https://github.com/inferablehq/inferable/blob/main/demos/typescript/terminal-copilot/service.ts)**: Run commands in your terminal, with explicit human approvals.
+- **[Data Connector](https://www.inferable.ai/use-cases/data-connector)**: Deploy a docker container in your infrastructure, and let Inferable take actions with your REST / GraphQL APIs.
+
 
 ## Self Hosting
 
@@ -84,10 +109,6 @@ Inferable is 100% open-source and self-hostable. See our [self hosting guide](ht
 - [.NET](./sdk-dotnet/README.md) ([Quick start](./sdk-dotnet/README.md#quick-start))
 - [React](./sdk-react/README.md) ([Quick start](./sdk-react/README.md#quick-start))
 
-## Documentation
-
-For comprehensive documentation on using Inferable AI, please visit our [official documentation](https://docs.inferable.ai/).
-
 ## Open Source
 
 This repository contains the Inferable control-plane, as well as SDKs for various languages.
@@ -95,8 +116,8 @@ This repository contains the Inferable control-plane, as well as SDKs for variou
 **Core services:**
 
 - `/control-plane` - The core Inferable control plane service
-- `/app` - Web console/dashboard application
-- `/cli` - Command-line interface tool
+- `/app` - Playground front-end and management console
+- `/cli` - Command-line interface tool (alpha)
 
 **SDKs:**
 
