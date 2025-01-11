@@ -331,7 +331,6 @@ export const start = async (fastify: FastifyInstance) => {
 
       const user = await authenticateUser(event.user, client, integration);
 
-
       if (hasThread(event)) {
         await handleExistingThread({
           userId: user?.userId,
@@ -520,7 +519,8 @@ const handleNewThread = async ({ event, client, clusterId, userId, agentId }: Me
         [THREAD_META_KEY]: thread,
         [CHANNEL_META_KEY]: event.channel,
       },
-      ...options
+      agentId,
+      ...options?.options
     });
 
     await client.chat.postMessage({
