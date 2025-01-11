@@ -10,13 +10,12 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import { SquareFunction } from "lucide-react";
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import { ReadOnlyJSON } from "../read-only-json";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Textarea } from "../ui/textarea";
+import { ClientInferResponseBody } from "@ts-rest/core";
+import { contract } from "@/client/contract";
 
 interface ToolContextButtonProps {
   clusterId: string;
@@ -32,20 +31,9 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const { getToken } = useAuth();
   const [services, setServices] = useState<
-    Array<{
-      name: string;
-      functions?: Array<{
-        name: string;
-        description?: string;
-        schema?: string;
-      }>;
-    }>
+    ClientInferResponseBody<typeof contract.listServices, 200>
   >([]);
-  const [functionDetails, setFunctionDetails] = useState<{
-    name: string;
-    description?: string;
-    schema?: string;
-  } | null>(null);
+  const [functionDetails, setFunctionDetails] = useState<NonNullable<typeof services[number]["functions"]>[number] | null>(null);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -135,6 +123,12 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
                   <div className="space-y-2">
                     <Label htmlFor="schema">Schema</Label>
                     <ReadOnlyJSON json={functionDetails.schema} />
+                  </div>
+                )}
+                {functionDetails.config && (
+                  <div className="space-y-2">
+                    <Label htmlFor="config">Config</Label>
+                    <ReadOnlyJSON json={functionDetails.config} />
                   </div>
                 )}
               </CardContent>
