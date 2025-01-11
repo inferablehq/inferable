@@ -18,10 +18,6 @@ const PostHogPageView = dynamic(() => import("@/components/posthog-pageview"), {
   ssr: false,
 });
 
-const CrispWithNoSSR = dynamic(() => import("@/components/crisp-chat"), {
-  ssr: false,
-});
-
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -67,7 +63,6 @@ export default function RootLayout({
               <PostHogPageView />
               {children}
             </PHProvider>
-            <CrispWithNoSSR />
           </body>
         </html>
         <RollbarUser />
