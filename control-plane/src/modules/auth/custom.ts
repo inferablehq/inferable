@@ -15,9 +15,11 @@ const customAuthContextCache = createCache<{
   resultType: jobs.ResultType | null;
 }>(Symbol("customAuthContextCache"));
 
-const customAuthResultSchema = z.object({
-  userId: z.string(),
-}).passthrough();
+const customAuthResultSchema = z
+  .object({
+    userId: z.string(),
+  })
+  .passthrough();
 
 /**
  * Calls the custom verify function and returns the result
@@ -52,7 +54,7 @@ export const verify = async ({
 
   const { handleCustomAuthFunction } = await getClusterDetails({ clusterId });
 
-  const [authService, authFunction] = handleCustomAuthFunction.split("_");
+  const [authService, authFunction] = handleCustomAuthFunction?.split("_") ?? [];
 
   try {
     const serviceDefinition = await getServiceDefinition({
@@ -120,7 +122,6 @@ export const verify = async ({
     await customAuthContextCache.set(secretHash, result, 300);
 
     return parsed.data;
-
   } catch (e) {
     if (e instanceof JobPollTimeoutError) {
       throw new AuthenticationError(

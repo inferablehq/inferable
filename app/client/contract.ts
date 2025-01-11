@@ -535,7 +535,7 @@ export const definition = {
         createdAt: z.date(),
         debug: z.boolean(),
         enableCustomAuth: z.boolean(),
-        handleCustomAuthFunction: z.string(),
+        handleCustomAuthFunction: z.string().nullable(),
         enableKnowledgebase: z.boolean(),
         lastPingAt: z.date().nullable(),
         isDemo: z.boolean(),

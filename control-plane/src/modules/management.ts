@@ -1,10 +1,10 @@
-import { and, eq, gte, max } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
+import { createCache } from "../utilities/cache";
 import * as errors from "../utilities/errors";
 import * as data from "./data";
 import { randomName } from "./names";
 import { VersionedTexts } from "./versioned-text";
-import { createCache } from "../utilities/cache";
 
 const clusterDetailsCache = createCache<Awaited<ReturnType<typeof getClusterDetails>>>(
   Symbol("clusterDetails")
@@ -133,8 +133,9 @@ export const getClusterDetails = async ({
   createdAt: Date;
   debug: boolean;
   isDemo: boolean;
-  handleCustomAuthFunction: string;
+  handleCustomAuthFunction: string | null;
   enableCustomAuth: boolean;
+  additionalContext: VersionedTexts | null;
   machines: Array<{
     id: string;
     lastPingAt: Date | null;
@@ -163,6 +164,7 @@ export const getClusterDetails = async ({
       isDemo: data.clusters.is_demo,
       handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
       enableCustomAuth: data.clusters.enable_custom_auth,
+      additionalContext: data.clusters.additional_context,
       machineId: data.machines.id,
       machineLastPingAt: data.machines.last_ping_at,
       machineIp: data.machines.ip,
@@ -206,6 +208,7 @@ export const getClusterDetails = async ({
         definition: r.serviceDefinition,
         timestamp: r.serviceTimestamp,
       })),
+    additionalContext: results[0].additionalContext,
   };
 
   await clusterDetailsCache.set(clusterId, response, 5);
