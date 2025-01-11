@@ -13,6 +13,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { PHProvider } from "./providers";
 import "@/lib/hyperdx";
+import { HelpCircle, SlackIcon } from "lucide-react";
 
 const PostHogPageView = dynamic(() => import("@/components/posthog-pageview"), {
   ssr: false,
@@ -62,6 +63,16 @@ export default function RootLayout({
               <PostHogUser />
               <PostHogPageView />
               {children}
+              <a
+                href="https://go.inferable.ai/slack"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fixed bottom-6 right-6 z-50 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                aria-label="Join our Slack community"
+              >
+                <SlackIcon className="h-4 w-4 bg-black rounded-full" />
+                Need Help?
+              </a>
             </PHProvider>
           </body>
         </html>
