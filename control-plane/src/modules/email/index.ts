@@ -15,6 +15,7 @@ import { ulid } from "ulid";
 import { unifiedMessageSchema } from "../contract";
 import { createExternalMessage, getExternalMessage } from "../runs/external-messages";
 import { getAgent, mergeAgentOptions } from "../agents";
+import { getIntegrations } from "../integrations/integrations";
 
 const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
 const EMAIL_SUBJECT_META_KEY = "emailSubject";
@@ -84,6 +85,14 @@ export const notifyNewMessage = async ({
     !tags?.[EMAIL_SUBJECT_META_KEY] ||
     !tags?.[EMAIL_SOURCE_META_KEY]
   ) {
+    return;
+  }
+
+  const integrations = await getIntegrations({ clusterId: message.clusterId });
+  if (!integrations.email) {
+    logger.info("No email integration configured. Skipping email notification.", {
+      messageId: message.id,
+    });
     return;
   }
 
