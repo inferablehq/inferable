@@ -177,7 +177,6 @@ export const services = pgTable(
       .references(() => clusters.id)
       .notNull(),
     service: varchar("service", { length: 1024 }).notNull(),
-    queue_url: varchar("queue_url", { length: 1024 }),
     definition: json("definition"), // this should be named the live definition
     timestamp: timestamp("timestamp", { withTimezone: true }),
   },

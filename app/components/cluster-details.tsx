@@ -1,10 +1,5 @@
 "use client";
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Blocks, Cpu, Network, Plus, PlusCircleIcon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle, SmallLiveGreenCircle } from "./circles";
-import { Button } from "./ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +8,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Blocks, Cpu, Plus, PlusCircleIcon } from "lucide-react";
+import { useState } from "react";
+import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle } from "./circles";
+import { Button } from "./ui/button";
 
 import { client } from "@/client/client";
 import { contract } from "@/client/contract";
@@ -26,15 +26,13 @@ import {
 } from "@/components/ui/table";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
-import { ClientInferResponseBody, ClientInferResponses } from "@ts-rest/core";
+import { ClientInferResponseBody } from "@ts-rest/core";
 import { formatDistance, formatRelative } from "date-fns";
 import { AppWindowIcon } from "lucide-react";
-import ToolContextButton from "./chat/ToolContextButton";
-import ErrorDisplay from "./error-display";
-import { EventsOverlayButton } from "./events-overlay";
-import { ServerConnectionStatus } from "./server-connection-pane";
-import { useClusterState } from "./useClusterState";
 import toast from "react-hot-toast";
+import ToolContextButton from "./chat/ToolContextButton";
+import { EventsOverlayButton } from "./events-overlay";
+import { ClusterState, Service, useClusterState } from "./useClusterState";
 
 function toServiceName(name: string) {
   return <span>{name}</span>;
@@ -48,41 +46,7 @@ function toFunctionName(name: string, serviceName: string) {
   return <span>{name}</span>;
 }
 
-function ControlPlaneBox() {
-  return (
-    <div className="rounded-xl bg-black p-5 shadow-md border border-border/50 text-sm w-[300px] mb-4 relative hover:shadow-lg transition-all duration-200">
-      <div className="flex items-center gap-4">
-        <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-          <Network className="w-6 h-6 text-white" />
-        </div>
-        <div className="flex-1">
-          <div className="text-lg font-medium text-white flex items-center gap-2">
-            <span className="font-mono">Control Plane</span>
-            <SmallLiveGreenCircle />
-          </div>
-          <div className="text-sm text-gray-400 font-mono flex items-center gap-2">
-            <span>api.inferable.ai</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-green-900/30 text-green-300 text-xs">
-              Connected
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ServiceCard({
-  service,
-  clusterId,
-  index,
-  total,
-}: {
-  service: ClientInferResponseBody<typeof contract.listServices, 200>[number];
-  clusterId: string;
-  index: number;
-  total: number;
-}) {
+function ServiceCard({ service, clusterId }: { service: Service; clusterId: string }) {
   const isActive =
     new Date(service.timestamp) > new Date() ||
     Date.now() - new Date(service.timestamp).getTime() < 1000 * 60;
@@ -205,8 +169,8 @@ function ServiceCard({
 }
 
 export default function ServicesOverview({ clusterId }: { clusterId: string }) {
-  const { services } = useClusterState(clusterId);
-  const sortedServices = services.sort((a, b) => a.name.localeCompare(b.name));
+  const { services, cluster } = useClusterState(clusterId);
+  const sortedServices = services.sort((a: Service, b: Service) => a.name.localeCompare(b.name));
 
   return (
     <div>
@@ -250,13 +214,7 @@ export default function ServicesOverview({ clusterId }: { clusterId: string }) {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {sortedServices.map((service, index) => (
-            <ServiceCard
-              key={service.name}
-              service={service}
-              clusterId={clusterId}
-              index={index}
-              total={sortedServices.length}
-            />
+            <ServiceCard key={service.name} service={service} clusterId={clusterId} />
           ))}
         </div>
       )}
@@ -646,10 +604,12 @@ function MachineCard({
   machine,
   clusterId,
 }: {
-  machine: ClientInferResponseBody<typeof contract.listMachines, 200>[number];
+  machine: ClusterState["machines"][number];
   clusterId: string;
 }) {
-  const isLive = Date.now() - new Date(machine.lastPingAt!).getTime() < 1000 * 60;
+  const isLive = machine.lastPingAt
+    ? Date.now() - new Date(machine.lastPingAt).getTime() < 1000 * 60
+    : false;
 
   return (
     <div

@@ -4,6 +4,11 @@ import * as errors from "../utilities/errors";
 import * as data from "./data";
 import { randomName } from "./names";
 import { VersionedTexts } from "./versioned-text";
+import { createCache } from "../utilities/cache";
+
+const clusterDetailsCache = createCache<Awaited<ReturnType<typeof getClusterDetails>>>(
+  Symbol("clusterDetails")
+);
 
 export const getClusters = async ({
   organizationId,
@@ -126,64 +131,79 @@ export const getClusterDetails = async ({
   name: string;
   description: string | null;
   createdAt: Date;
-  lastPingAt: Date | null;
-  additionalContext: VersionedTexts | null;
   debug: boolean;
-  enableCustomAuth: boolean;
-  handleCustomAuthFunction: string;
-  enableKnowledgebase: boolean;
   isDemo: boolean;
+  machines: Array<{
+    id: string;
+    lastPingAt: Date | null;
+    ip: string | null;
+    sdkVersion: string | null;
+    sdkLanguage: string | null;
+  }>;
+  services: Array<{
+    service: string;
+    definition: unknown | null;
+    timestamp: Date | null;
+  }>;
 }> => {
-  const [clusters, machines] = await Promise.all([
-    data.db
-      .select({
-        id: data.clusters.id,
-        name: data.clusters.name,
-        description: data.clusters.description,
-        createdAt: data.clusters.created_at,
-        additionalContext: data.clusters.additional_context,
-        debug: data.clusters.debug,
-        enableCustomAuth: data.clusters.enable_custom_auth,
-        handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
-        enableKnowledgebase: data.clusters.enable_knowledgebase,
-        isDemo: data.clusters.is_demo,
-      })
-      .from(data.clusters)
-      .where(and(eq(data.clusters.id, clusterId))),
-    data.db
-      .select({
-        clusterId: data.machines.cluster_id,
-        maxLastPingAt: max(data.machines.last_ping_at),
-      })
-      .from(data.machines)
-      .where(
-        and(
-          eq(data.machines.cluster_id, clusterId),
-          gte(data.machines.last_ping_at, new Date(Date.now() - 1000 * 60 * 60 * 1))
-        )
-      )
-      .groupBy(data.machines.cluster_id),
-  ]);
+  const cached = await clusterDetailsCache.get(clusterId);
+  if (cached !== undefined) {
+    return cached;
+  }
 
-  const cluster = clusters[0];
+  const results = await data.db
+    .select({
+      id: data.clusters.id,
+      name: data.clusters.name,
+      description: data.clusters.description,
+      createdAt: data.clusters.created_at,
+      debug: data.clusters.debug,
+      isDemo: data.clusters.is_demo,
+      machineId: data.machines.id,
+      machineLastPingAt: data.machines.last_ping_at,
+      machineIp: data.machines.ip,
+      machineSdkVersion: data.machines.sdk_version,
+      machineSdkLanguage: data.machines.sdk_language,
+      serviceService: data.services.service,
+      serviceDefinition: data.services.definition,
+      serviceTimestamp: data.services.timestamp,
+    })
+    .from(data.clusters)
+    .leftJoin(data.machines, eq(data.machines.cluster_id, data.clusters.id))
+    .leftJoin(data.services, eq(data.services.cluster_id, data.clusters.id))
+    .where(eq(data.clusters.id, clusterId));
 
-  if (!cluster) {
+  if (results.length === 0) {
     throw new errors.NotFoundError("Cluster not found");
   }
 
-  return {
-    id: cluster.id,
-    name: cluster.name,
-    description: cluster.description,
-    createdAt: cluster.createdAt,
-    debug: cluster.debug,
-    additionalContext: cluster.additionalContext,
-    lastPingAt: machines[0]?.maxLastPingAt,
-    enableCustomAuth: cluster.enableCustomAuth,
-    handleCustomAuthFunction: cluster.handleCustomAuthFunction,
-    enableKnowledgebase: cluster.enableKnowledgebase,
-    isDemo: cluster.isDemo,
+  const response = {
+    id: results[0].id,
+    name: results[0].name,
+    description: results[0].description,
+    createdAt: results[0].createdAt,
+    debug: results[0].debug,
+    isDemo: results[0].isDemo,
+    machines: results
+      .filter(r => r.machineId !== null)
+      .map(r => ({
+        id: r.machineId!,
+        lastPingAt: r.machineLastPingAt,
+        ip: r.machineIp,
+        sdkVersion: r.machineSdkVersion,
+        sdkLanguage: r.machineSdkLanguage,
+      })),
+    services: results
+      .filter(r => r.serviceService !== null)
+      .map(r => ({
+        service: r.serviceService!,
+        definition: r.serviceDefinition,
+        timestamp: r.serviceTimestamp,
+      })),
   };
+
+  await clusterDetailsCache.set(clusterId, response, 5);
+  return response;
 };
 
 export const getClusterMachines = async ({ clusterId }: { clusterId: string }) => {
