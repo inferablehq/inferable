@@ -17,7 +17,7 @@ Inferable is an open source platform that helps you build reliable LLM-powered a
 - Managed Agent Runtime - ReAct-like agent runtime powered by your own functions
 - Durable Tool Calling - Recover from failures, load balance tool calls across compute, cache results
 - Zero Network Config - No inbound connections or networking required for distributed tools
-- Multiple Language Support - Native SDKs for TypeScript, Go, .NET and more comping up
+- Multiple Language Support - Native SDKs for TypeScript, Go, .NET and more coming up
 - Fully Open Source - MIT licensed and self-hostable
 
 ![Deployment](./assets/deployment.png)
