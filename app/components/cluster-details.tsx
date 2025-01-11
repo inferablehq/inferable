@@ -490,9 +490,9 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
 
       setActualCommand(newCommand);
       setDisplayCommand(redactedCommand);
-      toast.success("Copied to clipboard");
       try {
         await navigator.clipboard.writeText(newCommand);
+        toast.success("Copied to clipboard");
         setStatus("created");
       } catch (err) {
         setShowCommandDialog(true);

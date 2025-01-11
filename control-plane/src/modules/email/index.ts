@@ -163,7 +163,7 @@ export const handleApprovalRequest = async ({
     return;
   }
 
-   const runUrl = `https://app.inferable.ai/clusters/${clusterId}/runs/${runId}`;
+   const runUrl = `${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}`;
   await sendEmail({
     fromEmail: `${integrations.email.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
     toEmail: tags[EMAIL_SOURCE_META_KEY],

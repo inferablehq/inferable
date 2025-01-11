@@ -139,6 +139,7 @@ jobs:
           REDIS_URL: "redis://localhost:6379"
           DATABASE_URL: "postgres://postgres:postgres@localhost:5432/postgres"
           DATABASE_SSL_DISABLED: "1"
+          APP_ORIGIN: "http://localhost:3000"
           JWKS_URL: ${{ secrets.TEST_JWKS_URL }}
           AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY }}

@@ -59,7 +59,7 @@ const envSchema = z
     // Required in EE (Disabled by default)
     EE_DEPLOYMENT: truthy.default(false),
 
-    APP_ORIGIN: z.string().url().optional(),
+    APP_ORIGIN: z.string().url(),
 
     JWKS_URL: z.string().url().optional(),
     JWT_IGNORE_EXPIRATION: truthy.default(false),

@@ -420,7 +420,7 @@ const buildAdditionalContext = async (run: {
   let context = "";
 
   context += await getClusterContextText(run.clusterId);
-  context += `\nCurrent Run URL: https://app.inferable.ai/clusters/${run.clusterId}/runs/${run.id}`;
+  context += `\nCurrent Run URL: ${env.APP_ORIGIN}/clusters/${run.clusterId}/runs/${run.id}`;
   run.systemPrompt && (context += `\n${run.systemPrompt}`);
 
   return context;
