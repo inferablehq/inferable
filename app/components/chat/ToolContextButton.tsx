@@ -8,12 +8,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useAuth } from "@clerk/nextjs";
-import { SquareFunction } from "lucide-react";
+import { SquareFunction, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ReadOnlyJSON } from "../read-only-json";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { contract } from "@/client/contract";
 
@@ -33,9 +34,6 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
   const [services, setServices] = useState<
     ClientInferResponseBody<typeof contract.listServices, 200>
   >([]);
-  const [functionDetails, setFunctionDetails] = useState<
-    NonNullable<(typeof services)[number]["functions"]>[number] | null
-  >(null);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -59,21 +57,9 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
     fetchServices();
   }, [clusterId, getToken]);
 
-  useEffect(() => {
-    const findFunctionDetails = () => {
-      const serviceObj = services.find(s => s.name === service);
-      if (serviceObj && serviceObj.functions) {
-        const func = serviceObj.functions.find(f => f.name === functionName);
-        if (func) {
-          setFunctionDetails(func);
-        }
-      }
-    };
-
-    if (services.length > 0) {
-      findFunctionDetails();
-    }
-  }, [services, service, functionName]);
+  const functionDetails = services
+    .find(s => s.name === service)
+    ?.functions?.find(f => f.name === functionName);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -93,7 +79,7 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
           </SheetDescription>
         </SheetHeader>
         <div className="mt-6 space-y-6">
-          {functionDetails && (
+          {functionDetails ? (
             <Card>
               <CardHeader>
                 <CardTitle>Details</CardTitle>
@@ -123,6 +109,15 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
                 )}
               </CardContent>
             </Card>
+          ) : (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="text-sm">Function Not Found</AlertTitle>
+              <AlertDescription className="text-xs text-muted-foreground">
+                The specified function could not be found. It may have been removed or is not
+                available in this service.
+              </AlertDescription>
+            </Alert>
           )}
         </div>
       </SheetContent>
