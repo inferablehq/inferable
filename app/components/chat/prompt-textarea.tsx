@@ -10,6 +10,7 @@ import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
 import {
+  ArrowRight,
   Bot,
   ChevronDown,
   ChevronRight,
@@ -17,6 +18,7 @@ import {
   ExternalLinkIcon,
   PlusCircleIcon,
   Settings2Icon,
+  Blocks,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -322,6 +324,95 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
 
   return (
     <div className="space-y-6">
+      {isDemoService && (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white text-sm font-semibold shadow-sm">
+              1
+            </div>
+            <p className="text-base font-semibold text-gray-800">
+              Great! You've connected a couple of services. They are ready to use.
+            </p>
+          </div>
+          <div className="rounded-xl p-5 shadow-sm border border-green-100 bg-green-50/30 transition-all duration-200">
+            <div className="grid grid-cols-2 divide-x divide-green-100">
+              <div className="pr-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Blocks className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">SQLite Service</div>
+                    <div className="text-xs text-muted-foreground">
+                      Employee database for fictional companies
+                    </div>
+                  </div>
+                  <a
+                    href="https://github.com/inferablehq/inferable/blob/main/demos/typescript/sql-to-text/service.ts"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:text-primary/90 hover:underline whitespace-nowrap"
+                  >
+                    View Source →
+                  </a>
+                </div>
+              </div>
+
+              <div className="pl-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Blocks className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium">Terminal Copilot</div>
+                    <div className="text-xs text-muted-foreground">
+                      Run terminal commands with approval
+                    </div>
+                  </div>
+                  <a
+                    href="https://github.com/inferablehq/inferable/blob/main/demos/typescript/terminal-copilot/service.ts"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:text-primary/90 hover:underline whitespace-nowrap"
+                  >
+                    View Source →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white text-sm font-semibold shadow-sm">
+                2
+              </div>
+              <div className="text-base font-semibold text-gray-800">
+                Try these example prompts to see how Inferable works
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {demoServicePrompts.map((demoPrompt, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDemoPromptClick(demoPrompt)}
+                  className="text-left h-auto flex flex-col items-start p-3"
+                >
+                  <span className="font-medium">{demoPrompt.text}</span>
+                  {demoPrompt.description.map((description, index) => (
+                    <span key={index} className="text-xs text-muted-foreground mt-1">
+                      {index + 1}. {description}
+                    </span>
+                  ))}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       {noServicesAndMachines && !isLoading && (
         <div className="w-full rounded-lg border border-gray-200 bg-gray-50 p-4">
           <div className="flex flex-col items-start justify-between">
@@ -344,33 +435,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                 size="sm"
                 className="shrink-0"
               >
-                Connect a Service
+                Learn How <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {isDemoService && (
-        <div className="flex flex-col gap-2">
-          <div className="text-sm font-medium">Some prompts to try:</div>
-          <div className="flex flex-col gap-2">
-            {demoServicePrompts.map((demoPrompt, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                onClick={() => handleDemoPromptClick(demoPrompt)}
-                className="text-left h-auto flex flex-col items-start p-3"
-              >
-                <span className="font-medium">{demoPrompt.text}</span>
-                {demoPrompt.description.map((description, index) => (
-                  <span key={index} className="text-xs text-muted-foreground mt-1">
-                    {index + 1}. {description}
-                  </span>
-                ))}
-              </Button>
-            ))}
           </div>
         </div>
       )}
@@ -758,7 +825,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       </div>
 
       <div className="flex gap-2">
-        <Button size="sm" onClick={submit}>
+        <Button size="sm" onClick={submit} disabled={prompt.length < 3}>
           Start Run
         </Button>
         {prompt.length > 3 && (

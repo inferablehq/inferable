@@ -41,7 +41,12 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
   return (
     <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
       <div className="flex items-center gap-2 mr-2">
-        <h1 className="text-lg text-gray-400 tracking-tight">{clusterDetails.body.name}</h1>
+        <Link
+          href={`/clusters/${clusterId}/runs`}
+          className="text-lg text-gray-400 tracking-tight hover:text-gray-600"
+        >
+          {clusterDetails.body.name}
+        </Link>
         {clusterDetails.body.isDemo && <Badge variant="secondary">Demo</Badge>}
       </div>
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
@@ -63,6 +68,9 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
       </Link>
       <Link href={`/clusters/${clusterId}/settings`} className={linkStyles}>
         <Settings className="h-4 w-4" /> Settings
+      </Link>
+      <Link href={`https://docs.inferable.ai`} target="_blank" className={linkStyles}>
+        <ExternalLink className="h-4 w-4" /> Docs
       </Link>
       <div className="ml-auto">
         <LiveCheck />

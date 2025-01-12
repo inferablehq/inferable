@@ -33,7 +33,9 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
   const [services, setServices] = useState<
     ClientInferResponseBody<typeof contract.listServices, 200>
   >([]);
-  const [functionDetails, setFunctionDetails] = useState<NonNullable<typeof services[number]["functions"]>[number] | null>(null);
+  const [functionDetails, setFunctionDetails] = useState<
+    NonNullable<(typeof services)[number]["functions"]>[number] | null
+  >(null);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -59,9 +61,9 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
 
   useEffect(() => {
     const findFunctionDetails = () => {
-      const serviceObj = services.find((s) => s.name === service);
+      const serviceObj = services.find(s => s.name === service);
       if (serviceObj && serviceObj.functions) {
-        const func = serviceObj.functions.find((f) => f.name === functionName);
+        const func = serviceObj.functions.find(f => f.name === functionName);
         if (func) {
           setFunctionDetails(func);
         }
@@ -76,16 +78,8 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          className="px-2 py-1"
-          onClick={() => {
-            // fetchContext();
-            setIsOpen(true);
-          }}
-        >
-          <SquareFunction className="w-4 h-4" />
+        <Button size="sm" variant="secondary" className="text-xs text-muted-foreground">
+          Function metadata →
         </Button>
       </SheetTrigger>
       <SheetContent className="sm:max-w-[800px] overflow-y-auto">
@@ -107,16 +101,12 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="functionName">Function Name</Label>
-                  <pre className="p-2">
-                    {functionDetails.name}
-                  </pre>
+                  <pre className="p-2">{functionDetails.name}</pre>
                 </div>
                 {functionDetails.description && (
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <pre className="p-2">
-                      {functionDetails.description}
-                    </pre>
+                    <pre className="p-2">{functionDetails.description}</pre>
                   </div>
                 )}
                 {functionDetails.schema && (

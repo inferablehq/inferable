@@ -149,12 +149,7 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
         <div className="mt-6 flex gap-4 justify-center">
           <Button asChild variant="default">
             <Link href="/setup-demo">
-              Create Demo Cluster <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/clusters/new">
-              Create Empty Cluster <ArrowRight className="ml-2 h-4 w-4" />
+              Quick Start <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>
