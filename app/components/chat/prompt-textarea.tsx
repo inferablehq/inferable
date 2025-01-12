@@ -331,7 +331,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
               1
             </div>
             <p className="text-base font-semibold text-gray-800">
-              Great! You've connected a couple of services. They are ready to use.
+              Great! You&apos;ve connected a couple of services. They are ready to use.
             </p>
           </div>
           <div className="rounded-xl p-5 shadow-sm border border-green-100 bg-green-50/30 transition-all duration-200">
