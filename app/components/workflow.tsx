@@ -100,7 +100,10 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
       .catch((e: unknown) => {
         if (e instanceof Error && e.name === "AbortError") {
           // Request was aborted, do nothing
-          return;
+          return {
+            status: -1,
+            body: null,
+          } as const;
         }
         console.error("Failed to fetch timeline", e);
 
@@ -110,7 +113,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
         } as const;
       });
 
-    if (!isMounted.current || !result) return;
+    if (!isMounted.current || result.status === -1) return;
 
     if (result.status === 200) {
       if (result.body.messages.length === 0 && result.body.activity.length === 0) {
