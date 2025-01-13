@@ -30,7 +30,6 @@ const formSchema = z.object({
   description: z.string().default(""),
   debug: z.boolean().default(false),
   enableCustomAuth: z.boolean().default(false),
-  enableKnowledgebase: z.boolean().default(false),
   handleCustomAuthFunction: z.string().default(""),
 });
 
@@ -55,7 +54,6 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
         form.setValue("description", details.body.description ?? "");
         form.setValue("debug", details.body.debug ?? false);
         form.setValue("enableCustomAuth", details.body.enableCustomAuth ?? false);
-        form.setValue("enableKnowledgebase", details.body.enableKnowledgebase ?? false);
         form.setValue("handleCustomAuthFunction", details.body.handleCustomAuthFunction ?? "");
       } else {
         createErrorToast(details, "Failed to fetch cluster details");
