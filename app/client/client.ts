@@ -15,3 +15,11 @@ export const client = initClient(contract, {
   baseUrl: getBaseUrl(),
   baseHeaders: {},
 });
+
+export const clientWithAbortController = (signal: AbortSignal) => {
+  return initClient(contract, {
+    baseUrl: getBaseUrl(),
+    baseHeaders: {},
+    abortSignal: signal,
+  });
+};

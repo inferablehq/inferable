@@ -1,5 +1,3 @@
-"use client";
-
 import { Run } from "@/components/workflow";
 
 function Page({

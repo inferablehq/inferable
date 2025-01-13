@@ -114,7 +114,7 @@ function FunctionCall({
         <div className="rounded-lg border border-border/50 bg-background/50 p-4">
           <div className="space-y-2">
             <div className="flex flex-row items-center space-x-2">
-              <SheetTrigger>
+              <SheetTrigger asChild>
                 <Button
                   size="sm"
                   className={`${approvalRequested && !approved ? "opacity-50" : ""}

@@ -1,6 +1,6 @@
 "use client";
 
-import { client } from "@/client/client";
+import { client, clientWithAbortController } from "@/client/client";
 import { contract } from "@/client/contract";
 import FunctionCall from "@/components/chat/function-call";
 import RunEvent from "@/components/chat/workflow-event";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { RefreshCcw, TestTube2Icon, WorkflowIcon } from "lucide-react";
 import { useQueryState } from "nuqs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 
 import { ulid } from "ulid";
 import { Textarea } from "./ui/textarea";
@@ -38,26 +38,9 @@ function uniqueBy<T>(array: T[], key: keyof T) {
   return array.filter((v, i, a) => a.findIndex(t => t[key] === v[key]) === i);
 }
 
-function ElementWrapper({
-  mutableId,
-  children,
-  id,
-}: {
-  mutableId: string;
-  children: React.ReactNode;
-  id: string;
-  human?: boolean;
-}) {
-  const dimmable = id.length === 26 && mutableId < id; // only if ULID
-
+function ElementWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className={`${
-        dimmable ? `opacity-60` : ``
-      } transition-all duration-300 workflow-element-wrapper mb-4`}
-    >
-      {children}
-    </div>
+    <div className={`transition-all duration-300 workflow-element-wrapper mb-4`}>{children}</div>
   );
 }
 
@@ -80,32 +63,10 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
     200
   > | null>(null);
 
-  const [run, setRun] = useState<ClientInferResponseBody<typeof contract.getRun, 200> | null>(null);
-
-  useEffect(() => {
-    async function fetchRunMetadata() {
-      const result = await client.getRun({
-        headers: {
-          authorization: `Bearer ${await getToken()}`,
-        },
-        params: {
-          clusterId,
-          runId,
-        },
-      });
-
-      if (result.status === 200) {
-        setRun(result.body);
-      }
-    }
-
-    fetchRunMetadata();
-  }, [clusterId, runId, getToken]);
-
   const messagesAfter = useRef<string>("0");
   const activityAfter = useRef<string>("0");
-
   const isMounted = useRef<boolean>(true);
+  const controllerRef = useRef<AbortController>();
 
   useEffect(() => {
     return () => {
@@ -114,7 +75,15 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
   }, []);
 
   const fetchRunTimeline = useCallback(async () => {
-    const result = await client
+    if (!isMounted.current) return;
+
+    // Abort previous request if it exists
+    controllerRef.current?.abort();
+
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    const result = await clientWithAbortController(controller.signal)
       .getRunTimeline({
         headers: {
           authorization: `Bearer ${await getToken()}`,
@@ -128,7 +97,11 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
           activityAfter: activityAfter.current,
         },
       })
-      .catch(e => {
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name === "AbortError") {
+          // Request was aborted, do nothing
+          return;
+        }
         console.error("Failed to fetch timeline", e);
 
         return {
@@ -136,6 +109,8 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
           body: null,
         } as const;
       });
+
+    if (!isMounted.current || !result) return;
 
     if (result.status === 200) {
       if (result.body.messages.length === 0 && result.body.activity.length === 0) {
@@ -171,11 +146,19 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
       await new Promise(resolve => setTimeout(resolve, 4_000));
     }
 
-    return fetchRunTimeline();
-  }, [clusterId, runId, getToken]);
+    if (isMounted.current) {
+      setTimeout(fetchRunTimeline, 1000);
+    }
+  }, [clusterId, runId]);
 
   useEffect(() => {
+    isMounted.current = true;
     fetchRunTimeline();
+
+    return () => {
+      isMounted.current = false;
+      controllerRef.current?.abort();
+    };
   }, [fetchRunTimeline]);
 
   const wipMessages = useQueue<
@@ -262,8 +245,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
     [getToken]
   );
 
-  const [mutableId, setMutableId] = useState("7ZZZZZZZZZZZZZZZZZZZZZZZZZ");
-
   const user = useUser();
   const organization = useOrganization();
 
@@ -275,246 +256,251 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
 
   const isOwner = runTimeline?.run.userId === user.user?.id;
 
-  const jobElements =
-    runTimeline?.jobs.map(job => ({
-      element: (
-        <ElementWrapper mutableId={mutableId} id={job.id} key={job.id}>
-          <FunctionCall
-            key={job.id}
-            clusterId={clusterId}
-            jobId={job.id}
-            service={job.service}
-            resultType={job.resultType}
-            status={job.status}
-            targetFn={job.targetFn}
-            approved={job.approved}
-            approvalRequested={job.approvalRequested}
-            isFocused={focusedJobId === job.id}
-            submitApproval={(approved: boolean) => {
-              submitApproval({
-                approved,
-                jobId: job.id,
-                clusterId,
-              });
-            }}
-            onFocusChange={focused => {
-              if (!focused && focusedJobId !== job.id) {
-                return;
-              }
-              setFocusedJobId(focused ? job.id : null);
-            }}
-          />
-        </ElementWrapper>
-      ),
-      timestamp: new Date(job.createdAt).getTime(),
-    })) || [];
-
-  const eventElements =
-    runTimeline?.messages
-      .filter(m => ["human", "agent", "template", "invocation-result"].includes(m.type))
-      .map(m => ({
+  const elements = useMemo(() => {
+    const jobElements =
+      runTimeline?.jobs.map(job => ({
         element: (
-          <ElementWrapper mutableId={mutableId} id={m.id} key={m.id} human={m.type === "human"}>
-            <RunEvent
-              {...m}
-              key={m.id}
-              showMeta={false}
+          <ElementWrapper key={job.id}>
+            <FunctionCall
+              key={job.id}
               clusterId={clusterId}
-              jobs={runTimeline?.jobs ?? []}
-              pending={"pending" in m && m.pending}
-              runId={runId}
-              messages={runTimeline?.messages ?? []}
+              jobId={job.id}
+              service={job.service}
+              resultType={job.resultType}
+              status={job.status}
+              targetFn={job.targetFn}
+              approved={job.approved}
+              approvalRequested={job.approvalRequested}
+              isFocused={focusedJobId === job.id}
+              submitApproval={(approved: boolean) => {
+                submitApproval({
+                  approved,
+                  jobId: job.id,
+                  clusterId,
+                });
+              }}
+              onFocusChange={focused => {
+                if (!focused && focusedJobId !== job.id) {
+                  return;
+                }
+                setFocusedJobId(focused ? job.id : null);
+              }}
             />
           </ElementWrapper>
         ),
-        timestamp: m.createdAt ? new Date(m.createdAt).getTime() : 0,
+        timestamp: new Date(job.createdAt).getTime(),
       })) || [];
 
-  const blobElements =
-    runTimeline?.blobs.map(a => ({
-      element: (
-        <ElementWrapper id={a.id} key={a.id} mutableId={mutableId}>
-          <Blob blob={a} clusterId={clusterId} key={a.id} />
-        </ElementWrapper>
-      ),
-      timestamp: new Date(a.createdAt).getTime(),
-    })) || [];
+    const eventElements =
+      runTimeline?.messages
+        .filter(m => ["human", "agent", "template", "invocation-result"].includes(m.type))
+        .map(m => ({
+          element: (
+            <ElementWrapper key={m.id} human={m.type === "human"}>
+              <RunEvent
+                {...m}
+                key={m.id}
+                showMeta={false}
+                clusterId={clusterId}
+                jobs={runTimeline?.jobs ?? []}
+                pending={"pending" in m && m.pending}
+                runId={runId}
+                messages={runTimeline?.messages ?? []}
+              />
+            </ElementWrapper>
+          ),
+          timestamp: m.createdAt ? new Date(m.createdAt).getTime() : 0,
+        })) || [];
 
-  const activityElements =
-    runTimeline?.activity
-      .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1))
-      .map((a, index) => ({
+    const blobElements =
+      runTimeline?.blobs.map(a => ({
         element: (
-          <ElementWrapper id={a.id} key={a.id} mutableId={mutableId}>
-            <DebugEvent
-              clusterId={clusterId}
-              event={a}
-              msSincePreviousEvent={
-                index > 0
-                  ? new Date(a.createdAt).getTime() -
-                    new Date(runTimeline?.activity[index - 1]?.createdAt ?? 0).getTime()
-                  : 0
-              }
-            />
+          <ElementWrapper key={a.id}>
+            <Blob blob={a} clusterId={clusterId} key={a.id} />
           </ElementWrapper>
         ),
         timestamp: new Date(a.createdAt).getTime(),
       })) || [];
 
-  const metadataOptionsHeader = run
-    ? {
-        element: (
-          <div className="bg-white border-b px-4 py-2 mb-4" key="metadata-options-header">
-            <div className="flex flex-col space-y-2">
-              <div className="flex items-center space-x-2">
-                {run.test ? (
-                  <div className="bg-purple-50 p-2 rounded">
-                    <TestTube2Icon className="h-4 w-4 text-purple-500" />
-                  </div>
-                ) : (
-                  <div className="bg-blue-50 p-2 rounded">
-                    <WorkflowIcon className="h-4 w-4 text-blue-500" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{run.test ? "Test Run" : "Run"}</span>
-                  <p className="text-xs text-gray-400">{run.id}</p>
-                </div>
-              </div>
+    const activityElements =
+      runTimeline?.activity
+        .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1))
+        .map((a, index) => ({
+          element: (
+            <ElementWrapper key={a.id}>
+              <DebugEvent
+                clusterId={clusterId}
+                event={a}
+                msSincePreviousEvent={
+                  index > 0
+                    ? new Date(a.createdAt).getTime() -
+                      new Date(runTimeline?.activity[index - 1]?.createdAt ?? 0).getTime()
+                    : 0
+                }
+              />
+            </ElementWrapper>
+          ),
+          timestamp: new Date(a.createdAt).getTime(),
+        })) || [];
 
-              {run.tags && Object.keys(run.tags).length > 0 && (
-                <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">Tags</span>
-                  <div className="flex flex-wrap gap-1">
-                    {Object.entries(run.tags).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="bg-gray-100 px-2 py-0.5 rounded text-xs"
-                        title={`${key}: ${value}`}
-                      >
-                        {key}: {value}
-                      </div>
-                    ))}
+    const metadataOptionsHeader = runTimeline?.run
+      ? {
+          element: (
+            <div className="bg-white border-b px-4 py-2 mb-4" key="metadata-options-header">
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
+                  {runTimeline?.run.test ? (
+                    <div className="bg-purple-50 p-2 rounded">
+                      <TestTube2Icon className="h-4 w-4 text-purple-500" />
+                    </div>
+                  ) : (
+                    <div className="bg-blue-50 p-2 rounded">
+                      <WorkflowIcon className="h-4 w-4 text-blue-500" />
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">
+                      {runTimeline?.run.test ? "Test Run" : "Run"}
+                    </span>
+                    <p className="text-xs text-gray-400">{runTimeline?.run.id}</p>
                   </div>
                 </div>
-              )}
 
-              {run.context && Object.keys(run.context).length > 0 && (
-                <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">Context</span>
-                  <div className="flex flex-wrap gap-1">
-                    {Object.entries(run.context).map(([key, value]) => {
-                      const displayValue =
-                        typeof value === "string" && value.length > 50
-                          ? value.slice(0, 47) + "..."
-                          : JSON.stringify(value);
-                      return (
+                {/* {runTimeline?.run.tags && Object.keys(runTimeline?.run.tags).length > 0 && (
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Tags</span>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(runTimeline?.run.tags).map(([key, value]) => (
                         <div
                           key={key}
                           className="bg-gray-100 px-2 py-0.5 rounded text-xs"
-                          title={`${key}: ${JSON.stringify(value)}`}
+                          title={`${key}: ${value}`}
                         >
-                          {key}: {displayValue}
+                          {key}: {value}
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )} */}
 
-              {run.attachedFunctions && run.attachedFunctions.length > 0 ? (
-                <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">Functions</span>
-                  <div className="flex flex-wrap gap-1">
-                    {run.attachedFunctions.map(fn => (
-                      <div
-                        key={fn}
-                        className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono"
-                        title={fn}
-                      >
-                        {fn}
+                {runTimeline?.run.context && Object.keys(runTimeline?.run.context).length > 0 && (
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Context</span>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(runTimeline?.run.context).map(([key, value]) => {
+                        const displayValue =
+                          typeof value === "string" && value.length > 50
+                            ? value.slice(0, 47) + "..."
+                            : JSON.stringify(value);
+                        return (
+                          <div
+                            key={key}
+                            className="bg-gray-100 px-2 py-0.5 rounded text-xs"
+                            title={`${key}: ${JSON.stringify(value)}`}
+                          >
+                            {key}: {displayValue}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {runTimeline?.run.attachedFunctions &&
+                runTimeline?.run.attachedFunctions.length > 0 ? (
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Functions</span>
+                    <div className="flex flex-wrap gap-1">
+                      {runTimeline?.run.attachedFunctions.map(fn => (
+                        <div
+                          key={fn}
+                          className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono"
+                          title={fn}
+                        >
+                          {fn}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-xs font-medium text-gray-500">Functions</span>
+                    <div className="flex flex-wrap gap-1">
+                      <div className="py-0.5 rounded text-xs text-gray-500">
+                        Full access including{" "}
+                        <a
+                          className="text-blue-500 hover:underline"
+                          href="https://docs.inferable.ai/pages/standard-lib"
+                        >
+                          Standard Library
+                        </a>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">Functions</span>
-                  <div className="flex flex-wrap gap-1">
-                    <div className="py-0.5 rounded text-xs text-gray-500">
-                      Full access including{" "}
-                      <a
-                        className="text-blue-500 hover:underline"
-                        href="https://docs.inferable.ai/pages/standard-lib"
+                )}
+
+                {runTimeline?.run.userId && (
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-xs font-medium text-gray-500">User Context</span>
+                    <div className="flex flex-wrap gap-1">
+                      <div
+                        className="bg-gray-100 px-2 py-0.5 rounded text-xs"
+                        title={`Id: ${runTimeline?.run.userId}`}
                       >
-                        Standard Library
-                      </a>
+                        Id: <span className="font-mono">{runTimeline?.run.userId}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {run.userId && (
-                <div className="flex flex-col space-y-1">
-                  <span className="text-xs font-medium text-gray-500">User Context</span>
-                  <div className="flex flex-wrap gap-1">
-                    <div
-                      className="bg-gray-100 px-2 py-0.5 rounded text-xs"
-                      title={`Id: ${run.userId}`}
-                    >
-                      Id: <span className="font-mono">{run.userId}</span>
-                    </div>
+                {runTimeline?.run.status === "failed" && (
+                  <div className="flex flex-row">
+                    <MessageCircleWarning className="h-4 w-4 mt-1 text-red-500" />
+                    <span className="text-sm text-red-600 px-2">
+                      Failed: {runTimeline?.run.failureReason}
+                    </span>{" "}
                   </div>
-                </div>
-              )}
-
-              {run.status === "failed" && (
-                <div className="flex flex-row">
-                  <MessageCircleWarning className="h-4 w-4 mt-1 text-red-500" />
-                  <span className="text-sm text-red-600 px-2">
-                    Failed: {run.failureReason}
-                  </span>{" "}
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        ),
-        timestamp: 0,
-      }
-    : null;
+          ),
+          timestamp: 0,
+        }
+      : null;
 
-  const pendingMessage =
-    wipMessages.queue
-      .filter(m => !runTimeline?.messages.map(m => m.id).includes(m.id))
-      .map(m => ({
-        element: (
-          <ElementWrapper mutableId={mutableId} id={m.id} key={m.id} human={m.type === "human"}>
-            <RunEvent
-              {...m}
-              key={m.id}
-              showMeta={false}
-              clusterId={clusterId}
-              jobs={runTimeline?.jobs ?? []}
-              pending={"pending" in m && m.pending}
-              runId={runId}
-              messages={runTimeline?.messages ?? []}
-            />
-          </ElementWrapper>
-        ),
-        timestamp: m.createdAt ? new Date(m.createdAt).getTime() : new Date().getTime(),
-      })) || [];
+    const pendingMessage =
+      wipMessages.queue
+        .filter(m => !runTimeline?.messages.map(m => m.id).includes(m.id))
+        .map(m => ({
+          element: (
+            <ElementWrapper id={m.id} key={m.id} human={m.type === "human"}>
+              <RunEvent
+                {...m}
+                key={m.id}
+                showMeta={false}
+                clusterId={clusterId}
+                jobs={runTimeline?.jobs ?? []}
+                pending={"pending" in m && m.pending}
+                runId={runId}
+                messages={runTimeline?.messages ?? []}
+              />
+            </ElementWrapper>
+          ),
+          timestamp: m.createdAt ? new Date(m.createdAt).getTime() : new Date().getTime(),
+        })) || [];
 
-  const elements = [
-    metadataOptionsHeader,
-    ...jobElements,
-    ...eventElements,
-    ...activityElements,
-    ...pendingMessage,
-    ...blobElements,
-  ]
-    .filter(Boolean)
-    .sort((a, b) => (a!.timestamp > b!.timestamp ? 1 : -1))
-    .map(item => item!.element);
+    return [
+      metadataOptionsHeader,
+      ...jobElements,
+      ...eventElements,
+      ...activityElements,
+      ...pendingMessage,
+      ...blobElements,
+    ]
+      .filter(Boolean)
+      .sort((a, b) => (a!.timestamp > b!.timestamp ? 1 : -1))
+      .map(item => item!.element);
+  }, [runTimeline, clusterId, runId, focusedJobId, wipMessages.queue]);
 
   const isEditable = isAdmin || isOwner;
 
