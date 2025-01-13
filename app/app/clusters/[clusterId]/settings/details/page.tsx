@@ -76,7 +76,6 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
             description: data.description,
             debug: data.debug,
             enableCustomAuth: data.enableCustomAuth,
-            enableKnowledgebase: data.enableKnowledgebase,
             handleCustomAuthFunction: data.handleCustomAuthFunction,
           },
         });
