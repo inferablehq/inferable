@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
+import uniqBy from "lodash/uniqBy";
 import { createCache } from "../utilities/cache";
 import * as errors from "../utilities/errors";
 import * as data from "./data";
@@ -192,22 +193,28 @@ export const getClusterDetails = async ({
     isDemo: results[0].isDemo,
     handleCustomAuthFunction: results[0].handleCustomAuthFunction,
     enableCustomAuth: results[0].enableCustomAuth,
-    machines: results
-      .filter(r => r.machineId !== null)
-      .map(r => ({
-        id: r.machineId!,
-        lastPingAt: r.machineLastPingAt,
-        ip: r.machineIp,
-        sdkVersion: r.machineSdkVersion,
-        sdkLanguage: r.machineSdkLanguage,
-      })),
-    services: results
-      .filter(r => r.serviceService !== null)
-      .map(r => ({
-        service: r.serviceService!,
-        definition: r.serviceDefinition,
-        timestamp: r.serviceTimestamp,
-      })),
+    machines: uniqBy(
+      results
+        .filter(r => r.machineId !== null)
+        .map(r => ({
+          id: r.machineId!,
+          lastPingAt: r.machineLastPingAt,
+          ip: r.machineIp,
+          sdkVersion: r.machineSdkVersion,
+          sdkLanguage: r.machineSdkLanguage,
+        })),
+      r => r.id
+    ),
+    services: uniqBy(
+      results
+        .filter(r => r.serviceService !== null)
+        .map(r => ({
+          service: r.serviceService!,
+          definition: r.serviceDefinition,
+          timestamp: r.serviceTimestamp,
+        })),
+      r => r.service
+    ),
     additionalContext: results[0].additionalContext,
   };
 
