@@ -55,11 +55,6 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
       <Link href={`/clusters/${clusterId}/agents`} className={linkStyles}>
         <Bot className="h-4 w-4" /> Agents
       </Link>
-      {clusterDetails.body.enableKnowledgebase && (
-        <Link href={`/clusters/${clusterId}/knowledge`} className={linkStyles}>
-          <BookOpen className="h-4 w-4" /> Knowledge
-        </Link>
-      )}
       <Link href={`/clusters/${clusterId}/integrations`} className={linkStyles}>
         <NetworkIcon className="h-4 w-4" /> Integrations
       </Link>
