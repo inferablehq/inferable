@@ -45,7 +45,7 @@ export async function fetchValTownMeta({
     },
   });
 
-  if (!response.ok) {
+  if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) {
     logger.error("Failed to fetch Val.town metadata", {
       endpoint,
       status: response.status,
