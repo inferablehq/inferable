@@ -20,7 +20,15 @@ import { MessageCircleWarning } from "lucide-react";
 import { FeedbackDialog } from "./bug-report-dialog";
 import { DebugEvent } from "./debug-event";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SendButton } from "@/components/ui/send-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { Blob } from "./chat/blob";
 
 const messageSkeleton = (
@@ -518,27 +526,27 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
 
   const isEditable = isAdmin || isOwner;
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      smoothScrollToBottom(container);
-    }
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        const container = scrollContainerRef.current;
+        smoothScrollToBottom(container);
+      }
+    }, 100); // add a small delay because inline elements are not rendered immediately
   }, [elements.length]);
 
   const composerDisabled = !runTimeline || !isEditable;
 
   return (
-    <div className="h-[calc(100vh-16rem)] overflow-hidden rounded-sm">
+    <div className="overflow-hidden rounded-sm">
       <div
         ref={scrollContainerRef}
         className="h-[calc(100vh-25rem)] border rounded-sm text-sm overflow-y-auto scroll-smooth"
       >
         {elements.length > 0 ? <div className="flex flex-col">{elements}</div> : messageSkeleton}
       </div>
-      <div ref={messagesEndRef} />
       <div
         className={cn(
           "flex flex-col space-y-2 p-2 bg-slate-50 border",
@@ -562,20 +570,58 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
           />
           <div className="flex flex-row space-x-2">
             <div className="flex items-center space-x-2">
-              <Button
+              <SendButton
                 onClick={() => onSubmit(prompt)}
-                size="sm"
                 disabled={runTimeline?.run.status === "running"}
               >
                 {runTimeline?.run.status === "running" ? (
                   <>
-                    <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+                    <RefreshCcw className="h-4 w-4 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   "Send"
                 )}
-              </Button>
+              </SendButton>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-1">
+                    or via <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem asChild>
+                    <a
+                      href="https://docs.inferable.ai/pages/api"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      Run via API <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a
+                      href="https://docs.inferable.ai/pages/slack"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      Run via Slack <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a
+                      href="https://docs.inferable.ai/pages/email"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      Run via Email <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="flex-grow">&nbsp;</div>
             <FeedbackDialog
@@ -583,7 +629,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
               clusterId={clusterId}
               comment={runTimeline?.run.feedbackComment}
               score={runTimeline?.run.feedbackScore}
-              userName={user.user?.emailAddresses.find(e => e.emailAddress)?.emailAddress ?? ""}
             />
           </div>
         </div>

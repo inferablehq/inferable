@@ -4,30 +4,30 @@ import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import { ReadOnlyJSON } from "@/components/read-only-json";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { SendButton } from "@/components/ui/send-button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { isFeatureEnabled } from "@/lib/features";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest, ClientInferResponseBody } from "@ts-rest/core";
 import {
   ArrowRight,
+  Blocks,
   Bot,
   ChevronDown,
   ChevronRight,
   Cog,
-  ExternalLinkIcon,
   PlusCircleIcon,
   Settings2Icon,
-  Blocks,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "../ui/button";
-import Commands from "./sdk-commands";
-import { isFeatureEnabled } from "@/lib/features";
 import toast from "react-hot-toast";
+import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { useClusterState } from "../useClusterState";
+import Commands from "./sdk-commands";
 
 export type RunOptions = {
   agentId?: string;
@@ -825,9 +825,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       </div>
 
       <div className="flex gap-2">
-        <Button size="sm" onClick={submit} disabled={prompt.length < 3}>
-          Start Run
-        </Button>
+        <SendButton onClick={submit} disabled={prompt.length < 3} />
         {prompt.length > 3 && (
           <Commands
             clusterId={clusterId}
