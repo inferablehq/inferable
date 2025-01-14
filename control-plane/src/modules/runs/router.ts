@@ -87,10 +87,41 @@ export const runsRouter = initServer().router(
         }
       }
 
-      // TODO: Validate that onStatusChange and attachedFunctions exist
-      // TODO: Validate that onStatusChange schema is correct
-      const onStatusChange =
-        body.onStatusChange?.function && normalizeFunctionReference(body.onStatusChange.function);
+      let onStatusChangeHandler: string | undefined = undefined;
+      let onStatusChangeStatuses: string[] | undefined = undefined;
+
+      if (body.onStatusChange) {
+        if (body.onStatusChange.function && body.onStatusChange.webhook) {
+          return {
+            status: 400,
+            body: {
+              message: "onStatusChange cannot have both function and webhook",
+            },
+          };
+        }
+
+        if (body.onStatusChange.function) {
+          // TODO: Validate that onStatusChange and attachedFunctions exist
+          // TODO: Validate that onStatusChange schema is correct
+          onStatusChangeHandler =
+            body.onStatusChange.function && normalizeFunctionReference(body.onStatusChange.function);
+        }
+
+        if (body.onStatusChange.webhook) {
+          // Check for valid Schema
+          if (!body.onStatusChange.webhook.startsWith("https://")) {
+            return {
+              status: 400,
+              body: {
+                message: "onStatusChange webhook must start with https://",
+              },
+            };
+          }
+
+          onStatusChangeHandler = body.onStatusChange.webhook;
+          onStatusChangeStatuses = body.onStatusChange.statuses ?? ["done", "failed"];
+        }
+      }
 
       let runOptions: RunOptions & { runId?: string } = {
         runId: body.runId,
@@ -161,7 +192,8 @@ export const runsRouter = initServer().router(
 
         context: body.context,
 
-        onStatusChange,
+        onStatusChangeHandler: onStatusChangeHandler,
+        onStatusChangeStatuses: onStatusChangeStatuses,
 
         // Merged Options
         resultSchema: runOptions.resultSchema,

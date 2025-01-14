@@ -46,6 +46,7 @@ export const processRun = async (
     reasoningTraces: boolean;
     enableResultGrounding: boolean;
     onStatusChange: string | null;
+    onStatusChangeStatuses: string[] | null;
     authContext: unknown | null;
     context: unknown | null;
   },
@@ -229,6 +230,7 @@ export const processRun = async (
         id: run.id,
         clusterId: run.clusterId,
         onStatusChange: run.onStatusChange,
+        onStatusChangeStatuses: run.onStatusChangeStatuses,
         status: run.status,
         authContext: run.authContext,
         context: run.context,

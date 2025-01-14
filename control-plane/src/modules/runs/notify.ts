@@ -7,6 +7,7 @@ import { getClusterBackgroundRun } from "./";
 import { runMessages } from "../data";
 import * as slack from "../integrations/slack";
 import * as email from "../email";
+import AsyncRetry from "async-retry";
 
 export const notifyApprovalRequest = async ({
   jobId,
@@ -52,6 +53,7 @@ export const notifyStatusChange = async ({
     id: string;
     clusterId: string;
     onStatusChange: string | null;
+    onStatusChangeStatuses: string[] | null;
     status: string;
     authContext: unknown;
     context: unknown;
@@ -68,28 +70,58 @@ export const notifyStatusChange = async ({
     return;
   }
 
-  // TODO: Support for webhooks
-  const [resultService, resultFunction] = run.onStatusChange?.split("_") ?? [];
+  // Don't notify if the status is not in the allowed list
+  if (run.onStatusChangeStatuses && !run.onStatusChangeStatuses.includes(status)) {
+    return;
+  }
 
   let notify;
-
-  if (!!resultService && !!resultFunction) {
+  if (run.onStatusChange.startsWith("https://")) {
     notify = async (payload: unknown) => {
-      const { id } = await jobs.createJob({
-        service: resultService,
-        targetFn: resultFunction,
-        targetArgs: packer.pack(payload),
-        authContext: run.authContext,
-        runContext: run.context,
-        owner: {
-          clusterId: run.clusterId,
+
+      await AsyncRetry(
+        async (_, attempt: number) => {
+          logger.info("Sending status change webhook", {
+            url: run.onStatusChange,
+            attempt,
+          })
+
+          return await fetch(run.onStatusChange!, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
         },
-        runId: getClusterBackgroundRun(run.clusterId),
-      });
-      logger.info("Created job with run result", {
-        jobId: id,
-      });
+        {
+          retries: 5,
+        },
+      );
     };
+
+  } else {
+    const [resultService, resultFunction] = run.onStatusChange?.split("_") ?? [];
+
+    if (!!resultService && !!resultFunction) {
+      notify = async (payload: unknown) => {
+        const { id } = await jobs.createJob({
+          service: resultService,
+          targetFn: resultFunction,
+          targetArgs: packer.pack(payload),
+          authContext: run.authContext,
+          runContext: run.context,
+          owner: {
+            clusterId: run.clusterId,
+          },
+          runId: getClusterBackgroundRun(run.clusterId),
+        });
+        logger.info("Created job with run result", {
+          jobId: id,
+        });
+      };
+    }
   }
 
   if (!notify) {

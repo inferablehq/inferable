@@ -6,7 +6,7 @@ import { getRun } from "./";
 import { processRun } from "./agent/run";
 import { generateTitle } from "./summarization";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Consumer } from "sqs-consumer";
 import { z } from "zod";
 import { injectTraceContext } from "../observability/tracer";

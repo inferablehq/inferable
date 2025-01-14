@@ -7,7 +7,7 @@ import { insertRunMessage } from "../messages";
 import { and, eq } from "drizzle-orm";
 
 describe("processRun", () => {
-  it("should call onStatusChange handler", async () => {
+  it("should call onStatusChange function handler", async () => {
     const owner = await createOwner();
     await upsertServiceDefinition({
       service: "testService",
@@ -33,6 +33,7 @@ describe("processRun", () => {
       status: "running" as const,
       attachedFunctions: ["testService_someFunction"],
       onStatusChange: "testService_someOtherFunction",
+      onStatusChangeStatuses: null,
       modelIdentifier: null,
       resultSchema: {
         type: "object",

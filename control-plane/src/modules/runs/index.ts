@@ -22,7 +22,8 @@ export const createRun = async ({
   test,
   testMocks,
   systemPrompt,
-  onStatusChange,
+  onStatusChangeHandler,
+  onStatusChangeStatuses,
   resultSchema,
   tags,
   attachedFunctions,
@@ -48,7 +49,8 @@ export const createRun = async ({
       output: Record<string, unknown>;
     }
   >;
-  onStatusChange?: string;
+  onStatusChangeHandler?: string;
+  onStatusChangeStatuses?: string[];
   resultSchema?: unknown;
   tags?: Record<string, string>;
   attachedFunctions?: string[];
@@ -78,7 +80,8 @@ export const createRun = async ({
       reasoning_traces: reasoningTraces,
       interactive: interactive,
       enable_summarization: enableSummarization,
-      on_status_change: onStatusChange,
+      on_status_change: onStatusChangeHandler,
+      on_status_change_statuses: onStatusChangeStatuses,
       result_schema: resultSchema,
       attached_functions: attachedFunctions,
       agent_id: agentId,
@@ -214,6 +217,7 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
       test: runs.test,
       testMocks: runs.test_mocks,
       onStatusChange: runs.on_status_change,
+      onStatusChangeStatuses: runs.on_status_change_statuses,
       resultSchema: runs.result_schema,
       feedbackComment: runs.feedback_comment,
       feedbackScore: runs.feedback_score,
@@ -486,7 +490,8 @@ export const createRunWithMessage = async ({
   interactive,
   enableSummarization,
   modelIdentifier,
-  onStatusChange,
+  onStatusChangeHandler,
+  onStatusChangeStatuses,
   authContext,
   context,
   enableResultGrounding,
@@ -499,7 +504,8 @@ export const createRunWithMessage = async ({
     test,
     testMocks,
     systemPrompt,
-    onStatusChange,
+    onStatusChangeHandler,
+    onStatusChangeStatuses,
     attachedFunctions,
     resultSchema,
     tags,
