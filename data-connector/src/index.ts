@@ -1,7 +1,7 @@
 import "dotenv/config";
 
 import { Inferable } from "inferable";
-import { PostgresClient } from "./postgres/postgres";
+import { InferablePGSQLAdapter } from "@inferable/pgsql-adapter";
 import { RegisteredService } from "inferable/bin/types";
 import { OpenAPIClient } from "./open-api/open-api";
 import { GraphQLClient } from "./graphql/graphql";
@@ -56,8 +56,8 @@ const parseConfig = (connector: any) => {
     }
 
     if (connector.type === "postgres") {
-      const postgresClient = new PostgresClient({
-        approvalMode: config.approvalMode === 1,
+      const postgresClient = new InferablePGSQLAdapter({
+        approvalMode: config.approvalMode === 1 ? "always" : "off",
         privacyMode: config.privacyMode === 1,
         maxResultLength: Number(config.maxResultLength),
         ...connector,

@@ -14,7 +14,7 @@ const isMutativeExplain = async (pg: Client, query: string): Promise<boolean> =>
     return result.rows.some(row => /ModifyTable|Insert|Update|Delete/i.test(row["QUERY PLAN"]));
   } catch (error) {
     console.error('Error running EXPLAIN:', error);
-    return false; // Default to non-mutative on error
+    return true;
   }
 };
 

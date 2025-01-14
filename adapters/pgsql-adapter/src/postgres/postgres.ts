@@ -31,6 +31,11 @@ export class InferablePGSQLAdapter {
           "Privacy mode is enabled, table data will not be sent to the model.",
         );
       }
+      console.log(
+        `Approval mode set to '${this.params.approvalMode}' - queries will ${
+          this.params.approvalMode === 'off' ? 'not' : ''
+        } require approval${this.params.approvalMode === 'mutate' ? ' for data-modifying operations' : ''}`,
+      );
 
       process.removeListener("SIGTERM", this.handleSigterm);
       process.on("SIGTERM", this.handleSigterm);
