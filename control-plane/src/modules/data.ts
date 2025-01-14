@@ -307,7 +307,8 @@ export const runs = pgTable(
     status: text("status", {
       enum: ["pending", "running", "paused", "done", "failed"],
     })
-      .default("pending"),
+      .default("pending")
+      .notNull(),
     failure_reason: text("failure_reason"),
     debug: boolean("debug").notNull().default(false),
     attached_functions: json("attached_functions").$type<string[]>().notNull().default([]),

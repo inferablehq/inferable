@@ -1,0 +1,1 @@
+ALTER TABLE "workflows" ALTER COLUMN "status" SET NOT NULL;
