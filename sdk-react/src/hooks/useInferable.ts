@@ -113,6 +113,7 @@ export function useInferable(options: UseInferableOptions): {
     resultSchema?: z.ZodObject<any>;
     metadata?: Record<string, string>;
     interactive?: boolean;
+    context?: Record<string, string>;
   }) => Promise<{ id: string }>;
   listRuns: () => Promise<{
     runs: Array<{
@@ -150,6 +151,7 @@ export function useInferable(options: UseInferableOptions): {
       resultSchema?: z.ZodObject<any>;
       metadata?: Record<string, string>;
       interactive?: boolean;
+      context?: Record<string, string>;
     }) => {
       return client
         .createRun({
@@ -166,6 +168,7 @@ export function useInferable(options: UseInferableOptions): {
               : undefined,
             metadata: createRunOptions.metadata,
             interactive: createRunOptions.interactive,
+            context: createRunOptions.context,
           },
         })
         .then(response => {
