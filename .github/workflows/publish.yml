@@ -151,7 +151,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: sdk-react/package-lock.json
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps # @testing-library/react-hooks@8.0.1 requires @types/react@^16.9.0 || ^17.0.0
       - name: Build package
         run: npm run build
       - name: Configure Git User
