@@ -299,7 +299,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
         .filter(m => ["human", "agent", "template", "invocation-result"].includes(m.type))
         .map(m => ({
           element: (
-            <ElementWrapper key={m.id} human={m.type === "human"}>
+            <ElementWrapper key={m.id}>
               <RunEvent
                 {...m}
                 key={m.id}
@@ -476,7 +476,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
         .filter(m => !runTimeline?.messages.map(m => m.id).includes(m.id))
         .map(m => ({
           element: (
-            <ElementWrapper id={m.id} key={m.id} human={m.type === "human"}>
+            <ElementWrapper key={m.id}>
               <RunEvent
                 {...m}
                 key={m.id}
