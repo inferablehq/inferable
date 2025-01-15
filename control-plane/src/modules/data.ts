@@ -275,7 +275,7 @@ export const externalMessages = pgTable(
     messageReference: foreignKey({
       columns: [table.message_id, table.run_id, table.cluster_id],
       foreignColumns: [runMessages.id, runMessages.workflow_id, runMessages.cluster_id],
-    }),
+    }).onDelete("cascade"),
     externalMessageIndex: index("externalMessagesIndex").on(table.external_id, table.cluster_id),
   })
 );
