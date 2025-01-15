@@ -19,13 +19,13 @@ if (require.main === module) {
         type: 'string',
         demandOption: true,
       })
-      .option('approvalMode', {
+      .option('approval-mode', {
         type: 'string',
         describe: 'Approval mode: "always" (all queries), "mutate" (only data-modifying queries), or "off"',
         choices: ['always', 'mutate', 'off'],
         default: 'always',
       })
-      .option('privacyMode', {
+      .option('privacy-mode', {
         type: 'boolean',
         describe: 'Enable privacy mode. All data will be returned as blobs (not sent to the model)',
         default: false,
@@ -48,7 +48,7 @@ if (require.main === module) {
       .argv;
 
     try {
-      const { approvalMode, privacyMode, schema, endpoint, secret } = argv as any;
+      const { 'approval-mode': approvalMode, 'privacy-mode': privacyMode, schema, endpoint, secret } = argv as any;
       const [ connectionString ] = argv._;
 
       if (!connectionString) {

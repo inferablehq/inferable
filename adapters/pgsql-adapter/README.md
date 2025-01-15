@@ -2,15 +2,63 @@
 
 This package provides a PostgreSQL adapter for Inferable allowing you to chat with your PostgreSQL database in natural language.
 
-## Installation
+## Quickstart
 
 ```bash
-npm install @inferable/pgsql-adapter
+# connection string doesn't leave your local machine
+npx @inferable/pgsql-adapter postgresql://user:pass@localhost:5432/postgres --secret=sk_inf_xxx
 ```
 
 ## Usage
 
 The package can be used either as a library in your Node.js application or as a standalone CLI tool.
+
+### CLI Usage
+
+You can run the adapter directly from the command line:
+
+```bash
+npx @inferable/pgsql-adapter <connection_string> [options]
+
+Options:
+      --version        Show version number                             [boolean]
+      --approval-mode  Approval mode: "always" (all queries), "mutate" (only
+                      data-modifying queries), or "off"
+               [string] [choices: "always", "mutate", "off"] [default: "always"]
+      --privacy-mode   Enable privacy mode. All data will be returned as blobs
+                      (not sent to the model)         [boolean] [default: false]
+      --schema        Database schema to use        [string] [default: "public"]
+      --secret        Inferable API cluster secret                      [string]
+      --endpoint      Inferable API endpoint                            [string]
+  -h, --help          Show help                                        [boolean]
+
+```
+
+**Examples**
+
+- Prompt human approval on all workflows:
+
+```bash
+npx @inferable/pgsql-adapter postgresql://user:pass@localhost:5432/postgres \
+   --approval-mode=always \
+   --secret=sk_inf_xxx
+```
+
+- Prompt human approval on all data-modifying workflows:
+
+```bash
+npx @inferable/pgsql-adapter postgresql://user:pass@localhost:5432/postgres \
+   --approval-mode=mutate \
+   --secret=sk_inf_xxx
+```
+
+- Don't share query results with the LLM:
+
+```bash
+npx @inferable/pgsql-adapter postgresql://user:pass@localhost:5432/postgres \
+   --privacy-mode \
+   --secret=sk_inf_xxx
+```
 
 ### Library Usage
 
@@ -38,27 +86,6 @@ await service.start();
 process.on('SIGTERM', async () => {
   await service.stop();
 });
-```
-
-### CLI Usage
-
-You can run the adapter directly from the command line:
-
-```bash
-npx @inferable/pgsql-adapter <connectionString> [options]
-
-Options:
-      --version       Show version number                              [boolean]
-      --approvalMode  Approval mode: "always" (all queries), "mutate" (only
-                      data-modifying queries), or "off"
-               [string] [choices: "always", "mutate", "off"] [default: "always"]
-      --privacyMode   Enable privacy mode. All data will be returned as blobs
-                      (not sent to the model)         [boolean] [default: false]
-      --schema        Database schema to use        [string] [default: "public"]
-      --secret        Inferable API cluster secret                      [string]
-      --endpoint      Inferable API endpoint                            [string]
-  -h, --help          Show help                                        [boolean]
-
 ```
 
 ## API Secret
