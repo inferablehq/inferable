@@ -33,57 +33,86 @@ import { useState, useCallback, useEffect } from "react";
 import { toast } from "react-hot-toast";
 
 type IntegrationConfig = {
-  [K in "langfuse" | "tavily" | "zapier" | "valtown" | "slack" | "email"]: {
+  [K in "langfuse" | "tavily" | "zapier" | "valtown" | "slack" | "email" | "toolhouse"]: {
     name: string;
     description: string;
     icon: LucideIcon;
     stage: "alpha" | "beta" | "stable";
+    category: string;
+    order: number;
+    docs: string;
   };
 };
 
+const descriptionsForCategory = {
+  ["Observability"]: "These integrations allow you to monitor your Inferable Runs",
+  ["Triggers"]: "These integrations allow you to trigger Inferable Runs via external events",
+  ["Tools"]: "These integrations allow you to build tools that can be used in your Inferable Runs",
+};
+
 const config: IntegrationConfig = {
-  // toolhouse: {
-  //   name: "Toolhouse",
-  //   description:
-  //     "Connect your toolhouse.ai tools directly to your Inferable Runs",
-  //   icon: Wrench,
-  //   stage: "beta",
-  // },
   langfuse: {
     name: "Langfuse",
     description: "Send LLM telemetry to Langfuse for monitoring and analytics",
     icon: BarChartHorizontal,
     stage: "stable",
+    category: "Observability",
+    order: 1,
+    docs: "https://docs.inferable.ai/pages/langfuse",
   },
   tavily: {
     name: "Tavily",
     description: "Use Tavily to search the web for information",
     icon: Search,
     stage: "stable",
+    category: "Tools",
+    order: 2,
+    docs: "https://docs.inferable.ai/pages/tavily",
   },
   zapier: {
     name: "Zapier",
     description: "Integrate your Inferable Runs with Zapier",
     icon: Zap,
-    stage: "alpha",
+    stage: "stable",
+    category: "Triggers",
+    order: 3,
+    docs: "https://docs.inferable.ai/pages/zapier",
   },
   valtown: {
     name: "Val.town",
     description: "Register a service with a Val from Val.town",
     icon: FunctionSquare,
-    stage: "alpha",
+    stage: "stable",
+    category: "Tools",
+    order: 4,
+    docs: "https://docs.inferable.ai/pages/valtown",
   },
   slack: {
     name: "Slack",
     description: "Trigger Runs from your Slack workspace",
     icon: Slack,
-    stage: "beta",
+    stage: "stable",
+    category: "Triggers",
+    order: 5,
+    docs: "https://docs.inferable.ai/pages/slack",
   },
   email: {
     name: "Email",
     description: "Trigger Runs via Email",
     icon: Mail,
-    stage: "alpha",
+    stage: "beta",
+    category: "Triggers",
+    order: 6,
+    docs: "https://docs.inferable.ai/pages/email",
+  },
+  toolhouse: {
+    name: "Toolhouse",
+    description: "Connect your toolhouse.ai tools directly to your Inferable Runs",
+    icon: Wrench,
+    stage: "beta",
+    category: "Tools",
+    order: 7,
+    docs: "https://docs.inferable.ai/pages/toolhouse",
   },
 };
 
@@ -186,85 +215,110 @@ export default function IntegrationsPage({
         Connect your Inferable cluster with other tools and services
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Object.entries(integrations)
-          .concat([["zapier", null]])
-          .map(([key, integration]) => {
-            const c = config[key as keyof typeof config];
-            if (!c) return null;
-            const Icon = c.icon;
+      {["Triggers", "Observability", "Tools"].map(category => (
+        <div key={category}>
+          <h2 className="text-xl font-semibold mt-6">{category}</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {descriptionsForCategory[category as keyof typeof descriptionsForCategory] ?? ""}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Object.entries(integrations)
+              .concat([["zapier", null]])
+              .sort((a, b) => {
+                const aConfig = config[a[0] as keyof typeof config];
+                const bConfig = config[b[0] as keyof typeof config];
+                return (aConfig?.order ?? 0) - (bConfig?.order ?? 0);
+              })
+              .filter(([key]) => {
+                const c = config[key as keyof typeof config];
+                return c && c.category === category;
+              })
+              .map(([key, integration]) => {
+                const c = config[key as keyof typeof config];
+                if (!c) return null;
+                const Icon = c.icon;
 
-            return (
-              <Card className="flex flex-col" key={key}>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    <CardTitle>{c.name}</CardTitle>
-                    <div className="group relative">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStageStyles(c.stage)}`}
-                      >
-                        {c.stage}
-                      </span>
-                      <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
-                        {stageDescriptions[c.stage]}
+                return (
+                  <Card className="flex flex-col" key={key}>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Icon className="w-4 h-4" />
+                        <CardTitle>{c.name}</CardTitle>
+                        <div className="group relative">
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStageStyles(c.stage)}`}
+                          >
+                            {c.stage}
+                          </span>
+                          <div className="invisible group-hover:visible absolute left-0 top-full mt-2 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg z-10">
+                            {stageDescriptions[c.stage]}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <CardDescription>{c.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow flex items-end">
-                  <div className="w-full flex gap-2">
-                    <Link href={`/clusters/${clusterId}/integrations/${key}`} className="flex-grow">
-                      <Button className="w-full" variant="outline">
-                        {integration !== null ? "Configure" : "Install"}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                    </Link>
-                    {integration !== null && (
-                      <AlertDialog
-                        open={integrationToDelete === key}
-                        onOpenChange={open => !open && setIntegrationToDelete(null)}
-                      >
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => setIntegrationToDelete(key)}
-                          title="Uninstall integration"
+                      <CardDescription>{c.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex items-end">
+                      <div className="w-full flex gap-2">
+                        <Link
+                          href={`/clusters/${clusterId}/integrations/${key}`}
+                          className="flex-grow"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remove {c.name} Integration</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to remove the {c.name} integration?
-                              <br />
-                              <br />
-                              <b>This will remove all associated configuration.</b>
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => {
-                                handleUninstall(key);
-                                setIntegrationToDelete(null);
-                              }}
+                          <Button className="w-full" variant="outline">
+                            {integration !== null ? "Configure" : "Install"}
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </Link>
+                        <Link href={c.docs} target="_blank" rel="noopener noreferrer">
+                          <Button variant="outline" title="View documentation">
+                            Docs
+                          </Button>
+                        </Link>
+                        {integration !== null && (
+                          <AlertDialog
+                            open={integrationToDelete === key}
+                            onOpenChange={open => !open && setIntegrationToDelete(null)}
+                          >
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => setIntegrationToDelete(key)}
+                              title="Uninstall integration"
                             >
-                              Uninstall
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-      </div>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove {c.name} Integration</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to remove the {c.name} integration?
+                                  <br />
+                                  <br />
+                                  <b>This will remove all associated configuration.</b>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => {
+                                    handleUninstall(key);
+                                    setIntegrationToDelete(null);
+                                  }}
+                                >
+                                  Uninstall
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

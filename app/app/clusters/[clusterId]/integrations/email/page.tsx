@@ -2,13 +2,7 @@
 
 import { client } from "@/client/client";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -81,7 +75,7 @@ export default function EmailIntegration({
         email: {
           agentId: data.agentId === NO_AGENT_ID_VALUE ? undefined : data.agentId,
           connectionId: connectionId ?? NEW_CONNECTION_ID_VALUE,
-          validateSPFandDKIM: data.validateSPFandDKIM
+          validateSPFandDKIM: data.validateSPFandDKIM,
         },
       },
     });
@@ -114,7 +108,7 @@ export default function EmailIntegration({
         params: {
           clusterId: clusterId,
         },
-      })
+      }),
     ]);
 
     setLoading(false);
@@ -125,7 +119,10 @@ export default function EmailIntegration({
 
     if (integrationsResponse.status === 200 && integrationsResponse.body?.email) {
       form.setValue("agentId", integrationsResponse.body.email.agentId);
-      form.setValue("validateSPFandDKIM", integrationsResponse.body.email.validateSPFandDKIM ?? false);
+      form.setValue(
+        "validateSPFandDKIM",
+        integrationsResponse.body.email.validateSPFandDKIM ?? false
+      );
       setConnectionId(integrationsResponse.body.email.connectionId || null);
     }
   }, [clusterId, getToken, form]);
@@ -157,8 +154,8 @@ export default function EmailIntegration({
             <CardTitle>Configure Email Integration</CardTitle>
           </div>
           <CardDescription>
-            Configure email integration settings for this cluster. Route incoming emails
-            to specific agents or use cluster defaults.
+            Configure email integration settings for this cluster. Route incoming emails to specific
+            agents or use cluster defaults.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -169,7 +166,11 @@ export default function EmailIntegration({
                 <div className="flex gap-2 items-center">
                   <Input
                     readOnly
-                    value={!!connectionId ? `${connectionId}@${EMAIL_INGESTION_SUFIX}` : "Email address will be generated on save"}
+                    value={
+                      !!connectionId
+                        ? `${connectionId}@${EMAIL_INGESTION_SUFIX}`
+                        : "Email address will be generated on save"
+                    }
                     className="font-mono"
                   />
 
@@ -178,7 +179,7 @@ export default function EmailIntegration({
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        navigator.clipboard.writeText(`${connectionId}@${EMAIL_INGESTION_SUFIX}` );
+                        navigator.clipboard.writeText(`${connectionId}@${EMAIL_INGESTION_SUFIX}`);
                         toast.success("Copied to clipboard");
                       }}
                     >
@@ -203,8 +204,10 @@ export default function EmailIntegration({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value={NO_AGENT_ID_VALUE}>None (Use Cluster Defaults)</SelectItem>
-                        {agents.map((agent) => (
+                        <SelectItem value={NO_AGENT_ID_VALUE}>
+                          None (Use Cluster Defaults)
+                        </SelectItem>
+                        {agents.map(agent => (
                           <SelectItem key={agent.id} value={agent.id}>
                             {agent.name}
                           </SelectItem>
@@ -212,7 +215,8 @@ export default function EmailIntegration({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Select an agent to handle incoming emails, or leave empty to use cluster defaults
+                      Select an agent to handle incoming emails, or leave empty to use cluster
+                      defaults
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
