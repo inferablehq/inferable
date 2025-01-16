@@ -101,7 +101,7 @@ export const notifyNewMessage = async ({
   if ("message" in messageData && messageData.message) {
 
     const originalMessageId = tags[EMAIL_INIT_MESSAGE_ID_META_KEY];
-    const fromEmail = `"Inferable" <${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}>`;
+    const fromEmail = `"Inferable" <${integrations.email.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}>`;
     const toEmail = tags[EMAIL_SOURCE_META_KEY];
     const subject = `Re: ${tags[EMAIL_SUBJECT_META_KEY]}`;
     const bodyText = messageData.message;
