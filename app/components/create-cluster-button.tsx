@@ -1,22 +1,28 @@
 "use client";
 
 import { client } from "@/client/client";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonProps } from "@/components/ui/button";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { PlusIcon } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-export const CreateClusterButton = () => {
+export const CreateClusterButton = ({
+  label,
+  variant,
+}: {
+  label: string;
+  variant: ButtonProps["variant"];
+}) => {
   const { getToken } = useAuth();
   const router = useRouter();
   return (
     <Button
-      size="lg"
+      variant={variant}
       onClick={async () => {
         const toastId = toast.loading("Creating cluster...");
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         await client
           .createCluster({
@@ -27,7 +33,7 @@ export const CreateClusterButton = () => {
               description: "Cluster created from playground",
             },
           })
-          .then((result) => {
+          .then(result => {
             toast.dismiss(toastId);
             if (result.status === 204) {
               toast.success("Successfully created a cluster.");
@@ -36,14 +42,14 @@ export const CreateClusterButton = () => {
               toast.error("Failed to create a cluster.");
             }
           })
-          .catch((error) => {
+          .catch(error => {
             toast.dismiss(toastId);
             createErrorToast(error, "Failed to create a cluster.");
           });
       }}
     >
       <PlusIcon className="w-4 h-4 mr-2" />
-      Create new Cluster
+      {label}
     </Button>
   );
 };

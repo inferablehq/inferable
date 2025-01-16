@@ -14,6 +14,8 @@ import Link from "next/link";
 import { Eye, Trash2, Settings, Play, ArrowUpDown, Brain, ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
+import { CreateClusterButton } from "./create-cluster-button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type ClusterData = {
   id: string;
@@ -147,11 +149,24 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
           Get started by creating your first cluster to organize your functions and runs.
         </p>
         <div className="mt-6 flex gap-4 justify-center">
-          <Button asChild variant="default">
-            <Link href="/setup-demo">
-              Quick Start <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <Popover defaultOpen>
+            <PopoverTrigger asChild>
+              <Button asChild variant="default">
+                <Link href="/setup-demo">
+                  Quick Start <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95">
+              <div className="text-sm font-medium">
+                👋 New to Inferable?
+                <p className="font-normal text-muted-foreground mt-1">
+                  We strongly recommend starting with our demo cluster!
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <CreateClusterButton label="Create empty cluster" variant="outline" />
         </div>
       </div>
     );
@@ -159,7 +174,7 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center">
         <Input
           placeholder="Filter clusters..."
           value={(columnFilters[0]?.value as string) ?? ""}
@@ -173,6 +188,26 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
           }
           className="max-w-sm"
         />
+        <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button asChild variant="outline">
+                <Link href="/setup-demo">
+                  Quick Start <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95">
+              <div className="text-sm font-medium">
+                👋 New to Inferable?
+                <p className="font-normal text-muted-foreground mt-1">
+                  We strongly recommend starting with our demo cluster!
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <CreateClusterButton label="Create Cluster" variant="default" />
+        </div>
       </div>
       <DataTable
         columns={columns}
