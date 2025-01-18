@@ -101,7 +101,7 @@ export const notifyNewMessage = async ({
   if ("message" in messageData && messageData.message) {
 
     const originalMessageId = tags[EMAIL_INIT_MESSAGE_ID_META_KEY];
-    const fromEmail = `"Inferable" <${message.clusterId}@${env.INFERABLE_EMAIL_DOMAIN}>`;
+    const fromEmail = `"Inferable" <${integrations.email.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}>`;
     const toEmail = tags[EMAIL_SOURCE_META_KEY];
     const subject = `Re: ${tags[EMAIL_SUBJECT_META_KEY]}`;
     const bodyText = messageData.message;
@@ -261,7 +261,12 @@ async function handleEmailIngestion(raw: unknown) {
   const connection = await integrationByConnectionId(message.connectionId);
 
   if (!connection) {
-    logger.info("Could not find connection for email. Skipping")
+    logger.info("Could not find connection for email. Skipping", {
+      connectionId: message.connectionId,
+      messageId: message.messageId,
+      inReplyTo: message.inReplyTo,
+      integrationAddress: message.ingestionAddresses
+    })
     return
   }
 
@@ -269,6 +274,8 @@ async function handleEmailIngestion(raw: unknown) {
     if (connection?.email?.validateSPFandDKIM) {
       logger.info("Email did not pass DKIM or SPF checks. Skipping.", {
         messageId: message.messageId,
+        dkimVerdict: message.dkimVerdict,
+        spfVerdict: message.spfVerdict
       });
 
       await sendEmail({
