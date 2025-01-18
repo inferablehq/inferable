@@ -32,7 +32,10 @@ type MessageEvent = {
   clusterId: string;
   user?: {
     userId: string;
-    emailAddress: string;
+    slack: {
+      id: string;
+      email: string;
+    }
   };
   agentId?: string;
 };
@@ -515,7 +518,7 @@ const handleNewThread = async ({ event, client, clusterId, user, agentId }: Mess
       type: "human",
       authContext: {
         userId: user?.userId,
-        emailAddress: user?.emailAddress,
+        slack: user?.slack,
       },
       messageMetadata: {
         displayable: {
@@ -630,7 +633,10 @@ const authenticateUser = async (
 
   return {
     userId: `clerk:${clerkUser.id}`,
-    emailAddress: email,
+    slack: {
+      id: userId,
+      email
+    }
   };
 };
 

@@ -63,7 +63,7 @@ export type CustomAuth = Auth & {
   type: "custom";
   clusterId: string;
   token: string;
-  context: unknown;
+  context: Record<string, unknown>;
 };
 
 export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {

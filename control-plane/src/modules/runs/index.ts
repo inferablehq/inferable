@@ -60,7 +60,7 @@ export const createRun = async ({
   reasoningTraces?: boolean;
   enableSummarization?: boolean;
   modelIdentifier?: ChatIdentifiers;
-  authContext?: unknown;
+  authContext?: Record<string, unknown>;
   context?: unknown;
   enableResultGrounding?: boolean;
 }) => {
@@ -87,7 +87,10 @@ export const createRun = async ({
       agent_id: agentId,
       agent_version: agentVersion,
       model_identifier: modelIdentifier,
-      auth_context: authContext,
+      auth_context: {
+        ...authContext,
+        userId,
+      },
       context: context,
       enable_result_grounding: enableResultGrounding,
     })
