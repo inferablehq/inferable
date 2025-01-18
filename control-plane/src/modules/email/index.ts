@@ -425,6 +425,10 @@ const handleNewChain = async ({
     userId,
     clusterId,
     agentId,
+    authContext: {
+      userId,
+      emailAddress: source,
+    },
     tags: {
       [EMAIL_INIT_MESSAGE_ID_META_KEY]: messageId,
       [EMAIL_SUBJECT_META_KEY]: subject,

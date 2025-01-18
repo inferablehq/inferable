@@ -30,7 +30,10 @@ type MessageEvent = {
   event: KnownEventFromType<"message">;
   client: webApi.WebClient;
   clusterId: string;
-  userId?: string;
+  user?: {
+    userId: string;
+    emailAddress: string;
+  };
   agentId?: string;
 };
 
@@ -333,14 +336,14 @@ export const start = async (fastify: FastifyInstance) => {
 
       if (hasThread(event)) {
         await handleExistingThread({
-          userId: user?.userId,
+          user,
           event,
           client,
           clusterId: integration.cluster_id,
         });
       } else {
         await handleNewThread({
-          userId: user?.userId,
+          user,
           event,
           client,
           clusterId: integration.cluster_id,
@@ -478,7 +481,7 @@ const deleteNangoConnection = async (connectionId: string) => {
   await nango.deleteConnection(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
 };
 
-const handleNewThread = async ({ event, client, clusterId, userId, agentId }: MessageEvent) => {
+const handleNewThread = async ({ event, client, clusterId, user, agentId }: MessageEvent) => {
   let thread = event.ts;
   // If this message is part of a thread, associate the run with the thread rather than the message
   if (hasThread(event)) {
@@ -506,10 +509,14 @@ const handleNewThread = async ({ event, client, clusterId, userId, agentId }: Me
 
   if ("text" in event && event.text) {
     const run = await createRunWithMessage({
-      userId,
+      userId: user?.userId,
       clusterId,
       message: event.text,
       type: "human",
+      authContext: {
+        userId: user?.userId,
+        emailAddress: user?.emailAddress,
+      },
       messageMetadata: {
         displayable: {
           via: "slack",
@@ -536,7 +543,7 @@ const handleNewThread = async ({ event, client, clusterId, userId, agentId }: Me
   throw new Error("Event had no text");
 };
 
-const handleExistingThread = async ({ event, client, clusterId, userId }: MessageEvent) => {
+const handleExistingThread = async ({ event, client, clusterId, user }: MessageEvent) => {
   if ("text" in event && event.text) {
     if (!hasThread(event)) {
       throw new Error("Event had no thread_ts");
@@ -552,7 +559,7 @@ const handleExistingThread = async ({ event, client, clusterId, userId }: Messag
     // Message is within a thread which already has a Run, continue
     if (run) {
       await addMessageAndResume({
-        userId,
+        userId: user?.userId,
         id: ulid(),
         clusterId: run.clusterId,
         runId: run.id,
@@ -568,7 +575,7 @@ const handleExistingThread = async ({ event, client, clusterId, userId }: Messag
       // Message is in a thread, but does't have a Run, start a new one
       // TODO: Inferable doesn't have context for the original message, we should include this
       await handleNewThread({
-        userId,
+        user,
         event,
         client,
         clusterId,
@@ -623,6 +630,7 @@ const authenticateUser = async (
 
   return {
     userId: `clerk:${clerkUser.id}`,
+    emailAddress: email,
   };
 };
 
