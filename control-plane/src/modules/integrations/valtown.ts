@@ -132,13 +132,9 @@ const syncValTownService = async ({
 
 const unsyncValTownService = async ({
   clusterId,
-  integrations,
 }: {
   clusterId: string;
-  integrations: z.infer<typeof integrationSchema>;
 }) => {
-  assert(integrations.valtown, "Missing valtown configuration");
-
   await deleteServiceDefinition({
     service: "valtown",
     owner: { clusterId },
@@ -202,8 +198,8 @@ export const valtown: InstallableIntegration = {
       token: config.token,
     });
   },
-  onDeactivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {
-    await unsyncValTownService({ clusterId, integrations });
+  onDeactivate: async (clusterId: string, _: z.infer<typeof integrationSchema> ) => {
+    await unsyncValTownService({ clusterId });
   },
   handleCall,
 };
