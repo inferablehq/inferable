@@ -1,7 +1,12 @@
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, integrations } from "../data";
-import { tavilyIntegration, valtownIntegration, toolhouseIntegration, slackIntegration } from "./constants";
+import {
+  tavilyIntegration,
+  valtownIntegration,
+  toolhouseIntegration,
+  slackIntegration,
+} from "./constants";
 import { tavily } from "./tavily";
 import { toolhouse } from "./toolhouse";
 import { valtown } from "./valtown";
@@ -82,11 +87,11 @@ export const upsertIntegrations = async ({
     Object.entries(config)
       .filter(([key]) => installables[key as keyof typeof installables])
       .map(([key, value]) => {
-      if (value) {
-        return getInstallables(key)?.onActivate?.(clusterId, config, existing);
-      } else if (value === null) {
-        return getInstallables(key)?.onDeactivate?.(clusterId, config, existing);
-      }
-    })
+        if (value) {
+          return getInstallables(key)?.onActivate?.(clusterId, config, existing);
+        } else if (value === null) {
+          return getInstallables(key)?.onDeactivate?.(clusterId, config, existing);
+        }
+      })
   );
 };
