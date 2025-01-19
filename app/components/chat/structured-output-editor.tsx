@@ -4,13 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import debounce from "lodash/debounce";
 import { cn } from "@/lib/utils";
 import { X, Plus } from "lucide-react";
@@ -21,7 +15,7 @@ const basicStructuredOutputSchema = z.object({
     z.object({
       type: z.literal("string"),
       description: z.string().optional(),
-    }),
+    })
   ),
   required: z.array(z.string()).optional(),
   additionalProperties: z.boolean().default(false),
@@ -77,20 +71,18 @@ export function StructuredOutputEditor({
       }
 
       if (editorType === "basic") {
-        const props: Property[] = Object.entries(schemaValue.properties).map(
-          ([key, prop]) => ({
-            key,
-            type: prop.type,
-            description: prop.description || "",
-            required: schemaValue.required?.includes(key) || false,
-          }),
-        );
+        const props: Property[] = Object.entries(schemaValue.properties).map(([key, prop]) => ({
+          key,
+          type: prop.type,
+          description: prop.description || "",
+          required: schemaValue.required?.includes(key) || false,
+        }));
         setProperties(props);
       } else {
         setAdvancedValue(JSON.stringify(schemaValue, null, 2));
       }
     },
-    [onChange],
+    [onChange]
   );
 
   useEffect(() => {
@@ -123,19 +115,19 @@ export function StructuredOutputEditor({
               type: "string",
               description,
             },
-          ]),
+          ])
         ),
-        required: newProperties.filter((p) => p.required).map((p) => p.key),
+        required: newProperties.filter(p => p.required).map(p => p.key),
         additionalProperties: false,
       };
       onChange(JSON.stringify(schema, null, 2));
     }, 300),
-    [onChange],
+    [onChange]
   );
 
   const updateProperty = useCallback(
     (index: number, field: keyof Property, value: string | boolean) => {
-      setProperties((prevProperties) => {
+      setProperties(prevProperties => {
         const updatedProperties = [...prevProperties];
         updatedProperties[index] = {
           ...updatedProperties[index],
@@ -145,7 +137,7 @@ export function StructuredOutputEditor({
         return updatedProperties;
       });
     },
-    [debouncedUpdateSchema],
+    [debouncedUpdateSchema]
   );
 
   const addProperty = () => {
@@ -178,7 +170,7 @@ export function StructuredOutputEditor({
   };
 
   const removeProperty = (index: number) => {
-    setProperties((prevProperties) => {
+    setProperties(prevProperties => {
       const updatedProperties = prevProperties.filter((_, i) => i !== index);
       debouncedUpdateSchema(updatedProperties);
       return updatedProperties;
@@ -199,7 +191,7 @@ export function StructuredOutputEditor({
         </Select>
         {editorType === "basic" && (
           <Button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               e.preventDefault();
               addProperty();
@@ -216,17 +208,17 @@ export function StructuredOutputEditor({
       {editorType === "advanced" ? (
         <Textarea
           value={advancedValue}
-          onChange={(e) => handleAdvancedChange(e.target.value)}
-          className="flex-grow min-h-[540px] font-mono text-sm"
+          onChange={e => handleAdvancedChange(e.target.value)}
+          className="flex-grow min-h-[340px] font-mono text-sm"
         />
       ) : (
-        <div className="flex-grow flex flex-col min-h-[540px] overflow-y-auto space-y-4">
+        <div className="flex-grow flex flex-col min-h-[340px] overflow-y-auto space-y-4">
           {properties.map((prop, index) => (
             <div key={index} className="bg-secondary/50 p-4 rounded-lg">
               <div className="flex justify-between items-center mb-2">
                 <label className="text-sm font-medium">Property</label>
                 <Button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     e.preventDefault();
                     removeProperty(index);
@@ -241,11 +233,10 @@ export function StructuredOutputEditor({
               <div className="flex space-x-2 mb-2">
                 <Input
                   value={prop.key}
-                  onChange={(e) => updateProperty(index, "key", e.target.value)}
+                  onChange={e => updateProperty(index, "key", e.target.value)}
                   className={cn(
                     "flex-grow",
-                    prop.key.trim() === "" &&
-                      "border-destructive focus-visible:ring-destructive",
+                    prop.key.trim() === "" && "border-destructive focus-visible:ring-destructive"
                   )}
                   placeholder="Enter property name"
                 />
@@ -253,14 +244,9 @@ export function StructuredOutputEditor({
                   <Checkbox
                     id={`required-${index}`}
                     checked={prop.required}
-                    onCheckedChange={(checked) =>
-                      updateProperty(index, "required", !!checked)
-                    }
+                    onCheckedChange={checked => updateProperty(index, "required", !!checked)}
                   />
-                  <label
-                    htmlFor={`required-${index}`}
-                    className="text-xs cursor-pointer"
-                  >
+                  <label htmlFor={`required-${index}`} className="text-xs cursor-pointer">
                     Required
                   </label>
                 </div>
@@ -268,13 +254,11 @@ export function StructuredOutputEditor({
               <label className="text-sm font-medium">Description</label>
               <Textarea
                 value={prop.description}
-                onChange={(e) =>
-                  updateProperty(index, "description", e.target.value)
-                }
+                onChange={e => updateProperty(index, "description", e.target.value)}
                 className={cn(
                   "mt-1",
                   prop.description.trim() === "" &&
-                    "border-orange-500 focus-visible:ring-orange-500",
+                    "border-orange-500 focus-visible:ring-orange-500"
                 )}
                 placeholder="Enter property description"
                 rows={3}

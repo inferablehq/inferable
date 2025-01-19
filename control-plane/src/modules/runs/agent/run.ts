@@ -452,6 +452,12 @@ export const findRelevantTools = async (state: RunGraphState) => {
         } else if (internalToolName === stdlib.getUrl.metadata.name) {
           tools.push(stdlib.getUrl);
           continue;
+        } else {
+          logger.warn("Tool not found in stdlib", {
+            tool,
+          });
+
+          throw new Error(`Tool ${tool} not found in cluster ${run.clusterId}`);
         }
       }
 

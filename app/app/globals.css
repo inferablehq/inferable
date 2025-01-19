@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  font-size: 13px !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -154,4 +158,3 @@ input[cmdk-input]:focus-visible {
   font-size: 1.25rem;
   line-height: 1.75rem;
 }
-

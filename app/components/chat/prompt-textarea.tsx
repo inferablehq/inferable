@@ -185,6 +185,15 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     if (queryAgentId) {
       setSelectedAgentId(queryAgentId);
     }
+
+    const queryPrompt = searchParams?.get("prompt");
+    if (queryPrompt) {
+      setPrompt(queryPrompt);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      }
+    }
   }, [searchParams, setSelectedAgentId]);
 
   const onSubmit = useCallback(
@@ -290,14 +299,6 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   };
 
   const [activeTab, setActiveTab] = useState<string>("custom");
-
-  useEffect(() => {
-    const queryAgentId = searchParams?.get("agentId");
-    if (queryAgentId) {
-      setSelectedAgentId(queryAgentId);
-      setActiveTab("agent");
-    }
-  }, [searchParams, setSelectedAgentId]);
 
   const noServicesAndMachines = !services.length && !machines.length;
 
@@ -435,7 +436,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                 size="sm"
                 className="shrink-0"
               >
-                Learn How <ArrowRight className="ml-2 h-4 w-4" />
+                Connect a Service <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>

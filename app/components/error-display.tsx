@@ -53,27 +53,9 @@ export default function ErrorDisplay({ status, error, meta }: ErrorDisplayProps)
   const message = error?.body?.error?.message || error?.error?.message || error?.message;
 
   return (
-    <div className="w-full flex items-center justify-center">
-      <div className="p-6 max-w-md w-full border border-red-200 rounded-lg shadow-lg">
-        <div className="flex">
-          <div className="flex-shrink-0">
-            <AlertTriangle className="h-6 w-6 text-red-500" aria-hidden="true" />
-          </div>
-          <div className="ml-4">
-            <h3 className="text-base font-semibold text-red-700">
-              We hit an error {status && `(${status})`}
-            </h3>
-            <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
-              <p>{message || errorContent.message}</p>
-            </div>
-            {meta && (
-              <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
-                <ReadOnlyJSON json={meta} />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="flex items-center gap-2">
+      <AlertTriangle className="h-5 w-5 text-red-500" aria-hidden="true" />
+      <p className="text-sm text-gray-600">{message || errorContent.message}</p>
     </div>
   );
 }

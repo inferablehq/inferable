@@ -231,8 +231,6 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     cluster,
   } = useClusterState(clusterId);
 
-  const isDemoCluster = cluster?.isDemo === true;
-
   return (
     <div className="flex flex-col space-y-3 w-full">
       <Sheet>
@@ -355,6 +353,129 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               </div>
             ) : (
               <ServicesOverview clusterId={clusterId} />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
+          >
+            <div className="absolute -top-1.5 -right-1.5">
+              <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              </div>
+            </div>
+            <div className="flex items-center gap-4 w-full">
+              <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
+                <Blocks className="w-5 h-5 text-gray-700" />
+              </div>
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-semibold text-gray-900">Standard Library</span>
+                <span className="text-xs text-green-600">Available</span>
+              </div>
+            </div>
+          </Button>
+        </SheetTrigger>
+        <SheetContent style={{ minWidth: "80%" }} className="overflow-y-auto h-screen">
+          <SheetHeader className="pb-6">
+            <SheetTitle>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Blocks className="w-5 h-5 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <div className="font-mono text-xl">Standard Library</div>
+                  <div className="text-sm text-muted-foreground">
+                    Built-in tools ready to use in your agents. These tools are always available and
+                    don't require any setup.{" "}
+                    <a href="/docs/pages/standard-library" className="text-primary hover:underline">
+                      View Documentation →
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-6">
+            {isInitialLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Description</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-mono">calculator</TableCell>
+                        <TableCell>
+                          <div className="space-y-2">
+                            <div>
+                              Performs arithmetic calculations using a sandboxed Python interpreter
+                              for secure and isolated execution
+                            </div>
+                            <a
+                              href={`/clusters/${clusterId}/runs?prompt=Calculate (5 * 3) + (10 / 2) using the calculator tool`}
+                              className="inline-block"
+                            >
+                              <Button variant="outline" size="sm" className="text-xs">
+                                Test: Basic Arithmetic
+                              </Button>
+                            </a>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-mono">currentDateTime</TableCell>
+                        <TableCell>
+                          <div className="space-y-2">
+                            <div>
+                              Returns the current time in both ISO 8601 format and Unix timestamp
+                            </div>
+                            <a
+                              href={`/clusters/${clusterId}/runs?prompt=What is the current date and time? Please show both ISO format and Unix timestamp`}
+                              className="inline-block"
+                            >
+                              <Button variant="outline" size="sm" className="text-xs">
+                                Test: Get Current Time
+                              </Button>
+                            </a>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-mono">getUrl</TableCell>
+                        <TableCell>
+                          <div className="space-y-2">
+                            <div>
+                              Fetches and parses web content into markdown format, with an allowlist
+                              of trusted domains for security
+                            </div>
+                            <a
+                              href={`/clusters/${clusterId}/runs?prompt=Fetch and show me the content from https://docs.inferable.ai/introduction`}
+                              className="inline-block"
+                            >
+                              <Button variant="outline" size="sm" className="text-xs">
+                                Test: Fetch Documentation
+                              </Button>
+                            </a>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
             )}
           </div>
         </SheetContent>
@@ -634,6 +755,25 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
 
         <div className="mt-4 space-y-4">
           <div className="grid grid-cols-3 gap-4">
+            <a
+              href="https://github.com/inferablehq/inferable/tree/main/adapters/stdlib-adapter"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              <Button
+                variant="outline"
+                className="w-full h-auto py-4 bg-white hover:bg-gray-50 border-gray-200"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#4CAF50] flex items-center justify-center">
+                    <span className="text-white font-bold">S</span>
+                  </div>
+                  <span className="text-sm">Standard Library</span>
+                  <span className="text-xs text-green-600">Available</span>
+                </div>
+              </Button>
+            </a>
             <a
               href="https://github.com/inferablehq/inferable/tree/main/adapters/graphql-adapter"
               target="_blank"
