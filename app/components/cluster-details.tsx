@@ -293,16 +293,20 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                       <TableRow>
                         <TableCell className="font-mono">calculator</TableCell>
                         <TableCell>
-                          <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-4">
                             <div>
                               Performs arithmetic calculations using a sandboxed Python interpreter
                               for secure and isolated execution
                             </div>
                             <a
                               href={`/clusters/${clusterId}/runs?prompt=Calculate (5 * 3) + (10 / 2) using the calculator tool`}
-                              className="inline-block"
+                              className="shrink-0"
                             >
-                              <Button variant="outline" size="sm" className="text-xs">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs whitespace-nowrap"
+                              >
                                 Test: Basic Arithmetic
                               </Button>
                             </a>
@@ -312,15 +316,19 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                       <TableRow>
                         <TableCell className="font-mono">currentDateTime</TableCell>
                         <TableCell>
-                          <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-4">
                             <div>
                               Returns the current time in both ISO 8601 format and Unix timestamp
                             </div>
                             <a
                               href={`/clusters/${clusterId}/runs?prompt=What is the current date and time? Please show both ISO format and Unix timestamp`}
-                              className="inline-block"
+                              className="shrink-0"
                             >
-                              <Button variant="outline" size="sm" className="text-xs">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs whitespace-nowrap"
+                              >
                                 Test: Get Current Time
                               </Button>
                             </a>
@@ -330,17 +338,21 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                       <TableRow>
                         <TableCell className="font-mono">getUrl</TableCell>
                         <TableCell>
-                          <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-4">
                             <div>
                               Fetches and parses web content into markdown format, with an allowlist
                               of trusted domains for security
                             </div>
                             <a
-                              href={`/clusters/${clusterId}/runs?prompt=Fetch and show me the content from https://docs.inferable.ai/introduction`}
-                              className="inline-block"
+                              href={`/clusters/${clusterId}/runs?prompt=What's the current top story on Hacker News?`}
+                              className="shrink-0"
                             >
-                              <Button variant="outline" size="sm" className="text-xs">
-                                Test: Fetch Documentation
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs whitespace-nowrap"
+                              >
+                                Test: Fetch Hacker News
                               </Button>
                             </a>
                           </div>
