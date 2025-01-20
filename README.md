@@ -9,9 +9,9 @@ Inferable is the easiest way to convert your existing internal APIs, functions, 
 ![NPM Version](https://img.shields.io/npm/v/inferable?color=32CD32&style=for-the-badge) ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/inferablehq/inferable?filename=sdk-go%2Fgo.mod&color=32CD32&style=for-the-badge) ![NuGet Version](https://img.shields.io/nuget/v/inferable?color=32CD32&style=for-the-badge)
 ![License](https://img.shields.io/github/license/inferablehq/inferable?color=32CD32&style=for-the-badge)
 
-</div>
+[![Demo Video](./assets/thumbnail.png)](https://www.youtube.com/watch?v=B8Rl8FT8DpM)
 
-[![Demo Video](https://image.mux.com/uzM4gDXiba4RLkvub01mnUey02p8huyEc02PsA6aTLpLqo/animated.gif?width=640&start=115&fps=30)](https://youtu.be/B8Rl8FT8DpM)
+</div>
 
 ## ✨ Features
 
