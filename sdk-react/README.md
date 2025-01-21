@@ -46,8 +46,12 @@ function Chat() {
     // customAuthToken: "your-custom-auth-token",
   });
 
-  // Start or connect to a run
-  const run = useRun(inferable);
+  const {
+    createMessage,
+    messages,
+    setRunId,
+    run,
+  } = useRun(inferable);
 
   // Get utility functions for working with messages
   const messages = useMessages(run.messages);
@@ -66,7 +70,15 @@ function Chat() {
       <input
         onKeyPress={e => {
           if (e.key === "Enter") {
-            run.createMessage(e.target.value);
+            if (!run?.id) {
+              const { id } = await inferable.createRun({
+                initialPrompt: message,
+                interactive: true,
+              });
+              setRunId(id);
+            } else {
+              await createMessage(message);
+            }
             e.target.value = "";
           }
         }}
