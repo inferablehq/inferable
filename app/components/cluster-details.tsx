@@ -266,7 +266,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                   <div className="font-mono text-xl">Standard Library</div>
                   <div className="text-sm text-muted-foreground">
                     Built-in tools ready to use. These tools are always available for runs.{" "}
-                    <a href="/docs/pages/standard-library" className="text-primary hover:underline">
+                    <a href="https://docs.inferable.ai/pages/standard-lib" className="text-primary hover:underline">
                       View Documentation →
                     </a>
                   </div>

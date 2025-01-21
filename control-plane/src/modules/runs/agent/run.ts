@@ -26,7 +26,7 @@ import { RunGraphState } from "./state";
 import { AgentTool } from "./tool";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
-import { stdlib } from "./tools/stdlib";
+import { availableStdlib } from "./tools/stdlib";
 
 /**
  * Run a Run from the most recent saved state
@@ -133,7 +133,7 @@ export const processRun = async (
         return mockTool;
       }
 
-      const internalTool = stdlib[toolCall.toolName];
+      const internalTool = availableStdlib()[toolCall.toolName];
 
       if (internalTool) {
         return internalTool;
@@ -437,6 +437,8 @@ export const findRelevantTools = async (state: RunGraphState) => {
   const tools: AgentTool[] = [];
   const attachedFunctions = run.attachedFunctions ?? [];
 
+  const stdlib = availableStdlib();
+
   // If functions are explicitly attached, skip relevant tools search
   if (attachedFunctions.length > 0) {
     for (const tool of attachedFunctions) {
@@ -486,7 +488,9 @@ export const findRelevantTools = async (state: RunGraphState) => {
 
     tools.push(...found);
 
-    tools.push(stdlib.currentDateTime, stdlib.getUrl, stdlib.calculator);
+    tools.push(
+      ...Object.values(availableStdlib())
+    )
 
     events.write({
       type: "functionRegistrySearchCompleted",

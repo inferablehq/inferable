@@ -117,6 +117,8 @@ const envSchema = z
       "ANALYTICS_BUCKET_NAME",
       "NANGO_SECRET_KEY",
       "SLACK_SIGNING_SECRET",
+      "E2B_ACCESS_TOKEN",
+      "FIRECRAWL_API_KEY"
     ];
 
     for (const key of EE_REQUIRED) {
