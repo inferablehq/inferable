@@ -205,7 +205,7 @@ export function useRun<T extends z.ZodObject<any>>(
 
   const createMessage = useMemo(
     () => async (input: string) => {
-      if (!runId) return;
+      if (!runId) throw new Error("Can not create message without a run ID");
 
       const response = await inferable.client.createMessage({
         params: { clusterId: inferable.clusterId, runId: runId },
