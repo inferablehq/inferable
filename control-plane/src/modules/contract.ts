@@ -324,6 +324,22 @@ export const definition = {
       }),
     },
   },
+  cancelJob: {
+    method: "POST",
+    path: "/clusters/:clusterId/jobs/:jobId/cancel",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      jobId: z.string(),
+    }),
+    responses: {
+      204: z.undefined(),
+      401: z.undefined(),
+    },
+    body: z.undefined(),
+  },
   createJobResult: {
     method: "POST",
     path: "/clusters/:clusterId/jobs/:jobId/result",
@@ -1327,24 +1343,6 @@ export const definition = {
     body: z.object({}).passthrough(),
     responses: {
       200: z.undefined(),
-    },
-  },
-  getStandardLibraryMeta: {
-    method: "GET",
-    path: "/clusters/:clusterId/standard-library",
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        tools: z.array(
-          z.object({
-            name: z.string(),
-            description: z.string(),
-            enabled: z.boolean(),
-          })
-        ),
-      }),
     },
   },
 } as const;

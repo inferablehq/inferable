@@ -355,18 +355,6 @@ export const updateServiceEmbeddings = async ({
   );
 };
 
-export const getStandardLibraryToolsMeta = (): {
-  name: string;
-  description: string;
-  enabled: boolean;
-}[] => {
-  return Object.values(availableStdlib()).map(tool => ({
-    name: tool.name,
-    description: tool.description,
-    enabled: true,
-  }));
-};
-
 export const validateServiceRegistration = ({
   service,
   definition,
