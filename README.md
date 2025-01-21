@@ -49,6 +49,8 @@ The easiest way to get started is by following the [Quickstart](https://docs.inf
 - **[Terminal Copilot](https://github.com/inferablehq/inferable/blob/main/demos/typescript/terminal-copilot/service.ts)**: Run commands in your terminal, with explicit human approvals.
 - **[Data Connector](https://www.inferable.ai/use-cases/data-connector)**: Deploy a docker container in your infrastructure, and let Inferable take actions with your REST / GraphQL APIs.
 
+![Demo](./assets/demo.png)
+
 ## 📚 Language Support
 
 | Language | Source | Package |
