@@ -292,6 +292,8 @@ export const definition = {
         resultType: z.string().nullable(),
         createdAt: z.date(),
         blobs: z.array(blobSchema),
+        approved: z.boolean().nullable(),
+        approvalRequested: z.boolean().nullable(),
       }),
     },
   },
