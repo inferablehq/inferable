@@ -45,7 +45,7 @@ export function Header() {
           appearance={clerkAppearance}
           afterCreateOrganizationUrl="/"
           afterLeaveOrganizationUrl="/"
-          afterSelectOrganizationUrl="/"
+          afterSelectOrganizationUrl="/switch-org"
         />
       </div>
     </header>
