@@ -86,6 +86,15 @@ export const integrationSchema = z.object({
       nangoConnectionId: z.string(),
       botUserId: z.string(),
       teamId: z.string(),
+      agentId: z.string().optional(),
+    })
+    .optional()
+    .nullable(),
+  email: z
+    .object({
+      connectionId: z.string(),
+      agentId: z.string().optional(),
+      validateSPFandDKIM: z.boolean().optional(),
     })
     .optional()
     .nullable(),
@@ -144,53 +153,63 @@ const agentDataSchema = z
   })
   .strict();
 
-const peripheralMessageDataSchema = z.object({
+const peripheralMessageSchema = z.object({
   id: z.string(),
   createdAt: z.date().optional(),
   pending: z.boolean().optional(),
-  displayableContext: z.record(z.string()).optional().nullable(),
+  metadata: z.record(z.unknown()).optional().nullable(),
 });
 
-export const unifiedMessageDataSchema = z.discriminatedUnion("type", [
+export const unifiedMessageSchema = z.discriminatedUnion("type", [
   z
     .object({
       type: z.literal("agent"),
       data: agentDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("invocation-result"),
       data: resultDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("human"),
       data: genericMessageDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("template"),
       data: genericMessageDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("supervisor"),
       data: genericMessageDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
   z
     .object({
       type: z.literal("agent-invalid"),
       data: genericMessageDataSchema,
     })
-    .merge(peripheralMessageDataSchema),
+    .merge(peripheralMessageSchema),
 ]);
 
-export type UnifiedMessage = z.infer<typeof unifiedMessageDataSchema>;
+export type UnifiedMessage = z.infer<typeof unifiedMessageSchema>;
+
+export type MessageTypes =
+  | "agent"
+  | "human"
+  | "template"
+  | "invocation-result"
+  | "supervisor"
+  | "agent-invalid";
+
+export type UnifiedMessageOfType<T extends MessageTypes> = Extract<UnifiedMessage, { type: T }>;
 
 export const FunctionConfigSchema = z.object({
   cache: z
@@ -205,6 +224,232 @@ export const FunctionConfigSchema = z.object({
 });
 
 export const definition = {
+  // Misc Endpoints
+  live: {
+    method: "GET",
+    path: "/live",
+    responses: {
+      200: z.object({
+        status: z.string(),
+      }),
+    },
+  },
+  getContract: {
+    method: "GET",
+    path: "/contract",
+    responses: {
+      200: z.object({
+        contract: z.string(),
+      }),
+    },
+  },
+
+  createStructuredOutput: {
+    method: "POST",
+    path: "/clusters/:clusterId/structured-output",
+    headers: z.object({ authorization: z.string() }),
+    body: z.object({
+      prompt: z.string(),
+      resultSchema: anyObject
+        .optional()
+        .describe(
+          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
+        ),
+      modelId: z.enum(["claude-3-5-sonnet", "claude-3-haiku"]),
+      temperature: z
+        .number()
+        .optional()
+        .describe("The temperature to use for the model")
+        .default(0.5),
+    }),
+    responses: {
+      200: z.unknown(),
+      401: z.undefined(),
+    },
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+  },
+
+  // Job Endpoints
+  getJob: {
+    method: "GET",
+    path: "/clusters/:clusterId/jobs/:jobId",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      jobId: z.string(),
+    }),
+    responses: {
+      200: z.object({
+        id: z.string(),
+        status: z.string(),
+        targetFn: z.string(),
+        service: z.string(),
+        executingMachineId: z.string().nullable(),
+        targetArgs: z.string(),
+        result: z.string().nullable(),
+        resultType: z.string().nullable(),
+        createdAt: z.date(),
+        blobs: z.array(blobSchema),
+      }),
+    },
+  },
+  createJob: {
+    method: "POST",
+    path: "/clusters/:clusterId/jobs",
+    query: z.object({
+      waitTime: z.coerce
+        .number()
+        .min(0)
+        .max(20)
+        .default(0)
+        .describe("Time in seconds to keep the request open waiting for a response"),
+    }),
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    body: z.object({
+      service: z.string(),
+      function: z.string(),
+      input: z.object({}).passthrough(),
+    }),
+    responses: {
+      401: z.undefined(),
+      200: z.object({
+        id: z.string(),
+        result: z.any().nullable(),
+        resultType: z.enum(["resolution", "rejection", "interrupt"]).nullable(),
+        status: z.enum(["pending", "running", "success", "failure", "stalled"]),
+      }),
+    },
+  },
+  cancelJob: {
+    method: "POST",
+    path: "/clusters/:clusterId/jobs/:jobId/cancel",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      jobId: z.string(),
+    }),
+    responses: {
+      204: z.undefined(),
+      401: z.undefined(),
+    },
+    body: z.undefined(),
+  },
+  createJobResult: {
+    method: "POST",
+    path: "/clusters/:clusterId/jobs/:jobId/result",
+    headers: z.object({
+      authorization: z.string(),
+      ...machineHeaders,
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      jobId: z.string(),
+    }),
+    responses: {
+      204: z.undefined(),
+      401: z.undefined(),
+    },
+    body: z.object({
+      result: z.any(),
+      resultType: z.enum(["resolution", "rejection", "interrupt"]),
+      meta: z.object({
+        functionExecutionTime: z.number().optional(),
+      }),
+    }),
+  },
+  listJobs: {
+    method: "GET",
+    path: "/clusters/:clusterId/jobs",
+    query: z.object({
+      service: z.string(),
+      status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
+      limit: z.coerce.number().min(1).max(20).default(10),
+      acknowledge: z.coerce
+        .boolean()
+        .default(false)
+        .describe("Should retrieved Jobs be marked as running"),
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    headers: z.object({
+      authorization: z.string(),
+      ...machineHeaders,
+    }),
+    responses: {
+      401: z.undefined(),
+      410: z.object({
+        message: z.string(),
+      }),
+      200: z.array(
+        z.object({
+          id: z.string(),
+          function: z.string(),
+          input: z.any(),
+          authContext: z.any().nullable(),
+          runContext: z.any().nullable(),
+          approved: z.boolean(),
+        })
+      ),
+    },
+  },
+  createJobApproval: {
+    method: "POST",
+    path: "/clusters/:clusterId/jobs/:jobId/approval",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      jobId: z.string(),
+    }),
+    responses: {
+      204: z.undefined(),
+      404: z.object({
+        message: z.string(),
+      }),
+    },
+    body: z.object({
+      approved: z.boolean(),
+    }),
+  },
+  createJobBlob: {
+    method: "POST",
+    path: "/clusters/:clusterId/jobs/:jobId/blobs",
+    headers: z.object({
+      authorization: z.string(),
+      "x-machine-id": z.string(),
+      "x-machine-sdk-version": z.string(),
+      "x-machine-sdk-language": z.string(),
+      "x-forwarded-for": z.string().optional(),
+      "x-sentinel-no-mask": z.string().optional(),
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      jobId: z.string(),
+    }),
+    responses: {
+      201: z.object({
+        id: z.string(),
+      }),
+      401: z.undefined(),
+      404: z.object({
+        message: z.string(),
+      }),
+    },
+    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, workflowId: true }).and(
+      z.object({
+        data: z.string(),
+      })
+    ),
+  },
+
   createMachine: {
     method: "POST",
     path: "/machines",
@@ -232,92 +477,8 @@ export const definition = {
       204: z.undefined(),
     },
   },
-  live: {
-    method: "GET",
-    path: "/live",
-    responses: {
-      200: z.object({
-        status: z.string(),
-      }),
-    },
-  },
-  createCallApproval: {
-    method: "POST",
-    path: "/clusters/:clusterId/calls/:callId/approval",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      callId: z.string(),
-    }),
-    responses: {
-      204: z.undefined(),
-      404: z.object({
-        message: z.string(),
-      }),
-    },
-    body: z.object({
-      approved: z.boolean(),
-    }),
-  },
-  createCallBlob: {
-    method: "POST",
-    path: "/clusters/:clusterId/calls/:callId/blobs",
-    headers: z.object({
-      authorization: z.string(),
-      "x-machine-id": z.string(),
-      "x-machine-sdk-version": z.string(),
-      "x-machine-sdk-language": z.string(),
-      "x-forwarded-for": z.string().optional(),
-      "x-sentinel-no-mask": z.string().optional(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      callId: z.string(),
-    }),
-    responses: {
-      201: z.object({
-        id: z.string(),
-      }),
-      401: z.undefined(),
-      404: z.object({
-        message: z.string(),
-      }),
-    },
-    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, workflowId: true }).and(
-      z.object({
-        data: z.string(),
-      })
-    ),
-  },
-  getContract: {
-    method: "GET",
-    path: "/contract",
-    responses: {
-      200: z.object({
-        contract: z.string(),
-      }),
-    },
-  },
-  listClusters: {
-    method: "GET",
-    path: "/clusters",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          name: z.string(),
-          createdAt: z.date(),
-          description: z.string().nullable(),
-        })
-      ),
-      401: z.undefined(),
-    },
-  },
+
+  // Cluster Endpoints
   createCluster: {
     method: "POST",
     path: "/clusters",
@@ -329,37 +490,12 @@ export const definition = {
     },
     body: z.object({
       description: z.string().describe("Human readable description of the cluster"),
-    }),
-  },
-  upsertIntegrations: {
-    method: "PUT",
-    path: "/clusters/:clusterId/integrations",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    responses: {
-      200: z.undefined(),
-      401: z.undefined(),
-      400: z.object({
-        message: z.string(),
-      }),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-    body: integrationSchema,
-  },
-  getIntegrations: {
-    method: "GET",
-    path: "/clusters/:clusterId/integrations",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    responses: {
-      200: integrationSchema,
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
+      name: z.string().optional().describe("Human readable name of the cluster"),
+      isDemo: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Whether the cluster is a demo cluster"),
     }),
   },
   deleteCluster: {
@@ -396,7 +532,6 @@ export const definition = {
           "Enable additional logging (Including prompts and results) for use by Inferable support"
         ),
       enableCustomAuth: z.boolean().optional(),
-      enableRunConfigs: z.boolean().optional(),
       enableKnowledgebase: z.boolean().optional(),
       handleCustomAuthFunction: z.string().optional(),
     }),
@@ -416,10 +551,24 @@ export const definition = {
         createdAt: z.date(),
         debug: z.boolean(),
         enableCustomAuth: z.boolean(),
-        handleCustomAuthFunction: z.string(),
-        enableRunConfigs: z.boolean(),
-        enableKnowledgebase: z.boolean(),
-        lastPingAt: z.date().nullable(),
+        handleCustomAuthFunction: z.string().nullable(),
+        isDemo: z.boolean(),
+        machines: z.array(
+          z.object({
+            id: z.string(),
+            lastPingAt: z.date().nullable(),
+            ip: z.string().nullable(),
+            sdkVersion: z.string().nullable(),
+            sdkLanguage: z.string().nullable(),
+          })
+        ),
+        services: z.array(
+          z.object({
+            service: z.string(),
+            definition: z.unknown().nullable(),
+            timestamp: z.date().nullable(),
+          })
+        ),
       }),
       401: z.undefined(),
       404: z.undefined(),
@@ -428,6 +577,59 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
+  listClusters: {
+    method: "GET",
+    path: "/clusters",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    responses: {
+      200: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          createdAt: z.date(),
+          description: z.string().nullable(),
+        })
+      ),
+      401: z.undefined(),
+    },
+  },
+
+  // Integration Endpoints
+  getIntegrations: {
+    method: "GET",
+    path: "/clusters/:clusterId/integrations",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    responses: {
+      200: integrationSchema,
+    },
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+  },
+  upsertIntegrations: {
+    method: "PUT",
+    path: "/clusters/:clusterId/integrations",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    responses: {
+      200: z.undefined(),
+      401: z.undefined(),
+      400: z.object({
+        message: z.string(),
+      }),
+    },
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    body: integrationSchema,
+  },
+
+  // Event Endpoints
   listEvents: {
     method: "GET",
     path: "/clusters/:clusterId/events",
@@ -462,6 +664,29 @@ export const definition = {
       includeMeta: z.string().optional(),
     }),
   },
+  getEventMeta: {
+    method: "GET",
+    path: "/clusters/:clusterId/events/:eventId/meta",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    responses: {
+      200: z.object({
+        type: z.string(),
+        machineId: z.string().nullable(),
+        service: z.string().nullable(),
+        createdAt: z.date(),
+        jobId: z.string().nullable(),
+        targetFn: z.string().nullable(),
+        resultType: z.string().nullable(),
+        status: z.string().nullable(),
+        meta: z.unknown(),
+        id: z.string(),
+      }),
+      401: z.undefined(),
+      404: z.undefined(),
+    },
+  },
   listUsageActivity: {
     method: "GET",
     path: "/clusters/:clusterId/usage",
@@ -491,29 +716,8 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
-  getEventMeta: {
-    method: "GET",
-    path: "/clusters/:clusterId/events/:eventId/meta",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        type: z.string(),
-        machineId: z.string().nullable(),
-        service: z.string().nullable(),
-        createdAt: z.date(),
-        jobId: z.string().nullable(),
-        targetFn: z.string().nullable(),
-        resultType: z.string().nullable(),
-        status: z.string().nullable(),
-        meta: z.unknown(),
-        id: z.string(),
-      }),
-      401: z.undefined(),
-      404: z.undefined(),
-    },
-  },
+
+  // Run Endpoints
   createRun: {
     method: "POST",
     path: "/clusters/:clusterId/runs",
@@ -557,14 +761,13 @@ export const definition = {
         ),
       onStatusChange: z
         .object({
-          function: functionReference.describe("A function to call when the run status changes"),
+          statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])).describe(" A list of Run statuses which should trigger the handler").optional().default(["done", "failed"]),
+          function: functionReference.describe("A function to call when the run status changes").optional(),
+          webhook: z.string().describe("A webhook URL to call when the run status changes").optional(),
         })
         .optional()
         .describe("Mechanism for receiving notifications when the run status changes"),
-      metadata: z
-        .record(z.string())
-        .optional()
-        .describe("Run metadata which can be used to filter runs"),
+      tags: z.record(z.string()).optional().describe("Run tags which can be used to filter runs"),
       test: z
         .object({
           enabled: z.boolean().default(false),
@@ -581,17 +784,17 @@ export const definition = {
         })
         .optional()
         .describe("When provided, the run will be marked as as a test / evaluation"),
-      configId: z.string().optional().describe("The run configuration ID to use"),
+      agentId: z.string().optional().describe("The agent ID to use"),
       input: z
         .object({})
         .passthrough()
         .describe(
-          "Structured input arguments to merge with the initial prompt. The schema must match the run configuration input schema if defined"
+          "Structured input arguments to merge with the initial prompt. The schema must match the agent input schema if defined"
         )
         .optional(),
       context: anyObject
         .optional()
-        .describe("Additional context to propogate to all calls in the run"),
+        .describe("Additional context to propogate to all Jobs in the Run"),
       reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
       callSummarization: z
         .boolean()
@@ -633,6 +836,91 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
+  listRuns: {
+    method: "GET",
+    path: "/clusters/:clusterId/runs",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    query: z.object({
+      userId: z.string().optional(),
+      test: z.coerce
+        .string()
+        .transform(value => value === "true")
+        .optional(),
+      limit: z.coerce.number().min(10).max(50).default(50),
+      tags: z.string().optional().describe("Filter runs by a tag value (value:key)"),
+      agentId: z.string().optional(),
+    }),
+    responses: {
+      200: z.array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          userId: z.string().nullable(),
+          createdAt: z.date(),
+          status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+          test: z.boolean(),
+          agentId: z.string().nullable(),
+          agentVersion: z.number().nullable(),
+          feedbackScore: z.number().nullable(),
+        })
+      ),
+      401: z.undefined(),
+    },
+  },
+  getRun: {
+    method: "GET",
+    path: "/clusters/:clusterId/runs/:runId",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    responses: {
+      200: z.object({
+        id: z.string(),
+        userId: z.string().nullable(),
+        status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+        failureReason: z.string().nullable(),
+        test: z.boolean(),
+        feedbackComment: z.string().nullable(),
+        feedbackScore: z.number().nullable(),
+        context: z.any().nullable(),
+        authContext: z.any().nullable(),
+        result: anyObject.nullable(),
+        tags: z.record(z.string()).nullable(),
+        attachedFunctions: z.array(z.string()).nullable(),
+      }),
+      401: z.undefined(),
+    },
+  },
+  createFeedback: {
+    method: "POST",
+    path: "/clusters/:clusterId/runs/:runId/feedback",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    body: z.object({
+      comment: z.string().describe("Feedback comment").nullable(),
+      score: z.number().describe("Score between 0 and 1").min(0).max(1).nullable(),
+    }),
+    responses: {
+      204: z.undefined(),
+      401: z.undefined(),
+      404: z.undefined(),
+    },
+    pathParams: z.object({
+      runId: z.string(),
+      clusterId: z.string(),
+    }),
+  },
+  oas: {
+    method: "GET",
+    path: "/public/oas.json",
+    responses: {
+      200: z.unknown(),
+    },
+  },
+  // Message Endpoints
   createMessage: {
     method: "POST",
     path: "/clusters/:clusterId/runs/:runId/messages",
@@ -674,157 +962,11 @@ export const definition = {
       limit: z.coerce.number().min(10).max(50).default(50),
     }),
     responses: {
-      200: z.array(unifiedMessageDataSchema),
+      200: z.array(unifiedMessageSchema),
       401: z.undefined(),
     },
   },
-  listRuns: {
-    method: "GET",
-    path: "/clusters/:clusterId/runs",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    query: z.object({
-      userId: z.string().optional(),
-      test: z.coerce
-        .string()
-        .transform(value => value === "true")
-        .optional(),
-      limit: z.coerce.number().min(10).max(50).default(50),
-      metadata: z.string().optional().describe("Filter runs by a metadata value (value:key)"),
-      configId: z.string().optional(),
-    }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          name: z.string(),
-          userId: z.string().nullable(),
-          createdAt: z.date(),
-          status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
-          test: z.boolean(),
-          configId: z.string().nullable(),
-          configVersion: z.number().nullable(),
-          feedbackScore: z.number().nullable(),
-        })
-      ),
-      401: z.undefined(),
-    },
-  },
-  getRun: {
-    method: "GET",
-    path: "/clusters/:clusterId/runs/:runId",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-        userId: z.string().nullable(),
-        status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
-        failureReason: z.string().nullable(),
-        test: z.boolean(),
-        feedbackComment: z.string().nullable(),
-        feedbackScore: z.number().nullable(),
-        context: z.any().nullable(),
-        authContext: z.any().nullable(),
-        result: anyObject.nullable(),
-        metadata: z.record(z.string()).nullable(),
-        attachedFunctions: z.array(z.string()).nullable(),
-      }),
-      401: z.undefined(),
-    },
-  },
-  createFeedback: {
-    method: "POST",
-    path: "/clusters/:clusterId/runs/:runId/feedback",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    body: z.object({
-      comment: z.string().describe("Feedback comment").nullable(),
-      score: z.number().describe("Score between 0 and 1").min(0).max(1).nullable(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-      404: z.undefined(),
-    },
-    pathParams: z.object({
-      runId: z.string(),
-      clusterId: z.string(),
-    }),
-  },
-  oas: {
-    method: "GET",
-    path: "/public/oas.json",
-    responses: {
-      200: z.unknown(),
-    },
-  },
-  updateMessage: {
-    method: "PUT",
-    path: "/clusters/:clusterId/runs/:runId/messages/:messageId",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({ message: z.string() }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-      }),
-      404: z.object({ message: z.string() }),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-      runId: z.string(),
-      messageId: z.string(),
-    }),
-  },
-  getClusterExport: {
-    method: "GET",
-    path: "/clusters/:clusterId/export",
-    headers: z.object({ authorization: z.string() }),
-    pathParams: z.object({ clusterId: z.string() }),
-    responses: {
-      200: z.object({
-        data: z.string(),
-      }),
-    },
-  },
-  consumeClusterExport: {
-    method: "POST",
-    path: "/clusters/:clusterId/import",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({ data: z.string() }),
-    pathParams: z.object({ clusterId: z.string() }),
-    responses: {
-      200: z.object({ message: z.string() }),
-      400: z.undefined(),
-    },
-  },
-  getCall: {
-    method: "GET",
-    path: "/clusters/:clusterId/calls/:callId",
-    headers: z.object({ authorization: z.string() }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      callId: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-        status: z.string(),
-        targetFn: z.string(),
-        service: z.string(),
-        executingMachineId: z.string().nullable(),
-        targetArgs: z.string(),
-        result: z.string().nullable(),
-        resultType: z.string().nullable(),
-        createdAt: z.date(),
-        blobs: z.array(blobSchema),
-      }),
-    },
-  },
+
   listRunReferences: {
     method: "GET",
     path: "/clusters/:clusterId/runs/:runId/references",
@@ -851,6 +993,8 @@ export const definition = {
       ),
     },
   },
+
+  // API Key Endpoints
   createApiKey: {
     method: "POST",
     path: "/clusters/:clusterId/api-keys",
@@ -968,7 +1112,7 @@ export const definition = {
     responses: {
       404: z.undefined(),
       200: z.object({
-        messages: z.array(unifiedMessageDataSchema),
+        messages: z.array(unifiedMessageSchema),
         activity: z.array(
           z.object({
             id: z.string(),
@@ -1022,64 +1166,11 @@ export const definition = {
       404: z.undefined(),
     },
   },
-  upsertFunctionMetadata: {
-    method: "PUT",
-    path: "/clusters/:clusterId/:service/:function/metadata",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      function: z.string(),
-    }),
-    body: z.object({
-      additionalContext: z.string().optional(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-  },
-  getFunctionMetadata: {
+
+  // Agent Endpoints
+  getAgent: {
     method: "GET",
-    path: "/clusters/:clusterId/:service/:function/metadata",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      function: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        additionalContext: z.string().nullable(),
-      }),
-      401: z.undefined(),
-      404: z.object({ message: z.string() }),
-    },
-  },
-  deleteFunctionMetadata: {
-    method: "DELETE",
-    path: "/clusters/:clusterId/:service/:function/metadata",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      service: z.string(),
-      function_name: z.string(),
-    }),
-    body: z.undefined(),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-  },
-  getRunConfig: {
-    method: "GET",
-    path: "/clusters/:clusterId/run-configs/:configId",
+    path: "/clusters/:clusterId/agents/:agentId",
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.object({
@@ -1110,15 +1201,15 @@ export const definition = {
     },
     pathParams: z.object({
       clusterId: z.string(),
-      configId: z.string(),
+      agentId: z.string(),
     }),
     query: z.object({
       withPreviousVersions: z.enum(["true", "false"]).default("false"),
     }),
   },
-  createRunConfig: {
+  createAgent: {
     method: "POST",
-    path: "/clusters/:clusterId/run-configs",
+    path: "/clusters/:clusterId/agents",
     headers: z.object({ authorization: z.string() }),
     body: z.object({
       name: z.string(),
@@ -1136,13 +1227,13 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
-  upsertRunConfig: {
+  upsertAgent: {
     method: "PUT",
-    path: "/clusters/:clusterId/run-configs/:configId",
+    path: "/clusters/:clusterId/agents/:agentId",
     headers: z.object({ authorization: z.string() }),
     pathParams: z.object({
       clusterId: z.string(),
-      configId: z.string().regex(userDefinedIdRegex),
+      agentId: z.string().regex(userDefinedIdRegex),
     }),
     body: z.object({
       name: z.string().optional(),
@@ -1168,9 +1259,9 @@ export const definition = {
       404: z.object({ message: z.string() }),
     },
   },
-  deleteRunConfig: {
+  deleteAgent: {
     method: "DELETE",
-    path: "/clusters/:clusterId/run-configs/:configId",
+    path: "/clusters/:clusterId/agent/:agentId",
     headers: z.object({ authorization: z.string() }),
     responses: {
       204: z.undefined(),
@@ -1180,12 +1271,12 @@ export const definition = {
     body: z.undefined(),
     pathParams: z.object({
       clusterId: z.string(),
-      configId: z.string(),
+      agentId: z.string(),
     }),
   },
-  listRunConfigs: {
+  listAgents: {
     method: "GET",
-    path: "/clusters/:clusterId/run-configs",
+    path: "/clusters/:clusterId/agents",
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.array(
@@ -1207,36 +1298,9 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
-  searchRunConfigs: {
+  getAgentMetrics: {
     method: "GET",
-    path: "/clusters/:clusterId/run-configs/search",
-    headers: z.object({ authorization: z.string() }),
-    query: z.object({
-      search: z.string(),
-    }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          clusterId: z.string(),
-          name: z.string(),
-          initialPrompt: z.string(),
-          attachedFunctions: z.array(z.string()),
-          resultSchema: z.unknown().nullable(),
-          createdAt: z.date(),
-          updatedAt: z.date(),
-          similarity: z.number(),
-        })
-      ),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  getRunConfigMetrics: {
-    method: "GET",
-    path: "/clusters/:clusterId/run-configs/:configId/metrics",
+    path: "/clusters/:clusterId/agents/:agentId/metrics",
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.array(
@@ -1251,263 +1315,11 @@ export const definition = {
     },
     pathParams: z.object({
       clusterId: z.string(),
-      configId: z.string(),
+      agentId: z.string(),
     }),
   },
-  createClusterKnowledgeArtifact: {
-    method: "POST",
-    path: "/clusters/:clusterId/knowledge",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      artifacts: z.array(
-        z.object({
-          id: z.string(),
-          data: z.string(),
-          tags: z.array(z.string()).transform(tags => tags.map(tag => tag.toLowerCase().trim())),
-          title: z.string(),
-        })
-      ),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  getKnowledge: {
-    method: "GET",
-    path: "/clusters/:clusterId/knowledge",
-    headers: z.object({ authorization: z.string() }),
-    query: z.object({
-      query: z.string(),
-      limit: z.coerce.number().min(1).max(50).default(5),
-      tag: z.string().optional(),
-    }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          data: z.string(),
-          tags: z.array(z.string()),
-          title: z.string(),
-          similarity: z.number(),
-        })
-      ),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  upsertKnowledgeArtifact: {
-    method: "PUT",
-    path: "/clusters/:clusterId/knowledge/:artifactId",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      data: z.string(),
-      tags: z.array(z.string()).transform(tags => tags.map(tag => tag.toLowerCase().trim())),
-      title: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-      }),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-      artifactId: z.string().regex(userDefinedIdRegex),
-    }),
-  },
-  deleteKnowledgeArtifact: {
-    method: "DELETE",
-    path: "/clusters/:clusterId/knowledge/:artifactId",
-    headers: z.object({ authorization: z.string() }),
-    body: z.undefined(),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-  },
-  getAllKnowledgeArtifacts: {
-    method: "GET",
-    path: "/clusters/:clusterId/knowledge-export",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          data: z.string(),
-          tags: z.array(z.string()),
-          title: z.string(),
-        })
-      ),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  createRunRetry: {
-    method: "POST",
-    path: "/clusters/:clusterId/runs/:runId/retry",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      messageId: z.string(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-  },
-  createCall: {
-    method: "POST",
-    path: "/clusters/:clusterId/calls",
-    query: z.object({
-      waitTime: z.coerce
-        .number()
-        .min(0)
-        .max(20)
-        .default(0)
-        .describe("Time in seconds to keep the request open waiting for a response"),
-    }),
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    body: z.object({
-      service: z.string(),
-      function: z.string(),
-      input: z.object({}).passthrough(),
-    }),
-    responses: {
-      401: z.undefined(),
-      200: z.object({
-        id: z.string(),
-        result: z.any().nullable(),
-        resultType: z.enum(["resolution", "rejection", "interrupt"]).nullable(),
-        status: z.enum(["pending", "running", "success", "failure", "stalled"]),
-      }),
-    },
-  },
-  createCallResult: {
-    method: "POST",
-    path: "/clusters/:clusterId/calls/:callId/result",
-    headers: z.object({
-      authorization: z.string(),
-      ...machineHeaders,
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      callId: z.string(),
-    }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-    },
-    body: z.object({
-      result: z.any(),
-      resultType: z.enum(["resolution", "rejection", "interrupt"]),
-      meta: z.object({
-        functionExecutionTime: z.number().optional(),
-      }),
-    }),
-  },
-  listCalls: {
-    method: "GET",
-    path: "/clusters/:clusterId/calls",
-    query: z.object({
-      service: z.string(),
-      status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
-      limit: z.coerce.number().min(1).max(20).default(10),
-      acknowledge: z.coerce.boolean().default(false).describe("Should calls be marked as running"),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-    headers: z.object({
-      authorization: z.string(),
-      ...machineHeaders,
-    }),
-    responses: {
-      401: z.undefined(),
-      410: z.object({
-        message: z.string(),
-      }),
-      200: z.array(
-        z.object({
-          id: z.string(),
-          function: z.string(),
-          input: z.any(),
-          authContext: z.any().nullable(),
-          runContext: z.any().nullable(),
-          approved: z.boolean(),
-        })
-      ),
-    },
-  },
-  getKnowledgeArtifact: {
-    method: "GET",
-    path: "/clusters/:clusterId/knowledge/:artifactId",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-        data: z.string(),
-        tags: z.array(z.string()),
-        title: z.string(),
-      }),
-      401: z.undefined(),
-      404: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-      artifactId: z.string(),
-    }),
-  },
-  createStructuredOutput: {
-    method: "POST",
-    path: "/clusters/:clusterId/structured-output",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      prompt: z.string(),
-      resultSchema: anyObject
-        .optional()
-        .describe(
-          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
-        ),
-      modelId: z.enum(["claude-3-5-sonnet", "claude-3-haiku"]),
-      temperature: z
-        .number()
-        .optional()
-        .describe("The temperature to use for the model")
-        .default(0.5),
-    }),
-    responses: {
-      200: z.unknown(),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  getServerStats: {
-    method: "GET",
-    path: "/stats",
-    responses: {
-      200: z.object({
-        functionCalls: z.object({
-          count: z.number(),
-        }),
-        tokenUsage: z.object({
-          input: z.number(),
-          output: z.number(),
-        }),
-        refreshedAt: z.number(),
-      }),
-    },
-  },
+
+  // Nango Endpoints
   createNangoSession: {
     method: "POST",
     path: "/clusters/:clusterId/nango/sessions",

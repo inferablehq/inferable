@@ -13,7 +13,6 @@ describe("useMessages", () => {
       },
       createdAt: new Date(mockDate.getTime() + 1000),
       pending: false,
-      displayableContext: null,
     },
     {
       id: "2",
@@ -24,7 +23,6 @@ describe("useMessages", () => {
       },
       createdAt: new Date(mockDate.getTime() + 2000),
       pending: false,
-      displayableContext: null,
     },
     {
       id: "3",
@@ -34,7 +32,6 @@ describe("useMessages", () => {
       },
       createdAt: new Date(mockDate.getTime() + 3000),
       pending: false,
-      displayableContext: null,
     },
   ];
 

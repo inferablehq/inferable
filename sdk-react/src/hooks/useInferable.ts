@@ -111,9 +111,10 @@ export function useInferable(options: UseInferableOptions): {
     name?: string;
     model?: "claude-3-5-sonnet" | "claude-3-haiku";
     resultSchema?: z.ZodObject<any>;
-    metadata?: Record<string, string>;
+    tags?: Record<string, string>;
     interactive?: boolean;
     context?: Record<string, string>;
+    agentId?: string;
   }) => Promise<{ id: string }>;
   listRuns: () => Promise<{
     runs: Array<{
@@ -123,8 +124,8 @@ export function useInferable(options: UseInferableOptions): {
       createdAt: Date;
       status: "pending" | "running" | "paused" | "done" | "failed" | null;
       test: boolean;
-      configId: string | null;
-      configVersion: number | null;
+      agentId: string | null;
+      agentVersion: number | null;
       feedbackScore: number | null;
     }>;
   }>;
@@ -149,9 +150,10 @@ export function useInferable(options: UseInferableOptions): {
       name?: string;
       model?: "claude-3-5-sonnet" | "claude-3-haiku";
       resultSchema?: z.ZodObject<any>;
-      metadata?: Record<string, string>;
+      tags?: Record<string, string>;
       interactive?: boolean;
       context?: Record<string, string>;
+      agentId?: string;
     }) => {
       return client
         .createRun({
@@ -166,9 +168,10 @@ export function useInferable(options: UseInferableOptions): {
             resultSchema: createRunOptions.resultSchema
               ? zodToJsonSchema(createRunOptions.resultSchema)
               : undefined,
-            metadata: createRunOptions.metadata,
+            tags: createRunOptions.tags,
             interactive: createRunOptions.interactive,
             context: createRunOptions.context,
+            agentId: createRunOptions.agentId,
           },
         })
         .then(response => {
