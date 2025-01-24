@@ -1,0 +1,1 @@
+ALTER TABLE "clusters" ADD COLUMN "is_ephemeral" boolean DEFAULT false NOT NULL;
