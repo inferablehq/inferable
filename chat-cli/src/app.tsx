@@ -15,13 +15,12 @@ const App = () => {
   if (!apiSecret) {
     if (process.env.INFERABLE_API_SECRET) {
       setApiSecret(process.env.INFERABLE_API_SECRET);
-    }
-
-    return <Input
-      children={<Text>Enter your API secret:</Text>}
-      onSetValue={(key) => {
-        setApiSecret(key);
-      }} />;
+    }      return <Input
+        id="api-secret-input"
+        children={<Text>Enter your API secret:</Text>}
+        onSetValue={(key) => {
+          setApiSecret(key);
+        }} />;
   }
 
   if (!clusterId) {
@@ -30,6 +29,7 @@ const App = () => {
     }
 
     return <Input
+      id="cluster-id-input"
       children={<Text>Enter your cluster ID:</Text>}
       onSetValue={(key) => {
         setClusterId(key);

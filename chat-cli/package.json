@@ -20,7 +20,7 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@inferable/react": "^0.0.20",
+    "@inferable/react": "^0.0.21",
     "@ts-rest/core": "^3.28.0",
     "dotenv": "^16.4.5",
     "ink": "^5.1.0",
@@ -31,8 +31,9 @@
     "typescript": "^5.2.2"
   },
   "devDependencies": {
+    "@types/ink": "^0.5.2",
     "@types/marked-terminal": "^6.1.1",
-    "@types/react": "^18.0.45",
+    "@types/react": "^18.3.18",
     "jest": "^29.7.0"
   },
   "jest": {
