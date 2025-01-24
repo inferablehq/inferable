@@ -6,14 +6,15 @@ interface InputProps {
   mask?: boolean;
   children?: React.ReactNode;
   onSetValue: (key: string) => void;
+  autoFocus?: boolean;
   id: string;
   disabled?: boolean;
 }
 
-export const Input = ({ onSetValue, mask, children, id, disabled }: InputProps) => {
+export const Input = ({ onSetValue, mask, children, id, disabled, autoFocus }: InputProps) => {
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const { isFocused } = useFocus({ id, autoFocus: false });
+  const { isFocused } = useFocus({ id, autoFocus });
 
   return (
     <Box flexDirection="column">
@@ -26,8 +27,13 @@ export const Input = ({ onSetValue, mask, children, id, disabled }: InputProps) 
           focus={isFocused}
           showCursor={false}
           onSubmit={value => {
+            if (!value.trim()) {
+              setError('Value cannot be empty');
+              return;
+            }
             try {
-              onSetValue(value);
+              onSetValue(value.trim());
+              setError(null);
             } catch (err) {
               setError('Invalid format');
             }

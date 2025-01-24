@@ -12,7 +12,8 @@
     "allowJs": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "jsx": "react-jsx",
+    "jsx": "react-jsxdev",
+    "jsxImportSource": "react",
     "lib": [
       "es2017",
       "dom"

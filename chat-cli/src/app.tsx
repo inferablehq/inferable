@@ -1,22 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { render, Text, Box } from 'ink';
 import { AgentSelector, NONE_AGENT_ID } from './components/AgentSelector.js';
 import { Input } from './components/Input.js';
 import { ChatInterface } from './chat.js';
 import { RunSelector, NONE_RUN_ID } from './components/RunSelector.js';
 
-const App = () => {
+type AppProps = {
+  clusterId?: string;
+  apiSecret?: string;
+  agentId?: string;
+  runId?: string;
+};
 
-  const [apiSecret, setApiSecret] = useState<string | null>(null);
-  const [clusterId, setClusterId] = useState<string | null>(null);
-  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-  const [selectedRun, setSelectedRun] = useState<string | null>(null);
+export const App = ({
+  clusterId: initialClusterId,
+  apiSecret: initialApiSecret,
+  agentId: initialAgentId,
+  runId: initialRunId
+}: AppProps = {}) => {
+
+  const [apiSecret, setApiSecret] = useState<string | null>(initialApiSecret ?? null);
+  const [clusterId, setClusterId] = useState<string | null>(initialClusterId ?? null);
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(initialAgentId ?? null);
+  const [selectedRun, setSelectedRun] = useState<string | null>(initialRunId ?? null);
 
   if (!apiSecret) {
-    if (process.env.INFERABLE_API_SECRET) {
-      setApiSecret(process.env.INFERABLE_API_SECRET);
-    }      return <Input
+    return <Input
         id="api-secret-input"
+        key="api-secret-input"
+        autoFocus={true}
+        mask={true}
         children={<Text>Enter your API secret:</Text>}
         onSetValue={(key) => {
           setApiSecret(key);
@@ -24,19 +37,17 @@ const App = () => {
   }
 
   if (!clusterId) {
-    if (process.env.INFERABLE_CLUSTER_ID) {
-      setClusterId(process.env.INFERABLE_CLUSTER_ID);
-    }
-
     return <Input
       id="cluster-id-input"
+      key="cluster-id-input"
+      autoFocus={true}
       children={<Text>Enter your cluster ID:</Text>}
       onSetValue={(key) => {
         setClusterId(key);
       }} />;
   }
 
-  if (!selectedRun) {
+  if (!selectedAgent && !selectedRun && selectedRun !== NONE_RUN_ID) {
     return (
       <RunSelector
         apiKey={apiSecret}
@@ -47,7 +58,7 @@ const App = () => {
   }
 
 
-  if (selectedRun === NONE_RUN_ID && !selectedAgent) {
+  if (selectedRun === NONE_RUN_ID && !selectedAgent && selectedAgent !== NONE_AGENT_ID) {
     return (
       <AgentSelector
         apiKey={apiSecret}
@@ -60,9 +71,7 @@ const App = () => {
   return <ChatInterface
     apiSecret={apiSecret}
     clusterId={clusterId}
-    runId={selectedRun === NONE_RUN_ID ? undefined : selectedRun}
+    runId={selectedRun === NONE_RUN_ID ? undefined : selectedRun ?? undefined}
     agentId={selectedAgent === NONE_AGENT_ID ? undefined : selectedAgent ?? undefined}
   />
 };
-
-render(<App />);
