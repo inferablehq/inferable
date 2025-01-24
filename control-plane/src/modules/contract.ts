@@ -234,6 +234,17 @@ export const definition = {
       }),
     },
   },
+  createEphemeralSetup: {
+    method: "POST",
+    path: "/ephemeral-setup",
+    responses: {
+      200: z.object({
+        clusterId: z.string(),
+        apiKey: z.string(),
+      }),
+    },
+    body: z.undefined(),
+  },
   getContract: {
     method: "GET",
     path: "/contract",
@@ -763,9 +774,18 @@ export const definition = {
         ),
       onStatusChange: z
         .object({
-          statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])).describe(" A list of Run statuses which should trigger the handler").optional().default(["done", "failed"]),
-          function: functionReference.describe("A function to call when the run status changes").optional(),
-          webhook: z.string().describe("A webhook URL to call when the run status changes").optional(),
+          statuses: z
+            .array(z.enum(["pending", "running", "paused", "done", "failed"]))
+            .describe(" A list of Run statuses which should trigger the handler")
+            .optional()
+            .default(["done", "failed"]),
+          function: functionReference
+            .describe("A function to call when the run status changes")
+            .optional(),
+          webhook: z
+            .string()
+            .describe("A webhook URL to call when the run status changes")
+            .optional(),
         })
         .optional()
         .describe("Mechanism for receiving notifications when the run status changes"),

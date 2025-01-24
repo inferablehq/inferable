@@ -172,6 +172,15 @@ export const getRunMessagesForDisplayWithPolling = async ({
   return [];
 };
 
+export const getMessageCountForCluster = async (clusterId: string) => {
+  const messages = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(runMessages)
+    .where(eq(runMessages.cluster_id, clusterId));
+
+  return messages[0].count;
+};
+
 export const getRunMessages = async ({
   clusterId,
   runId,

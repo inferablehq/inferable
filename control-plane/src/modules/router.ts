@@ -41,6 +41,16 @@ export const router = initServer().router(contract, {
       },
     };
   },
+  createEphemeralSetup: async request => {
+    const result = await management.createEphemeralSetup(
+      (request.headers["x-forwarded-for"] as string) ?? "unknown"
+    );
+
+    return {
+      status: 200,
+      body: result,
+    };
+  },
   getContract: async () => {
     return {
       status: 200,

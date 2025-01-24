@@ -164,6 +164,7 @@ export const clusters = pgTable(
       precision: 6,
     }),
     is_demo: boolean("is_demo").notNull().default(false),
+    is_ephemeral: boolean("is_ephemeral").notNull().default(false),
   },
   table => ({
     idOrgIndex: index("clusters_id_org_index").on(table.id, table.organization_id),

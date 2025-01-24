@@ -7,7 +7,7 @@ export class RetryableError extends Error {
   }
 }
 
-const retryableErrors = [RetryableError, RateLimitError, InternalServerError]
+const retryableErrors = [RetryableError, RateLimitError, InternalServerError];
 const retryableErrorMessages = [
   // DB Connection Errors
   "connection terminated due to connection timeout",
@@ -18,15 +18,18 @@ const retryableErrorMessages = [
   "too many clients already",
   // Bedrock Errors
   "503 bedrock is unable to process your request",
-  "429 too many requests"
+  "429 too many requests",
 ];
 
 export const isRetryableError = (error: unknown) => {
-  if (error instanceof Error && retryableErrorMessages.find((message) => error.message.toLowerCase().includes(message))) {
-    return true
+  if (
+    error instanceof Error &&
+    retryableErrorMessages.find(message => error.message.toLowerCase().includes(message))
+  ) {
+    return true;
   }
 
-  if (error instanceof Error && retryableErrors.find((type) => error instanceof type)) {
+  if (error instanceof Error && retryableErrors.find(type => error instanceof type)) {
     return true;
   }
 
@@ -39,17 +42,14 @@ export class DocumentedError extends Error {
   constructor(message: string, docsLink?: string) {
     super(message);
     this.name = "DocumentedError";
-    this.docsLink = docsLink
+    this.docsLink = docsLink;
   }
 }
 
 export class AuthenticationError extends DocumentedError {
   statusCode = 401;
 
-  constructor(
-    message: string,
-    docsLink: string = "https://docs.inferable.ai/pages/auth"
-  ) {
+  constructor(message: string, docsLink: string = "https://docs.inferable.ai/pages/auth") {
     super(message, docsLink);
     this.name = "AuthenticationError";
   }
@@ -70,6 +70,15 @@ export class BadRequestError extends DocumentedError {
   constructor(message: string, docsLink?: string) {
     super(message, docsLink);
     this.name = "BadRequestError";
+  }
+}
+
+export class PaymentRequiredError extends DocumentedError {
+  statusCode: number = 402;
+
+  constructor(message: string, docsLink?: string) {
+    super(message, docsLink);
+    this.name = "PaymentRequiredError";
   }
 }
 
@@ -122,5 +131,14 @@ export class RunBusyError extends DocumentedError {
   ) {
     super(message, docsLink);
     this.name = "RunBusyError";
+  }
+}
+
+export class TooManyRequestsError extends DocumentedError {
+  statusCode = 429;
+
+  constructor(message: string, docsLink?: string) {
+    super(message, docsLink);
+    this.name = "TooManyRequestsError";
   }
 }
