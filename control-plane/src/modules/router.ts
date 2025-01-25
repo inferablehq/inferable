@@ -15,7 +15,7 @@ import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { getServiceDefinitions } from "./service-definitions";
 import { unqualifiedEntityId } from "./auth/auth";
 import { upsertMachine } from "./machines";
-import { ILLEGAL_SERVICE_NAMES } from "./machines/router";
+import { ILLEGAL_SERVICE_NAMES } from "./machines/constants";
 import { dereferenceSync } from "dereference-json-schema";
 import { safeParse } from "../utilities/safe-parse";
 import { upsertServiceDefinition } from "./service-definitions";
@@ -51,7 +51,7 @@ import { validateConfig } from "./integrations/toolhouse";
 import { getSession, nango, webhookSchema } from "./integrations/nango";
 import { env } from "../utilities/env";
 import { integrationByConnectionId } from "./email";
-import { NEW_CONNECTION_ID } from "./integrations/router";
+import { NEW_CONNECTION_ID } from "./integrations/constants";
 
 
 const readFile = util.promisify(fs.readFile);

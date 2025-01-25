@@ -4,4 +4,3 @@ export const ILLEGAL_SERVICE_NAMES = [
   "toolhouse",
   "ToolHouse",
 ];
-
