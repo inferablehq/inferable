@@ -12,7 +12,6 @@ import { contract } from "./contract";
 import * as data from "./data";
 import { integrationsRouter } from "./integrations/router";
 import { jobsRouter } from "./jobs/router";
-import { machineRouter } from "./machines/router";
 import * as management from "./management";
 import { buildModel } from "./models";
 import * as events from "./observability/events";
@@ -22,11 +21,88 @@ import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { runsRouter } from "./runs/router";
 import { getServiceDefinitions } from "./service-definitions";
 import { unqualifiedEntityId } from "./auth/auth";
+import { upsertMachine } from "./machines";
+import { ILLEGAL_SERVICE_NAMES } from "./machines/router";
+import { dereferenceSync } from "dereference-json-schema";
+import { safeParse } from "../../utilities/safe-parse";
+import { upsertServiceDefinition } from "./service-definitions";
 
 const readFile = util.promisify(fs.readFile);
 
 export const router = initServer().router(contract, {
-  ...machineRouter.routes,
+  createMachine: async (request) => {
+    const machine = request.request.getAuth().isMachine();
+
+    const machineId = request.headers["x-machine-id"];
+
+    if (!machineId) {
+      throw new BadRequestError("Request does not contain machine ID header");
+    }
+
+    const { service, functions } = request.body;
+
+    if (service && ILLEGAL_SERVICE_NAMES.includes(service)) {
+      throw new BadRequestError(
+        `Service name ${service} is reserved and cannot be used.`,
+      );
+    }
+
+    const derefedFns = functions?.map((fn) => {
+      const schema = fn.schema
+        ? safeParse(fn.schema)
+        : { success: true, data: undefined };
+
+      if (!schema.success) {
+        throw new BadRequestError(
+          `Function ${fn.name} has an invalid schema.`,
+        );
+      }
+
+      return {
+        clusterId: machine.clusterId,
+        name: fn.name,
+        description: fn.description,
+        schema: schema.data
+          ? JSON.stringify(dereferenceSync(schema.data))
+          : undefined,
+        config: fn.config,
+      };
+    });
+
+    await Promise.all([
+      upsertMachine({
+        clusterId: machine.clusterId,
+        machineId,
+        sdkVersion: request.headers["x-machine-sdk-version"],
+        sdkLanguage: request.headers["x-machine-sdk-language"],
+        xForwardedFor: request.headers["x-forwarded-for"],
+        ip: request.request.ip,
+      }),
+      service &&
+        upsertServiceDefinition({
+          service,
+          definition: {
+            name: service,
+            functions: derefedFns,
+          },
+          owner: machine,
+        }),
+    ]);
+
+    events.write({
+      type: "machineRegistered",
+      clusterId: machine.clusterId,
+      machineId,
+      service,
+    });
+
+    return {
+      status: 200,
+      body: {
+        clusterId: machine.clusterId,
+      },
+    };
+  },
   ...runsRouter.routes,
   ...authRouter.routes,
   ...jobsRouter.routes,
