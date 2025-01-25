@@ -6,7 +6,6 @@ import { ulid } from "ulid";
 import util from "util";
 import { getBlobData } from "./blobs";
 import * as data from "./data";
-import { integrationsRouter } from "./integrations/router";
 import * as management from "./management";
 import { buildModel } from "./models";
 import * as events from "./observability/events";
@@ -29,7 +28,7 @@ import { logger } from "./observability/logger";
 import { createBlob } from "./blobs";
 import { recordServicePoll } from "./service-definitions";
 import { getJob } from "./jobs/jobs";
-import { BadRequestError, NotFoundError } from "../utilities/errors";
+import { BadRequestError, NotFoundError, AuthenticationError } from "../utilities/errors";
 import {
   createRun,
   deleteRun,
@@ -47,6 +46,13 @@ import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
 import { getBlobsForJobs } from "./blobs";
 import { getJobReferences } from "./jobs/jobs";
+import { getIntegrations, upsertIntegrations } from "./integrations/integrations";
+import { validateConfig } from "./integrations/toolhouse";
+import { getSession, nango, webhookSchema } from "./integrations/nango";
+import { env } from "../utilities/env";
+import { integrationByConnectionId } from "./email";
+import { NEW_CONNECTION_ID } from "./integrations/router";
+
 
 const readFile = util.promisify(fs.readFile);
 
@@ -959,7 +965,213 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  ...integrationsRouter.routes,
+  upsertIntegrations: async (request) => {
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth().isAdmin();
+    await auth.canManage({ cluster: { clusterId } });
+
+    if (request.body.slack) {
+      const integrations = await getIntegrations({ clusterId });
+      if (!integrations.slack) {
+        throw new BadRequestError("Slack integration does not exist");
+      }
+
+      // Only the agentId is editable via the API
+      request.body.slack = {
+        agentId: request.body.slack.agentId,
+        ...integrations.slack
+      }
+    }
+
+    if (request.body.email) {
+      const existing = await getIntegrations({ clusterId });
+
+      const connectionId = request.body.email.connectionId;
+      const agentId = request.body.email.agentId;
+
+
+      if (connectionId === NEW_CONNECTION_ID) {
+        const connectionId = crypto.randomUUID();
+        const collision = await integrationByConnectionId(connectionId);
+        if (collision) {
+          // This is so unlikely that we will fail the request if we experience a collision
+          logger.error("Unexpected connectionId collision", {
+            clusterId,
+            connectionId,
+          })
+          throw new Error("Unexpected connectionId collision");
+        }
+
+        request.body.email.connectionId = connectionId;
+      } else if (connectionId !== existing?.email?.connectionId) {
+        throw new BadRequestError("Email connectionId is not user editable");
+      }
+
+      if (agentId && agentId !== existing?.email?.agentId) {
+        const agent = await getAgent({
+          clusterId,
+          id: agentId
+        });
+
+        if (!agent) {
+          logger.warn("Attempted to connect email to non-existent agent", {
+            clusterId,
+            agentId: request.body.email.agentId
+          })
+
+          request.body.email.agentId = undefined;
+        }
+      }
+    }
+
+    if (request.body.toolhouse) {
+      try {
+        await validateConfig(request.body);
+      } catch (error) {
+        return {
+          status: 400,
+          body: {
+            message: `Failed to validate ToolHouse config: ${error}`,
+          },
+        };
+      }
+    }
+
+    await upsertIntegrations({
+      clusterId,
+      config: request.body,
+    });
+
+    Object.entries(request.body).forEach(([key, value]) => {
+
+      const action = value === null ? "delete" : "update";
+
+      posthog?.capture({
+        distinctId: unqualifiedEntityId(auth.entityId),
+        event: `api:integration_${action}`,
+        groups: {
+          organization: auth.organizationId,
+          cluster: clusterId,
+        },
+        properties: {
+          cluster_id: clusterId,
+          integration: key,
+          cli_version: request.headers["x-cli-version"],
+          user_agent: request.headers["user-agent"],
+        },
+      });
+
+    })
+
+
+    return {
+      status: 200,
+      body: undefined,
+    };
+  },
+  getIntegrations: async (request) => {
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth();
+    await auth.canAccess({ cluster: { clusterId } });
+    auth.isAdmin();
+
+    const integrations = await getIntegrations({
+      clusterId,
+    });
+
+    return {
+      status: 200,
+      body: integrations,
+    };
+  },
+  createNangoSession: async (request) => {
+    if (!nango) {
+      throw new Error("Nango is not configured");
+    }
+
+    const { clusterId } = request.params;
+    const { integration } = request.body;
+
+    if (integration !== env.NANGO_SLACK_INTEGRATION_ID) {
+      throw new BadRequestError("Invalid Nango integration ID");
+    }
+
+    const auth = request.request.getAuth();
+    await auth.canAccess({ cluster: { clusterId } });
+    auth.isAdmin();
+
+    return {
+      status: 200,
+      body: {
+        token: await getSession({ clusterId, integrationId: env.NANGO_SLACK_INTEGRATION_ID }),
+      },
+    }
+  },
+  createNangoEvent: async (request) => {
+    if (!nango) {
+      throw new Error("Nango is not configured");
+    }
+
+    const signature = request.headers["x-nango-signature"];
+
+    const isValid = nango.verifyWebhookSignature(signature, request.body);
+
+    if (!isValid) {
+      throw new AuthenticationError("Invalid Nango webhook signature");
+    }
+
+    logger.info("Received Nango webhook", {
+      body: request.body
+    });
+
+    const webhook = webhookSchema.safeParse(request.body);
+    if (!webhook.success) {
+      logger.error("Failed to parse Nango webhook", {
+        error: webhook.error,
+      })
+      throw new BadRequestError("Invalid Nango webhook payload");
+    }
+
+    if (
+      webhook.data.provider === "slack"
+        && webhook.data.operation === "creation"
+        && webhook.data.success
+    ) {
+      const connection = await nango.getConnection(
+        webhook.data.providerConfigKey,
+        webhook.data.connectionId,
+      );
+
+      logger.info("New Slack connection registered", {
+        connectionId: webhook.data.connectionId,
+        teamId: connection.connection_config["team.id"],
+      });
+
+      const clusterId = connection.end_user?.id;
+
+      if (!clusterId) {
+        throw new BadRequestError("End user ID not found in Nango connection");
+      }
+
+      await upsertIntegrations({
+        clusterId,
+        config: {
+          slack: {
+            nangoConnectionId: webhook.data.connectionId,
+            teamId: connection.connection_config["team.id"],
+            botUserId: connection.connection_config["bot_user_id"],
+          },
+        }
+      })
+    }
+
+    return {
+      status: 200,
+      body: undefined,
+    }
+  },
   live: async () => {
     await data.isAlive();
 
