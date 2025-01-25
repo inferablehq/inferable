@@ -4,14 +4,10 @@ import fs from "fs";
 import path from "path";
 import { ulid } from "ulid";
 import util from "util";
-import { BadRequestError } from "../utilities/errors";
 import { deleteAgent, getAgent, listAgents, upsertAgent, validateSchema } from "./agents";
-import { authRouter } from "./auth/router";
 import { getBlobData } from "./blobs";
-import { contract } from "./contract";
 import * as data from "./data";
 import { integrationsRouter } from "./integrations/router";
-import { jobsRouter } from "./jobs/router";
 import * as management from "./management";
 import { buildModel } from "./models";
 import * as events from "./observability/events";
@@ -24,8 +20,18 @@ import { unqualifiedEntityId } from "./auth/auth";
 import { upsertMachine } from "./machines";
 import { ILLEGAL_SERVICE_NAMES } from "./machines/router";
 import { dereferenceSync } from "dereference-json-schema";
-import { safeParse } from "../../utilities/safe-parse";
+import { safeParse } from "../utilities/safe-parse";
 import { upsertServiceDefinition } from "./service-definitions";
+import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
+import { packer } from "./packer";
+import * as jobs from "./jobs/jobs";
+import { getClusterBackgroundRun } from "./runs";
+import { contract, interruptSchema } from "./contract";
+import { logger } from "./observability/logger";
+import { createBlob } from "./blobs";
+import { recordServicePoll } from "./service-definitions";
+import { getJob } from "./jobs/jobs";
+import { BadRequestError, NotFoundError } from "../utilities/errors";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -104,8 +110,432 @@ export const router = initServer().router(contract, {
     };
   },
   ...runsRouter.routes,
-  ...authRouter.routes,
-  ...jobsRouter.routes,
+  createApiKey: async (request) => {
+    const { name } = request.body;
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth().isAdmin();
+    await auth.canManage({ cluster: { clusterId } });
+
+    const { id, key } = await createApiKey({
+      clusterId,
+      name,
+      createdBy: auth.entityId,
+    });
+
+    posthog?.identify({
+      distinctId: id,
+      properties: {
+        key_name: name,
+        auth_type: "api",
+        created_by: auth.entityId,
+      },
+    });
+
+    posthog?.groupIdentify({
+      distinctId: id,
+      groupType: "organization",
+      groupKey: auth.organizationId,
+    });
+
+    posthog?.groupIdentify({
+      distinctId: id,
+      groupType: "cluster",
+      groupKey: clusterId,
+    });
+
+    posthog?.capture({
+      distinctId: unqualifiedEntityId(auth.entityId),
+      event: "api:api_key_create",
+      groups: {
+        organization: auth.organizationId,
+        cluster: clusterId,
+      },
+      properties: {
+        cluster_id: clusterId,
+        key_id: id,
+        key_name: id,
+        cli_version: request.headers["x-cli-version"],
+        user_agent: request.headers["user-agent"],
+      },
+    });
+
+    return {
+      status: 200,
+      body: { id, key },
+    };
+  },
+  listApiKeys: async (request) => {
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth().isAdmin();
+    await auth.canManage({ cluster: { clusterId } });
+
+    const apiKeys = await listApiKeys({ clusterId });
+
+    return {
+      status: 200,
+      body: apiKeys,
+    };
+  },
+  revokeApiKey: async (request) => {
+    const { clusterId, keyId } = request.params;
+
+    const auth = request.request.getAuth().isAdmin();
+    await auth.canManage({ cluster: { clusterId } });
+
+    await revokeApiKey({ clusterId, keyId });
+
+    posthog?.capture({
+      distinctId: unqualifiedEntityId(auth.entityId),
+      event: "api:api_key_revoke",
+      groups: {
+        organization: auth.organizationId,
+        cluster: clusterId,
+      },
+      properties: {
+        cluster_id: clusterId,
+        api_key_id: keyId,
+        cli_version: request.headers["x-cli-version"],
+        user_agent: request.headers["user-agent"],
+      },
+    });
+
+    return {
+      status: 204,
+      body: undefined,
+    };
+  },
+  createJob: async request => {
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth();
+
+    auth.canAccess({ cluster: { clusterId } });
+    auth.canCreate({ call: true });
+
+    const { function: fn, input, service } = request.body;
+    const { waitTime } = request.query;
+
+    const { id } = await jobs.createJob({
+      service: service,
+      targetFn: fn,
+      targetArgs: packer.pack(input),
+      owner: { clusterId },
+      runId: getClusterBackgroundRun(clusterId),
+    });
+
+    if (!waitTime || waitTime <= 0) {
+      return {
+        status: 200,
+        body: {
+          id,
+          status: "pending",
+          result: null,
+          resultType: null,
+        },
+      };
+    }
+
+    const jobResult = await jobs.getJobStatusSync({
+      jobId: id,
+      owner: { clusterId },
+      ttl: waitTime * 1000,
+    });
+
+    if (!jobResult) {
+      throw new Error("Could not get call result");
+    }
+
+    const { status, result, resultType } = jobResult;
+
+    const unpackedResult = result ? packer.unpack(result) : null;
+
+    return {
+      status: 200,
+      body: {
+        id,
+        status,
+        result: unpackedResult,
+        resultType,
+      },
+    };
+  },
+  cancelJob: async request => {
+    const { clusterId, jobId } = request.params;
+
+    const auth = request.request.getAuth();
+
+    auth.canAccess({ cluster: { clusterId } });
+    auth.canManage({ cluster: { clusterId } });
+
+    await jobs.cancelJob({
+      jobId,
+      clusterId,
+    });
+
+    return {
+      status: 204,
+      body: undefined,
+    };
+  },
+  createJobResult: async request => {
+    const { clusterId, jobId } = request.params;
+    let { result, resultType } = request.body;
+    const { meta } = request.body;
+
+    const machine = request.request.getAuth().isMachine();
+    machine.canAccess({ cluster: { clusterId } });
+
+    const machineId = request.headers["x-machine-id"];
+
+    if (!machineId) {
+      throw new BadRequestError("Request does not contain machine ID header");
+    }
+
+    if (resultType === "interrupt") {
+      const parsed = await interruptSchema.safeParseAsync(result);
+
+      if (!parsed.success) {
+        throw new BadRequestError(parsed.error.message);
+      }
+
+      if (parsed.data.type === "approval") {
+        logger.info("Requesting approval", {
+          jobId,
+        });
+
+        await jobs.requestApproval({
+          jobId,
+          clusterId,
+        });
+
+        return {
+          status: 204,
+          body: undefined,
+        };
+      } else {
+        throw new BadRequestError("Unsupported interrupt type");
+      }
+    }
+
+    if (!!result) {
+      // Max result size 500kb
+      const data = Buffer.from(JSON.stringify(result));
+      if (Buffer.byteLength(data) > 500 * 1024) {
+        logger.info("Job result too large, persisting as blob", {
+          jobId,
+        });
+
+        const job = await getJob({ clusterId, jobId });
+
+        if (!job) {
+          throw new NotFoundError("Job not found");
+        }
+
+        await createBlob({
+          data: data.toString("base64"),
+          size: Buffer.byteLength(data),
+          encoding: "base64",
+          type: "application/json",
+          name: "Oversize Job result",
+          clusterId,
+          runId: job.runId ?? undefined,
+          jobId: job.id ?? undefined,
+        });
+
+        result = {
+          message: "The result was too large and was returned to the user directly",
+        };
+
+        resultType = "rejection";
+      }
+    }
+
+    await Promise.all([
+      upsertMachine({
+        clusterId,
+        machineId,
+        sdkVersion: request.headers["x-machine-sdk-version"],
+        sdkLanguage: request.headers["x-machine-sdk-language"],
+        xForwardedFor: request.headers["x-forwarded-for"],
+        ip: request.request.ip,
+      }).catch(e => {
+        // don't fail the request if the machine upsert fails
+
+        logger.error("Failed to upsert machine", {
+          error: e,
+        });
+      }),
+      jobs.persistJobResult({
+        owner: machine,
+        result: packer.pack(result),
+        resultType,
+        functionExecutionTime: meta?.functionExecutionTime,
+        jobId,
+        machineId,
+      }),
+    ]);
+
+    return {
+      status: 204,
+      body: undefined,
+    };
+  },
+  listJobs: async request => {
+    const { clusterId } = request.params;
+    const { service, limit, acknowledge, status } = request.query;
+
+    if (acknowledge && status !== "pending") {
+      throw new BadRequestError("Only pending jobs can be acknowledged");
+    }
+
+    if (!acknowledge) {
+      throw new Error("Not implemented");
+    }
+
+    const machineId = request.headers["x-machine-id"];
+
+    if (!machineId) {
+      throw new BadRequestError("Request does not contain machine ID header");
+    }
+
+    const machine = request.request.getAuth().isMachine();
+    machine.canAccess({ cluster: { clusterId } });
+
+    const [, servicePing, pollResult] = await Promise.all([
+      upsertMachine({
+        clusterId,
+        machineId,
+        sdkVersion: request.headers["x-machine-sdk-version"],
+        sdkLanguage: request.headers["x-machine-sdk-language"],
+        xForwardedFor: request.headers["x-forwarded-for"],
+        ip: request.request.ip,
+      }),
+      recordServicePoll({
+        clusterId,
+        service,
+      }),
+      jobs.pollJobs({
+        clusterId,
+        machineId,
+        service,
+        limit,
+      }),
+    ]);
+
+    if (servicePing === false) {
+      logger.info("Machine polling for unregistered service", {
+        service,
+      });
+      return {
+        status: 410,
+        body: {
+          message: `Service ${service} is not registered`,
+        },
+      };
+    }
+
+    request.reply.header("retry-after", 1);
+
+    return {
+      status: 200,
+      body: pollResult.map(job => ({
+        id: job.id,
+        function: job.targetFn,
+        input: packer.unpack(job.targetArgs),
+        authContext: job.authContext,
+        runContext: job.runContext,
+        approved: job.approved,
+      })),
+    };
+  },
+  createJobBlob: async request => {
+    const { jobId, clusterId } = request.params;
+    const body = request.body;
+
+    const machine = request.request.getAuth().isMachine();
+    machine.canAccess({ cluster: { clusterId } });
+
+    const job = await jobs.getJob({ clusterId, jobId });
+
+    if (!job) {
+      return {
+        status: 404,
+        body: {
+          message: "Job not found",
+        },
+      };
+    }
+
+    const blob = await createBlob({
+      ...body,
+      clusterId,
+      runId: job.runId ?? undefined,
+      jobId: jobId ?? undefined,
+    });
+
+    return {
+      status: 201,
+      body: blob,
+    };
+  },
+  getJob: async request => {
+    const { clusterId, jobId } = request.params;
+
+    const auth = request.request.getAuth();
+    await auth.canAccess({ cluster: { clusterId } });
+
+    const job = await jobs.getJob({ clusterId, jobId });
+
+    if (!job) {
+      return {
+        status: 404,
+        body: {
+          message: "Job not found",
+        },
+      };
+    }
+
+    if (job.runId) {
+      await auth.canAccess({
+        run: { clusterId, runId: job.runId },
+      });
+    }
+
+    return {
+      status: 200,
+      body: job,
+    };
+  },
+  createJobApproval: async request => {
+    const { clusterId, jobId } = request.params;
+
+    const auth = request.request.getAuth();
+    await auth.canManage({ cluster: { clusterId } });
+
+    const job = await jobs.getJob({ clusterId, jobId });
+
+    if (!job) {
+      return {
+        status: 404,
+        body: {
+          message: "Job not found",
+        },
+      };
+    }
+
+    await jobs.submitApproval({
+      jobId,
+      clusterId,
+      approved: request.body.approved,
+    });
+
+    return {
+      status: 204,
+      body: undefined,
+    };
+  },
   ...integrationsRouter.routes,
   live: async () => {
     await data.isAlive();
