@@ -9,11 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
-export default function NewAgent({
-  params,
-}: {
-  params: { clusterId: string };
-}) {
+export default function NewAgent({ params }: { params: { clusterId: string } }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { getToken } = useAuth();
@@ -36,20 +32,14 @@ export default function NewAgent({
         params: { clusterId: params.clusterId },
         body: {
           name: formData.name,
-          initialPrompt:
-            formData.initialPrompt === "" ? undefined : formData.initialPrompt,
-          systemPrompt:
-            formData.systemPrompt === "" ? undefined : formData.systemPrompt,
-          resultSchema: formData.resultSchema
-            ? JSON.parse(formData.resultSchema)
-            : undefined,
-          inputSchema: formData.inputSchema
-            ? JSON.parse(formData.inputSchema)
-            : undefined,
+          initialPrompt: formData.initialPrompt === "" ? undefined : formData.initialPrompt,
+          systemPrompt: formData.systemPrompt === "" ? undefined : formData.systemPrompt,
+          resultSchema: formData.resultSchema ? JSON.parse(formData.resultSchema) : undefined,
+          inputSchema: formData.inputSchema ? JSON.parse(formData.inputSchema) : undefined,
           attachedFunctions: formData.attachedFunctions
             .split(",")
-            .map((f) => f.trim())
-            .filter((f) => f !== ""),
+            .map(f => f.trim())
+            .filter(f => f !== ""),
         },
         headers: {
           authorization: `Bearer ${await getToken()}`,
@@ -58,16 +48,12 @@ export default function NewAgent({
 
       if (response.status === 201) {
         toast.success("Agent created successfully");
-        router.push(
-          `/clusters/${params.clusterId}/agents/${response.body.id}/edit`,
-        );
+        router.push(`/clusters/${params.clusterId}/agents/${response.body.id}/edit`);
       } else {
         createErrorToast(response, "Failed to create Agent");
       }
     } catch (error) {
-      toast.error(
-        `An error occurred while creating the Agent: ${error}`,
-      );
+      toast.error(`An error occurred while creating the Agent: ${error}`);
     } finally {
       setIsLoading(false);
     }
@@ -79,11 +65,7 @@ export default function NewAgent({
       <p className="text-muted-foreground mb-4">
         <br />
         Please see our{" "}
-        <Link
-          href="https://docs.inferable.ai/pages/agents"
-          target="_blank"
-          className="underline"
-        >
+        <Link href="https://docs.inferable.ai/pages/agents" target="_blank" className="underline">
           docs
         </Link>{" "}
         for more information on how to use Agents.

@@ -3,7 +3,7 @@ module github.com/inferablehq/inferable/sdk-go
 go 1.22.9
 
 require (
-	github.com/invopop/jsonschema v0.12.0
+	github.com/invopop/jsonschema v0.13.0
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.10.0
 )

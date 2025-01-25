@@ -100,6 +100,17 @@ function FunctionCall({
     if (status === "success") getJobDetail();
   }, [status, getJobDetail]);
 
+  const cancelJob = useCallback(async () => {
+    const token = await getToken();
+    const response = await client.cancelJob({
+      params: { jobId, clusterId },
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (response.status === 204) {
+      getJobDetail();
+    }
+  }, [jobId, clusterId, getToken, getJobDetail]);
+
   const inputData = job?.targetArgs ? unpack(job.targetArgs) : null;
   const outputData = job?.result ? unpack(job.result) : null;
   const showInlineInput = inputData && isShortJSON(inputData);
@@ -139,6 +150,17 @@ function FunctionCall({
                     Deny
                   </Button>
                 </div>
+              )}
+
+              {status === "pending" || status === "running" && !approvalRequested && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={cancelJob}
+                  title="Cancel this function call"
+                >
+                  Cancel
+                </Button>
               )}
             </div>
 

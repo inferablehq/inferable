@@ -378,6 +378,19 @@ export async function requestApproval({ jobId, clusterId }: { jobId: string; clu
   }
 }
 
+export async function cancelJob({ jobId, clusterId }: { jobId: string; clusterId: string }) {
+  await data.db
+  .update(data.jobs)
+  .set({
+    status: "success",
+    result_type: "rejection",
+    result: packer.pack({
+      message: "This call was cancelled by the user.",
+    }),
+  })
+  .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
+}
+
 export async function submitApproval({
   jobId,
   clusterId,

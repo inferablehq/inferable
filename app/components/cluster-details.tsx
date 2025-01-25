@@ -33,6 +33,7 @@ import toast from "react-hot-toast";
 import ToolContextButton from "./chat/ToolContextButton";
 import { EventsOverlayButton } from "./events-overlay";
 import { ClusterState, Service, useClusterState } from "./useClusterState";
+import { QuickStartDemo } from "./quick-start-demo";
 
 function toServiceName(name: string) {
   return <span>{name}</span>;
@@ -231,10 +232,145 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     cluster,
   } = useClusterState(clusterId);
 
-  const isDemoCluster = cluster?.isDemo === true;
-
   return (
     <div className="flex flex-col space-y-3 w-full">
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
+          >
+            <div className="absolute -top-1.5 -right-1.5">
+              <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              </div>
+            </div>
+            <div className="flex items-center gap-4 w-full">
+              <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
+                <Blocks className="w-5 h-5 text-gray-700" />
+              </div>
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-semibold text-gray-900">Standard Library</span>
+                <span className="text-xs text-green-600">Available</span>
+              </div>
+            </div>
+          </Button>
+        </SheetTrigger>
+        <SheetContent style={{ minWidth: "80%" }} className="overflow-y-auto h-screen">
+          <SheetHeader className="pb-6">
+            <SheetTitle>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Blocks className="w-5 h-5 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <div className="font-mono text-xl">Standard Library</div>
+                  <div className="text-sm text-muted-foreground">
+                    Built-in tools ready to use. These tools are always available for runs.{" "}
+                    <a
+                      href="https://docs.inferable.ai/pages/standard-lib"
+                      className="text-primary hover:underline"
+                    >
+                      View Documentation →
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-6">
+            {isInitialLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Description</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-mono">calculator</TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              Performs arithmetic calculations using a sandboxed Python interpreter
+                              for secure and isolated execution
+                            </div>
+                            <a
+                              href={`/clusters/${clusterId}/runs?prompt=Calculate (5 * 3) + (10 / 2) using the calculator tool`}
+                              className="shrink-0"
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs whitespace-nowrap"
+                              >
+                                Test: Basic Arithmetic
+                              </Button>
+                            </a>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-mono">currentDateTime</TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              Returns the current time in both ISO 8601 format and Unix timestamp
+                            </div>
+                            <a
+                              href={`/clusters/${clusterId}/runs?prompt=What is the current date and time? Please show both ISO format and Unix timestamp`}
+                              className="shrink-0"
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs whitespace-nowrap"
+                              >
+                                Test: Get Current Time
+                              </Button>
+                            </a>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-mono">getUrl</TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              Fetches and parses web content into markdown format, with an allowlist
+                              of trusted domains for security
+                            </div>
+                            <a
+                              href={`/clusters/${clusterId}/runs?prompt=What's the current top story on Hacker News?`}
+                              className="shrink-0"
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs whitespace-nowrap"
+                              >
+                                Test: Fetch Hacker News
+                              </Button>
+                            </a>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <Sheet>
         <SheetTrigger asChild>
           <Button
@@ -410,135 +546,9 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
 }
 
 export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
-  const [status, setStatus] = useState<"creating" | "created" | "error">();
-  const { getToken } = useAuth();
-  const [actualCommand, setActualCommand] = useState<string>(
-    "npx @inferable/demo@latest run --secret=sk_inf_***"
-  );
-  const [displayCommand, setDisplayCommand] = useState<string>(
-    "npx @inferable/demo@latest run --secret=sk_inf_***"
-  );
-  const [showCommandDialog, setShowCommandDialog] = useState(false);
-
-  const handleCopy = async () => {
-    setStatus("creating");
-    const name = `autogenerated-demo-${Math.random().toString(36).substring(2, 10)}`;
-
-    const result = await client
-      .createApiKey({
-        headers: { authorization: `Bearer ${await getToken()}` },
-        params: { clusterId },
-        body: { name },
-      })
-      .catch(err => {
-        setStatus("error");
-        createErrorToast(err, "Failed to create API key");
-
-        return {
-          status: -1,
-          body: null,
-        } as const;
-      });
-
-    if (result.status === 200) {
-      const newCommand = `npx @inferable/demo@latest run --secret=${result.body.key}`;
-      const key = result.body.key;
-      const redactedKey = key.substring(0, 10) + "*".repeat(key.length - 10);
-      const redactedCommand = `npx @inferable/demo@latest run --secret=${redactedKey}`;
-
-      setActualCommand(newCommand);
-      setDisplayCommand(redactedCommand);
-      try {
-        await navigator.clipboard.writeText(newCommand);
-        toast.success("Copied to clipboard");
-        setStatus("created");
-      } catch (err) {
-        setShowCommandDialog(true);
-        setStatus("error");
-      }
-    } else {
-      setStatus("error");
-      createErrorToast(result, "Failed to create API key");
-    }
-  };
-
-  const getStatusText = () => {
-    switch (status) {
-      case "creating":
-        return "Creating API key...";
-      case "created":
-        return "Copied to clipboard ✅";
-      case "error":
-        return "Error creating key";
-      default:
-        return "Click to copy";
-    }
-  };
-
   return (
     <div className="space-y-4">
-      <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200">
-        <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-            <Cpu className="w-5 h-5 text-gray-600" />
-          </div>
-          <div>
-            <div className="text-base font-medium text-gray-900">Quick Start</div>
-            <div className="text-sm text-gray-500">
-              Try out Inferable with our demo service running locally on your machine
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-2">
-          <Button
-            onClick={handleCopy}
-            variant="outline"
-            className={cn(
-              "w-full h-auto py-4 font-mono text-sm group relative overflow-hidden transition-all",
-              "bg-black hover:bg-black/80 border-gray-800 text-white hover:text-white",
-              "flex items-center gap-2",
-              status === "creating" && "opacity-70 cursor-wait"
-            )}
-            disabled={status === "creating"}
-          >
-            <span className="flex-1 text-left truncate">{displayCommand}</span>
-            <span
-              className={cn(
-                "text-xs px-2 py-1 rounded-md transition-colors",
-                status === "created"
-                  ? "bg-green-500/20 text-green-300"
-                  : status === "error"
-                    ? "bg-red-500/20 text-red-300"
-                    : status === "creating"
-                      ? "bg-yellow-500/20 text-yellow-300"
-                      : "bg-gray-700 text-gray-300"
-              )}
-            >
-              {getStatusText()}
-            </span>
-          </Button>
-        </div>
-
-        <Dialog open={showCommandDialog} onOpenChange={setShowCommandDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Copy Command</DialogTitle>
-              <DialogDescription>
-                Unable to copy automatically. Please copy the command manually:
-              </DialogDescription>
-            </DialogHeader>
-            <div className="bg-black/90 p-4 rounded-md">
-              <pre className="text-white text-sm font-mono whitespace-pre-wrap break-all">
-                {actualCommand}
-              </pre>
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setShowCommandDialog(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <QuickStartDemo clusterId={clusterId} />
 
       <div className="rounded-xl p-5 shadow-sm border border-gray-200 bg-gray-50/50 transition-all duration-200">
         <div className="flex items-center gap-4">
@@ -634,6 +644,25 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
 
         <div className="mt-4 space-y-4">
           <div className="grid grid-cols-3 gap-4">
+            <a
+              href="https://github.com/inferablehq/inferable/tree/main/adapters/stdlib-adapter"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              <Button
+                variant="outline"
+                className="w-full h-auto py-4 bg-white hover:bg-gray-50 border-gray-200"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#4CAF50] flex items-center justify-center">
+                    <span className="text-white font-bold">S</span>
+                  </div>
+                  <span className="text-sm">Standard Library</span>
+                  <span className="text-xs text-green-600">Available</span>
+                </div>
+              </Button>
+            </a>
             <a
               href="https://github.com/inferablehq/inferable/tree/main/adapters/graphql-adapter"
               target="_blank"

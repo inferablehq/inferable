@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Command } from "lucide-react";
+import { useState } from "react";
+import { useEffect } from "react";
 
 interface SendButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   disabled?: boolean;
@@ -17,9 +19,11 @@ export function SendButton({
   showShortcut = true,
   ...props
 }: SendButtonProps) {
-  // Check if user is on Mac
-  const isMac =
-    typeof window !== "undefined" ? navigator.platform.toUpperCase().indexOf("MAC") >= 0 : false;
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(navigator.platform.toUpperCase().indexOf("MAC") >= 0);
+  }, []);
 
   return (
     <Button size="sm" className={cn("gap-2", className)} disabled={disabled} {...props}>

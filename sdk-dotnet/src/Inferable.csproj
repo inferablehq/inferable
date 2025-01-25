@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Inferable</PackageId>
-    <Version>0.0.23</Version>
+    <Version>0.0.25</Version>
     <Authors>Inferable</Authors>
     <Company>Inferable</Company>
     <Description>Client library for interacting with the Inferable API</Description>
@@ -13,7 +13,7 @@
     <RepositoryUrl>https://github.com/inferablehq/inferable/sdk-dotnet</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
     <PackageReference Include="NJsonSchema" Version="11.1.0" />
   </ItemGroup>
 </Project>

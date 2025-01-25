@@ -14,9 +14,8 @@ import * as data from "./data";
 import { embeddableEntitiy } from "./embeddings/embeddings";
 import { logger } from "./observability/logger";
 import { packer } from "./packer";
-import { withThrottle } from "./util";
 import jsonpath from "jsonpath";
-import { stdlib } from "./runs/agent/tools/stdlib";
+import { availableStdlib } from "./runs/agent/tools/stdlib";
 
 // The time without a ping before a service is considered expired
 const SERVICE_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute
@@ -354,18 +353,6 @@ export const updateServiceEmbeddings = async ({
       embeddableServiceFunction.deleteEmbedding(clusterId, "service-function", id)
     )
   );
-};
-
-export const getStandardLibraryToolsMeta = (): {
-  name: string;
-  description: string;
-  enabled: boolean;
-}[] => {
-  return Object.values(stdlib).map(tool => ({
-    name: tool.name,
-    description: tool.description,
-    enabled: true,
-  }));
 };
 
 export const validateServiceRegistration = ({

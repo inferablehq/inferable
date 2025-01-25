@@ -234,6 +234,17 @@ export const definition = {
       }),
     },
   },
+  createEphemeralSetup: {
+    method: "POST",
+    path: "/ephemeral-setup",
+    responses: {
+      200: z.object({
+        clusterId: z.string(),
+        apiKey: z.string(),
+      }),
+    },
+    body: z.undefined(),
+  },
   getContract: {
     method: "GET",
     path: "/contract",
@@ -292,6 +303,8 @@ export const definition = {
         resultType: z.string().nullable(),
         createdAt: z.date(),
         blobs: z.array(blobSchema),
+        approved: z.boolean().nullable(),
+        approvalRequested: z.boolean().nullable(),
       }),
     },
   },
@@ -323,6 +336,22 @@ export const definition = {
         status: z.enum(["pending", "running", "success", "failure", "stalled"]),
       }),
     },
+  },
+  cancelJob: {
+    method: "POST",
+    path: "/clusters/:clusterId/jobs/:jobId/cancel",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      jobId: z.string(),
+    }),
+    responses: {
+      204: z.undefined(),
+      401: z.undefined(),
+    },
+    body: z.undefined(),
   },
   createJobResult: {
     method: "POST",
@@ -745,9 +774,18 @@ export const definition = {
         ),
       onStatusChange: z
         .object({
-          statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])).describe(" A list of Run statuses which should trigger the handler").optional().default(["done", "failed"]),
-          function: functionReference.describe("A function to call when the run status changes").optional(),
-          webhook: z.string().describe("A webhook URL to call when the run status changes").optional(),
+          statuses: z
+            .array(z.enum(["pending", "running", "paused", "done", "failed"]))
+            .describe(" A list of Run statuses which should trigger the handler")
+            .optional()
+            .default(["done", "failed"]),
+          function: functionReference
+            .describe("A function to call when the run status changes")
+            .optional(),
+          webhook: z
+            .string()
+            .describe("A webhook URL to call when the run status changes")
+            .optional(),
         })
         .optional()
         .describe("Mechanism for receiving notifications when the run status changes"),
@@ -1327,24 +1365,6 @@ export const definition = {
     body: z.object({}).passthrough(),
     responses: {
       200: z.undefined(),
-    },
-  },
-  getStandardLibraryMeta: {
-    method: "GET",
-    path: "/clusters/:clusterId/standard-library",
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-    responses: {
-      200: z.object({
-        tools: z.array(
-          z.object({
-            name: z.string(),
-            description: z.string(),
-            enabled: z.boolean(),
-          })
-        ),
-      }),
     },
   },
 } as const;

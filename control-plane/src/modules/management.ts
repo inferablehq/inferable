@@ -6,6 +6,8 @@ import * as errors from "../utilities/errors";
 import * as data from "./data";
 import { randomName } from "./names";
 import { VersionedTexts } from "./versioned-text";
+import { createApiKey } from "./auth/cluster";
+import { rateLimiter } from "./rate-limiter";
 
 const clusterDetailsCache = createCache<Awaited<ReturnType<typeof getClusterDetails>>>(
   Symbol("clusterDetails")
@@ -38,21 +40,63 @@ export const getClusters = async ({
   return clusters;
 };
 
+export const createEphemeralSetup = async (
+  ip: string
+): Promise<{
+  clusterId: string;
+  apiKey: string;
+  ip: string;
+}> => {
+  const clusterId = ulid();
+
+  const limiter = rateLimiter({ window: "hour", ceiling: 10 });
+  const allowed = limiter.allowed(`ephemeral-setup:${ip}`, 1);
+
+  if (!allowed) {
+    throw new errors.TooManyRequestsError(
+      "Too many ephemeral setups for this IP. Try again in 1h."
+    );
+  } else {
+    await limiter.consume(`ephemeral-setup:${ip}`, 1);
+  }
+
+  const cluster = await createCluster({
+    name: "Ephemeral Cluster",
+    organizationId: "ephemeral",
+    description: `Ephemeral cluster created by ${ip}`,
+    isEphemeral: true,
+  });
+
+  const { key: apiKey } = await createApiKey({
+    clusterId: cluster.id,
+    createdBy: "anonymous",
+    name: "ephemeral-default",
+  });
+
+  return {
+    clusterId,
+    apiKey,
+    ip,
+  };
+};
+
 export const createCluster = async ({
   name,
   organizationId,
   description,
   isDemo,
+  isEphemeral,
 }: {
   name?: string;
   organizationId: string;
   description: string;
   isDemo?: boolean;
+  isEphemeral?: boolean;
 }): Promise<{
   id: string;
   name: string;
 }> => {
-  const id = ulid();
+  const id = isEphemeral ? `eph_${ulid()}` : ulid();
 
   return data.db
     .insert(data.clusters)
@@ -63,6 +107,7 @@ export const createCluster = async ({
         organization_id: organizationId,
         description,
         is_demo: isDemo,
+        is_ephemeral: isEphemeral,
       },
     ])
     .returning({

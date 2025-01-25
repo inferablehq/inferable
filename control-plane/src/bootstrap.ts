@@ -176,14 +176,10 @@ const startTime = Date.now();
     slack.start(app),
     externalCalls.start(),
     email.start(),
-    ...(env.EE_DEPLOYMENT
-      ? [
-          customerTelemetry.start(),
-          toolhouse.start(),
-          flagsmith?.getEnvironmentFlags(),
-          analytics.start(),
-        ]
-      : []),
+    customerTelemetry.start(),
+    toolhouse.start(),
+    flagsmith?.getEnvironmentFlags(),
+    analytics.start(),
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });

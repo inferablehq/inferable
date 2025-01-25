@@ -41,11 +41,7 @@ type AgentFormPrompts = {
   isLoading: boolean;
 };
 
-export function AgentForm({
-  initialData,
-  onSubmit,
-  isLoading,
-}: AgentFormPrompts) {
+export function AgentForm({ initialData, onSubmit, isLoading }: AgentFormPrompts) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -89,9 +85,7 @@ export function AgentForm({
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormDescription>
-                The name of the Agent
-              </FormDescription>
+              <FormDescription>The name of the Agent</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -110,8 +104,7 @@ export function AgentForm({
                 />
               </FormControl>
               <FormDescription>
-                An Initial Prompt which defines the first &quot;human&quot; message in the
-                Run.
+                An Initial Prompt which defines the first &quot;human&quot; message in the Run.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -154,11 +147,10 @@ export function AgentForm({
                       You have explicitly attached functions.
                     </AlertTitle>
                     <AlertDescription className="text-sm text-xs mt-2">
-                      By explicitly attaching functions, you limit the functions
-                      that the run will be able to use. If you do not specify
-                      any attached functions, all function will be available. If
-                      you want more deterministic results, you should explicitly
-                      attach the functions you want to use.
+                      By explicitly attaching functions, you limit the functions that the run will
+                      be able to use. If you do not specify any attached functions, all function
+                      will be available. If you want more deterministic results, you should
+                      explicitly attach the functions you want to use.
                     </AlertDescription>
                   </Alert>
                 ) : (
@@ -169,7 +161,7 @@ export function AgentForm({
             </FormItem>
           )}
         />
-        <div>
+        <div className="border border-gray-200 p-4 rounded-lg">
           <p className="font-semibold">Result Schema (Optional)</p>
           <p className="text-xs text-gray-500 mb-2 mt-1">
             Enforce that Runs produce a structured result that conforms to this JSON schema.
@@ -192,7 +184,7 @@ export function AgentForm({
                 <FormControl>
                   <StructuredOutputEditor
                     value={field.value ?? ""}
-                    onChange={(value) => field.onChange(value)}
+                    onChange={value => field.onChange(value)}
                   />
                 </FormControl>
                 <FormMessage />
@@ -200,7 +192,7 @@ export function AgentForm({
             )}
           />
         </div>
-        <div>
+        <div className="border border-gray-200 p-4 rounded-lg">
           <p className="font-semibold">Input Schema (Optional)</p>
           <p className="text-xs text-gray-500 mb-2 mt-1">
             Enforce that Runs must be invoked with an input object that matches this JSON schema.
@@ -223,7 +215,7 @@ export function AgentForm({
                 <FormControl>
                   <StructuredOutputEditor
                     value={field.value ?? ""}
-                    onChange={(value) => field.onChange(value)}
+                    onChange={value => field.onChange(value)}
                   />
                 </FormControl>
                 <FormMessage />

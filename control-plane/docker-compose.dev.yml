@@ -1,22 +1,30 @@
 services:
   postgres:
-    extends:
-      file: docker-compose.base.yml
-      service: postgres
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: inferable
+      POSTGRES_PASSWORD: inferable
+      POSTGRES_DB: inferable
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   redis:
-    extends:
-      file: docker-compose.base.yml
-      service: redis
+    image: redis
+    container_name: redis
     ports:
       - "6379:6379"
 
   elasticmq:
-    extends:
-      file: docker-compose.base.yml
-      service: elasticmq
+    image: softwaremill/elasticmq-native
+    container_name: elasticmq
+    configs:
+      - source: elasticmq_conf
+        target: /opt/elasticmq.conf
+    volumes:
+      - elasticmqdata:/data
     ports:
       - "9324:9324"
       - "9325:9325"

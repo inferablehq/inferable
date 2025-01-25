@@ -49,6 +49,9 @@ const columns: ColumnDef<ClusterData>[] = [
         </Link>
         <div className="text-sm text-gray-500 truncate mt-1" title={row.original.description || ""}>
           {row.original.description || "No description"}
+          <div className="text-xs font-mono text-gray-400 mt-1" title={row.original.id}>
+            ID: {row.original.id}
+          </div>
         </div>
       </div>
     ),

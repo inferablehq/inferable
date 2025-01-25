@@ -20,7 +20,7 @@ import { posthog } from "./posthog";
 import { addMessageAndResume } from "./runs";
 import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { runsRouter } from "./runs/router";
-import { getServiceDefinitions, getStandardLibraryToolsMeta } from "./service-definitions";
+import { getServiceDefinitions } from "./service-definitions";
 import { unqualifiedEntityId } from "./auth/auth";
 
 const readFile = util.promisify(fs.readFile);
@@ -39,6 +39,16 @@ export const router = initServer().router(contract, {
       body: {
         status: "ok",
       },
+    };
+  },
+  createEphemeralSetup: async request => {
+    const result = await management.createEphemeralSetup(
+      (request.headers["x-forwarded-for"] as string) ?? "unknown"
+    );
+
+    return {
+      status: 200,
+      body: result,
     };
   },
   getContract: async () => {
@@ -600,21 +610,6 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: result.structured,
-    };
-  },
-  getStandardLibraryMeta: async request => {
-    const { clusterId } = request.params;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
-
-    const tools = getStandardLibraryToolsMeta();
-
-    return {
-      status: 200,
-      body: {
-        tools,
-      },
     };
   },
 });

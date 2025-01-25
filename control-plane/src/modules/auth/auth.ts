@@ -98,7 +98,7 @@ export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {
 
       if (!clusterId) {
         throw new AuthenticationError(
-          "Custom auth can only be used with /clusters/:clusterId paths"
+          `Custom auth can only be used with /clusters/:clusterId paths. Request URL: ${request.url}.`
         );
       }
 

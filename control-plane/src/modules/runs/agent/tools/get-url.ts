@@ -5,9 +5,6 @@ import { AgentTool } from "../tool";
 
 export const GET_URL_TOOL_NAME = "getUrl";
 
-// TODO: This should be configurable for clusters with a credit card on file
-const allowedHosts = ["https://docs.inferable.ai", "https://news.ycombinator.com"];
-
 export const getUrlTool = new AgentTool({
   name: GET_URL_TOOL_NAME,
   description: "Fetches content from a URL and returns it in markdown format.",
@@ -21,10 +18,6 @@ export const getUrlTool = new AgentTool({
   func: async (input: { url: string }) => {
     if (!env.FIRECRAWL_API_KEY) {
       throw new Error("Crawling API is not configured");
-    }
-
-    if (!allowedHosts.some(host => input.url.startsWith(host))) {
-      throw new Error("Request blocked. Allowed hosts are: " + allowedHosts.join(", "));
     }
 
     try {

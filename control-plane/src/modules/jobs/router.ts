@@ -18,6 +18,7 @@ export const jobsRouter = initServer().router(
     createJobBlob: contract.createJobBlob,
     getJob: contract.getJob,
     createJobApproval: contract.createJobApproval,
+    cancelJob: contract.cancelJob,
   },
   {
     createJob: async request => {
@@ -73,6 +74,24 @@ export const jobsRouter = initServer().router(
           result: unpackedResult,
           resultType,
         },
+      };
+    },
+    cancelJob: async request => {
+      const { clusterId, jobId } = request.params;
+
+      const auth = request.request.getAuth();
+
+      auth.canAccess({ cluster: { clusterId } });
+      auth.canManage({ cluster: { clusterId } });
+
+      await jobs.cancelJob({
+        jobId,
+        clusterId,
+      });
+
+      return {
+        status: 204,
+        body: undefined,
       };
     },
     createJobResult: async request => {

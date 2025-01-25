@@ -25,17 +25,17 @@ const linkStyles =
 export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps) {
   const { getToken } = auth();
 
-  const clusterDetails = await client
-    .getCluster({
-      headers: { authorization: `Bearer ${await getToken()}` },
-      params: { clusterId },
-    })
-    .catch(() => {
-      return { status: 500, body: { error: "Failed to fetch cluster details" } } as const;
-    });
+  const clusterDetails = await client.getCluster({
+    headers: { authorization: `Bearer ${await getToken()}` },
+    params: { clusterId },
+  });
 
   if (clusterDetails.status !== 200) {
-    return <ErrorDisplay error={clusterDetails.body} status={clusterDetails.status} />;
+    return (
+      <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
+        <ErrorDisplay error={clusterDetails.body} status={clusterDetails.status} />
+      </div>
+    );
   }
 
   return (
@@ -45,9 +45,9 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
           href={`/clusters/${clusterId}/runs`}
           className="text-lg text-gray-400 tracking-tight hover:text-gray-600"
         >
-          {clusterDetails.body.name}
+          {clusterDetails.body?.name}
         </Link>
-        {clusterDetails.body.isDemo && <Badge variant="secondary">Demo</Badge>}
+        {clusterDetails.body?.isDemo && <Badge variant="secondary">Demo</Badge>}
       </div>
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
         <PlayCircle className="h-4 w-4" /> Runs

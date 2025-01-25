@@ -54,6 +54,10 @@ const getClusterCount = async () => {
 };
 
 const populateAnalytics = async () => {
+  if (!env.ANALYTICS_BUCKET_NAME) {
+    return;
+  }
+
   // Get the start of the previous hour
   const timestamp = new Date();
   timestamp.setMinutes(0, 0, 0);

@@ -1,14 +1,25 @@
 import { and, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
-import { BadRequestError, NotFoundError, RunBusyError } from "../../utilities/errors";
+import {
+  BadRequestError,
+  NotFoundError,
+  PaymentRequiredError,
+  RunBusyError,
+} from "../../utilities/errors";
 import { clusters, db, jobs, RunMessageMetadata, runMessages, runTags, runs } from "../data";
 import { ChatIdentifiers } from "../models/routing";
 import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
 import { sqs } from "../sqs";
 import { trackCustomerTelemetry } from "../track-customer-telemetry";
-import { getRunMessages, hasInvocations, insertRunMessage, lastAgentMessage } from "./messages";
+import {
+  getMessageCountForCluster,
+  getRunMessages,
+  hasInvocations,
+  insertRunMessage,
+  lastAgentMessage,
+} from "./messages";
 import { getRunTags } from "./tags";
 import { omitBy } from "lodash";
 
@@ -323,6 +334,16 @@ export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; r
   };
 };
 
+const assertEphemeralClusterLimitations = async (clusterId: string) => {
+  if (clusterId.startsWith("eph_")) {
+    const count = await getMessageCountForCluster(clusterId);
+
+    if (count > 30) {
+      throw new PaymentRequiredError("Ephemeral cluster has reached the message limit");
+    }
+  }
+};
+
 export const addMessageAndResumeWithRun = async ({
   userId,
   id,
@@ -350,6 +371,8 @@ export const addMessageAndResumeWithRun = async ({
   if (!skipAssert) {
     await assertRunReady({ clusterId, run });
   }
+
+  await assertEphemeralClusterLimitations(clusterId);
 
   await insertRunMessage({
     userId,

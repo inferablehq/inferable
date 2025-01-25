@@ -1,0 +1,45 @@
+{
+  "name": "@inferable/chat",
+  "version": "0.24.13",
+  "description": "Chat CLI for inferable.ai",
+  "bin": {
+    "inf": "bin/index.js"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "test:dev": "jest --runInBand --watch src --forceExit --onlyChanged",
+    "test": "jest --runInBand --forceExit",
+    "start": "node ./bin/index.js",
+    "build": "tsc && chmod +x ./bin/index.js",
+    "clean": "rm -rf ./bin",
+    "dev": "npm run build && npm run start"
+  },
+  "author": "Inferable, Inc.",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@inferable/react": "^0.0.21",
+    "@ts-rest/core": "^3.28.0",
+    "dotenv": "^16.4.5",
+    "ink": "^5.1.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^18.3.1",
+    "simple-update-notifier": "^2.0.0",
+    "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/ink": "^0.5.2",
+    "@types/marked-terminal": "^6.1.1",
+    "@types/react": "^18.3.18",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testMatch": [
+      "**/__tests__/**/*.ts",
+      "**/?(*.)+(spec|test).ts"
+    ]
+  }
+}

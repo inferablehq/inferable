@@ -28,6 +28,7 @@ import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { useClusterState } from "../useClusterState";
 import Commands from "./sdk-commands";
+import { QuickStartDemo } from "../quick-start-demo";
 
 export type RunOptions = {
   agentId?: string;
@@ -185,6 +186,15 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     if (queryAgentId) {
       setSelectedAgentId(queryAgentId);
     }
+
+    const queryPrompt = searchParams?.get("prompt");
+    if (queryPrompt) {
+      setPrompt(queryPrompt);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      }
+    }
   }, [searchParams, setSelectedAgentId]);
 
   const onSubmit = useCallback(
@@ -290,14 +300,6 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   };
 
   const [activeTab, setActiveTab] = useState<string>("custom");
-
-  useEffect(() => {
-    const queryAgentId = searchParams?.get("agentId");
-    if (queryAgentId) {
-      setSelectedAgentId(queryAgentId);
-      setActiveTab("agent");
-    }
-  }, [searchParams, setSelectedAgentId]);
 
   const noServicesAndMachines = !services.length && !machines.length;
 
@@ -414,31 +416,8 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       )}
 
       {noServicesAndMachines && !isLoading && (
-        <div className="w-full rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <div className="flex flex-col items-start justify-between">
-            <div className="flex flex-col items-start justify-between">
-              <div>
-                <h3 className="font-medium text-gray-800">No Services Connected</h3>
-                <p className="mt-1 text-sm text-gray-600">
-                  It looks like you haven&apos;t connected any services. Connect a service to give
-                  your agent some powers.
-                </p>
-              </div>
-              <div className="h-4" />
-              <Button
-                onClick={() => {
-                  const addServicesButton = document.querySelector("[data-add-services-trigger]");
-                  if (addServicesButton instanceof HTMLElement) {
-                    addServicesButton.click();
-                  }
-                }}
-                size="sm"
-                className="shrink-0"
-              >
-                Learn How <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+        <div className="flex-grow-0">
+          <QuickStartDemo clusterId={clusterId} />
         </div>
       )}
 
