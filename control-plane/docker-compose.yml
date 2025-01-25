@@ -55,4 +55,5 @@ configs:
         run-generate-name {}
         customer-telemetry {}
         external-tool-call {}
+        email-ingestion {}
       }
