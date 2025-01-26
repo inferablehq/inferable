@@ -38,7 +38,15 @@ import {
   addMessageAndResumeWithRun,
   updateRunFeedback,
 } from "./runs";
-import { RunOptions, mergeAgentOptions, deleteAgent, getAgent, listAgents, upsertAgent, validateSchema } from "./agents";
+import {
+  RunOptions,
+  mergeAgentOptions,
+  deleteAgent,
+  getAgent,
+  listAgents,
+  upsertAgent,
+  validateSchema,
+} from "./agents";
 import { normalizeFunctionReference } from "./service-definitions";
 import { getClusterDetails } from "./cluster";
 import { JsonSchemaInput } from "inferable/bin/types";
@@ -53,11 +61,10 @@ import { env } from "../utilities/env";
 import { integrationByConnectionId } from "./email";
 import { NEW_CONNECTION_ID } from "./integrations/constants";
 
-
 const readFile = util.promisify(fs.readFile);
 
 export const router = initServer().router(contract, {
-  createMachine: async (request) => {
+  createMachine: async request => {
     const machine = request.request.getAuth().isMachine();
 
     const machineId = request.headers["x-machine-id"];
@@ -69,29 +76,21 @@ export const router = initServer().router(contract, {
     const { service, functions } = request.body;
 
     if (service && ILLEGAL_SERVICE_NAMES.includes(service)) {
-      throw new BadRequestError(
-        `Service name ${service} is reserved and cannot be used.`,
-      );
+      throw new BadRequestError(`Service name ${service} is reserved and cannot be used.`);
     }
 
-    const derefedFns = functions?.map((fn) => {
-      const schema = fn.schema
-        ? safeParse(fn.schema)
-        : { success: true, data: undefined };
+    const derefedFns = functions?.map(fn => {
+      const schema = fn.schema ? safeParse(fn.schema) : { success: true, data: undefined };
 
       if (!schema.success) {
-        throw new BadRequestError(
-          `Function ${fn.name} has an invalid schema.`,
-        );
+        throw new BadRequestError(`Function ${fn.name} has an invalid schema.`);
       }
 
       return {
         clusterId: machine.clusterId,
         name: fn.name,
         description: fn.description,
-        schema: schema.data
-          ? JSON.stringify(dereferenceSync(schema.data))
-          : undefined,
+        schema: schema.data ? JSON.stringify(dereferenceSync(schema.data)) : undefined,
         config: fn.config,
       };
     });
@@ -217,8 +216,8 @@ export const router = initServer().router(contract, {
       }
     }
 
-    let runOptions: RunOptions & { runId?: string } = {
-      runId: body.runId,
+    let runOptions: RunOptions = {
+      id: body.id,
       initialPrompt: body.initialPrompt,
       systemPrompt: body.systemPrompt,
       attachedFunctions: body.attachedFunctions?.map(normalizeFunctionReference),
@@ -270,7 +269,7 @@ export const router = initServer().router(contract, {
     const customAuth = auth.type === "custom" ? auth.isCustomAuth() : undefined;
 
     const run = await createRun({
-      runId: runOptions.runId,
+      id: runOptions.id,
       userId: auth.entityId,
       clusterId,
 
@@ -539,7 +538,7 @@ export const router = initServer().router(contract, {
       body: jobReferences,
     };
   },
-  createApiKey: async (request) => {
+  createApiKey: async request => {
     const { name } = request.body;
     const { clusterId } = request.params;
 
@@ -594,7 +593,7 @@ export const router = initServer().router(contract, {
       body: { id, key },
     };
   },
-  listApiKeys: async (request) => {
+  listApiKeys: async request => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth().isAdmin();
@@ -607,7 +606,7 @@ export const router = initServer().router(contract, {
       body: apiKeys,
     };
   },
-  revokeApiKey: async (request) => {
+  revokeApiKey: async request => {
     const { clusterId, keyId } = request.params;
 
     const auth = request.request.getAuth().isAdmin();
@@ -965,7 +964,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  upsertIntegrations: async (request) => {
+  upsertIntegrations: async request => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth().isAdmin();
@@ -980,8 +979,8 @@ export const router = initServer().router(contract, {
       // Only the agentId is editable via the API
       request.body.slack = {
         agentId: request.body.slack.agentId,
-        ...integrations.slack
-      }
+        ...integrations.slack,
+      };
     }
 
     if (request.body.email) {
@@ -989,7 +988,6 @@ export const router = initServer().router(contract, {
 
       const connectionId = request.body.email.connectionId;
       const agentId = request.body.email.agentId;
-
 
       if (connectionId === NEW_CONNECTION_ID) {
         const connectionId = crypto.randomUUID();
@@ -999,7 +997,7 @@ export const router = initServer().router(contract, {
           logger.error("Unexpected connectionId collision", {
             clusterId,
             connectionId,
-          })
+          });
           throw new Error("Unexpected connectionId collision");
         }
 
@@ -1011,14 +1009,14 @@ export const router = initServer().router(contract, {
       if (agentId && agentId !== existing?.email?.agentId) {
         const agent = await getAgent({
           clusterId,
-          id: agentId
+          id: agentId,
         });
 
         if (!agent) {
           logger.warn("Attempted to connect email to non-existent agent", {
             clusterId,
-            agentId: request.body.email.agentId
-          })
+            agentId: request.body.email.agentId,
+          });
 
           request.body.email.agentId = undefined;
         }
@@ -1044,7 +1042,6 @@ export const router = initServer().router(contract, {
     });
 
     Object.entries(request.body).forEach(([key, value]) => {
-
       const action = value === null ? "delete" : "update";
 
       posthog?.capture({
@@ -1061,16 +1058,14 @@ export const router = initServer().router(contract, {
           user_agent: request.headers["user-agent"],
         },
       });
-
-    })
-
+    });
 
     return {
       status: 200,
       body: undefined,
     };
   },
-  getIntegrations: async (request) => {
+  getIntegrations: async request => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
@@ -1086,7 +1081,7 @@ export const router = initServer().router(contract, {
       body: integrations,
     };
   },
-  createNangoSession: async (request) => {
+  createNangoSession: async request => {
     if (!nango) {
       throw new Error("Nango is not configured");
     }
@@ -1107,9 +1102,9 @@ export const router = initServer().router(contract, {
       body: {
         token: await getSession({ clusterId, integrationId: env.NANGO_SLACK_INTEGRATION_ID }),
       },
-    }
+    };
   },
-  createNangoEvent: async (request) => {
+  createNangoEvent: async request => {
     if (!nango) {
       throw new Error("Nango is not configured");
     }
@@ -1123,25 +1118,25 @@ export const router = initServer().router(contract, {
     }
 
     logger.info("Received Nango webhook", {
-      body: request.body
+      body: request.body,
     });
 
     const webhook = webhookSchema.safeParse(request.body);
     if (!webhook.success) {
       logger.error("Failed to parse Nango webhook", {
         error: webhook.error,
-      })
+      });
       throw new BadRequestError("Invalid Nango webhook payload");
     }
 
     if (
-      webhook.data.provider === "slack"
-        && webhook.data.operation === "creation"
-        && webhook.data.success
+      webhook.data.provider === "slack" &&
+      webhook.data.operation === "creation" &&
+      webhook.data.success
     ) {
       const connection = await nango.getConnection(
         webhook.data.providerConfigKey,
-        webhook.data.connectionId,
+        webhook.data.connectionId
       );
 
       logger.info("New Slack connection registered", {
@@ -1163,14 +1158,14 @@ export const router = initServer().router(contract, {
             teamId: connection.connection_config["team.id"],
             botUserId: connection.connection_config["bot_user_id"],
           },
-        }
-      })
+        },
+      });
     }
 
     return {
       status: 200,
       body: undefined,
-    }
+    };
   },
   live: async () => {
     await data.isAlive();

@@ -26,7 +26,7 @@ import { omitBy } from "lodash";
 export { start, stop } from "./queues";
 
 export const createRun = async ({
-  runId,
+  id,
   userId,
   clusterId,
   name,
@@ -48,7 +48,7 @@ export const createRun = async ({
   context,
   enableResultGrounding,
 }: {
-  runId?: string;
+  id?: string;
   userId?: string;
   clusterId: string;
   name?: string;
@@ -96,7 +96,7 @@ export const createRun = async ({
   const [run] = await db
     .insert(runs)
     .values({
-      id: runId ?? ulid(),
+      id: id ?? ulid(),
       cluster_id: clusterId,
       status: "pending",
       user_id: userId ?? "SYSTEM",
@@ -126,11 +126,11 @@ export const createRun = async ({
     .returning(resultSet);
 
   if (!run) {
-    if (runId) {
+    if (id) {
       return db
         .select(resultSet)
         .from(runs)
-        .where(and(eq(runs.id, runId), eq(runs.cluster_id, clusterId)))
+        .where(and(eq(runs.id, id), eq(runs.cluster_id, clusterId)))
         .limit(1)
         .then(result => result[0]);
     }
@@ -509,7 +509,7 @@ export type RunMessage = {
 };
 
 export const createRunWithMessage = async ({
-  runId,
+  id,
   userId,
   clusterId,
   message,
@@ -535,7 +535,7 @@ export const createRunWithMessage = async ({
   enableResultGrounding,
 }: Parameters<typeof createRun>[0] & RunMessage) => {
   const run = await createRun({
-    runId,
+    id,
     userId,
     clusterId,
     name,

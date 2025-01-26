@@ -257,6 +257,7 @@ export const validateInput = ({ schema, input }: { schema: any; input: any }) =>
 };
 
 export type RunOptions = {
+  id?: string;
   initialPrompt?: string;
   systemPrompt?: string;
   attachedFunctions?: string[];

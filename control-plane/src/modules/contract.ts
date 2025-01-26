@@ -738,7 +738,7 @@ export const definition = {
       authorization: z.string(),
     }),
     body: z.object({
-      runId: z
+      id: z
         .string()
         .optional()
         .describe(
