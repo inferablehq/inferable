@@ -75,6 +75,23 @@ export const createRun = async ({
   context?: unknown;
   enableResultGrounding?: boolean;
 }) => {
+  const resultSet = {
+    id: runs.id,
+    name: runs.name,
+    clusterId: runs.cluster_id,
+    systemPrompt: runs.system_prompt,
+    status: runs.status,
+    debug: runs.debug,
+    test: runs.test,
+    attachedFunctions: runs.attached_functions,
+    modelIdentifier: runs.model_identifier,
+    authContext: runs.auth_context,
+    context: runs.context,
+    interactive: runs.interactive,
+    enableResultGrounding: runs.enable_result_grounding,
+    agentId: runs.agent_id,
+  } as const;
+
   // Insert the run with a subquery for debug value
   const [run] = await db
     .insert(runs)
@@ -105,24 +122,19 @@ export const createRun = async ({
       context: context,
       enable_result_grounding: enableResultGrounding,
     })
-    .returning({
-      id: runs.id,
-      name: runs.name,
-      clusterId: runs.cluster_id,
-      systemPrompt: runs.system_prompt,
-      status: runs.status,
-      debug: runs.debug,
-      test: runs.test,
-      attachedFunctions: runs.attached_functions,
-      modelIdentifier: runs.model_identifier,
-      authContext: runs.auth_context,
-      context: runs.context,
-      interactive: runs.interactive,
-      enableResultGrounding: runs.enable_result_grounding,
-      agentId: runs.agent_id,
-    });
+    .onConflictDoNothing()
+    .returning(resultSet);
 
   if (!run) {
+    if (runId) {
+      return db
+        .select(resultSet)
+        .from(runs)
+        .where(and(eq(runs.id, runId), eq(runs.cluster_id, clusterId)))
+        .limit(1)
+        .then(result => result[0]);
+    }
+
     throw new Error("Failed to create run");
   }
 

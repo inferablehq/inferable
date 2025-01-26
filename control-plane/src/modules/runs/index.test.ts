@@ -23,6 +23,32 @@ describe("assertRunReady", () => {
     ).resolves.not.toThrow();
   });
 
+  it("should be idempotent when creating run with same ID", async () => {
+    const runId = ulid();
+    const firstRun = await createRun({
+      runId,
+      clusterId: owner.clusterId,
+      name: "first run",
+      tags: {
+        first: "first",
+      },
+      systemPrompt: "foo",
+    });
+
+    const secondRun = await createRun({
+      runId,
+      clusterId: owner.clusterId,
+      name: "second run",
+      tags: {
+        second: "second",
+      },
+      systemPrompt: "bar",
+    });
+
+    expect(secondRun.name).toEqual(firstRun.name);
+    expect(firstRun.id).toBe(runId);
+  });
+
   it("should throw if run is running", async () => {
     const run = await createRun({
       clusterId: owner.clusterId,
