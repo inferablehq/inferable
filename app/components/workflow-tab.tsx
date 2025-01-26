@@ -12,13 +12,7 @@ import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
 import { truncate } from "lodash";
-import {
-  Bot,
-  TestTubeIcon,
-  ThumbsDownIcon,
-  ThumbsUpIcon,
-  TrashIcon,
-} from "lucide-react";
+import { Bot, TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon, TrashIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -80,13 +74,11 @@ export function RunTab({
     [onRefetchWorkflows, onGoToCluster, runId, getToken]
   );
 
-  const [templates, setTemplates] = useState<{ id: string; name: string }[]>(
-    []
-  );
+  const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     getToken()
-      .then((token) => {
+      .then(token => {
         return client.listAgents({
           headers: {
             authorization: `Bearer ${token}`,
@@ -96,7 +88,7 @@ export function RunTab({
           },
         });
       })
-      .then((results) => {
+      .then(results => {
         if (results.status === 200) {
           setTemplates(results.body);
         } else {
@@ -108,8 +100,8 @@ export function RunTab({
   return (
     <div className="flex flex-col space-y-2">
       {workflows
-        .sort((a, b) => (a.id > b.id ? -1 : 1))
-        .map((workflow) => (
+        .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
+        .map(workflow => (
           <RunPill
             key={workflow.id}
             workflow={workflow}
@@ -154,11 +146,9 @@ function RunPill({
       key={workflow.id}
       className={`grid grid-cols-[20px_1fr] items-start hover:text-black border p-2 rounded-md shadow-sm
                     ${
-                      runId === workflow.id
-                        ? "bg-gray-100"
-                        : "text-slate-600 bg-white"
+                      runId === workflow.id ? "bg-gray-100" : "text-slate-600 bg-white"
                     } cursor-pointer mt-2 ${depth > 0 ? "opacity-90" : ""}`}
-      onClick={(e) => {
+      onClick={e => {
         e.stopPropagation();
         onGoToWorkflow(clusterId, workflow.id);
       }}
@@ -172,10 +162,7 @@ function RunPill({
         <span className="flex space-x-2 items-center">
           <p className="text-xs text-muted-foreground font-mono tracking-tighter">
             Created {userId === workflow.userId && "by you "}
-            {formatRelative(
-              new Date(workflow.createdAt).getTime(),
-              new Date().getTime()
-            )}
+            {formatRelative(new Date(workflow.createdAt).getTime(), new Date().getTime())}
           </p>
         </span>
         <div className="flex justify-between items-end">
@@ -190,7 +177,7 @@ function RunPill({
                 <Tag
                   label={<TestTubeIcon className="h-3 w-3" />}
                   value=""
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     router.push(
                       `/clusters/${clusterId}/runs?filters=${encodeURIComponent(
@@ -205,7 +192,7 @@ function RunPill({
               {workflow.agentId && (
                 <Tag
                   label={<Bot className="h-3 w-3" />}
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     router.push(
                       `/clusters/${clusterId}/runs?filters=${encodeURIComponent(
@@ -215,10 +202,7 @@ function RunPill({
                       )}`
                     );
                   }}
-                  value={
-                    templates.find((t) => t.id === workflow.agentId)?.name ??
-                    "unknown"
-                  }
+                  value={templates.find(t => t.id === workflow.agentId)?.name ?? "unknown"}
                 />
               )}
               {workflow.feedbackScore !== null && (
@@ -237,7 +221,7 @@ function RunPill({
           </div>
           <Button
             className="opacity-30 hover:opacity-100"
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
               onDeleteWorkflow(workflow.id, clusterId);
             }}
@@ -263,10 +247,7 @@ function Tag({
   onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
-    <div
-      className="flex flex-col items-start text-xs mt-1 flex-wrap"
-      onClick={onClick}
-    >
+    <div className="flex flex-col items-start text-xs mt-1 flex-wrap" onClick={onClick}>
       <div
         className={`flex space-x-1 bg-white border mt-1 py-1 px-2 rounded-sm text-gray-600 mr-1 mb-1 items-center h-8 ${
           onClick ? "hover:bg-gray-100" : ""
