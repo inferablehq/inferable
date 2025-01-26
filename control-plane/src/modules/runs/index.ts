@@ -132,7 +132,12 @@ export const createRun = async ({
         .from(runs)
         .where(and(eq(runs.id, id), eq(runs.cluster_id, clusterId)))
         .limit(1)
-        .then(result => result[0]);
+        .then(result => {
+          return {
+            ...result[0],
+            created: false,
+          };
+        });
     }
 
     throw new Error("Failed to create run");
@@ -150,7 +155,7 @@ export const createRun = async ({
     );
   }
 
-  return run;
+  return { ...run, created: true };
 };
 
 export const deleteRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
