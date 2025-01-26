@@ -31,16 +31,6 @@ debug.formatters.J = (json) => {
 
 export const log = debug("inferable:client");
 
-type RunInput = Omit<
-  Required<
-    Parameters<ReturnType<typeof createApiClient>["createRun"]>[0]
-  >["body"],
-  "resultSchema"
-> & {
-  id?: string;
-  resultSchema?: z.ZodType<unknown> | JsonSchemaInput;
-};
-
 /**
  * The Inferable client. This is the main entry point for using Inferable.
  *
@@ -214,22 +204,20 @@ export class Inferable {
    * console.log("Run result:", result);
    * ```
    */
-  public async run(input: RunInput) {
-    let resultSchema: JsonSchemaInput | undefined;
-
-    if (!!input.resultSchema && isZodType(input.resultSchema)) {
-      resultSchema = zodToJsonSchema(input.resultSchema) as JsonSchemaInput;
-    } else {
-      resultSchema = input.resultSchema;
-    }
-
+  public async run(
+    input: Parameters<ReturnType<typeof createApiClient>["createRun"]>[0] & {
+      resultSchema?: z.ZodType<unknown> | JsonSchemaInput;
+    },
+  ) {
     const runResult = await this.client.createRun({
       params: {
         clusterId: await this.getClusterId(),
       },
       body: {
         ...input,
-        resultSchema,
+        resultSchema: isZodType(input.resultSchema)
+          ? zodToJsonSchema(input.resultSchema)
+          : input.resultSchema,
       },
     });
 
