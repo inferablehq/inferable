@@ -108,8 +108,8 @@ export class Inferable {
    */
   constructor(options?: {
     apiSecret?: string;
-    endpoint?: string
-    machineId?: string
+    endpoint?: string;
+    machineId?: string;
   }) {
     if (options?.apiSecret && process.env.INFERABLE_API_SECRET) {
       log(
@@ -223,38 +223,21 @@ export class Inferable {
       resultSchema = input.resultSchema;
     }
 
-    let runResult;
-    if (input.id) {
-      runResult = await this.client.getRun({
-        params: {
-          clusterId: await this.getClusterId(),
-          runId: input.id,
-        },
-      });
+    const runResult = await this.client.createRun({
+      params: {
+        clusterId: await this.getClusterId(),
+      },
+      body: {
+        ...input,
+        resultSchema,
+      },
+    });
 
-      if (runResult.status != 200) {
-        throw new InferableError("Failed to get existing run", {
-          body: runResult.body,
-          status: runResult.status,
-        });
-      }
-    } else {
-      runResult = await this.client.createRun({
-        params: {
-          clusterId: await this.getClusterId(),
-        },
-        body: {
-          ...input,
-          resultSchema,
-        },
+    if (runResult.status != 201) {
+      throw new InferableError("Failed to create run", {
+        body: runResult.body,
+        status: runResult.status,
       });
-
-      if (runResult.status != 201) {
-        throw new InferableError("Failed to create run", {
-          body: runResult.body,
-          status: runResult.status,
-        });
-      }
     }
 
     return {
