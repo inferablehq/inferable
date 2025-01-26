@@ -217,7 +217,7 @@ export const router = initServer().router(contract, {
     }
 
     let runOptions: RunOptions = {
-      id: body.id,
+      id: body.id || body.runId || ulid(),
       initialPrompt: body.initialPrompt,
       systemPrompt: body.systemPrompt,
       attachedFunctions: body.attachedFunctions?.map(normalizeFunctionReference),

@@ -748,6 +748,14 @@ export const definition = {
           val => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
           "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long."
         ),
+      runId: z
+        .string()
+        .optional()
+        .describe("Deprecated. Use `id` instead.")
+        .refine(
+          val => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
+          "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long."
+        ),
       initialPrompt: z
         .string()
         .optional()
