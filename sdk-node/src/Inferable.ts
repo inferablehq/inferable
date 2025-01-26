@@ -205,9 +205,10 @@ export class Inferable {
    * ```
    */
   public async run(
-    input: Parameters<
-      ReturnType<typeof createApiClient>["createRun"]
-    >[0]["body"] & {
+    input: Omit<
+      Parameters<ReturnType<typeof createApiClient>["createRun"]>[0]["body"],
+      "resultSchema"
+    > & {
       resultSchema?: z.ZodType<unknown> | JsonSchemaInput;
     },
   ) {
