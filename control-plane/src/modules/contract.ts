@@ -742,11 +742,11 @@ export const definition = {
         .string()
         .optional()
         .describe(
-          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given"
+          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned."
         )
         .refine(
-          val => !val || /^[0-9A-Z]{26}$/.test(val),
-          "Run ID must be a valid ULID (26 uppercase alphanumeric characters)"
+          val => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
+          "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long."
         ),
       initialPrompt: z
         .string()

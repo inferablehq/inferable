@@ -234,6 +234,17 @@ export const definition = {
       }),
     },
   },
+  createEphemeralSetup: {
+    method: "POST",
+    path: "/ephemeral-setup",
+    responses: {
+      200: z.object({
+        clusterId: z.string(),
+        apiKey: z.string(),
+      }),
+    },
+    body: z.undefined(),
+  },
   getContract: {
     method: "GET",
     path: "/contract",
@@ -292,6 +303,8 @@ export const definition = {
         resultType: z.string().nullable(),
         createdAt: z.date(),
         blobs: z.array(blobSchema),
+        approved: z.boolean().nullable(),
+        approvalRequested: z.boolean().nullable(),
       }),
     },
   },
@@ -729,11 +742,11 @@ export const definition = {
         .string()
         .optional()
         .describe(
-          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given"
+          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned."
         )
         .refine(
-          val => !val || /^[0-9A-Z]{26}$/.test(val),
-          "Run ID must be a valid ULID (26 uppercase alphanumeric characters)"
+          val => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
+          "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long."
         ),
       initialPrompt: z
         .string()
@@ -761,9 +774,18 @@ export const definition = {
         ),
       onStatusChange: z
         .object({
-          statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])).describe(" A list of Run statuses which should trigger the handler").optional().default(["done", "failed"]),
-          function: functionReference.describe("A function to call when the run status changes").optional(),
-          webhook: z.string().describe("A webhook URL to call when the run status changes").optional(),
+          statuses: z
+            .array(z.enum(["pending", "running", "paused", "done", "failed"]))
+            .describe(" A list of Run statuses which should trigger the handler")
+            .optional()
+            .default(["done", "failed"]),
+          function: functionReference
+            .describe("A function to call when the run status changes")
+            .optional(),
+          webhook: z
+            .string()
+            .describe("A webhook URL to call when the run status changes")
+            .optional(),
         })
         .optional()
         .describe("Mechanism for receiving notifications when the run status changes"),
