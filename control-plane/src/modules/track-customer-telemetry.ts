@@ -1,53 +1,30 @@
-import { SendMessageCommand } from "@aws-sdk/client-sqs";
-import { env } from "../utilities/env";
-import { logger } from "./observability/logger";
-import { withSpan } from "./observability/tracer";
-import { sqs } from "./sqs";
 import { z } from "zod";
 import {
   modelCallEventSchema,
   runFeedbackEventSchema,
   toolCallEventSchema,
 } from "./integrations/integration-events";
+import { logger } from "./observability/logger";
+import { withSpan } from "./observability/tracer";
+import { customerTelemetryQueue } from "./queues/customer-telemetry";
 
 type ObservabilityEvent = z.infer<
-  | typeof modelCallEventSchema
-  | typeof runFeedbackEventSchema
-  | typeof toolCallEventSchema
+  typeof modelCallEventSchema | typeof runFeedbackEventSchema | typeof toolCallEventSchema
 >;
 
 export async function trackCustomerTelemetry(event: ObservabilityEvent) {
-  const queueUrl = env.SQS_CUSTOMER_TELEMETRY_QUEUE_URL;
-
   return withSpan(
-    "sqs.send_model_call_event",
+    "queue.send_customer_telemetry",
     async () => {
       try {
-        const command = new SendMessageCommand({
-          QueueUrl: queueUrl,
-          MessageBody: JSON.stringify({
-            ...event,
-            runId: event.runId,
-          }),
-          MessageAttributes: {
-            eventType: {
-              DataType: "String",
-              StringValue: event.type,
-            },
-            data: {
-              DataType: "String",
-              StringValue: JSON.stringify(event),
-            },
-          },
+        await customerTelemetryQueue.send({
+          ...event,
+          runId: event.runId,
         });
-
-        const response = await sqs.send(command);
-        return response;
       } catch (error) {
-        logger.error("Error sending model call event to SQS", {
+        logger.error("Error sending customer telemetry event to queue", {
           error,
           event,
-          queueUrl,
         });
         throw error;
       }
@@ -56,14 +33,12 @@ export async function trackCustomerTelemetry(event: ObservabilityEvent) {
       attributes: {
         "cluster.id": event.clusterId,
         "run.id": event.runId,
-        "sqs.queue.url": queueUrl,
       },
-    },
-  ).catch((error) => {
-    logger.warn("Error sending customer telemetry event to SQS", {
+    }
+  ).catch(error => {
+    logger.warn("Error sending customer telemetry event to queue", {
       error,
       event,
-      queueUrl,
     });
   });
 }

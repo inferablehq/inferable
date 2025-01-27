@@ -24,8 +24,7 @@ export const baseMessageSchema = z
 export type BaseMessage = z.infer<typeof baseMessageSchema>;
 
 export const withObservability =
-  (queueUrl: string, fn: (message: unknown) => Promise<void>) =>
-  async (message: Message) => {
+  (queueUrl: string, fn: (message: unknown) => Promise<void>) => async (message: Message) => {
     const jsonResult = safeParse(message.Body);
     if (!jsonResult.success) {
       logger.error("Message body is not valid JSON", {
@@ -36,11 +35,11 @@ export const withObservability =
     }
 
     const zodResult = baseMessageSchema
-    .extend({
-      clusterId: z.string().optional(),
-      runId: z.string().optional(),
-    })
-    .safeParse(jsonResult.data);
+      .extend({
+        clusterId: z.string().optional(),
+        runId: z.string().optional(),
+      })
+      .safeParse(jsonResult.data);
 
     if (!zodResult.success) {
       logger.error("Message body does conform to base schema", {
@@ -74,7 +73,7 @@ export const withObservability =
         {
           attributes,
         },
-        existingTraceContext,
+        existingTraceContext
       );
     } catch (e) {
       if (isRetryableError(e)) {

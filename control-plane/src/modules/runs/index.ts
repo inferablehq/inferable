@@ -1,4 +1,5 @@
 import { and, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { omitBy } from "lodash";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
 import {
@@ -7,11 +8,12 @@ import {
   PaymentRequiredError,
   RunBusyError,
 } from "../../utilities/errors";
-import { clusters, db, jobs, RunMessageMetadata, runMessages, runTags, runs } from "../data";
+import { clusters, db, jobs, RunMessageMetadata, runMessages, runs, runTags } from "../data";
 import { ChatIdentifiers } from "../models/routing";
 import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
-import { sqs } from "../sqs";
+import { runGenerateNameQueue } from "../queues/run-name-generation";
+import { runProcessQueue } from "../queues/run-process";
 import { trackCustomerTelemetry } from "../track-customer-telemetry";
 import {
   getMessageCountForCluster,
@@ -21,7 +23,6 @@ import {
   lastAgentMessage,
 } from "./messages";
 import { getRunTags } from "./tags";
-import { omitBy } from "lodash";
 
 export { start, stop } from "./queues";
 
@@ -143,6 +144,17 @@ export const createRun = async ({
     throw new Error("Failed to create run");
   }
 
+  // Send the run to be processed
+  await runProcessQueue
+    .send({
+      runId: run.id,
+      clusterId,
+      ...injectTraceContext(),
+    })
+    .catch(e => {
+      logger.error("Failed to send run to process queue", { error: e });
+    });
+
   // Insert tags if provided
   if (tags) {
     await db.insert(runTags).values(
@@ -155,7 +167,10 @@ export const createRun = async ({
     );
   }
 
-  return { ...run, created: true };
+  return {
+    ...run,
+    created: true,
+  };
 };
 
 export const deleteRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
@@ -465,18 +480,17 @@ export const resumeRun = async (input: { id: string; clusterId: string }) => {
     return;
   }
 
-  const sqsResult = await sqs.sendMessage({
-    QueueUrl: env.SQS_RUN_PROCESS_QUEUE_URL,
-    MessageBody: JSON.stringify({
+  await runProcessQueue
+    .send({
       runId: input.id,
       clusterId: input.clusterId,
       ...injectTraceContext(),
-    }),
-  });
+    })
+    .catch((error: Error) => {
+      logger.error("Failed to send run to process queue", { error });
+    });
 
-  logger.info("Added run processing job to queue", {
-    messageId: sqsResult.MessageId,
-  });
+  logger.info("Added run processing job to queue");
 };
 
 export const generateRunName = async (
@@ -491,19 +505,19 @@ export const generateRunName = async (
     return;
   }
 
-  const sqsResult = await sqs.sendMessage({
-    QueueUrl: env.SQS_RUN_GENERATE_NAME_QUEUE_URL,
-    MessageBody: JSON.stringify({
+  await runGenerateNameQueue
+    .send({
       runId: run.id,
       clusterId: run.clusterId,
       content,
       ...injectTraceContext(),
-    }),
-  });
+    })
+    .catch((error: Error) => {
+      logger.error("Failed to send name generation to queue", { error });
+    });
 
   logger.info("Added name generation job to queue", {
     runId: run.id,
-    messageId: sqsResult.MessageId,
   });
 };
 

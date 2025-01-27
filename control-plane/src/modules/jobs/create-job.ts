@@ -5,12 +5,11 @@ import * as data from "../data";
 import * as events from "../observability/events";
 import { FunctionConfig, getServiceDefinition, parseJobArgs } from "../service-definitions";
 import { extractWithJsonPath } from "../util";
-import { env } from "../../utilities/env";
 import { injectTraceContext } from "../observability/tracer";
 import { logger } from "../observability/logger";
-import { sqs } from "../sqs";
 import { externalServices } from "../integrations/constants";
 import { jobDefaults } from "../data";
+import { externalToolCallQueue } from "../queues/external-tool-call";
 
 type CreateJobParams = {
   jobId: string;
@@ -260,19 +259,16 @@ const onAfterJobCreated = async ({
   });
 
   if (externalServices.includes(service)) {
-    await sqs
-      .sendMessage({
-        QueueUrl: env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL,
-        MessageBody: JSON.stringify({
-          clusterId: owner.clusterId,
-          runId,
-          jobId,
-          service,
-          ...injectTraceContext(),
-        }),
+    await externalToolCallQueue
+      .send({
+        clusterId: owner.clusterId,
+        runId,
+        jobId,
+        service,
+        ...injectTraceContext(),
       })
       .catch(e => {
-        logger.error("Failed to send external call to SQS", { error: e });
+        logger.error("Failed to send external call to queue", { error: e });
       });
   }
 };

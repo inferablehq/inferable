@@ -1,6 +1,4 @@
-import { Consumer } from "sqs-consumer";
 import { env } from "../../utilities/env";
-import { sqs, withObservability } from "../sqs";
 import { z } from "zod";
 import { logger } from "../observability/logger";
 import { safeParse } from "../../utilities/safe-parse";
@@ -44,25 +42,6 @@ const snsNotificationSchema = z.object({
   Message: z.string(),
 });
 
-const emailIngestionConsumer = env.SQS_EMAIL_INGESTION_QUEUE_URL
-  ? Consumer.create({
-      queueUrl: env.SQS_EMAIL_INGESTION_QUEUE_URL,
-      batchSize: 5,
-      visibilityTimeout: 60,
-      heartbeatInterval: 30,
-      handleMessage: withObservability(env.SQS_EMAIL_INGESTION_QUEUE_URL, handleEmailIngestion),
-      sqs,
-    })
-  : undefined;
-
-export const start = async () => {
-  emailIngestionConsumer?.start();
-};
-
-export const stop = async () => {
-  emailIngestionConsumer?.stop();
-};
-
 export const notifyNewMessage = async ({
   message,
   tags,
@@ -99,7 +78,6 @@ export const notifyNewMessage = async ({
   const messageData = unifiedMessageSchema.parse(message).data;
 
   if ("message" in messageData && messageData.message) {
-
     const originalMessageId = tags[EMAIL_INIT_MESSAGE_ID_META_KEY];
     const fromEmail = `"Inferable" <${integrations.email.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}>`;
     const toEmail = tags[EMAIL_SOURCE_META_KEY];
@@ -163,14 +141,15 @@ export const handleApprovalRequest = async ({
     return;
   }
 
-   const runUrl = `${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}`;
+  const runUrl = `${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}`;
   await sendEmail({
     fromEmail: `${integrations.email.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
     toEmail: tags[EMAIL_SOURCE_META_KEY],
     subject: "Run is waiting for approval",
-    bodyText: "Your run is waiting for approval. Please visit the link below to review it:\n\n" + runUrl,
-  })
-}
+    bodyText:
+      "Your run is waiting for approval. Please visit the link below to review it:\n\n" + runUrl,
+  });
+};
 
 export async function parseMessage(message: unknown) {
   const notification = snsNotificationSchema.safeParse(message);
@@ -246,8 +225,12 @@ export const stripQuoteTail = (message: string) => {
   return lines.reverse().join("\n");
 };
 
-async function handleEmailIngestion(raw: unknown) {
+export async function handleEmailIngestion(raw: unknown) {
   const message = await parseMessage(raw);
+  if (!message) {
+    return;
+  }
+
   if (!message.body) {
     logger.info("Email had no body. Skipping", {});
     return;
@@ -265,26 +248,27 @@ async function handleEmailIngestion(raw: unknown) {
       connectionId: message.connectionId,
       messageId: message.messageId,
       inReplyTo: message.inReplyTo,
-      integrationAddress: message.ingestionAddresses
-    })
-    return
+      integrationAddress: message.ingestionAddresses,
+    });
+    return;
   }
 
   if (message.dkimVerdict !== "PASS" || message.spfVerdict !== "PASS") {
-    if (connection?.email?.validateSPFandDKIM) {
+    if (connection.email?.validateSPFandDKIM) {
       logger.info("Email did not pass DKIM or SPF checks. Skipping.", {
         messageId: message.messageId,
         dkimVerdict: message.dkimVerdict,
-        spfVerdict: message.spfVerdict
+        spfVerdict: message.spfVerdict,
       });
 
       await sendEmail({
         fromEmail: `${message.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
         toEmail: message.source,
         subject: "Inferable email ingestion failed",
-        bodyText: "Email did not pass DKIM or SPF checks.\n\nPlease see the https://docs.inferable.ai/pages/email for more information.",
+        bodyText:
+          "Email did not pass DKIM or SPF checks.\n\nPlease see the https://docs.inferable.ai/pages/email for more information.",
         originalMessageId: message.messageId,
-      })
+      });
       return;
     }
   }
@@ -292,23 +276,23 @@ async function handleEmailIngestion(raw: unknown) {
   const clusterId = connection.clusterId;
   const agentId = connection.email?.agentId;
 
-
   let user: Awaited<ReturnType<typeof authenticateUser>>;
   try {
     user = await authenticateUser(message.source, clusterId);
   } catch (e) {
     logger.info("Could not authenticate email sender. Skipping.", {
       error: e,
-    })
+    });
 
     await sendEmail({
       fromEmail: `${message.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
       toEmail: message.source,
       subject: "Inferable email ingestion failed",
-      bodyText: "Could not authenticate email sender.\n\nPlease see the https://docs.inferable.ai/pages/email for more information.",
+      bodyText:
+        "Could not authenticate email sender.\n\nPlease see the https://docs.inferable.ai/pages/email for more information.",
       originalMessageId: message.messageId,
-    })
-    return
+    });
+    return;
   }
 
   const reference = message.inReplyTo || message.references[0];
@@ -318,16 +302,17 @@ async function handleEmailIngestion(raw: unknown) {
       externalId: reference,
     });
     if (!existing) {
-      logger.info("Could not find Run for email chain. Skipping.")
+      logger.info("Could not find Run for email chain. Skipping.");
 
       await sendEmail({
         fromEmail: `${message.connectionId}@${env.INFERABLE_EMAIL_DOMAIN}`,
         toEmail: message.source,
         subject: "Inferable email ingestion failed",
-        bodyText: "Could not find Run for email chain.\n\nPlease see https://docs.inferable.ai/pages/email for more information.",
+        bodyText:
+          "Could not find Run for email chain.\n\nPlease see https://docs.inferable.ai/pages/email for more information.",
         originalMessageId: message.messageId,
-      })
-      return
+      });
+      return;
     }
 
     return await handleExistingChain({
@@ -418,7 +403,7 @@ const handleNewChain = async ({
   if (options?.error) {
     logger.error("Could not merge agent options", {
       error: options.error,
-    })
+    });
   }
 
   await createRunWithMessage({
@@ -429,7 +414,7 @@ const handleNewChain = async ({
       userId,
       email: {
         email: source,
-      }
+      },
     },
     tags: {
       [EMAIL_INIT_MESSAGE_ID_META_KEY]: messageId,
@@ -438,12 +423,12 @@ const handleNewChain = async ({
     },
     messageMetadata: {
       displayable: {
-        via: "email"
+        via: "email",
       },
     },
     message: body,
     type: "human",
-    ...options?.options
+    ...options?.options,
   });
 };
 
@@ -466,7 +451,7 @@ const handleExistingChain = async ({
     runId,
     metadata: {
       displayable: {
-        via: "email"
+        via: "email",
       },
     },
     message: body,
@@ -481,7 +466,7 @@ export const integrationByConnectionId = async (connectionId: string) => {
       email: integrations.email,
     })
     .from(integrations)
-    .where(sql`email->>'connectionId' = ${connectionId}`);
+    .where(sql`${integrations.email}->>'connectionId' = ${connectionId.split("@")[0]}`);
 
   return result;
 };
@@ -506,15 +491,15 @@ const sendEmail = async ({
     `Subject: ${subject}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/plain; charset=UTF-8`,
-  ]
+  ];
 
   if (originalMessageId) {
     messageParts.push(`In-Reply-To: ${originalMessageId}`);
     messageParts.push(`References: ${originalMessageId}`);
   }
 
-  messageParts.push(``)
-  messageParts.push(bodyText)
+  messageParts.push(``);
+  messageParts.push(bodyText);
 
   // Send the raw email
   return await ses.sendRawEmail({

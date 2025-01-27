@@ -1,49 +1,38 @@
-import { env } from "../../utilities/env";
 import { createMutex, db, runs } from "../data";
 import { logger } from "../observability/logger";
-import { baseMessageSchema, sqs, withObservability } from "../sqs";
+import { baseMessageSchema } from "../sqs";
 import { getRun } from "./";
 import { processRun } from "./agent/run";
 import { generateTitle } from "./summarization";
 
 import { and, eq } from "drizzle-orm";
-import { Consumer } from "sqs-consumer";
 import { z } from "zod";
 import { injectTraceContext } from "../observability/tracer";
+import { createQueue, QueueNames } from "../queues";
 import { getRunTags } from "./tags";
 
-const runProcessConsumer = Consumer.create({
-  queueUrl: env.SQS_RUN_PROCESS_QUEUE_URL,
-  batchSize: 5,
-  visibilityTimeout: 180,
-  heartbeatInterval: 30,
-  handleMessage: withObservability(env.SQS_RUN_PROCESS_QUEUE_URL, handleRunProcess),
-  sqs,
-});
-
-const runGenerateNameConsumer = Consumer.create({
-  queueUrl: env.SQS_RUN_GENERATE_NAME_QUEUE_URL,
-  batchSize: 5,
-  visibilityTimeout: 30,
-  heartbeatInterval: 15,
-  handleMessage: withObservability(env.SQS_RUN_GENERATE_NAME_QUEUE_URL, handleRunNameGeneration),
-  sqs,
+export const runProcessQueue = createQueue<{
+  runId: string;
+  clusterId: string;
+  lockAttempts?: number;
+}>(QueueNames.runProcess, handleRunProcess, {
+  concurrency: 5,
 });
 
 export const start = async () => {
-  await Promise.all([runProcessConsumer.start(), runGenerateNameConsumer.start()]);
+  runProcessQueue.start();
 };
 
 export const stop = async () => {
-  runProcessConsumer.stop();
-  runGenerateNameConsumer.stop();
+  runProcessQueue.stop();
 };
 
 const MAX_PROCESS_LOCK_ATTEMPTS = 5;
-async function handleRunProcess(message: unknown) {
+export async function handleRunProcess(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
-      lockAttempts: z.number().default(0),
+      runId: z.string(),
+      lockAttempts: z.number().optional(),
     })
     .safeParse(message);
 
@@ -55,7 +44,7 @@ async function handleRunProcess(message: unknown) {
     return;
   }
 
-  const { runId, clusterId, lockAttempts } = zodResult.data;
+  const { runId, clusterId, lockAttempts = 0 } = zodResult.data;
 
   const unlock = await createMutex(`run-process-${runId}`).tryLock();
 
@@ -64,21 +53,21 @@ async function handleRunProcess(message: unknown) {
     if (lockAttempts < MAX_PROCESS_LOCK_ATTEMPTS) {
       const delay = Math.pow(5, lockAttempts);
 
-      const sqsResult = await sqs.sendMessage({
-        QueueUrl: env.SQS_RUN_PROCESS_QUEUE_URL,
-        DelaySeconds: delay,
-        MessageBody: JSON.stringify({
+      await runProcessQueue.send(
+        {
           runId,
           clusterId,
           lockAttempts: lockAttempts + 1,
           ...injectTraceContext(),
-        }),
-      });
+        },
+        {
+          delay: delay * 1000,
+        }
+      );
 
       logger.info("Will attempt to process after delay", {
         delay,
         lockAttempts,
-        nextAttemptMessageId: sqsResult.MessageId,
       });
     } else {
       logger.warn("Could not acquire run process lock after multiple attempts, skipping", {
@@ -105,7 +94,7 @@ async function handleRunProcess(message: unknown) {
   }
 }
 
-async function handleRunNameGeneration(message: unknown) {
+export async function handleRunNameGeneration(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
       content: z.string(),

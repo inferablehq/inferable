@@ -1,32 +1,11 @@
-import { Consumer } from "sqs-consumer";
-import { env } from "../../utilities/env";
-import { baseMessageSchema, sqs, withObservability } from "../sqs";
 import { z } from "zod";
-import { logger } from "../observability/logger";
-import { getJob } from "./jobs";
 import { externalServices } from "../integrations/constants";
-import { getIntegrations, getInstallables } from "../integrations/integrations";
+import { getInstallables, getIntegrations } from "../integrations/integrations";
+import { logger } from "../observability/logger";
+import { baseMessageSchema } from "../sqs";
+import { getJob } from "./jobs";
 
-const externalCallConsumer = env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL
-  ? Consumer.create({
-      queueUrl: env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL,
-      batchSize: 5,
-      visibilityTimeout: 60,
-      heartbeatInterval: 30,
-      handleMessage: withObservability(env.SQS_EXTERNAL_TOOL_CALL_QUEUE_URL, handleExternalCall),
-      sqs,
-    })
-  : undefined;
-
-export const start = async () => {
-  await Promise.all([externalCallConsumer?.start()]);
-};
-
-export const stop = async () => {
-  externalCallConsumer?.stop();
-};
-
-async function handleExternalCall(message: unknown) {
+export async function handleExternalCall(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
       jobId: z.string(),
