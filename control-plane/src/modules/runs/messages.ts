@@ -60,7 +60,8 @@ export const insertRunMessage = async ({
     })
     .returning({
       id: runMessages.id,
-    });
+    })
+    .then(result => result[0]);
 };
 
 export const getRunMessagesForDisplay = async ({

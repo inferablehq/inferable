@@ -19,7 +19,7 @@ const defaultQueueOptions: Partial<QueueOptions> = {
   telemetry,
 };
 
-export class QueueWrapper<T extends BaseMessage = BaseMessage> {
+export class QueueWrapper<T extends BaseMessage> {
   private queue: Queue;
   private worker?: Worker;
 
@@ -28,7 +28,8 @@ export class QueueWrapper<T extends BaseMessage = BaseMessage> {
     private handler: QueueHandler<T>,
     private options: Omit<QueueOptions, "connection"> & {
       concurrency?: number;
-    } = {}
+    } = {},
+    private jobIdKey?: (data: T) => string
   ) {
     this.queue = new Queue(name, {
       connection: defaultConnection,
@@ -37,10 +38,11 @@ export class QueueWrapper<T extends BaseMessage = BaseMessage> {
     });
   }
 
-  async send(data: T, options?: JobsOptions) {
+  async send(data: T, options?: JobsOptions): Promise<ReturnType<Queue["add"]>> {
     return this.queue.add(this.name, data, {
       ...options,
       attempts: options?.attempts ?? 3,
+      jobId: this.jobIdKey ? this.jobIdKey(data) : undefined,
     });
   }
 
@@ -85,18 +87,19 @@ export class QueueWrapper<T extends BaseMessage = BaseMessage> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const queueMap = new Map<string, QueueWrapper<any>>();
 
-export function createQueue<T extends BaseMessage = BaseMessage>(
+export function createQueue<T extends BaseMessage>(
   name: (typeof QueueNames)[keyof typeof QueueNames],
   handler: QueueHandler<T>,
   options?: Omit<QueueOptions, "connection"> & {
     concurrency?: number;
-  }
+  },
+  jobIdKey?: (data: T) => string
 ): QueueWrapper<T> {
   if (queueMap.has(name)) {
     return queueMap.get(name) as QueueWrapper<T>;
   }
 
-  const queue = new QueueWrapper<T>(name, handler, options);
+  const queue = new QueueWrapper<T>(name, handler, options, jobIdKey);
   queueMap.set(name, queue);
   return queue;
 }
@@ -112,4 +115,5 @@ export const QueueNames = {
   externalToolCallQueue: "externalToolCallQueue",
   customerTelemetryQueue: "customerTelemetryQueue",
   runProcessQueue: "runProcessQueue",
+  resumeRun: "resumeRun",
 } as const;

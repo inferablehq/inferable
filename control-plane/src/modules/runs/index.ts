@@ -364,7 +364,7 @@ export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; r
   };
 };
 
-const assertEphemeralClusterLimitations = async (clusterId: string) => {
+export const assertEphemeralClusterLimitations = async (clusterId: string) => {
   if (clusterId.startsWith("eph_")) {
     const count = await getMessageCountForCluster(clusterId);
 
@@ -372,63 +372,6 @@ const assertEphemeralClusterLimitations = async (clusterId: string) => {
       throw new PaymentRequiredError("Ephemeral cluster has reached the message limit");
     }
   }
-};
-
-export const addMessageAndResumeWithRun = async ({
-  userId,
-  id,
-  clusterId,
-  message,
-  type,
-  metadata,
-  skipAssert,
-  run,
-}: {
-  userId?: string;
-  id: string;
-  clusterId: string;
-  message: string;
-  type: "human" | "template" | "supervisor";
-  metadata?: RunMessageMetadata;
-  skipAssert?: boolean;
-  run: {
-    id: string;
-    status: string;
-    interactive: boolean;
-    clusterId: string;
-  };
-}) => {
-  if (!skipAssert) {
-    await assertRunReady({ clusterId, run });
-  }
-
-  await assertEphemeralClusterLimitations(clusterId);
-
-  await insertRunMessage({
-    userId,
-    clusterId,
-    runId: run.id,
-    data: {
-      message,
-    },
-    type,
-    id,
-    metadata,
-  });
-
-  // TODO: Move run name generation to event sourcing (pg-listen) https://github.com/inferablehq/inferable/issues/390
-  await generateRunName(
-    {
-      id: run.id,
-      clusterId: run.clusterId,
-    },
-    message
-  );
-
-  await resumeRun({
-    clusterId,
-    id: run.id,
-  });
 };
 
 export const addMessageAndResume = async ({
@@ -450,18 +393,33 @@ export const addMessageAndResume = async ({
   metadata?: RunMessageMetadata;
   skipAssert?: boolean;
 }) => {
-  const run = await getRun({ clusterId, runId });
+  if (!skipAssert) {
+    await assertRunReady({ clusterId, runId });
+  }
 
-  return addMessageAndResumeWithRun({
+  await insertRunMessage({
     userId,
-    id,
     clusterId,
-    run,
-    message,
+    runId,
+    data: {
+      message,
+    },
     type,
+    id,
     metadata,
-    skipAssert,
   });
+
+  await Promise.all([
+    resumeRun({
+      id: runId,
+      clusterId,
+    }),
+    runGenerateNameQueue.send({
+      runId,
+      clusterId,
+      content: message,
+    }),
+  ]);
 };
 
 export const resumeRun = async (input: { id: string; clusterId: string }) => {
@@ -489,39 +447,6 @@ export const resumeRun = async (input: { id: string; clusterId: string }) => {
     });
 
   logger.info("Added run processing job to queue");
-};
-
-export const generateRunName = async (
-  run: {
-    id: string;
-    clusterId: string;
-  },
-  content: string
-) => {
-  if (env.NODE_ENV === "test") {
-    logger.warn("Skipping run resume. NODE_ENV is set to 'test'.");
-    return;
-  }
-
-  await runGenerateNameQueue
-    .send(
-      {
-        runId: run.id,
-        clusterId: run.clusterId,
-        content,
-        ...injectTraceContext(),
-      },
-      {
-        jobId: `name-generation:${run.clusterId}:${run.id}`,
-      }
-    )
-    .catch((error: Error) => {
-      logger.error("Failed to send name generation to queue", { error });
-    });
-
-  logger.info("Added name generation job to queue", {
-    runId: run.id,
-  });
 };
 
 export type RunMessage = {
@@ -580,11 +505,11 @@ export const createRunWithMessage = async ({
     enableResultGrounding,
   });
 
-  await addMessageAndResumeWithRun({
+  await addMessageAndResume({
     id: ulid(),
     userId,
     clusterId,
-    run,
+    runId: run.id,
     message,
     type,
     metadata: messageMetadata,
@@ -603,23 +528,27 @@ export const getClusterBackgroundRun = (clusterId: string) => {
   return `${clusterId}BACKGROUND`;
 };
 
-export const assertRunReady = async (input: {
-  clusterId: string;
-  run: {
-    id: string;
-    status: string;
-    interactive: boolean;
-    clusterId: string;
-  };
-}) => {
-  const run = input.run;
+export const assertableRun = async ({ runId, clusterId }: { runId: string; clusterId: string }) => {
+  const [run] = await db
+    .select({
+      status: runs.status,
+      interactive: runs.interactive,
+    })
+    .from(runs)
+    .where(and(eq(runs.id, runId), eq(runs.cluster_id, clusterId)));
+
+  return run;
+};
+
+export const assertRunReady = async (input: { clusterId: string; runId: string }) => {
+  const run = await assertableRun(input);
 
   if (!run) {
     throw new NotFoundError("Run not found");
   }
 
   logger.info("Asserting run is ready", {
-    runId: run.id,
+    runId: input.runId,
     status: run.status,
   });
 
@@ -633,8 +562,8 @@ export const assertRunReady = async (input: {
   }
 
   const [lastMessage] = await getRunMessages({
-    clusterId: run.clusterId,
-    runId: run.id,
+    clusterId: input.clusterId,
+    runId: input.runId,
     limit: 1,
   });
 
@@ -654,8 +583,8 @@ export const assertRunReady = async (input: {
   });
 
   await resumeRun({
-    clusterId: run.clusterId,
-    id: run.id,
+    clusterId: input.clusterId,
+    id: input.runId,
   });
 
   throw new RunBusyError("Run is not ready for new messages: Unprocessed messages");

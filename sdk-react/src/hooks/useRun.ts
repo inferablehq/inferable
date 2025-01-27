@@ -152,18 +152,15 @@ export function useRun<T extends z.ZodObject<any>>(
           }),
         ]);
 
-
         if (!isMounted) return;
 
         if (timelineResponse.status === 200) {
-
           const runHasChanged = JSON.stringify(timelineResponse.body.run) !== JSON.stringify(run);
 
           if (runHasChanged) {
             setRun(timelineResponse.body.run);
           }
 
-          const jobsHasChanged = JSON.stringify(timelineResponse.body.jobs) !== JSON.stringify(jobs);
           setJobs(timelineResponse.body.jobs);
 
           lastMessageId.current =
@@ -230,14 +227,12 @@ export function useRun<T extends z.ZodObject<any>>(
     [inferable.client, runId]
   );
 
-
   const submitApproval = useMemo(
     () => async (jobId: string, approved: boolean) => {
       const response = await inferable.client.createJobApproval({
         body: { approved },
         params: { clusterId: inferable.clusterId, jobId },
-      })
-
+      });
 
       if (response.status !== 204) {
         setError(
@@ -246,10 +241,9 @@ export function useRun<T extends z.ZodObject<any>>(
           )
         );
       }
-
-    }, [inferable.client]
+    },
+    [inferable.client]
   );
-
 
   return {
     createMessage,

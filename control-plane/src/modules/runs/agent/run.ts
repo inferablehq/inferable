@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { getWaitingJobIds } from "../";
 import { env } from "../../../utilities/env";
@@ -27,6 +27,7 @@ import { AgentTool } from "./tool";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
 import { availableStdlib } from "./tools/stdlib";
+import { generateTitle } from "../summarization";
 
 /**
  * Run a Run from the most recent saved state
@@ -488,9 +489,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
 
     tools.push(...found);
 
-    tools.push(
-      ...Object.values(availableStdlib())
-    )
+    tools.push(...Object.values(availableStdlib()));
 
     events.write({
       type: "functionRegistrySearchCompleted",
@@ -587,4 +586,34 @@ export const buildMockTools = async (run: {
   }
 
   return mocks;
+};
+
+export const generateRunName = async ({
+  id,
+  clusterId,
+  content,
+}: {
+  id: string;
+  clusterId: string;
+  content: string;
+}) => {
+  const runName = await db
+    .select({ name: runs.name })
+    .from(runs)
+    .where(eq(runs.id, id))
+    .then(r => r[0]?.name);
+
+  if (runName) {
+    return;
+  }
+
+  const result = await generateTitle(content, {
+    id,
+    clusterId,
+  });
+
+  await db
+    .update(runs)
+    .set({ name: result.summary })
+    .where(and(eq(runs.id, id), eq(runs.cluster_id, clusterId)));
 };

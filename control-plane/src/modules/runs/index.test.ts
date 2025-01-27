@@ -17,7 +17,7 @@ describe("assertRunReady", () => {
 
     await expect(
       assertRunReady({
-        run,
+        runId: run.id,
         clusterId: owner.clusterId,
       })
     ).resolves.not.toThrow();
@@ -61,7 +61,7 @@ describe("assertRunReady", () => {
 
     await expect(
       assertRunReady({
-        run: updatedRun,
+        runId: updatedRun.id,
         clusterId: owner.clusterId,
       })
     ).rejects.toThrow(RunBusyError);
@@ -75,7 +75,7 @@ describe("assertRunReady", () => {
 
     await expect(
       assertRunReady({
-        run,
+        runId: run.id,
         clusterId: owner.clusterId,
       })
     ).rejects.toThrow(BadRequestError);
@@ -113,7 +113,7 @@ describe("assertRunReady", () => {
 
     await expect(
       assertRunReady({
-        run: updatedRun,
+        runId: updatedRun.id,
         clusterId: owner.clusterId,
       })
     ).resolves.not.toThrow();
@@ -141,7 +141,7 @@ describe("assertRunReady", () => {
 
     await expect(
       assertRunReady({
-        run: updatedRun,
+        runId: updatedRun.id,
         clusterId: owner.clusterId,
       })
     ).rejects.toThrow(RunBusyError);

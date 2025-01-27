@@ -1,11 +1,9 @@
-import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { createQueue } from "./core";
-import { QueueNames } from "./core";
-import { db, runs } from "../data";
+import { env } from "../../utilities/env";
 import { logger } from "../observability/logger";
-import { generateTitle } from "../runs/summarization";
+import { generateRunName } from "../runs/agent/run";
 import { BaseMessage, baseMessageSchema } from "../sqs";
+import { createQueue, QueueNames } from "./core";
 
 interface GenerateNameMessage extends BaseMessage {
   runId: string;
@@ -14,6 +12,11 @@ interface GenerateNameMessage extends BaseMessage {
 }
 
 export async function handleRunNameGeneration(message: unknown) {
+  if (env.NODE_ENV === "test") {
+    logger.warn("Skipping run resume. NODE_ENV is set to 'test'.");
+    return;
+  }
+
   const zodResult = baseMessageSchema
     .extend({
       content: z.string(),
@@ -30,15 +33,11 @@ export async function handleRunNameGeneration(message: unknown) {
 
   const { runId, clusterId, content } = zodResult.data;
 
-  const result = await generateTitle(content, {
+  await generateRunName({
     id: runId,
     clusterId,
+    content,
   });
-
-  await db
-    .update(runs)
-    .set({ name: result.summary })
-    .where(and(eq(runs.id, runId), eq(runs.cluster_id, clusterId)));
 }
 
 export const runGenerateNameQueue = createQueue<GenerateNameMessage>(

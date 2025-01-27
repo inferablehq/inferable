@@ -466,7 +466,7 @@ export const integrationByConnectionId = async (connectionId: string) => {
       email: integrations.email,
     })
     .from(integrations)
-    .where(sql`${integrations.email}->>'connectionId' = ${connectionId.split("@")[0]}`);
+    .where(sql`email->>'connectionId' = ${connectionId}`);
 
   return result;
 };

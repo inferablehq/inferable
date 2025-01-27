@@ -35,7 +35,6 @@ import {
   getClusterRuns,
   getAgentMetrics,
   getRunDetails,
-  addMessageAndResumeWithRun,
   updateRunFeedback,
 } from "./runs";
 import {
@@ -302,11 +301,11 @@ export const router = initServer().router(contract, {
     // This run.created is a bit of a hack to allow us to create a run with an existing ID
     // and prevent us from adding a message to a run that already exists.
     if (run.created && runOptions.initialPrompt) {
-      await addMessageAndResumeWithRun({
+      await addMessageAndResume({
         id: ulid(),
         userId: auth.entityId,
         clusterId,
-        run,
+        runId: run.id,
         message: runOptions.initialPrompt,
         type: body.agentId ? "template" : "human",
         metadata: runOptions.messageMetadata,
