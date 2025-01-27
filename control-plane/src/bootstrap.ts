@@ -17,7 +17,6 @@ import { addAttributes } from "./modules/observability/tracer";
 import * as queues from "./modules/queues/index";
 import * as redis from "./modules/redis";
 import * as router from "./modules/router";
-import * as runs from "./modules/runs";
 import * as serviceDefinitions from "./modules/service-definitions";
 import { env } from "./utilities/env";
 import { runMigrations } from "./utilities/migrate";
@@ -168,7 +167,6 @@ const startTime = Date.now();
     events.initialize(),
     jobs.start(),
     serviceDefinitions.start(),
-    runs.start(),
     models.start(),
     redis.start(),
     slack.start(app),
@@ -209,7 +207,6 @@ process.on("SIGTERM", async () => {
   });
 
   await Promise.all([
-    runs.stop(),
     app.close(),
     flagsmith?.close(),
     hdx?.shutdown(),
