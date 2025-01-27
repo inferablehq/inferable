@@ -6,17 +6,21 @@ interface CollapsibleProps {
   children: React.ReactNode;
   defaultCollapsed?: boolean;
   id: string;
+  disabled?: boolean;
 }
 
-export const Collapsible = ({ title, children, defaultCollapsed = true, id }: CollapsibleProps) => {
+export const Collapsible = ({ title, children, defaultCollapsed = true, id, disabled }: CollapsibleProps) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
-  const { isFocused } = useFocus({ id, autoFocus: false });
+  const { isFocused } = useFocus({ 
+    id, 
+    autoFocus: false,
+    isActive: !disabled 
+  });
   const { exit } = useApp();
 
   // Collapse when focus is lost
   useEffect(() => {
     if (!isFocused && !isCollapsed) {
-      setIsCollapsed(true);
       // Force terminal to scroll to bottom after collapse
       setTimeout(() => {
         process.stdout.write('\n');

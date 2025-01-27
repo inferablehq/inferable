@@ -23,7 +23,7 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
-    "@inferable/react": "^0.0.21",
+    "@inferable/react": "^0.0.22",
     "@ts-rest/core": "^3.28.0",
     "@types/yargs": "^17.0.33",
     "dotenv": "^16.4.5",
