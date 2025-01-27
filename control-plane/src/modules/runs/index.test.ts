@@ -216,12 +216,7 @@ describe("assertRunReady", () => {
 
     await expect(
       assertRunReady({
-        run: {
-          id: updatedRun.id,
-          status: updatedRun.status,
-          interactive: updatedRun.interactive,
-          clusterId: owner.clusterId,
-        },
+        runId: updatedRun.id,
         clusterId: owner.clusterId,
       })
     ).rejects.toThrow(RunBusyError);
