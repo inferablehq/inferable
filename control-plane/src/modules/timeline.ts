@@ -1,7 +1,7 @@
 import { getJobsForRun } from "./jobs/jobs";
 import { getActivityForTimeline } from "./observability/events";
 import { getRunMessagesForDisplay } from "./runs/messages";
-import { getRun } from "./runs";
+import { getRun, getRunDetails } from "./runs";
 
 export const timeline = {
   getRunTimeline: async ({
@@ -53,7 +53,7 @@ export const timeline = {
         clusterId,
         runId,
       }),
-      getRun({
+      getRunDetails({
         clusterId,
         runId,
       }),

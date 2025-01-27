@@ -8,8 +8,7 @@ type ApiClient = ReturnType<typeof createApiClient>;
 
 const createMockApiClient = () => ({
   createRun: jest.fn() as jest.Mock<any>,
-  listMessages: jest.fn() as jest.Mock<any>,
-  getRun: jest.fn() as jest.Mock<any>,
+  getRunTimeline: jest.fn() as jest.Mock<any>,
   createMessage: jest.fn() as jest.Mock<any>,
   listRuns: jest.fn() as jest.Mock<any>,
 });
@@ -29,10 +28,6 @@ describe("useRun", () => {
     jest.clearAllMocks();
   });
 
-  const mockSchema = z.object({
-    result: z.any(),
-  });
-
   const createMockInferable = (client: MockApiClient) => ({
     client: client as unknown as ApiClient,
     clusterId: "test-cluster",
@@ -48,11 +43,12 @@ describe("useRun", () => {
 
   it("should use existing runId when provided", async () => {
     const existingRunId = "existing-run-123";
-    mockApiClient.listMessages.mockResolvedValue({ status: 200, body: [], headers: new Headers() });
-    mockApiClient.getRun.mockResolvedValue({
+    mockApiClient.getRunTimeline.mockResolvedValue({
       status: 200,
-      body: { id: existingRunId, status: "running" },
-      headers: new Headers(),
+      body: {
+        messages: [],
+        run: { id: existingRunId, status: "running" },
+      }, headers: new Headers()
     });
 
     const mockInferable = createMockInferable(mockApiClient);
@@ -72,10 +68,12 @@ describe("useRun", () => {
     const runId = "test-run-123";
     const messageText = "test message";
 
-    mockApiClient.listMessages.mockResolvedValue({ status: 200, body: [], headers: new Headers() });
-    mockApiClient.getRun.mockResolvedValue({
+    mockApiClient.getRunTimeline.mockResolvedValue({
       status: 200,
-      body: { id: runId, status: "running" },
+      body: {
+        run: {id: runId, status: "running" },
+        messages: [],
+      },
       headers: new Headers(),
     });
     mockApiClient.createMessage.mockResolvedValueOnce({
