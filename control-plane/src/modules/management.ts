@@ -47,8 +47,6 @@ export const createEphemeralSetup = async (
   apiKey: string;
   ip: string;
 }> => {
-  const clusterId = ulid();
-
   const limiter = rateLimiter({ window: "hour", ceiling: 10 });
   const allowed = limiter.allowed(`ephemeral-setup:${ip}`, 1);
 
@@ -74,7 +72,7 @@ export const createEphemeralSetup = async (
   });
 
   return {
-    clusterId,
+    clusterId: cluster.id,
     apiKey,
     ip,
   };
