@@ -31,6 +31,8 @@ interface UseRunReturn<T extends z.ZodObject<any>> {
   result?: z.infer<T>;
   /** Array of jobs in the current run */
   jobs: RunTimelineJobs;
+  /** Function to approve or deny a job in the current run */
+  submitApproval: (jobId: string, approved: boolean) => Promise<void>;
   /** Error object if any errors occurred during the session */
   error: Error | null;
 }
@@ -228,6 +230,27 @@ export function useRun<T extends z.ZodObject<any>>(
     [inferable.client, runId]
   );
 
+
+  const submitApproval = useMemo(
+    () => async (jobId: string, approved: boolean) => {
+      const response = await inferable.client.createJobApproval({
+        body: { approved },
+        params: { clusterId: inferable.clusterId, jobId },
+      })
+
+
+      if (response.status !== 204) {
+        setError(
+          new Error(
+            `Could not submit approval. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
+          )
+        );
+      }
+
+    }, [inferable.client]
+  );
+
+
   return {
     createMessage,
     messages,
@@ -236,5 +259,6 @@ export function useRun<T extends z.ZodObject<any>>(
     result: run?.result ? run.result : undefined,
     error,
     setRunId: setRunIdWithPersistence,
+    submitApproval,
   };
 }
