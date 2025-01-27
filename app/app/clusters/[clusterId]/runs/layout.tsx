@@ -1,26 +1,10 @@
+"use client";
+
+import { useEffect } from "react";
 import { client } from "@/client/client";
 import { ClusterRunsLayout } from "@/components/cluster-runs-layout";
-import { auth } from "@clerk/nextjs";
-
-export async function generateMetadata({
-  params: { clusterId },
-}: {
-  params: { clusterId: string };
-}) {
-  const { getToken } = auth();
-  const token = await getToken();
-
-  const cluster = await client.getCluster({
-    headers: { authorization: `Bearer ${token}` },
-    params: { clusterId },
-  });
-
-  if (cluster.status !== 200) {
-    return { title: "Inferable" };
-  }
-
-  return { title: `${cluster.body?.name}` };
-}
+import { useAuth } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 
 export default function Home({
   params: { clusterId },
@@ -31,5 +15,26 @@ export default function Home({
   };
   children: React.ReactNode;
 }) {
+  const { getToken } = useAuth();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      const token = await getToken();
+      const cluster = await client.getCluster({
+        headers: { authorization: `Bearer ${token}` },
+        params: { clusterId },
+      });
+
+      if (cluster.status === 200 && cluster.body?.name) {
+        document.title = cluster.body.name;
+      } else {
+        document.title = "Inferable";
+      }
+    };
+
+    fetchMetadata();
+  }, [clusterId, getToken, pathname]);
+
   return <ClusterRunsLayout clusterId={clusterId}>{children}</ClusterRunsLayout>;
 }
