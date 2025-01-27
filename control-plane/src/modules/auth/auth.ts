@@ -8,6 +8,7 @@ import * as customAuth from "./custom";
 import { getRun } from "../runs";
 import { logger } from "../observability/logger";
 import { env } from "../../utilities/env";
+import { getJob } from "../jobs/jobs";
 
 const CLERK_ADMIN_ROLE = "org:admin";
 
@@ -19,6 +20,10 @@ export type Auth = {
     cluster?: {
       clusterId: string;
     };
+    job?: {
+      clusterId: string;
+      jobId: string;
+    };
     run?: {
       clusterId: string;
       runId: string;
@@ -27,6 +32,10 @@ export type Auth = {
   canManage(opts: {
     cluster?: {
       clusterId: string;
+    };
+    job?: {
+      clusterId: string;
+      jobId: string;
     };
     run?: {
       clusterId: string;
@@ -157,8 +166,14 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
         clusterId: clusterAuthDetails.clusterId,
         organizationId: clusterAuthDetails.organizationId,
         canAccess: async function (opts) {
-          if (!opts.cluster && !opts.run) {
+          if (!opts.cluster && !opts.run && !opts.job) {
             throw new AuthenticationError("Invalid assertion");
+          }
+
+          if (opts.job) {
+            if (opts.job.clusterId !== clusterAuthDetails.clusterId) {
+              throw new AuthenticationError("API Key does not have access to this cluster");
+            }
           }
 
           if (opts.cluster) {
@@ -176,12 +191,19 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
           return this;
         },
         canManage: async function (opts) {
-          if (!opts.cluster && !opts.run && !opts.agent) {
+          if (!opts.cluster && !opts.run && !opts.agent && !opts.job) {
             throw new AuthenticationError("Invalid assertion");
           }
 
           if (opts.cluster) {
             throw new AuthenticationError("API key can not manage this cluster");
+          }
+
+
+          if (opts.job) {
+            if (opts.job.clusterId !== clusterAuthDetails.clusterId) {
+              throw new AuthenticationError("API Key does not have access to this cluster");
+            }
           }
 
           // API key can manage runs if it has access to the cluster
@@ -239,11 +261,11 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
       organizationId: clerkAuthDetails.orgId,
       organizationRole: clerkAuthDetails.orgRole,
       canAccess: async function (opts) {
-        if (!opts.cluster && !opts.run) {
+        if (!opts.cluster && !opts.run && !opts.job) {
           throw new AuthenticationError("Invalid assertion");
         }
 
-        const clusterId = opts.cluster?.clusterId ?? (opts.run?.clusterId as string);
+        const clusterId = opts.cluster?.clusterId ?? (opts.run?.clusterId as string) ?? (opts.job?.clusterId as string);
 
         // First check the cluster
         if (
@@ -260,7 +282,7 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
         return this;
       },
       canManage: async function (opts) {
-        if (!opts.cluster && !opts.run && !opts.agent) {
+        if (!opts.cluster && !opts.run && !opts.agent && !opts.job) {
           throw new AuthenticationError("Invalid assertion");
         }
 
@@ -285,6 +307,12 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
             // Only admins can manage other users' workflows
             this.isAdmin();
           }
+        }
+
+        if (opts.job) {
+          await this.canAccess({
+            cluster: { clusterId: opts.job.clusterId },
+          });
         }
 
         if (opts.agent) {
@@ -372,7 +400,7 @@ export const extractCustomAuthState = async (
     token,
     context,
     canAccess: async function (opts) {
-      if (!opts.cluster && !opts.run) {
+      if (!opts.cluster && !opts.run && !opts.job) {
         throw new AuthenticationError("Invalid assertion");
       }
 
@@ -382,6 +410,11 @@ export const extractCustomAuthState = async (
 
       if (opts.run && opts.run.clusterId !== clusterId) {
         throw new AuthenticationError("Custom auth does not have access to this run");
+      }
+
+
+      if (opts.job && opts.job.clusterId !== clusterId) {
+        throw new AuthenticationError("Custom auth does not have access to this job");
       }
 
       if (opts.run) {
@@ -396,6 +429,30 @@ export const extractCustomAuthState = async (
 
         if (existingRun.userId !== this.entityId) {
           throw new AuthenticationError("Custom auth does not have access to this run");
+        }
+      }
+
+      if (opts.job) {
+        const job = await getJob({
+          clusterId: opts.job.clusterId,
+          jobId: opts.job.jobId
+        })
+
+        if (!job || !job.runId) {
+          throw new AuthenticationError("Custom auth does not have access to this job");
+        }
+
+        const existingRun = await getRun({
+          clusterId: opts.job.clusterId,
+          runId: job.runId,
+        });
+
+        if (!existingRun) {
+          throw new AuthenticationError("Custom auth does not have access to this job");
+        }
+
+        if (existingRun.userId !== this.entityId) {
+          throw new AuthenticationError("Custom auth does not have access to this job");
         }
       }
 
@@ -418,21 +475,26 @@ export const extractCustomAuthState = async (
         throw new AuthenticationError("Custom auth does not have access to this run");
       }
 
-      if (!opts.run) {
-        throw new AuthenticationError("Custom auth can only manage runs");
+      if (!opts.run && !opts.job) {
+        throw new AuthenticationError("Custom auth can only manage runs and jobs");
       }
 
-      const existingRun = await getRun({
-        clusterId: opts.run.clusterId,
-        runId: opts.run.runId,
-      });
-
-      if (!existingRun) {
-        throw new AuthenticationError("Custom auth does not have access to this run");
+      if (opts.run) {
+        await this.canAccess({
+          run: {
+            clusterId: opts.run.clusterId,
+            runId: opts.run.runId,
+          },
+        })
       }
 
-      if (existingRun.userId !== this.entityId) {
-        throw new AuthenticationError("Custom auth does not have access to this run");
+      if (opts.job) {
+        await this.canAccess({
+          job: {
+            clusterId: opts.job.clusterId,
+            jobId: opts.job.jobId
+          }
+        })
       }
 
       return this;

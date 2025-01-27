@@ -696,8 +696,7 @@ export const router = initServer().router(contract, {
 
     const auth = request.request.getAuth();
 
-    auth.canAccess({ cluster: { clusterId } });
-    auth.canManage({ cluster: { clusterId } });
+    auth.canManage({ job: { clusterId, jobId } });
 
     await jobs.cancelJob({
       jobId,
@@ -715,7 +714,7 @@ export const router = initServer().router(contract, {
     const { meta } = request.body;
 
     const machine = request.request.getAuth().isMachine();
-    machine.canAccess({ cluster: { clusterId } });
+    machine.canManage({ job: { clusterId, jobId } });
 
     const machineId = request.headers["x-machine-id"];
 
@@ -885,7 +884,7 @@ export const router = initServer().router(contract, {
     const body = request.body;
 
     const machine = request.request.getAuth().isMachine();
-    machine.canAccess({ cluster: { clusterId } });
+    machine.canManage({ job: { clusterId, jobId } });
 
     const job = await jobs.getJob({ clusterId, jobId });
 
@@ -914,7 +913,7 @@ export const router = initServer().router(contract, {
     const { clusterId, jobId } = request.params;
 
     const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
+    await auth.canAccess({ job: { clusterId, jobId } });
 
     const job = await jobs.getJob({ clusterId, jobId });
 
@@ -942,7 +941,7 @@ export const router = initServer().router(contract, {
     const { clusterId, jobId } = request.params;
 
     const auth = request.request.getAuth();
-    await auth.canManage({ cluster: { clusterId } });
+    await auth.canManage({ job: { clusterId, jobId } });
 
     const job = await jobs.getJob({ clusterId, jobId });
 
