@@ -9,7 +9,9 @@ import { BaseMessage } from "../sqs";
 
 export type QueueHandler<T> = (data: T) => Promise<void>;
 
-const defaultConnection = new IORedis(env.REDIS_URL);
+const defaultConnection = new IORedis(env.REDIS_URL, {
+  maxRetriesPerRequest: null,
+});
 
 const telemetry = new BullMQOtel("bullmq");
 

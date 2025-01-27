@@ -202,17 +202,21 @@ const buildCohereClient = () => {
 };
 
 export const start = () => {
-  console.log("routingOptions", { routingOptions });
-
   for (const [key, value] of Object.entries(routingOptions)) {
     if (value.length === 0) {
       throw new Error(`No provider available for ${key}`);
+    } else {
+      logger.info(`Provider available for ${key}`, { value });
     }
   }
 
   for (const [key, value] of Object.entries(embeddingOptions)) {
     if (value.length === 0) {
       throw new Error(`No provider available for ${key}`);
+    } else {
+      logger.info(`Provider available for ${key}`, {
+        value,
+      });
     }
   }
 };
