@@ -1,4 +1,3 @@
-export * from "./core";
 import { emailIngestionQueue } from "./email-ingestion";
 import { externalToolCallQueue } from "./external-tool-call";
 import { customerTelemetryQueue } from "./customer-telemetry";

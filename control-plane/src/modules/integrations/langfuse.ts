@@ -9,13 +9,15 @@ import {
 } from "./integration-events";
 import { getIntegrations } from "./integrations";
 import { integrationSchema } from "../contract";
+import { CustomerTelemetryListeners } from "../customer-telemetry";
+import { logger } from "../observability/logger";
 
 const langfuseCache = new NodeCache({
   maxKeys: 100,
 });
 
 const integrationsCache = createCache<z.infer<typeof integrationSchema>>(
-  Symbol("langfuseIntegrations"),
+  Symbol("langfuseIntegrations")
 );
 
 export async function getLangfuseClient(clusterId: string) {
@@ -53,7 +55,7 @@ export async function getLangfuseClient(clusterId: string) {
       client: langfuse,
       sendMessagePayloads: integrations.langfuse.sendMessagePayloads,
     },
-    60,
+    60
   ); // Cache for 1 minute
 
   return {
@@ -72,9 +74,7 @@ export async function flushCluster(clusterId: string) {
   }
 }
 
-export async function processModelCall(
-  event: z.infer<typeof modelCallEventSchema>,
-) {
+export async function processModelCall(event: z.infer<typeof modelCallEventSchema>) {
   const langfuse = await getLangfuseClient(event.clusterId);
 
   const trace = langfuse?.client.trace({
@@ -99,9 +99,7 @@ export async function processModelCall(
   });
 }
 
-export async function processRunFeedback(
-  event: z.infer<typeof runFeedbackEventSchema>,
-) {
+export async function processRunFeedback(event: z.infer<typeof runFeedbackEventSchema>) {
   const langfuse = await getLangfuseClient(event.clusterId);
 
   langfuse?.client.score({
@@ -112,9 +110,7 @@ export async function processRunFeedback(
   });
 }
 
-export async function processToolCall(
-  event: z.infer<typeof toolCallEventSchema>,
-) {
+export async function processToolCall(event: z.infer<typeof toolCallEventSchema>) {
   const langfuse = await getLangfuseClient(event.clusterId);
 
   langfuse?.client.span({
@@ -127,3 +123,21 @@ export async function processToolCall(
     level: event.level,
   });
 }
+
+export const start = () => {
+  CustomerTelemetryListeners.addListener(async data => {
+    if (data.type === "modelCall") {
+      await processModelCall(data);
+    } else if (data.type === "runFeedback") {
+      await processRunFeedback(data);
+    } else if (data.type === "toolCall") {
+      await processToolCall(data);
+    } else {
+      logger.error("Received customer telemetry message that does not conform to expected schema", {
+        message: data,
+      });
+    }
+
+    flushCluster(data.clusterId);
+  });
+};

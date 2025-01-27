@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { createQueue, QueueNames } from ".";
+import { createQueue } from "./core";
+import { QueueNames } from "./core";
 import { db, runs } from "../data";
 import { logger } from "../observability/logger";
 import { generateTitle } from "../runs/summarization";

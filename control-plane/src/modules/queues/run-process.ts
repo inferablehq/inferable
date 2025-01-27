@@ -1,4 +1,5 @@
-import { createQueue, QueueNames } from ".";
+import { createQueue } from "./core";
+import { QueueNames } from "./core";
 import { baseMessageSchema, BaseMessage } from "../sqs";
 import { createMutex } from "../data";
 import { logger } from "../observability/logger";

@@ -1,6 +1,7 @@
-import { createQueue, QueueNames } from ".";
 import { BaseMessage } from "../sqs";
 import { handleExternalCall } from "../jobs/external";
+import { createQueue } from "./core";
+import { QueueNames } from "./core";
 
 interface ExternalToolCallMessage extends BaseMessage {
   jobId: string;
