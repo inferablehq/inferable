@@ -506,12 +506,17 @@ export const generateRunName = async (
   }
 
   await runGenerateNameQueue
-    .send({
-      runId: run.id,
-      clusterId: run.clusterId,
-      content,
-      ...injectTraceContext(),
-    })
+    .send(
+      {
+        runId: run.id,
+        clusterId: run.clusterId,
+        content,
+        ...injectTraceContext(),
+      },
+      {
+        jobId: `name-generation:${run.clusterId}:${run.id}`,
+      }
+    )
     .catch((error: Error) => {
       logger.error("Failed to send name generation to queue", { error });
     });

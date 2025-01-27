@@ -9,7 +9,6 @@ export const generateTitle = async (
   run: {
     id: string;
     clusterId: string;
-    name: string | null;
   },
   words: number = 10
 ): Promise<{ summary: string }> => {
