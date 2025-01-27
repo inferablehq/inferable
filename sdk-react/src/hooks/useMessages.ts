@@ -1,4 +1,4 @@
-import { ListMessagesResponse } from "./useRun";
+import { RunTimelineMessages } from "./useRun";
 
 /**
  * Message types supported in the Inferable conversation system.
@@ -74,7 +74,7 @@ import { ListMessagesResponse } from "./useRun";
  * });
  * ```
  */
-export const useMessages = (messages?: ListMessagesResponse) => {
+export const useMessages = (messages?: RunTimelineMessages) => {
   return {
     /**
      * Returns all messages sorted by their ID
@@ -91,7 +91,7 @@ export const useMessages = (messages?: ListMessagesResponse) => {
      * @param type - The message type to filter by ("human", "agent", or "invocation-result")
      * @returns Array of messages matching the specified type
      */
-    getOfType: (type: ListMessagesResponse[number]["type"]) =>
+    getOfType: (type: RunTimelineMessages[number]["type"]) =>
       messages?.filter(message => message.type === type),
   };
 };

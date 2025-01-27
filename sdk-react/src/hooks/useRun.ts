@@ -4,8 +4,9 @@ import { z } from "zod";
 import { contract } from "../contract";
 import { useInferable } from "./useInferable";
 
-export type ListMessagesResponse = ClientInferResponseBody<(typeof contract)["listMessages"], 200>;
-type GetRunResponse = ClientInferResponseBody<(typeof contract)["getRun"], 200>;
+export type RunTimelineMessages = ClientInferResponseBody<(typeof contract)["listMessages"], 200>;
+type RunTimelineRun = ClientInferResponseBody<(typeof contract)["getRunTimeline"], 200>["run"];
+type RunTimelineJobs = ClientInferResponseBody<(typeof contract)["getRunTimeline"], 200>["jobs"];
 
 /**
  * Return type for the useRun hook containing all the necessary methods and data for managing a run session
@@ -20,14 +21,16 @@ interface UseRunReturn<T extends z.ZodObject<any>> {
    */
   createMessage: (input: string) => Promise<void>;
   /** Array of messages in the current run, including human messages, agent responses, and invocation results */
-  messages: ListMessagesResponse;
+  messages: RunTimelineMessages;
   /** Current run details including status, metadata, and result if available */
-  run?: GetRunResponse;
+  run?: RunTimelineRun;
   /**
    * Typed result of the run based on the provided schema T.
    * Only available when the run is complete and successful.
    */
   result?: z.infer<T>;
+  /** Array of jobs in the current run */
+  jobs: RunTimelineJobs;
   /** Error object if any errors occurred during the session */
   error: Error | null;
 }
@@ -102,8 +105,9 @@ export function useRun<T extends z.ZodObject<any>>(
   options: UseRunOptions = {}
 ): UseRunReturn<T> {
   const { persist = true } = options;
-  const [messages, setMessages] = useState<ListMessagesResponse>([]);
-  const [run, setRun] = useState<GetRunResponse>();
+  const [messages, setMessages] = useState<RunTimelineMessages>([]);
+  const [jobs, setJobs] = useState<RunTimelineJobs>([]);
+  const [run, setRun] = useState<RunTimelineRun>();
   const [runId, setRunId] = useState<string | undefined>(() => {
     if (persist && typeof window !== "undefined") {
       return localStorage.getItem(STORAGE_KEY) || undefined;
@@ -120,6 +124,7 @@ export function useRun<T extends z.ZodObject<any>>(
       setRunId(newRunId);
       setMessages([]);
       setRun(undefined);
+      setJobs([]);
       lastMessageId.current = null;
     },
     [persist]
@@ -136,29 +141,36 @@ export function useRun<T extends z.ZodObject<any>>(
       if (!runId) return;
 
       try {
-        const [messageResponse, runResponse] = await Promise.all([
-          inferable.client.listMessages({
+        const [timelineResponse] = await Promise.all([
+          inferable.client.getRunTimeline({
             params: { clusterId: inferable.clusterId, runId: runId },
             query: {
-              after: lastMessageId.current ?? "0",
-              waitTime: 20,
+              messagesAfter: lastMessageId.current ?? "0",
             },
-          }),
-          inferable.client.getRun({
-            params: { clusterId: inferable.clusterId, runId: runId },
           }),
         ]);
 
+
         if (!isMounted) return;
 
-        if (messageResponse.status === 200) {
+        if (timelineResponse.status === 200) {
+
+          const runHasChanged = JSON.stringify(timelineResponse.body.run) !== JSON.stringify(run);
+
+          if (runHasChanged) {
+            setRun(timelineResponse.body.run);
+          }
+
+          const jobsHasChanged = JSON.stringify(timelineResponse.body.jobs) !== JSON.stringify(jobs);
+          setJobs(timelineResponse.body.jobs);
+
           lastMessageId.current =
-            messageResponse.body.sort((a, b) => b.id.localeCompare(a.id))[0]?.id ??
+            timelineResponse.body.messages.sort((a, b) => b.id.localeCompare(a.id))[0]?.id ??
             lastMessageId.current;
 
           setMessages(existing =>
             existing.concat(
-              messageResponse.body.filter(
+              timelineResponse.body.messages.filter(
                 message =>
                   message.type === "agent" ||
                   message.type === "human" ||
@@ -169,19 +181,9 @@ export function useRun<T extends z.ZodObject<any>>(
         } else {
           setError(
             new Error(
-              `Could not list messages. Status: ${messageResponse.status} Body: ${JSON.stringify(messageResponse.body)}`
+              `Could not list messages. Status: ${timelineResponse.status} Body: ${JSON.stringify(timelineResponse.body)}`
             )
           );
-        }
-
-        if (runResponse.status === 200) {
-          const runHasChanged = JSON.stringify(runResponse.body) !== JSON.stringify(run);
-
-          if (runHasChanged) {
-            setRun(runResponse.body);
-          }
-        } else {
-          setError(new Error(`Could not get run. Status: ${runResponse.status}`));
         }
 
         // Schedule next poll
@@ -229,6 +231,7 @@ export function useRun<T extends z.ZodObject<any>>(
   return {
     createMessage,
     messages,
+    jobs,
     run,
     result: run?.result ? run.result : undefined,
     error,

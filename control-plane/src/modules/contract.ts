@@ -1176,6 +1176,8 @@ export const definition = {
           authContext: z.any().nullable(),
           feedbackComment: z.string().nullable(),
           feedbackScore: z.number().nullable(),
+          result: anyObject.nullable().optional(),
+          tags: z.record(z.string()).nullable().optional(),
           attachedFunctions: z.array(z.string()).nullable(),
           name: z.string().nullable(),
         }),
