@@ -36,7 +36,7 @@ export const blobSchema = z.object({
   size: z.number(),
   createdAt: z.date(),
   jobId: z.string().nullable(),
-  workflowId: z.string().nullable(),
+  runId: z.string().nullable(),
 });
 
 export const VersionedTextsSchema = z.object({
@@ -456,7 +456,7 @@ export const definition = {
         message: z.string(),
       }),
     },
-    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, workflowId: true }).and(
+    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, runId: true }).and(
       z.object({
         data: z.string(),
       })

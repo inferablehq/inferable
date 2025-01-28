@@ -23,7 +23,7 @@ export const getBlobsForJobs = async ({
       size: data.blobs.size,
       createdAt: data.blobs.created_at,
       jobId: data.blobs.job_id,
-      workflowId: data.blobs.workflow_id,
+      runId: data.blobs.run_id,
     })
     .from(data.blobs)
     .where(
@@ -52,11 +52,10 @@ export const getBlobData = async ({
       type: data.blobs.type,
       encoding: data.blobs.encoding,
       data: data.blobs.data,
-      runId: data.blobs.workflow_id,
+      runId: data.blobs.run_id,
       size: data.blobs.size,
       createdAt: data.blobs.created_at,
       jobId: data.blobs.job_id,
-      workflowId: data.blobs.workflow_id,
     })
     .from(data.blobs)
     .where(
@@ -95,7 +94,7 @@ export const createBlob = async ({
       size,
       data: rawData,
       job_id: jobId,
-      workflow_id: runId,
+      run_id: runId,
       cluster_id: clusterId,
       created_at: new Date(),
     })

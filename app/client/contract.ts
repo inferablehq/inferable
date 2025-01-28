@@ -36,7 +36,7 @@ export const blobSchema = z.object({
   size: z.number(),
   createdAt: z.date(),
   jobId: z.string().nullable(),
-  workflowId: z.string().nullable(),
+  runId: z.string().nullable(),
 });
 
 export const VersionedTextsSchema = z.object({
@@ -456,7 +456,7 @@ export const definition = {
         message: z.string(),
       }),
     },
-    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, workflowId: true }).and(
+    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, runId: true }).and(
       z.object({
         data: z.string(),
       })
@@ -738,12 +738,20 @@ export const definition = {
       authorization: z.string(),
     }),
     body: z.object({
-      runId: z
+      id: z
         .string()
         .optional()
         .describe(
           "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned."
         )
+        .refine(
+          val => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
+          "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long."
+        ),
+      runId: z
+        .string()
+        .optional()
+        .describe("Deprecated. Use `id` instead.")
         .refine(
           val => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
           "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long."
@@ -1168,6 +1176,8 @@ export const definition = {
           authContext: z.any().nullable(),
           feedbackComment: z.string().nullable(),
           feedbackScore: z.number().nullable(),
+          result: anyObject.nullable().optional(),
+          tags: z.record(z.string()).nullable().optional(),
           attachedFunctions: z.array(z.string()).nullable(),
           name: z.string().nullable(),
         }),

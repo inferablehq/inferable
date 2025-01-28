@@ -456,7 +456,7 @@ export const blobs = pgTable(
     id: varchar("id", { length: 1024 }).notNull(),
     name: varchar("name", { length: 1024 }).notNull(),
     cluster_id: varchar("cluster_id").notNull(),
-    workflow_id: varchar("workflow_id", { length: 1024 }),
+    run_id: varchar("run_id", { length: 1024 }),
     job_id: varchar("job_id", { length: 1024 }),
     data: text("data").notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -478,8 +478,8 @@ export const blobs = pgTable(
       columns: [table.cluster_id, table.job_id],
       foreignColumns: [jobs.cluster_id, jobs.id],
     }).onDelete("cascade"),
-    workflowReference: foreignKey({
-      columns: [table.cluster_id, table.workflow_id],
+    runReference: foreignKey({
+      columns: [table.cluster_id, table.run_id],
       foreignColumns: [runs.cluster_id, runs.id],
     }).onDelete("cascade"),
   })
