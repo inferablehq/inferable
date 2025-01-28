@@ -282,7 +282,7 @@ export const externalMessages = pgTable(
 
 export const runs = pgTable(
   // TODO: Rename to runs
-  "workflows",
+  "runs",
   {
     id: varchar("id", { length: 1024 }).notNull(),
     // TODO: Rename this to `on_status_change`
