@@ -16,6 +16,11 @@ export const postStartEdge = async (state: RunGraphState) => {
     return END;
   }
 
+  if (state.messages.length == 0) {
+    logger.error("Attempted to resume run with no messages");
+    return END;
+  }
+
   const lastMessage = state.messages[state.messages.length - 1];
 
   if (lastMessage.type == "agent") {

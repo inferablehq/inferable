@@ -142,17 +142,6 @@ export const createRun = async ({
     throw new Error("Failed to create run");
   }
 
-  // Send the run to be processed
-  await runProcessQueue
-    .send({
-      runId: run.id,
-      clusterId,
-      ...injectTraceContext(),
-    })
-    .catch(e => {
-      logger.error("Failed to send run to process queue", { error: e });
-    });
-
   // Insert tags if provided
   if (tags) {
     await db.insert(runTags).values(
