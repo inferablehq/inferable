@@ -347,8 +347,7 @@ export type RunMessageMetadata = {
 };
 
 export const runMessages = pgTable(
-  // TODO: Rename to `run_messages`
-  "workflow_messages",
+  "run_messages",
   {
     id: varchar("id", { length: 1024 }).notNull(),
     user_id: varchar("user_id", { length: 1024 }).notNull(),
