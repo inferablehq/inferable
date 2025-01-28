@@ -629,7 +629,7 @@ export const getAgentMetrics = async ({
     })
     .from(runs)
     .leftJoin(jobs, eq(runs.id, jobs.run_id))
-    .leftJoin(runMessages, eq(runs.id, runMessages.workflow_id))
+    .leftJoin(runMessages, eq(runs.id, runMessages.run_id))
     .where(and(eq(runs.cluster_id, clusterId), eq(runs.agent_id, agentId)))
     .groupBy(runs.id, runs.created_at, runs.feedback_score)
     .limit(1000);

@@ -4,8 +4,6 @@ import { ulid } from "ulid";
 import { z } from "zod";
 import { UnifiedMessage, unifiedMessageSchema } from "../contract";
 import { db, RunMessageMetadata, runMessages } from "../data";
-import { events } from "../observability/events";
-import { resumeRun } from "./";
 import { logger } from "../observability/logger";
 
 export type TypedMessage = z.infer<typeof unifiedMessageSchema>;
@@ -53,7 +51,7 @@ export const insertRunMessage = async ({
       id,
       user_id: userId ?? "SYSTEM",
       cluster_id: clusterId,
-      workflow_id: runId,
+      run_id: runId,
       metadata,
       type,
       data,
@@ -88,7 +86,7 @@ export const getRunMessagesForDisplay = async ({
     .where(
       and(
         eq(runMessages.cluster_id, clusterId),
-        eq(runMessages.workflow_id, runId),
+        eq(runMessages.run_id, runId),
         gt(runMessages.id, after),
         ne(runMessages.type, "agent-invalid"),
         ne(runMessages.type, "supervisor"),
@@ -197,7 +195,7 @@ export const getRunMessages = async ({
     .select({
       id: runMessages.id,
       clusterId: runMessages.cluster_id,
-      runId: runMessages.workflow_id,
+      runId: runMessages.run_id,
       type: runMessages.type,
       data: runMessages.data,
       createdAt: runMessages.created_at,
@@ -208,7 +206,7 @@ export const getRunMessages = async ({
     .where(
       and(
         eq(runMessages.cluster_id, clusterId),
-        eq(runMessages.workflow_id, runId),
+        eq(runMessages.run_id, runId),
         gt(runMessages.id, after)
       )
     )
@@ -365,7 +363,7 @@ export const lastAgentMessage = async ({
     .where(
       and(
         eq(runMessages.cluster_id, clusterId),
-        eq(runMessages.workflow_id, runId),
+        eq(runMessages.run_id, runId),
         eq(runMessages.type, "agent")
       )
     )
