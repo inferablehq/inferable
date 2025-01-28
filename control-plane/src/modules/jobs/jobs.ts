@@ -87,7 +87,7 @@ export const getJob = async ({ clusterId, jobId }: { clusterId: string; jobId: s
         result: data.jobs.result,
         resultType: data.jobs.result_type,
         createdAt: data.jobs.created_at,
-        runId: data.jobs.workflow_id,
+        runId: data.jobs.run_id,
         runContext: data.jobs.run_context,
         authContext: data.jobs.auth_context,
         approvalRequested: data.jobs.approval_requested,
@@ -164,7 +164,7 @@ export const getJobsForRun = async ({
     .where(
       and(
         eq(data.jobs.cluster_id, clusterId),
-        eq(data.jobs.workflow_id, runId),
+        eq(data.jobs.run_id, runId),
         gt(data.jobs.id, after)
       )
     );
@@ -209,7 +209,7 @@ export const getJobReferences = async ({
     .where(
       and(
         eq(data.jobs.cluster_id, clusterId),
-        eq(data.jobs.workflow_id, runId),
+        eq(data.jobs.run_id, runId),
         lte(data.jobs.created_at, before)
       )
     );
@@ -356,7 +356,7 @@ export async function requestApproval({ jobId, clusterId }: { jobId: string; clu
     .returning({
       jobId: data.jobs.id,
       clusterId: data.jobs.cluster_id,
-      runId: data.jobs.workflow_id,
+      runId: data.jobs.run_id,
       service: data.jobs.service,
       targetFn: data.jobs.target_fn,
     })
@@ -420,7 +420,7 @@ export async function submitApproval({
         )
       )
       .returning({
-        runId: data.jobs.workflow_id,
+        runId: data.jobs.run_id,
         service: data.jobs.service,
         targetFn: data.jobs.target_fn,
       });
@@ -447,7 +447,7 @@ export async function submitApproval({
         }),
       })
       .returning({
-        runId: data.jobs.workflow_id,
+        runId: data.jobs.run_id,
         service: data.jobs.service,
         targetFn: data.jobs.target_fn,
         resultType: data.jobs.result_type,

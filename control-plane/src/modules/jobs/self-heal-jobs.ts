@@ -32,7 +32,7 @@ export async function selfHealJobs() {
       targetFn: data.jobs.target_fn,
       clusterId: data.jobs.cluster_id,
       remainingAttempts: data.jobs.remaining_attempts,
-      runId: data.jobs.workflow_id,
+      runId: data.jobs.run_id,
     });
 
   stalledByTimeout.forEach(row => {
@@ -70,7 +70,7 @@ export async function selfHealJobs() {
       clusterId: data.jobs.cluster_id,
       remainingAttempts: data.jobs.remaining_attempts,
       status: data.jobs.status,
-      runId: data.jobs.workflow_id,
+      runId: data.jobs.run_id,
     });
 
   stalledJobs.forEach(row => {

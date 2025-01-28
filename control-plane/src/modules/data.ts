@@ -87,7 +87,7 @@ export const jobs = pgTable(
       .notNull()
       .default(jobDefaults.timeoutIntervalSeconds),
     service: varchar("service", { length: 1024 }).notNull(),
-    workflow_id: varchar("workflow_id", { length: 1024 }).notNull(),
+    run_id: varchar("run_id", { length: 1024 }).notNull(),
     auth_context: json("auth_context"),
     run_context: json("run_context"),
     approval_requested: boolean("approval_requested").notNull().default(false),

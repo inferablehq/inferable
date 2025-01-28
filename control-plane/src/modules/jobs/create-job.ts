@@ -194,7 +194,7 @@ const createJobStrategies = {
         cache_key: cacheKey,
         remaining_attempts: maxAttempts,
         timeout_interval_seconds: timeoutIntervalSeconds,
-        workflow_id: runId,
+        run_id: runId,
         auth_context: authContext,
         run_context: runContext,
       })
@@ -226,7 +226,7 @@ const createJobStrategies = {
         service,
         remaining_attempts: maxAttempts,
         timeout_interval_seconds: timeoutIntervalSeconds,
-        workflow_id: runId,
+        run_id: runId,
         auth_context: authContext,
         run_context: runContext,
       })

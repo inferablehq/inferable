@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" RENAME COLUMN "workflow_id" TO "run_id";

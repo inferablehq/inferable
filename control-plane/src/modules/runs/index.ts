@@ -604,7 +604,7 @@ export const getWaitingJobIds = async ({
     .from(jobs)
     .where(
       and(
-        eq(jobs.workflow_id, runId),
+        eq(jobs.run_id, runId),
         eq(jobs.cluster_id, clusterId),
         or(
           inArray(jobs.status, ["pending", "running"]),
@@ -639,7 +639,7 @@ export const getAgentMetrics = async ({
       `.as("time_to_completion"),
     })
     .from(runs)
-    .leftJoin(jobs, eq(runs.id, jobs.workflow_id))
+    .leftJoin(jobs, eq(runs.id, jobs.run_id))
     .leftJoin(runMessages, eq(runs.id, runMessages.workflow_id))
     .where(and(eq(runs.cluster_id, clusterId), eq(runs.agent_id, agentId)))
     .groupBy(runs.id, runs.created_at, runs.feedback_score)

@@ -91,7 +91,7 @@ export async function persistJobResult({
     .returning({
       service: data.jobs.service,
       targetFn: data.jobs.target_fn,
-      runId: data.jobs.workflow_id,
+      runId: data.jobs.run_id,
     });
 
   if (updateResult.length === 0) {
