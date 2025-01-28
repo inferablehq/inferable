@@ -238,20 +238,20 @@ export const runTags = pgTable(
   "workflow_metadata",
   {
     cluster_id: varchar("cluster_id").notNull(),
-    workflow_id: varchar("workflow_id", { length: 1024 }).notNull(),
+    run_id: varchar("run_id", { length: 1024 }).notNull(),
     key: varchar("key", { length: 1024 }).notNull(),
     value: text("value").notNull(),
   },
   table => ({
     pk: primaryKey({
-      columns: [table.cluster_id, table.workflow_id, table.key],
-      name: "workflow_metadata_cluster_id_workflow_id_key",
+      columns: [table.cluster_id, table.run_id, table.key],
+      name: "run_tags_cluster_id_run_id_key",
     }),
     workflowReference: foreignKey({
-      columns: [table.workflow_id, table.cluster_id],
+      columns: [table.run_id, table.cluster_id],
       foreignColumns: [runs.id, runs.cluster_id],
     }).onDelete("cascade"),
-    index: index("workflowMetadataIndex").on(table.key, table.value, table.cluster_id),
+    index: index("runTagsIndex").on(table.key, table.value, table.cluster_id),
   })
 );
 

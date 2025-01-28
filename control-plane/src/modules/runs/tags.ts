@@ -41,7 +41,7 @@ export const getRunsByTag = async ({
         ...(userId ? [eq(runs.user_id, userId)] : []),
       ),
     )
-    .rightJoin(runs, eq(runTags.workflow_id, runs.id))
+    .rightJoin(runs, eq(runTags.run_id, runs.id))
     .orderBy(desc(runs.created_at))
     .limit(limit);
 };
@@ -62,7 +62,7 @@ export const getRunTags = async ({
     .where(
       and(
         eq(runTags.cluster_id, clusterId),
-        eq(runTags.workflow_id, runId),
+        eq(runTags.run_id, runId),
       ),
     );
 

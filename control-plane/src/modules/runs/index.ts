@@ -158,7 +158,7 @@ export const createRun = async ({
     await db.insert(runTags).values(
       Object.entries(tags).map(([key, value]) => ({
         cluster_id: clusterId,
-        workflow_id: run.id,
+        run_id: run.id,
         key,
         value,
       }))
