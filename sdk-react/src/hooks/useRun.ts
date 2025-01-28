@@ -7,6 +7,7 @@ import { useInferable } from "./useInferable";
 export type RunTimelineMessages = ClientInferResponseBody<(typeof contract)["listMessages"], 200>;
 type RunTimelineRun = ClientInferResponseBody<(typeof contract)["getRunTimeline"], 200>["run"];
 type RunTimelineJobs = ClientInferResponseBody<(typeof contract)["getRunTimeline"], 200>["jobs"];
+type RunTimelineBlobs = ClientInferResponseBody<(typeof contract)["getRunTimeline"], 200>["blobs"];
 
 /**
  * Return type for the useRun hook containing all the necessary methods and data for managing a run session
@@ -31,6 +32,8 @@ interface UseRunReturn<T extends z.ZodObject<any>> {
   result?: z.infer<T>;
   /** Array of jobs in the current run */
   jobs: RunTimelineJobs;
+  /** Array of blobs in the current run */
+  blobs: RunTimelineBlobs;
   /** Function to approve or deny a job in the current run */
   submitApproval: (jobId: string, approved: boolean) => Promise<void>;
   /** Error object if any errors occurred during the session */
@@ -109,6 +112,7 @@ export function useRun<T extends z.ZodObject<any>>(
   const { persist = true } = options;
   const [messages, setMessages] = useState<RunTimelineMessages>([]);
   const [jobs, setJobs] = useState<RunTimelineJobs>([]);
+  const [blobs, setBlobs] = useState<RunTimelineBlobs>([]);
   const [run, setRun] = useState<RunTimelineRun>();
   const [runId, setRunId] = useState<string | undefined>(() => {
     if (persist && typeof window !== "undefined") {
@@ -162,6 +166,7 @@ export function useRun<T extends z.ZodObject<any>>(
           }
 
           setJobs(timelineResponse.body.jobs);
+          setBlobs(timelineResponse.body.blobs);
 
           lastMessageId.current =
             timelineResponse.body.messages.sort((a, b) => b.id.localeCompare(a.id))[0]?.id ??
@@ -249,6 +254,7 @@ export function useRun<T extends z.ZodObject<any>>(
     createMessage,
     messages,
     jobs,
+    blobs,
     run,
     result: run?.result ? run.result : undefined,
     error,
