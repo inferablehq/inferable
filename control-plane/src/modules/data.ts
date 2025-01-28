@@ -234,8 +234,7 @@ export const integrations = pgTable(
 );
 
 export const runTags = pgTable(
-  // TODO: Rename to `run_tags`
-  "workflow_metadata",
+  "run_tags",
   {
     cluster_id: varchar("cluster_id").notNull(),
     run_id: varchar("run_id", { length: 1024 }).notNull(),
@@ -247,7 +246,7 @@ export const runTags = pgTable(
       columns: [table.cluster_id, table.run_id, table.key],
       name: "run_tags_cluster_id_run_id_key",
     }),
-    workflowReference: foreignKey({
+    runReference: foreignKey({
       columns: [table.run_id, table.cluster_id],
       foreignColumns: [runs.id, runs.cluster_id],
     }).onDelete("cascade"),

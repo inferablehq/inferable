@@ -1513,6 +1513,13 @@
       "when": 1738048102660,
       "tag": "0216_jittery_the_hunter",
       "breakpoints": true
+    },
+    {
+      "idx": 217,
+      "version": "7",
+      "when": 1738049041294,
+      "tag": "0217_right_paibok",
+      "breakpoints": true
     }
   ]
 }
