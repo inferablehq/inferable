@@ -24,6 +24,11 @@ hdx?.init({
           return Math.random() > 0.01;
         }
 
+        if (req.method === "GET" && req.url?.includes("/timeline")) {
+          // Trace 1% of `/timeline` polls
+          return Math.random() > 0.01;
+        }
+
         if (req.url?.endsWith("/live")) {
           return true;
         }
