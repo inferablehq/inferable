@@ -36,6 +36,8 @@ interface UseRunReturn<T extends z.ZodObject<any>> {
   blobs: RunTimelineBlobs;
   /** Function to approve or deny a job in the current run */
   submitApproval: (jobId: string, approved: boolean) => Promise<void>;
+  /** Function to fetch blob data for a given blob ID */
+  getBlobData: (blobId: string) => Promise<unknown>;
   /** Error object if any errors occurred during the session */
   error: Error | null;
 }
@@ -250,6 +252,25 @@ export function useRun<T extends z.ZodObject<any>>(
     [inferable.client]
   );
 
+  const getBlobData = useMemo(
+    () => async (blobId: string) => {
+      const response = await inferable.client.getBlobData({
+        params: { clusterId: inferable.clusterId, blobId },
+      });
+
+      if (response.status === 200) {
+        return response.body;
+      } else {
+        setError(
+          new Error(
+            `Could not get blob data. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
+          )
+        );
+      }
+    },
+    [inferable.client]
+  );
+
   return {
     createMessage,
     messages,
@@ -260,5 +281,6 @@ export function useRun<T extends z.ZodObject<any>>(
     error,
     setRunId: setRunIdWithPersistence,
     submitApproval,
+    getBlobData,
   };
 }
