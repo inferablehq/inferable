@@ -1,9 +1,11 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, lt } from "drizzle-orm";
 import { createCache } from "../utilities/cache";
 import { NotFoundError } from "../utilities/errors";
+import * as cron from "./cron";
 import * as data from "./data";
 import { toModelInput } from "./prompts";
 import { getLatestVersionedText } from "./versioned-text";
+import { logger } from "./observability/logger";
 
 export const getClusterDetails = async (clusterId: string) => {
   const [cluster] = await data.db
@@ -26,6 +28,28 @@ export const getClusterDetails = async (clusterId: string) => {
   }
 
   return cluster;
+};
+
+
+const cleanupEphemeralClusters = async () => {
+  // Find 10 at a time
+  const clusters = await data.db
+    .select({
+      id: data.clusters.id,
+    })
+    .from(data.clusters)
+    .where(
+      and(
+        eq(data.clusters.is_ephemeral, true),
+        lt(data.clusters.created_at, new Date(Date.now() - 1000 * 60 * 60 * 24))
+      )
+    )
+    .limit(10);
+
+  logger.info("Cleaning up ephemeral clusters", {
+    count: clusters.length,
+    clusterIds: clusters.map(cluster => cluster.id),
+  });
 };
 
 const cache = createCache<boolean>(Symbol("clusterExists"));
@@ -72,4 +96,8 @@ export const getClusterContextText = async (clusterId: string) => {
       : (getLatestVersionedText(cluster.additionalContext)?.content ?? "");
 
   return toModelInput(html);
+};
+
+export const start = async () => {
+  cron.registerCron(cleanupEphemeralClusters, "cleanup-ephemeral", { interval: 1000 * 60 * 15 }); // 15 minutes
 };

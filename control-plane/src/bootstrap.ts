@@ -15,6 +15,7 @@ import { hdx } from "./modules/observability/hyperdx";
 import { logContext, logger } from "./modules/observability/logger";
 import { addAttributes } from "./modules/observability/tracer";
 import * as queues from "./modules/queues/index";
+import * as clusters from "./modules/cluster";
 import * as redis from "./modules/redis";
 import * as router from "./modules/router";
 import * as serviceDefinitions from "./modules/service-definitions";
@@ -174,6 +175,7 @@ const startTime = Date.now();
     flagsmith?.getEnvironmentFlags(),
     analytics.start(),
     thirdPartyIntegrations.start(),
+    clusters.start()
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });
