@@ -281,7 +281,6 @@ export const externalMessages = pgTable(
 );
 
 export const runs = pgTable(
-  // TODO: Rename to runs
   "runs",
   {
     id: varchar("id", { length: 1024 }).notNull(),
