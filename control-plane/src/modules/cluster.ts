@@ -1,4 +1,4 @@
-import { and, count, eq, lt } from "drizzle-orm";
+import { and, count, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { createCache } from "../utilities/cache";
 import { NotFoundError } from "../utilities/errors";
 import * as cron from "./cron";
@@ -44,16 +44,71 @@ const markEphemeralClustersForDeletion = async () => {
     })
     .where(
       and(
+        isNull(data.clusters.deleted_at),
         eq(data.clusters.is_ephemeral, true),
-        lt(data.clusters.created_at, new Date(Date.now() - 1000 * 60 * 60 * 24))
+        lt(data.clusters.created_at, new Date(Date.now() - 1000 * 60 * 60 * 12)) // 12 hours
       )
     )
 
-  logger.info("Cleaning up ephemeral clusters", {
+  logger.info("Marked ephemeral clusters for deletion", {
     count: clusters.length,
     clusterIds: clusters.map((cluster) => cluster.id),
   });
 };
+
+const cleanupMarkedClusters = async () => {
+  const clusters = await data.db
+    .select({
+      id: data.clusters.id,
+    })
+    .from(data.clusters)
+    .where(
+      and(
+        isNotNull(data.clusters.deleted_at),
+        lt(data.clusters.deleted_at, new Date(Date.now() - 1000 * 60 * 60 * 24)) // 12 hours
+      )
+    )
+
+  logger.info("Deleting marked clusters", {
+    count: clusters.length,
+    clusterIds: clusters.map((cluster) => cluster.id),
+  });
+
+
+  for (const cluster of clusters) {
+    // Temporary, skip non ephemeral clusters
+    if (!cluster.id.startsWith("eph_")) {
+      continue
+    }
+
+    try {
+      await data.db.transaction(async (tx) => {
+        await tx.execute(sql`DELETE FROM "agents" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "versioned_entities" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "blobs" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "api_keys" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "embeddings" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "run_messages" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "runs" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "external_messages" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "run_tags" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "integrations" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "services" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "machines" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "jobs" WHERE cluster_id = ${cluster.id}`);
+
+        await tx.execute(sql`UPDATE "events" SET deleted_at = now() WHERE cluster_id = ${cluster.id}`);
+
+        await tx.execute(sql`DELETE FROM "clusters" WHERE id = ${cluster.id}`);
+      });
+    } catch (error) {
+      logger.error("Error deleting cluster and associated data", {
+        clusterId: cluster.id,
+        error: error,
+      });
+    }
+  }
+}
 
 const cache = createCache<boolean>(Symbol("clusterExists"));
 
@@ -102,5 +157,6 @@ export const getClusterContextText = async (clusterId: string) => {
 };
 
 export const start = async () => {
-  cron.registerCron(markEphemeralClustersForDeletion, "cleanup-ephemeral", { interval: 1000 * 60 * 15 }); // 15 minutes
+  cron.registerCron(markEphemeralClustersForDeletion, "mark-ephemeral-clusters", { interval: 1000 * 60 * 15 }); // 15 minutes
+  cron.registerCron(cleanupMarkedClusters, "cleanup-marked-clusters", { interval: 1000 * 60 * 15 }); // 15 minutes
 };
