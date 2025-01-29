@@ -116,7 +116,7 @@ export const createCluster = async ({
     .then(r => r[0]);
 };
 
-export const deleteCluster = async ({ clusterId }: { clusterId: string }) => {
+export const markClusterForDeletion = async ({ clusterId }: { clusterId: string }) => {
   await data.db
     .update(data.clusters)
     .set({ deleted_at: new Date(), organization_id: null })

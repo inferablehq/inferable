@@ -31,24 +31,27 @@ export const getClusterDetails = async (clusterId: string) => {
 };
 
 
-const cleanupEphemeralClusters = async () => {
+const markEphemeralClustersForDeletion = async () => {
   // Find 10 at a time
   const clusters = await data.db
-    .select({
+    .update(data.clusters)
+    .set({
+      deleted_at: new Date(),
+      organization_id: null,
+    })
+    .returning({
       id: data.clusters.id,
     })
-    .from(data.clusters)
     .where(
       and(
         eq(data.clusters.is_ephemeral, true),
         lt(data.clusters.created_at, new Date(Date.now() - 1000 * 60 * 60 * 24))
       )
     )
-    .limit(10);
 
   logger.info("Cleaning up ephemeral clusters", {
     count: clusters.length,
-    clusterIds: clusters.map(cluster => cluster.id),
+    clusterIds: clusters.map((cluster) => cluster.id),
   });
 };
 
@@ -99,5 +102,5 @@ export const getClusterContextText = async (clusterId: string) => {
 };
 
 export const start = async () => {
-  cron.registerCron(cleanupEphemeralClusters, "cleanup-ephemeral", { interval: 1000 * 60 * 15 }); // 15 minutes
+  cron.registerCron(markEphemeralClustersForDeletion, "cleanup-ephemeral", { interval: 1000 * 60 * 15 }); // 15 minutes
 };

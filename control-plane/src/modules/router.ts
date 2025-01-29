@@ -1244,7 +1244,7 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth().isAdmin();
     await auth.canManage({ cluster: { clusterId } });
 
-    await management.deleteCluster({ clusterId });
+    await management.markClusterForDeletion({ clusterId });
 
     posthog?.capture({
       distinctId: unqualifiedEntityId(auth.entityId),
