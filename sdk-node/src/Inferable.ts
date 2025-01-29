@@ -3,7 +3,7 @@ import path from "path";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 import { createApiClient } from "./create-client";
-import { InferableError } from "./errors";
+import { InferableError, PollTimeoutError } from "./errors";
 import * as links from "./links";
 import { machineId } from "./machine-id";
 import { Service, registerMachine } from "./service";
@@ -14,6 +14,7 @@ import {
   FunctionRegistration,
   FunctionRegistrationInput,
   JsonSchemaInput,
+  PollResult,
   RegisteredService,
 } from "./types";
 import {
@@ -238,15 +239,30 @@ export class Inferable {
        * @param maxWaitTime The maximum amount of time to wait for the run to reach a terminal state. Defaults to 60 seconds.
        * @param interval The amount of time to wait between polling attempts. Defaults to 500ms.
        */
-      poll: async (options?: { maxWaitTime?: number; interval?: number }) => {
+      poll: async <T>(options?: {
+        maxWaitTime?: number;
+        interval?: number;
+      }): Promise<
+        | {
+            result: T;
+            status: "done";
+          }
+        | {
+            result: unknown;
+            status: "failed";
+            failureReason: string;
+          }
+      > => {
         if (!this.clusterId) {
           throw new InferableError(
             "Cluster ID must be provided to manage runs",
           );
         }
 
+        const waitTime = options?.maxWaitTime || 60_000;
+
         const start = Date.now();
-        const end = start + (options?.maxWaitTime || 60_000);
+        const end = start + waitTime;
 
         while (Date.now() < end) {
           const pollResult = await this.client.getRun({
@@ -273,8 +289,54 @@ export class Inferable {
             continue;
           }
 
-          return pollResult.body;
+          if (!pollResult.body.result) {
+            throw new InferableError(
+              "Run result is undefined. This is probably a bug in the Inferable SDK.",
+              {
+                runId: runResult.body.id,
+              },
+            );
+          }
+
+          if (!pollResult.body.status) {
+            throw new InferableError(
+              "Run status is undefined. This is probably a bug in the Inferable SDK.",
+              {
+                runId: runResult.body.id,
+              },
+            );
+          }
+
+          const finalStatus = z
+            .enum(["done", "failed"])
+            .safeParse(pollResult.body.status);
+
+          if (!finalStatus.success) {
+            throw new InferableError(
+              `Run status is not either "done" or "failed". Got ${pollResult.body.status}`,
+              {
+                runId: runResult.body.id,
+              },
+            );
+          }
+
+          if (finalStatus.data == "failed") {
+            return {
+              result: pollResult.body.result as unknown,
+              status: finalStatus.data,
+              failureReason: pollResult.body.failureReason ?? "Unknown",
+            };
+          } else {
+            return {
+              result: pollResult.body.result as T,
+              status: finalStatus.data,
+            };
+          }
         }
+
+        throw new PollTimeoutError(
+          `Run did not reach a terminal state in ${waitTime}ms. You can increase the wait time by passing a maxWaitTime option to the poll method.`,
+        );
       },
       /**
        * Retrieves the messages for a run.

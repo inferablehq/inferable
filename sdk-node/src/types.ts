@@ -62,7 +62,6 @@ export const handleCustomAuthInput = z.object({
   token: z.string(),
 });
 
-
 import type { JSONSchema4Type } from "json-schema";
 import type { JsonSchema7Type } from "zod-to-json-schema";
 

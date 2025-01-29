@@ -10,3 +10,10 @@ export class InferableError extends Error {
     this.meta = meta;
   }
 }
+
+export class PollTimeoutError extends InferableError {
+  constructor(message: string, meta?: { [key: string]: unknown }) {
+    super(message, meta);
+    this.name = "PollTimeoutError";
+  }
+}
