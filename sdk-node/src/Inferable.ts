@@ -14,7 +14,6 @@ import {
   FunctionRegistration,
   FunctionRegistrationInput,
   JsonSchemaInput,
-  PollResult,
   RegisteredService,
 } from "./types";
 import {
