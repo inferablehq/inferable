@@ -167,23 +167,34 @@ export function useRun<T extends z.ZodObject<any>>(
             setRun(timelineResponse.body.run);
           }
 
-          setJobs(timelineResponse.body.jobs);
-          setBlobs(timelineResponse.body.blobs);
+          const jobsHaveChanged = JSON.stringify(timelineResponse.body.jobs) !== JSON.stringify(jobs);
+          if (jobsHaveChanged) {
+            setJobs(timelineResponse.body.jobs);
+          }
+
+          const blobsHaveChanged = JSON.stringify(timelineResponse.body.blobs) !== JSON.stringify(blobs);
+          if (blobsHaveChanged) {
+            setBlobs(timelineResponse.body.blobs);
+          }
 
           lastMessageId.current =
             timelineResponse.body.messages.sort((a, b) => b.id.localeCompare(a.id))[0]?.id ??
             lastMessageId.current;
 
-          setMessages(existing =>
-            existing.concat(
-              timelineResponse.body.messages.filter(
-                message =>
-                  message.type === "agent" ||
-                  message.type === "human" ||
-                  message.type === "invocation-result"
+          const messagesHaveChanged = JSON.stringify(timelineResponse.body.messages) !== JSON.stringify(messages);
+
+          if (messagesHaveChanged) {
+            setMessages(existing =>
+              existing.concat(
+                timelineResponse.body.messages.filter(
+                  message =>
+                    message.type === "agent" ||
+                      message.type === "human" ||
+                      message.type === "invocation-result"
+                )
               )
-            )
-          );
+            );
+          }
         } else {
           setError(
             new Error(
