@@ -204,14 +204,30 @@ export class Inferable {
    * console.log("Run result:", result);
    * ```
    */
-  public async run(
-    input: Omit<
-      Parameters<ReturnType<typeof createApiClient>["createRun"]>[0]["body"],
-      "resultSchema"
-    > & {
-      resultSchema?: z.ZodType<unknown> | JsonSchemaInput;
-    },
-  ) {
+  public async run(input: {
+    id?: string;
+    initialPrompt?: string;
+    systemPrompt?: string;
+    name?: string;
+    model?: "claude-3-5-sonnet" | "claude-3-haiku";
+    resultSchema?: z.ZodType<unknown> | JsonSchemaInput;
+    attachedFunctions?: Array<{ service: string; function: string }>;
+    onStatusChange?: {
+      statuses?: Array<"pending" | "running" | "paused" | "done" | "failed">;
+      function?: { service: string; function: string };
+      webhook?: string;
+    };
+    tags?: Record<string, string>;
+    test?: {
+      enabled?: boolean;
+      mocks?: Record<string, { output: Record<string, unknown> }>;
+    };
+    interactive?: boolean;
+    reasoningTraces?: boolean;
+    enableSummarization?: boolean;
+    context?: Record<string, unknown>;
+    enableResultGrounding?: boolean;
+  }) {
     const runResult = await this.client.createRun({
       params: {
         clusterId: await this.getClusterId(),
