@@ -110,6 +110,7 @@ const genericMessageDataSchema = z
 const resultDataSchema = z
   .object({
     id: z.string(),
+    toolName: z.string().optional(),
     result: z.object({}).passthrough(),
   })
   .strict();

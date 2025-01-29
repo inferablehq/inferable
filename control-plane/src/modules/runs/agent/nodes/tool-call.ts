@@ -364,6 +364,7 @@ const _handleToolCall = async (
               message: `Failed to invoke ${toolName}`,
               error,
             },
+            toolName,
             id: toolCallId,
           },
           runId: run.id,

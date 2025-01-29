@@ -95,7 +95,7 @@ export const getRunMessagesForDisplay = async ({
     )
     .limit(limit);
 
-  return messages
+  const parsed = messages
     .map(message => {
       // handle result messages before they were renamed
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,6 +137,31 @@ export const getRunMessagesForDisplay = async ({
 
       return data;
     });
+
+  parsed.forEach(message => {
+    // Handle invocation-result from before toolName was added
+    if (message.type === "invocation-result" && !message.data.toolName) {
+      // Find the initial invocation
+
+      parsed
+        .filter(m => m.type === "agent" && m.data.invocations?.length)
+        .forEach(m => {
+          assertMessageOfType("agent", m).data.invocations?.forEach(invocation => {
+            if (invocation.id === message.data.id) {
+              message.data.toolName = invocation.toolName;
+            }
+          });
+        })
+
+      if (!message.data.toolName) {
+        logger.error("Could not find invocation for invocation-result message", {
+          message,
+        });
+      }
+    }
+  });
+
+  return parsed;
 };
 
 export const getRunMessagesForDisplayWithPolling = async ({
