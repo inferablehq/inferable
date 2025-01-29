@@ -227,6 +227,7 @@ export class Inferable {
     enableSummarization?: boolean;
     context?: Record<string, unknown>;
     enableResultGrounding?: boolean;
+    agentId?: string;
   }) {
     const runResult = await this.client.createRun({
       params: {
