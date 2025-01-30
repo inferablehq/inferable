@@ -1,21 +1,27 @@
-import { z } from "zod";
+import { createQueue } from "./core";
+import { QueueNames } from "./core";
+import { baseMessageSchema, BaseMessage } from "../sqs";
+import { createMutex } from "../data";
 import { logger } from "../observability/logger";
 import { assertEphemeralClusterLimitations, getRun } from "../runs";
 import { processRun } from "../runs/agent/run";
 import { getRunTags } from "../runs/tags";
-import { BaseMessage, baseMessageSchema } from "../sqs";
-import { createQueue, QueueNames } from "./core";
+import { injectTraceContext } from "../observability/tracer";
+import { z } from "zod";
 
 interface RunProcessMessage extends BaseMessage {
   runId: string;
   clusterId: string;
+  lockAttempts?: number;
 }
+
+const MAX_PROCESS_LOCK_ATTEMPTS = 5;
 
 export async function handleRunProcess(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
       runId: z.string(),
-      clusterId: z.string(),
+      lockAttempts: z.number().optional(),
     })
     .safeParse(message);
 
@@ -27,20 +33,55 @@ export async function handleRunProcess(message: unknown) {
     return;
   }
 
-  const { runId, clusterId } = zodResult.data;
+  const { runId, clusterId, lockAttempts = 0 } = zodResult.data;
 
-  const [run, tags] = await Promise.all([
-    getRun({ clusterId, runId }),
-    getRunTags({ clusterId, runId }),
-    assertEphemeralClusterLimitations(clusterId),
-  ]);
+  const unlock = await createMutex(`run-process-${clusterId}-${runId}`).tryLock();
 
-  if (!run) {
-    logger.error("Received job for unknown Run");
+  if (!unlock) {
+    logger.info("Could not acquire run process lock");
+    if (lockAttempts < MAX_PROCESS_LOCK_ATTEMPTS) {
+      const delay = Math.pow(5, lockAttempts);
+
+      await runProcessQueue.send(
+        {
+          runId,
+          clusterId,
+          lockAttempts: lockAttempts + 1,
+          ...injectTraceContext(),
+        },
+        {
+          delay: delay * 1000,
+        }
+      );
+
+      logger.info("Will attempt to process after delay", {
+        delay,
+        lockAttempts,
+      });
+    } else {
+      logger.warn("Could not acquire run process lock after multiple attempts, skipping", {
+        lockAttempts,
+      });
+    }
     return;
   }
 
-  await processRun(run, tags);
+  try {
+    const [run, tags] = await Promise.all([
+      getRun({ clusterId, runId }),
+      getRunTags({ clusterId, runId }),
+      assertEphemeralClusterLimitations(clusterId),
+    ]);
+
+    if (!run) {
+      logger.error("Received job for unknown Run");
+      return;
+    }
+
+    await processRun(run, tags);
+  } finally {
+    await unlock();
+  }
 }
 
 export const runProcessQueue = createQueue<RunProcessMessage>(
