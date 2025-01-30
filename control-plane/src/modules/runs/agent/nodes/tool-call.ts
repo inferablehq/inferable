@@ -161,6 +161,7 @@ const _handleToolCall = async (
               error,
             },
             id: toolCallId,
+            toolName,
           },
           runId: run.id,
           clusterId: run.clusterId,
@@ -232,6 +233,7 @@ const _handleToolCall = async (
               result: {
                 [toolCallId]: response,
               },
+              toolName,
               id: toolCallId,
             },
             runId: run.id,
@@ -316,6 +318,7 @@ const _handleToolCall = async (
                 message: `Provided input did not match schema for ${toolName}, check your input`,
                 parseResult: error.validatorResult.errors,
               },
+              toolName,
               id: toolCallId,
             },
             runId: run.id,

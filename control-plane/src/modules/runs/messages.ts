@@ -168,7 +168,7 @@ export const getRunMessagesForDisplay = async ({
 
       if (!message.data.toolName) {
         logger.error("Could not find invocation for invocation-result message", {
-          message,
+          msg: message,
         });
       }
     }
