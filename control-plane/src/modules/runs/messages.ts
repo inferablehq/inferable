@@ -139,19 +139,32 @@ export const getRunMessagesForDisplay = async ({
     });
 
   parsed.forEach(message => {
-    // Handle invocation-result from before toolName was added
-    if (message.type === "invocation-result" && !message.data.toolName) {
-      // Find the initial invocation
+    if (message.type === "invocation-result") {
 
-      parsed
-        .filter(m => m.type === "agent" && m.data.invocations?.length)
-        .forEach(m => {
-          assertMessageOfType("agent", m).data.invocations?.forEach(invocation => {
-            if (invocation.id === message.data.id) {
-              message.data.toolName = invocation.toolName;
-            }
-          });
-        })
+      // Handle invocation-result from before toolName was added
+      if (!message.data.toolName) {
+
+        // Find the initial invocation
+        parsed
+          .filter(m => m.type === "agent" && m.data.invocations?.length)
+          .forEach(m => {
+            assertMessageOfType("agent", m).data.invocations?.forEach(invocation => {
+              if (invocation.id === message.data.id) {
+                message.data.toolName = invocation.toolName;
+              }
+            });
+          })
+      }
+
+      // Remove nested result ulid which is present for result grounding but makes the result difficult to type on the client
+      if (message.data.id in message.data.result) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const nested = message.data.result[message.data.id] as any;
+        if ('result' in nested) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          message.data.result = nested.result as any;
+        }
+      }
 
       if (!message.data.toolName) {
         logger.error("Could not find invocation for invocation-result message", {

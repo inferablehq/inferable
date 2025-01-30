@@ -6,12 +6,25 @@ import "./TestPage.css";
 
 type MessageData = {
   message?: string;
-  result?: Record<string, unknown>;
+  result?: unknown;
   done?: boolean;
   learnings?: Array<unknown>;
   issue?: string;
   invocations?: Array<unknown>;
 };
+
+const searchInventory = z.union([
+  z.record(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string(),
+      price: z.number(),
+      qty: z.number(),
+    }).strict()
+  ),
+  z.object({ message: z.string() })
+]);
 
 const getMessageContent = (msg: { type: string; data: MessageData }) => {
   switch (msg.type) {
@@ -53,13 +66,18 @@ export function TestPage(props: UseInferableOptions) {
     setRunId,
   } = useRun(inferable, { persist });
 
-  const messages = useMessages(rawMessages);
+  const messages = useMessages(rawMessages, {
+    resultMap: {
+      "default_searchInventory": searchInventory,
+      "default_anotherFunction": z.number(),
+    }
+  });
 
   const fetchRuns = async () => {
     try {
       const response = await inferable.listRuns();
       if (response.runs) {
-        setRuns(response.runs);
+        setRuns(response.runs as any);
       }
     } catch (error) {
       console.error("Failed to fetch runs:", error);
@@ -98,6 +116,19 @@ export function TestPage(props: UseInferableOptions) {
 
   const sortedMessages = messages.all("asc");
 
+  // Messages are typed based on useMessageOptions.resultMap
+  // sortedMessages.forEach(msg => {
+  //   if (msg.type == "invocation-result") {
+  //     if (msg.data?.toolName == "default_searchInventory") {
+  //       // Union type
+  //       const result = msg.data?.result;
+  //     } else if (msg.data?.toolName == "default_anotherFunction") {
+  //       // number type
+  //       const result = msg.data?.result;
+  //     }
+  //   }
+  // })
+
   return (
     <div className="chat-container">
       <div className="chat-main">
@@ -122,6 +153,11 @@ export function TestPage(props: UseInferableOptions) {
             {run?.id ? "run.sendMessage" : "inferable.createRun"}
           </button>
         </div>
+        {messages.error && (
+          <div key={messages.error.message} className="parsing-error">
+            {messages.error.message}
+          </div>
+        )}
         <div
           className="options-section"
           style={{

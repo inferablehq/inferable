@@ -1,4 +1,106 @@
+import { z } from "zod";
 import { RunTimelineMessages } from "./useRun";
+import React, { useState } from "react";
+
+type RunTimelineMessage = RunTimelineMessages[number];
+type ToolSchemas = Record<string, z.ZodTypeAny>;
+
+type KnownInvocationResultMessages<TSchemas extends ToolSchemas> = {
+  [K in keyof TSchemas]: {
+    id: string;
+    type: "invocation-result";
+    data: {
+      toolName: K;
+      /** The parsed shape of the schema for K */
+      result: z.infer<TSchemas[K]>;
+    };
+  };
+}[keyof TSchemas];
+
+// Add a new type for untyped invocation results
+type UntypedInvocationResultMessage = {
+  id: string;
+  type: "invocation-result";
+  data: {
+    toolName: string;
+    result: unknown;
+  };
+};
+
+// All RunTimelineMessage that are not type.invocation-results
+type NonInvocationTimelineMessage = Exclude<RunTimelineMessage, { type: "invocation-result" }>;
+
+// Update ParsedMessage to handle both cases
+type ParsedMessage<TSchemas extends ToolSchemas> = NonInvocationTimelineMessage |
+  (TSchemas extends Record<string, never>
+    ? UntypedInvocationResultMessage
+    : KnownInvocationResultMessages<TSchemas>);
+
+/**
+ * Options for the useMessages hook
+ * Accept a map of toolName -> Zod schema
+ */
+interface UseMessagesOptions<TSchemas extends ToolSchemas = {}> {
+  /**
+   * Record of tool name to Zod schema. If a message has a matching toolName,
+   * we'll parse and narrow its result type accordingly.
+   */
+  resultMap?: TSchemas;
+}
+
+interface UseMessagesReturn<TSchemas extends ToolSchemas> {
+  /**
+   * Returns all messages sorted by their ID
+   * @param {"asc" | "desc"} [sort="desc"] - "asc" for oldest first, "desc" for newest first
+   */
+  all: (sort: "asc" | "desc") => ParsedMessage<TSchemas>[];
+  /**
+   * Filters messages to return only those of a specific type
+   * @param type - The message type to filter by ("human", "agent", or "invocation-result")
+   */
+  getOfType: (type: RunTimelineMessage["type"]) => ParsedMessage<TSchemas>[];
+
+  /** Error object if any errors occurred during the session */
+  error: Error | null;
+}
+
+/**
+ * Safely parses a single message:
+ * - If message.type !== 'invocation-result', return it unchanged
+ * - If message.type === 'invocation-result' and we have a matching tool schema,
+ *   return a typed version if parse succeeds; otherwise return fallback untyped
+ */
+function parseMessage<TSchemas extends ToolSchemas>(
+  message: RunTimelineMessage,
+  schemas?: TSchemas
+): ParsedMessage<TSchemas> | null {
+  // Only relevant for invocation-result messages
+  if (message.type !== "invocation-result") {
+    // Human or agent => pass through unchanged
+    return message as ParsedMessage<TSchemas>;
+  }
+
+  const { toolName, result } = message.data;
+  if (toolName && schemas && toolName in schemas) {
+    const schema = schemas[toolName];
+    const parsed = schema.safeParse(result);
+
+    if (!parsed.success) {
+      throw new Error(`Failed to parse result for ${toolName}: ${parsed.error}`);
+    }
+
+    // Return typed invocation-result message
+    return {
+      ...message,
+      data: {
+        toolName,
+        result: parsed.data,
+      },
+    } as ParsedMessage<TSchemas>;
+  }
+
+  return null;
+}
 
 /**
  * Message types supported in the Inferable conversation system.
@@ -33,14 +135,16 @@ import { RunTimelineMessages } from "./useRun";
  * @property {"invocation-result"} type - Identifies this as an invocation result
  * @property {Object} data - The invocation result data
  * @property {string} data.id - Unique identifier for the invocation
+ * @property {string} data.toolName - The name of the invoked function/tool
  * @property {Object} data.result - The result returned by the invoked function/tool
  */
 
 /**
- * React hook for managing and filtering conversation messages.
- * Provides utility functions for working with different message types and sorting messages.
+ * React hook for managing and filtering conversation messages,
+ * returning *typed* invocation-result messages when possible.
  *
  * @param messages - Array of messages from the conversation
+ * @param options - Provide a resultMap to parse tool results
  * @returns Object containing utility functions for message management
  *
  * @example
@@ -74,24 +178,49 @@ import { RunTimelineMessages } from "./useRun";
  * });
  * ```
  */
-export const useMessages = (messages?: RunTimelineMessages) => {
+export function useMessages<
+  TSchemas extends ToolSchemas = {}
+>(
+  messages?: RunTimelineMessages,
+  options?: UseMessagesOptions<TSchemas>
+): UseMessagesReturn<TSchemas> {
+  const [error, setError] = useState<Error | null>(null);
+
+  const parse = React.useCallback(
+    (msg: RunTimelineMessage) => {
+      try {
+        return parseMessage(msg, options?.resultMap)
+      } catch (e) {
+        if (e instanceof Error && e.message !== error?.message) {
+          setError(e)
+        }
+        return msg
+      }
+    },
+    [options?.resultMap, error]
+  );
+
   return {
-    /**
-     * Returns all messages sorted by their ID
-     * @param sort - Sort direction for messages
-     * @param {"asc" | "desc"} [sort="desc"] - "asc" for oldest first, "desc" for newest first
-     * @returns Sorted array of all messages
-     */
-    all: (sort: "asc" | "desc" = "desc") =>
-      messages?.sort((a, b) =>
-        sort === "asc" ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id)
-      ),
-    /**
-     * Filters messages to return only those of a specific type
-     * @param type - The message type to filter by ("human", "agent", or "invocation-result")
-     * @returns Array of messages matching the specified type
-     */
-    getOfType: (type: RunTimelineMessages[number]["type"]) =>
-      messages?.filter(message => message.type === type),
-  };
-};
+    all: (sort: "asc" | "desc" = "desc"): ParsedMessage<TSchemas>[] => {
+      if (!messages) return [];
+      return messages
+        .map(parse)
+        .filter((m): m is ParsedMessage<TSchemas> => m !== null)
+        .sort((a, b) =>
+          sort === "asc" ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id)
+        );
+    },
+
+    getOfType: (
+      type: RunTimelineMessage["type"]
+    ): ParsedMessage<TSchemas>[] => {
+      if (!messages) return [];
+      return messages
+        .map(parse)
+        .filter((m): m is ParsedMessage<TSchemas> => m !== null)
+        .filter((m) => m.type === type);
+    },
+
+    error,
+  }
+}
