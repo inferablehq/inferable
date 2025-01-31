@@ -20,8 +20,7 @@ describe("clusters", () => {
       additionalContext: {
         current: {
           version: "1",
-          content:
-            "<h1>Hello</h1><p>This is <strong>formatted</strong> text.</p>",
+          content: "<h1>Hello</h1><p>This is <strong>formatted</strong> text.</p>",
         },
         history: [],
       },
@@ -68,7 +67,7 @@ describe("clusters", () => {
     expect(contextText).toBe("Version 2 content");
   });
 
-  describe('cleanupMarkedClusters', () => {
+  describe("cleanupMarkedClusters", () => {
     it("should delete clusters that are marked for deletion", async () => {
       const cluster = await createCluster({
         description: "To be deleted",
@@ -76,22 +75,18 @@ describe("clusters", () => {
       });
 
       await data.db
-      .update(data.clusters)
-      .set({
-        deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      })
-      .where(
-        eq(data.clusters.id, cluster.id)
-      );
+        .update(data.clusters)
+        .set({
+          deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 24),
+        })
+        .where(eq(data.clusters.id, cluster.id));
 
       await cleanupMarkedClusters();
 
       const [exists] = await data.db
         .select({ count: count(data.clusters.id) })
         .from(data.clusters)
-        .where(
-          eq(data.clusters.id, cluster.id)
-        );
+        .where(eq(data.clusters.id, cluster.id));
 
       expect(exists.count).toBe(0);
     });
@@ -108,9 +103,7 @@ describe("clusters", () => {
       const [exists] = await data.db
         .select({ count: count(data.clusters.id) })
         .from(data.clusters)
-        .where(
-          eq(data.clusters.id, cluster.id)
-        );
+        .where(eq(data.clusters.id, cluster.id));
 
       expect(exists.count).toBe(1);
     });
@@ -135,16 +128,13 @@ describe("clusters", () => {
       });
 
       await data.db
-      .update(data.clusters)
-      .set({
-        deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      })
-      .where(
-        or(
-          eq(data.clusters.id, markedCluster1.id),
-          eq(data.clusters.id, markedCluster2.id)
-        )
-      );
+        .update(data.clusters)
+        .set({
+          deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 24),
+        })
+        .where(
+          or(eq(data.clusters.id, markedCluster1.id), eq(data.clusters.id, markedCluster2.id))
+        );
 
       await cleanupMarkedClusters();
 
@@ -152,10 +142,7 @@ describe("clusters", () => {
         .select({ count: count(data.clusters.id) })
         .from(data.clusters)
         .where(
-          or(
-            eq(data.clusters.id, markedCluster1.id),
-            eq(data.clusters.id, markedCluster2.id)
-          )
+          or(eq(data.clusters.id, markedCluster1.id), eq(data.clusters.id, markedCluster2.id))
         );
 
       expect(exists.count).toBe(0);

@@ -30,7 +30,6 @@ export const getClusterDetails = async (clusterId: string) => {
   return cluster;
 };
 
-
 const markEphemeralClustersForDeletion = async () => {
   // Find 10 at a time
   const clusters = await data.db
@@ -48,11 +47,11 @@ const markEphemeralClustersForDeletion = async () => {
         eq(data.clusters.is_ephemeral, true),
         lt(data.clusters.created_at, new Date(Date.now() - 1000 * 60 * 60 * 12)) // 12 hours
       )
-    )
+    );
 
   logger.info("Marked ephemeral clusters for deletion", {
     count: clusters.length,
-    clusterIds: clusters.map((cluster) => cluster.id),
+    clusterIds: clusters.map(cluster => cluster.id),
   });
 };
 
@@ -67,17 +66,16 @@ export const cleanupMarkedClusters = async () => {
         isNotNull(data.clusters.deleted_at),
         lt(data.clusters.deleted_at, new Date(Date.now() - 1000 * 60 * 60 * 24)) // 12 hours
       )
-    )
+    );
 
   logger.info("Deleting marked clusters", {
     count: clusters.length,
-    clusterIds: clusters.map((cluster) => cluster.id),
+    clusterIds: clusters.map(cluster => cluster.id),
   });
-
 
   for (const cluster of clusters) {
     try {
-      await data.db.transaction(async (tx) => {
+      await data.db.transaction(async tx => {
         await tx.execute(sql`DELETE FROM "agents" WHERE cluster_id = ${cluster.id}`);
         await tx.execute(sql`DELETE FROM "versioned_entities" WHERE cluster_id = ${cluster.id}`);
         await tx.execute(sql`DELETE FROM "blobs" WHERE cluster_id = ${cluster.id}`);
@@ -91,10 +89,12 @@ export const cleanupMarkedClusters = async () => {
         await tx.execute(sql`DELETE FROM "services" WHERE cluster_id = ${cluster.id}`);
         await tx.execute(sql`DELETE FROM "machines" WHERE cluster_id = ${cluster.id}`);
         await tx.execute(sql`DELETE FROM "jobs" WHERE cluster_id = ${cluster.id}`);
-        await tx.execute(sql`DELETE FROM "workflow_definitions" WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(sql`DELETE FROM "workflow_executions" WHERE cluster_id = ${cluster.id}`);
 
         // Events are not removed from the database, but they are marked as deleted for future cleanup
-        await tx.execute(sql`UPDATE "events" SET deleted_at = now() WHERE cluster_id = ${cluster.id}`);
+        await tx.execute(
+          sql`UPDATE "events" SET deleted_at = now() WHERE cluster_id = ${cluster.id}`
+        );
 
         await tx.execute(sql`DELETE FROM "clusters" WHERE id = ${cluster.id}`);
       });
@@ -105,7 +105,7 @@ export const cleanupMarkedClusters = async () => {
       });
     }
   }
-}
+};
 
 const cache = createCache<boolean>(Symbol("clusterExists"));
 
@@ -154,6 +154,8 @@ export const getClusterContextText = async (clusterId: string) => {
 };
 
 export const start = async () => {
-  cron.registerCron(markEphemeralClustersForDeletion, "mark-ephemeral-clusters", { interval: 1000 * 60 * 15 }); // 15 minutes
+  cron.registerCron(markEphemeralClustersForDeletion, "mark-ephemeral-clusters", {
+    interval: 1000 * 60 * 15,
+  }); // 15 minutes
   cron.registerCron(cleanupMarkedClusters, "cleanup-marked-clusters", { interval: 1000 * 60 * 15 }); // 15 minutes
 };
