@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, lt, or, sql } from "drizzle-orm";
 import * as data from "../data";
 import * as events from "../observability/events";
 import { logger } from "../observability/logger";
@@ -52,16 +52,10 @@ export async function selfHealJobs() {
   const stalledJobs = await data.db
     .update(data.jobs)
     .set({
-      status: sql`CASE
-        WHEN remaining_attempts > 0 THEN 'pending'
-        ELSE 'failure'
-      END`,
-      remaining_attempts: sql`CASE
-        WHEN remaining_attempts > 0 THEN remaining_attempts - 1
-        ELSE remaining_attempts
-      END`,
+      status: "pending",
+      remaining_attempts: sql`remaining_attempts - 1`,
     })
-    .where(eq(data.jobs.status, "stalled"))
+    .where(and(eq(data.jobs.status, "stalled"), gte(data.jobs.remaining_attempts, 1)))
     .returning({
       id: data.jobs.id,
       service: data.jobs.service,
@@ -81,17 +75,6 @@ export async function selfHealJobs() {
         jobId: row.id,
         type: "jobRecovered",
       });
-    } else {
-      events.write({
-        service: row.service,
-        clusterId: row.clusterId,
-        jobId: row.id,
-        type: "jobStalledTooManyTimes",
-      });
-
-      if (row.runId) {
-        resumeRun({ id: row.runId, clusterId: row.clusterId });
-      }
     }
   });
 

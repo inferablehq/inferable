@@ -180,42 +180,6 @@ export const router = initServer().router(contract, {
       }
     }
 
-    let onStatusChangeHandler: string | undefined = undefined;
-    let onStatusChangeStatuses: string[] | undefined = undefined;
-
-    if (body.onStatusChange) {
-      if (body.onStatusChange.function && body.onStatusChange.webhook) {
-        return {
-          status: 400,
-          body: {
-            message: "onStatusChange cannot have both function and webhook",
-          },
-        };
-      }
-
-      if (body.onStatusChange.function) {
-        // TODO: Validate that onStatusChange and attachedFunctions exist
-        // TODO: Validate that onStatusChange schema is correct
-        onStatusChangeHandler =
-          body.onStatusChange.function && normalizeFunctionReference(body.onStatusChange.function);
-      }
-
-      if (body.onStatusChange.webhook) {
-        // Check for valid Schema
-        if (!body.onStatusChange.webhook.startsWith("https://")) {
-          return {
-            status: 400,
-            body: {
-              message: "onStatusChange webhook must start with https://",
-            },
-          };
-        }
-
-        onStatusChangeHandler = body.onStatusChange.webhook;
-        onStatusChangeStatuses = body.onStatusChange.statuses ?? ["done", "failed"];
-      }
-    }
-
     let runOptions: RunOptions = {
       id: body.id || body.runId || ulid(),
       initialPrompt: body.initialPrompt,
@@ -285,8 +249,7 @@ export const router = initServer().router(contract, {
 
       context: body.context,
 
-      onStatusChangeHandler: onStatusChangeHandler,
-      onStatusChangeStatuses: onStatusChangeStatuses,
+      onStatusChangeHandler: body.onStatusChange,
 
       // Merged Options
       resultSchema: runOptions.resultSchema,
@@ -1757,12 +1720,12 @@ export const router = initServer().router(contract, {
   },
   createWorkflowExecution: async request => {
     const { clusterId, workflowName } = request.params;
-    const { executionId } = request.body;
 
     const machine = request.request.getAuth().isMachine();
-    machine.canManage({ cluster: { clusterId } });
+    machine.canAccess({ cluster: { clusterId } });
+    machine.canCreate({ run: true });
 
-    const result = await createWorkflowExecution(clusterId, workflowName, { executionId });
+    const result = await createWorkflowExecution(clusterId, workflowName, request.body);
 
     return {
       status: 201,

@@ -18,6 +18,8 @@ import {
 import { Pool } from "pg";
 import { env } from "../utilities/env";
 import { logger } from "./observability/logger";
+import { z } from "zod";
+import { onStatusChangeSchema } from "./contract";
 
 export const createMutex = advisoryLock(env.DATABASE_URL);
 
@@ -180,11 +182,6 @@ export const services = pgTable(
     service: varchar("service", { length: 1024 }).notNull(),
     definition: json("definition"), // this should be named the live definition
     timestamp: timestamp("timestamp", { withTimezone: true }),
-    type: text("type", {
-      enum: ["workflow", "tool"],
-    })
-      .default("tool")
-      .notNull(),
     http_trigger_endpoint: varchar("http_trigger_endpoint", { length: 1024 }),
   },
   table => ({
@@ -290,9 +287,7 @@ export const runs = pgTable(
   "runs",
   {
     id: varchar("id", { length: 1024 }).notNull(),
-    // TODO: Rename this to `on_status_change`
-    on_status_change: varchar("result_function", { length: 1024 }),
-    on_status_change_statuses: json("on_status_change_statuses").$type<string[]>(),
+    on_status_change: json("on_status_change").$type<z.infer<typeof onStatusChangeSchema>>(),
     result_schema: json("result_schema"),
     name: varchar("name", { length: 1024 }).default("").notNull(),
     system_prompt: varchar("system_prompt", { length: 1024 }),
@@ -569,11 +564,11 @@ export const workflowExecutions = pgTable(
     id: varchar("id", { length: 1024 }).notNull(),
     cluster_id: varchar("cluster_id").notNull(),
     workflow_execution_id: varchar("workflow_execution_id", { length: 1024 }).notNull(),
-    version: integer("version").notNull(),
     workflow_name: varchar("workflow_name", { length: 1024 }).notNull(),
+    version: integer("version").notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-    job_id: varchar("job_id", { length: 1024 }),
+    job_id: varchar("job_id", { length: 1024 }).notNull(),
   },
   table => ({
     pk: primaryKey({

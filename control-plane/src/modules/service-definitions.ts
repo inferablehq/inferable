@@ -355,13 +355,13 @@ export const updateServiceEmbeddings = async ({
 export const validateServiceName = (name: string) => {
   const parsed = z
     .string()
-    .regex(/^[a-zA-Z0-9.]+$/)
+    .regex(/^[a-zA-Z0-9.-]+$/)
     .min(1)
     .max(50)
     .safeParse(name);
 
   if (!parsed.success) {
-    throw new Error(`Service name must only contain letters, numbers, and periods. Got: ${name}`);
+    throw new Error(`Service name must match ^[a-zA-Z0-9.-]+$. Got: ${name}`);
   }
 };
 
@@ -421,7 +421,6 @@ export const getWorkflowServices = async ({
     .where(
       and(
         eq(data.services.cluster_id, clusterId),
-        eq(data.services.type, "workflow"),
         like(data.services.service, `workflows.${workflowName}.%`)
       )
     )

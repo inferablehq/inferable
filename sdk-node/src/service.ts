@@ -1,7 +1,7 @@
 import debug from "debug";
 import { z } from "zod";
 import { createApiClient } from "./create-client";
-import { InferableError } from "./errors";
+import { InferableAPIError, InferableError } from "./errors";
 import { serializeError } from "./serialize-error";
 import { executeFn, Result } from "./execute-fn";
 import { FunctionRegistration } from "./types";
@@ -312,11 +312,7 @@ export const registerMachine = async (
 
   if (registerResult?.status !== 200) {
     log("Failed to register machine", registerResult);
-
-    throw new InferableError("Failed to register machine", {
-      status: registerResult.status,
-      body: registerResult.body,
-    });
+    throw new InferableAPIError("Failed to register machine", registerResult);
   }
 
   return {

@@ -172,7 +172,7 @@ export const processRun = async (
 
       // Insert messages in a loop to ensure they are created with differing timestamps
       for (const message of state.messages.filter(m => !m.persisted)) {
-        await Promise.all([insertRunMessage(message), notifyNewMessage({ message, tags })]);
+        await Promise.allSettled([insertRunMessage(message), notifyNewMessage({ message, tags })]);
         message.persisted = true;
       }
     },

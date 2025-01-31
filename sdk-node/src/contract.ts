@@ -36,7 +36,7 @@ export const blobSchema = z.object({
   size: z.number(),
   createdAt: z.date(),
   jobId: z.string().nullable(),
-  workflowId: z.string().nullable(),
+  runId: z.string().nullable(),
 });
 
 export const VersionedTextsSchema = z.object({
@@ -110,6 +110,7 @@ const genericMessageDataSchema = z
 const resultDataSchema = z
   .object({
     id: z.string(),
+    toolName: z.string().optional(),
     result: z.object({}).passthrough(),
   })
   .strict();
@@ -468,7 +469,7 @@ export const definition = {
       }),
     },
     body: blobSchema
-      .omit({ id: true, createdAt: true, jobId: true, workflowId: true })
+      .omit({ id: true, createdAt: true, jobId: true, runId: true })
       .and(
         z.object({
           data: z.string(),
@@ -760,11 +761,19 @@ export const definition = {
         .string()
         .optional()
         .describe(
-          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given",
+          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned.",
         )
         .refine(
-          (val) => !val || /^[0-9A-Z]{26}$/.test(val),
-          "Run ID must be a valid ULID (26 uppercase alphanumeric characters)",
+          (val) => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
+          "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long.",
+        ),
+      runId: z
+        .string()
+        .optional()
+        .describe("Deprecated. Use `id` instead.")
+        .refine(
+          (val) => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
+          "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long.",
         ),
       initialPrompt: z
         .string()
@@ -874,6 +883,10 @@ export const definition = {
     responses: {
       201: z.object({
         id: z.string().describe("The id of the newly created run"),
+        status: z
+          .enum(["pending", "running", "paused", "done", "failed"])
+          .describe("The status of the run"),
+        result: anyObject.nullable().describe("The result of the run"),
       }),
       401: z.undefined(),
       400: z.object({
@@ -1226,6 +1239,8 @@ export const definition = {
           authContext: z.any().nullable(),
           feedbackComment: z.string().nullable(),
           feedbackScore: z.number().nullable(),
+          result: anyObject.nullable().optional(),
+          tags: z.record(z.string()).nullable().optional(),
           attachedFunctions: z.array(z.string()).nullable(),
           name: z.string().nullable(),
         }),
@@ -1429,6 +1444,23 @@ export const definition = {
     body: z.object({}).passthrough(),
     responses: {
       200: z.undefined(),
+    },
+  },
+  createWorkflowExecution: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      workflowName: z.string(),
+    }),
+    body: z
+      .object({
+        executionId: z.string().regex(userDefinedIdRegex),
+      })
+      .passthrough(),
+    responses: {
+      201: z.object({ jobId: z.string() }),
     },
   },
 } as const;

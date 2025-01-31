@@ -4,10 +4,13 @@ import { logger } from "../observability/logger";
 import { packer } from "../packer";
 import { getRunTags } from "./tags";
 import { getClusterBackgroundRun } from "./";
-import { runMessages } from "../data";
+import { runMessages, runs } from "../data";
 import * as slack from "../integrations/slack";
 import * as email from "../email";
 import AsyncRetry from "async-retry";
+import { onStatusChangeSchema } from "../contract";
+import { z } from "zod";
+import { resumeWorkflowExecution } from "../workflows/executions";
 
 export const notifyApprovalRequest = async ({
   jobId,
@@ -52,13 +55,12 @@ export const notifyStatusChange = async ({
   run: {
     id: string;
     clusterId: string;
-    onStatusChange: string | null;
-    onStatusChangeStatuses: string[] | null;
+    onStatusChange: z.infer<typeof onStatusChangeSchema> | null;
     status: string;
     authContext: unknown;
     context: unknown;
   };
-  status: string;
+  status: InferSelectModel<typeof runs>["status"];
   result?: unknown;
 }) => {
   if (!run.onStatusChange) {
@@ -71,67 +73,13 @@ export const notifyStatusChange = async ({
   }
 
   // Don't notify if the status is not in the allowed list
-  if (run.onStatusChangeStatuses && !run.onStatusChangeStatuses.includes(status)) {
+  if (!run.onStatusChange.statuses.includes(status)) {
     return;
   }
 
-  let notify;
-  if (run.onStatusChange.startsWith("https://")) {
-    notify = async (payload: unknown) => {
+  const onStatusChangeDefinition = run.onStatusChange;
 
-      await AsyncRetry(
-        async (_, attempt: number) => {
-          logger.info("Sending status change webhook", {
-            url: run.onStatusChange,
-            attempt,
-          })
-
-          return await fetch(run.onStatusChange!, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-
-        },
-        {
-          retries: 5,
-        },
-      );
-    };
-
-  } else {
-    const [resultService, resultFunction] = run.onStatusChange?.split("_") ?? [];
-
-    if (!!resultService && !!resultFunction) {
-      notify = async (payload: unknown) => {
-        const { id } = await jobs.createJob({
-          service: resultService,
-          targetFn: resultFunction,
-          targetArgs: packer.pack(payload),
-          authContext: run.authContext,
-          runContext: run.context,
-          owner: {
-            clusterId: run.clusterId,
-          },
-          runId: getClusterBackgroundRun(run.clusterId),
-        });
-        logger.info("Created job with run result", {
-          jobId: id,
-        });
-      };
-    }
-  }
-
-  if (!notify) {
-    logger.warn("Could not determine notification target", {
-      onStatusChange: run.onStatusChange,
-    });
-    return;
-  }
-
-  try {
+  async function getRunPayload() {
     const tags = await getRunTags({
       clusterId: run.clusterId,
       runId: run.id,
@@ -144,10 +92,55 @@ export const notifyStatusChange = async ({
       result: result ?? null,
     };
 
-    await notify(payload);
-  } catch (error) {
-    logger.error("Failed to notify status change", {
-      error,
+    return payload;
+  }
+
+  if (onStatusChangeDefinition.type === "webhook") {
+    await AsyncRetry(
+      async (_, attempt: number) => {
+        logger.info("Sending status change webhook", {
+          url: onStatusChangeDefinition.webhook,
+          attempt,
+        });
+
+        return await fetch(onStatusChangeDefinition.webhook, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(await getRunPayload()),
+        });
+      },
+      {
+        retries: 5,
+      }
+    );
+  } else if (onStatusChangeDefinition.type === "function") {
+    const { id } = await jobs.createJob({
+      service: onStatusChangeDefinition.function.service,
+      targetFn: onStatusChangeDefinition.function.function,
+      targetArgs: packer.pack(await getRunPayload()),
+      authContext: run.authContext,
+      runContext: run.context,
+      owner: {
+        clusterId: run.clusterId,
+      },
+      runId: getClusterBackgroundRun(run.clusterId),
     });
+
+    logger.info("Created job with run result", {
+      jobId: id,
+    });
+  } else if (onStatusChangeDefinition.type === "workflow") {
+    const { jobId } = await resumeWorkflowExecution({
+      clusterId: run.clusterId,
+      workflowExecutionId: run.id,
+    });
+
+    logger.info("Resumed workflow execution", {
+      jobId,
+    });
+  } else {
+    throw new Error(`Unknown onStatusChange type: ${onStatusChangeDefinition.type}`);
   }
 };

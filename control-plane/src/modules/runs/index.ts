@@ -23,6 +23,8 @@ import {
   lastAgentMessage,
 } from "./messages";
 import { getRunTags } from "./tags";
+import { onStatusChangeSchema } from "../contract";
+import { z } from "zod";
 
 export const createRun = async ({
   id,
@@ -33,7 +35,6 @@ export const createRun = async ({
   testMocks,
   systemPrompt,
   onStatusChangeHandler,
-  onStatusChangeStatuses,
   resultSchema,
   tags,
   attachedFunctions,
@@ -59,8 +60,7 @@ export const createRun = async ({
       output: Record<string, unknown>;
     }
   >;
-  onStatusChangeHandler?: string;
-  onStatusChangeStatuses?: string[];
+  onStatusChangeHandler?: z.infer<typeof onStatusChangeSchema>;
   resultSchema?: unknown;
   tags?: Record<string, string>;
   attachedFunctions?: string[];
@@ -108,7 +108,6 @@ export const createRun = async ({
       interactive: interactive,
       enable_summarization: enableSummarization,
       on_status_change: onStatusChangeHandler,
-      on_status_change_statuses: onStatusChangeStatuses,
       result_schema: resultSchema,
       attached_functions: attachedFunctions,
       agent_id: agentId,
@@ -250,7 +249,6 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
       test: runs.test,
       testMocks: runs.test_mocks,
       onStatusChange: runs.on_status_change,
-      onStatusChangeStatuses: runs.on_status_change_statuses,
       resultSchema: runs.result_schema,
       feedbackComment: runs.feedback_comment,
       feedbackScore: runs.feedback_score,
@@ -475,7 +473,6 @@ export const createRunWithMessage = async ({
   enableSummarization,
   modelIdentifier,
   onStatusChangeHandler,
-  onStatusChangeStatuses,
   authContext,
   context,
   enableResultGrounding,
@@ -489,7 +486,6 @@ export const createRunWithMessage = async ({
     testMocks,
     systemPrompt,
     onStatusChangeHandler,
-    onStatusChangeStatuses,
     attachedFunctions,
     resultSchema,
     tags,

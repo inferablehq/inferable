@@ -36,8 +36,8 @@ export const registerCron = async (
   logger.info("Cron job registered", { name, interval });
 };
 
-process.on("beforeExit", () => {
+export const stop = () => {
   intervals.forEach(intervalId => {
     clearInterval(intervalId);
   });
-});
+};
