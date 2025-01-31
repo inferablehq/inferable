@@ -1,13 +1,12 @@
 import assert from "assert";
 import { z } from "zod";
-import { AgentError, JobPollTimeoutError } from "../../../../utilities/errors";
+import { AgentError, NotFoundError } from "../../../../utilities/errors";
 import * as jobs from "../../../jobs/jobs";
 import { logger } from "../../../observability/logger";
 import { packer } from "../../../packer";
 import { getServiceDefinition, serviceFunctionEmbeddingId } from "../../../service-definitions";
 import { summariseJobResultIfNecessary } from "../summarizer";
 import { AgentTool } from "../tool";
-import { events } from "../../../observability/events";
 
 export const SpecialResultTypes = {
   jobTimeout: "inferableJobTimeout",
@@ -92,6 +91,9 @@ export const buildServiceFunctionTool = ({
       throw new AgentError(`Could not find function definition for ${functionName}`);
     }
 
+    // This relies on idempotency based on toolCallId, this will be called multiple times:
+    // - First tiem will create the job
+    // - Subsequent times will return the job
     const { id } = await jobs.createJob({
       service: serviceName,
       targetFn: functionName,
@@ -105,57 +107,52 @@ export const buildServiceFunctionTool = ({
       toolCallId,
     });
 
-    try {
-      const {
-        result: rawResult,
-        resultType,
-        status,
-      } = await jobs.getJobStatusSync({
-        jobId: id,
-        owner: {
-          clusterId: run.clusterId,
-        },
-        ttl: 5_000,
-      });
+    const job = await jobs.getJob({
+      jobId: id,
+      clusterId: run.clusterId,
+    });
 
-      const result = rawResult ? packer.unpack(rawResult) : null;
-
-      // This can happen on job / machine stall, where all retries are exhausted.
-      if (!resultType || !result) {
-        return JSON.stringify({
-          result: {
-            message: "Job did not return a result.",
-          },
-          resultType: "rejection",
-          status: "failure",
-        });
-      }
-
-      return JSON.stringify({
-        result: run.enableSummarization
-          ? await summariseJobResultIfNecessary({
-              result,
-              clusterId: run.clusterId,
-              runId: run.id,
-              targetFn: functionName,
-            })
-          : result,
-        resultType,
-        status,
-      });
-    } catch (e) {
-      if (e instanceof JobPollTimeoutError) {
-        logger.info("Timed out waiting for job to complete", {
-          jobId: id,
-        });
-
-        return JSON.stringify({
-          result: JSON.stringify([id]),
-          resultType: SpecialResultTypes.jobTimeout,
-          status: "success",
-        });
-      }
+    if (!job) {
+      throw new NotFoundError("Coud not find job for function call");
     }
+
+    const result = job?.result ? packer.unpack(job.result) : null;
+    const resultType = job?.resultType;
+    const status = job?.status;
+
+    // TODO: Rename jobTimeout
+    // This is a misnomer, we pause the run while waiting for jobs to resolve.
+    if (["pending", "running"].includes(status)) {
+      return JSON.stringify({
+        result: JSON.stringify([id]),
+        resultType: SpecialResultTypes.jobTimeout,
+        status: "success",
+      });
+    }
+
+    // This can happen on job / machine stall, where all retries are exhausted.
+    if (!resultType || !result) {
+      return JSON.stringify({
+        result: {
+          message: "Job did not return a result.",
+        },
+        resultType: "rejection",
+        status: "failure",
+      });
+    }
+
+    return JSON.stringify({
+      result: run.enableSummarization
+        ? await summariseJobResultIfNecessary({
+          result,
+          clusterId: run.clusterId,
+          runId: run.id,
+          targetFn: functionName,
+        })
+        : result,
+      resultType,
+      status,
+    });
   };
 
   return tool;
