@@ -1396,7 +1396,7 @@ export const definition = {
       })
       .passthrough(),
     responses: {
-      200: z.object({ id: z.string() }),
+      201: z.object({ jobId: z.string() }),
     },
   },
 } as const;

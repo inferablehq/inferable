@@ -59,6 +59,7 @@ import { getSession, nango, webhookSchema } from "./integrations/nango";
 import { env } from "../utilities/env";
 import { integrationByConnectionId } from "./email";
 import { NEW_CONNECTION_ID } from "./integrations/constants";
+import { createWorkflowExecution } from "./workflows/executions";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -339,7 +340,7 @@ export const router = initServer().router(contract, {
       body: {
         id: run.id,
         status: run.status,
-        result,
+        result: result ?? null,
       },
     };
   },
@@ -1752,6 +1753,20 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: result.structured,
+    };
+  },
+  createWorkflowExecution: async request => {
+    const { clusterId, workflowName } = request.params;
+    const { executionId } = request.body;
+
+    const machine = request.request.getAuth().isMachine();
+    machine.canManage({ cluster: { clusterId } });
+
+    const result = await createWorkflowExecution(clusterId, workflowName, { executionId });
+
+    return {
+      status: 201,
+      body: result,
     };
   },
 });
