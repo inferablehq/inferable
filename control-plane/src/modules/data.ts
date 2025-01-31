@@ -180,6 +180,12 @@ export const services = pgTable(
     service: varchar("service", { length: 1024 }).notNull(),
     definition: json("definition"), // this should be named the live definition
     timestamp: timestamp("timestamp", { withTimezone: true }),
+    type: text("type", {
+      enum: ["workflow", "tool"],
+    })
+      .default("tool")
+      .notNull(),
+    http_trigger_endpoint: varchar("http_trigger_endpoint", { length: 1024 }),
   },
   table => ({
     pk: primaryKey({
@@ -557,22 +563,22 @@ export const events = pgTable(
   })
 );
 
-export const workflowDefinitions = pgTable(
-  "workflow_definitions",
+export const workflowExecutions = pgTable(
+  "workflow_executions",
   {
     id: varchar("id", { length: 1024 }).notNull(),
     cluster_id: varchar("cluster_id").notNull(),
-    description: varchar("description", { length: 1024 }),
-    yaml: text("yaml").notNull(),
-    json: json("json").notNull(),
+    workflow_execution_id: varchar("workflow_execution_id", { length: 1024 }).notNull(),
+    version: integer("version").notNull(),
+    workflow_name: varchar("workflow_name", { length: 1024 }).notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-    version: integer("version").notNull(),
+    job_id: varchar("job_id", { length: 1024 }),
   },
   table => ({
     pk: primaryKey({
-      columns: [table.cluster_id, table.id, table.version],
-      name: "workflow_definitions_pkey",
+      columns: [table.cluster_id, table.id],
+      name: "workflow_executions_pkey",
     }),
   })
 );

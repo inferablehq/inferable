@@ -1,10 +1,6 @@
-import { and, eq, lte, sql } from "drizzle-orm";
-import {
-  validateDescription,
-  validateFunctionName,
-  validateFunctionSchema,
-  validateServiceName,
-} from "inferable";
+import { and, eq, like, lte, sql } from "drizzle-orm";
+import { validateDescription, validateFunctionName, validateFunctionSchema } from "inferable";
+import jsonpath from "jsonpath";
 import { Validator } from "jsonschema";
 import { z } from "zod";
 import { InvalidJobArgumentsError, InvalidServiceRegistrationError } from "../utilities/errors";
@@ -14,8 +10,6 @@ import * as data from "./data";
 import { embeddableEntitiy } from "./embeddings/embeddings";
 import { logger } from "./observability/logger";
 import { packer } from "./packer";
-import jsonpath from "jsonpath";
-import { availableStdlib } from "./runs/agent/tools/stdlib";
 
 // The time without a ping before a service is considered expired
 const SERVICE_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute
@@ -63,9 +57,9 @@ export async function recordServicePoll({
   clusterId,
   service,
 }: {
-    clusterId: string;
-    service: string;
-  }) {
+  clusterId: string;
+  service: string;
+}) {
   const result = await data.db
     .update(data.services)
     .set({
@@ -105,11 +99,13 @@ export async function upsertServiceDefinition({
   definition,
   owner,
   type = "ephemeral",
+  isWorkflow = false,
 }: {
   service: string;
   definition: ServiceDefinition;
   owner: { clusterId: string };
   type?: "ephemeral" | "permanent";
+  isWorkflow?: boolean; // because I used type to signal permanence like an idiot
 }) {
   validateServiceRegistration({
     service,
@@ -127,6 +123,7 @@ export async function upsertServiceDefinition({
       definition,
       cluster_id: owner.clusterId,
       timestamp,
+      type: isWorkflow ? "workflow" : "tool",
     })
     .onConflictDoUpdate({
       target: [data.services.service, data.services.cluster_id],
@@ -355,6 +352,19 @@ export const updateServiceEmbeddings = async ({
   );
 };
 
+export const validateServiceName = (name: string) => {
+  const parsed = z
+    .string()
+    .regex(/^[a-zA-Z0-9.]+$/)
+    .min(1)
+    .max(50)
+    .safeParse(name);
+
+  if (!parsed.success) {
+    throw new Error(`Service name must only contain letters, numbers, and periods. Got: ${name}`);
+  }
+};
+
 export const validateServiceRegistration = ({
   service,
   definition,
@@ -394,6 +404,43 @@ export const validateServiceRegistration = ({
       }
     }
   }
+};
+
+export const getWorkflowServices = async ({
+  clusterId,
+  workflowName,
+}: {
+  clusterId: string;
+  workflowName: string;
+}) => {
+  return data.db
+    .select({
+      service: data.services.service,
+    })
+    .from(data.services)
+    .where(
+      and(
+        eq(data.services.cluster_id, clusterId),
+        eq(data.services.type, "workflow"),
+        like(data.services.service, `workflows.${workflowName}.%`)
+      )
+    )
+    .then(r =>
+      r.map(r => {
+        const version = r.service.replace(`workflows.${workflowName}.`, "");
+
+        const parsed = z.string().regex(/^\d+$/).safeParse(version);
+
+        if (!parsed.success) {
+          throw new Error(`Invalid version ${version} for service ${r.service}`);
+        }
+
+        return {
+          service: r.service,
+          version: parseInt(parsed.data),
+        };
+      })
+    );
 };
 
 export const start = () =>

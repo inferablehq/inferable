@@ -841,6 +841,10 @@ export const definition = {
     responses: {
       201: z.object({
         id: z.string().describe("The id of the newly created run"),
+        status: z
+          .enum(["pending", "running", "paused", "done", "failed"])
+          .describe("The status of the run"),
+        result: anyObject.nullable().describe("The result of the run"),
       }),
       401: z.undefined(),
       400: z.object({
@@ -1376,6 +1380,23 @@ export const definition = {
     body: z.object({}).passthrough(),
     responses: {
       200: z.undefined(),
+    },
+  },
+  createWorkflowExecution: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      workflowName: z.string(),
+    }),
+    body: z
+      .object({
+        executionId: z.string().regex(userDefinedIdRegex),
+      })
+      .passthrough(),
+    responses: {
+      200: z.object({ id: z.string() }),
     },
   },
 } as const;

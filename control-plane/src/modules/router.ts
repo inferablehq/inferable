@@ -10,7 +10,7 @@ import * as management from "./management";
 import { buildModel } from "./models";
 import * as events from "./observability/events";
 import { posthog } from "./posthog";
-import { addMessageAndResume } from "./runs";
+import { addMessageAndResume, getRunResult } from "./runs";
 import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { getServiceDefinitions } from "./service-definitions";
 import { unqualifiedEntityId } from "./auth/auth";
@@ -332,9 +332,15 @@ export const router = initServer().router(contract, {
       },
     });
 
+    const result = run.status === "done" ? await getRunResult({ clusterId, runId: run.id }) : null;
+
     return {
       status: 201,
-      body: { id: run.id },
+      body: {
+        id: run.id,
+        status: run.status,
+        result,
+      },
     };
   },
   deleteRun: async request => {

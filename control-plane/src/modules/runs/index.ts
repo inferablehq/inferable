@@ -353,6 +353,16 @@ export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; r
   };
 };
 
+export const getRunResult = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+  const lastMessage = await lastAgentMessage({ clusterId, runId });
+
+  if (lastMessage?.type !== "agent") {
+    return null;
+  }
+
+  return lastMessage.data.result;
+};
+
 export const assertEphemeralClusterLimitations = async (clusterId: string) => {
   if (clusterId.startsWith("eph_")) {
     const count = await getMessageCountForCluster(clusterId);
