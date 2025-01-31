@@ -1,7 +1,7 @@
-import { BaseMessage } from "../sqs";
 import { handleEmailIngestion } from "../email";
 import { createQueue } from "./core";
 import { QueueNames } from "./core";
+import { BaseMessage } from "./observability";
 
 interface EmailIngestionMessage extends BaseMessage {
   content: string;

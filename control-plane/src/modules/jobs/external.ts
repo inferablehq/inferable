@@ -2,8 +2,8 @@ import { z } from "zod";
 import { externalServices } from "../integrations/constants";
 import { getInstallables, getIntegrations } from "../integrations/integrations";
 import { logger } from "../observability/logger";
-import { baseMessageSchema } from "../sqs";
 import { getJob } from "./jobs";
+import { baseMessageSchema } from "../queues/observability";
 
 export async function handleExternalCall(message: unknown) {
   const zodResult = baseMessageSchema

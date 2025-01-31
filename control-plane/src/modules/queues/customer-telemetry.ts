@@ -1,4 +1,3 @@
-import { BaseMessage } from "../sqs";
 import { z } from "zod";
 import {
   modelCallEventSchema,
@@ -8,6 +7,7 @@ import {
 import { handleCustomerTelemetry } from "../customer-telemetry";
 import { QueueNames } from "./core";
 import { createQueue } from "./core";
+import { BaseMessage } from "./observability";
 
 const eventSchema = z.discriminatedUnion("type", [
   modelCallEventSchema,

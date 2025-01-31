@@ -266,6 +266,7 @@ const _handleToolCall = async (
               result: {
                 [toolCallId]: response,
               },
+              toolName,
               id: toolCallId,
             },
             runId: run.id,

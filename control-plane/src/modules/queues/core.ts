@@ -2,10 +2,7 @@ import { Queue, Worker, QueueOptions, JobsOptions } from "bullmq";
 import { BullMQOtel } from "bullmq-otel";
 import { env } from "../../utilities/env";
 import IORedis from "ioredis";
-import { logger } from "../observability/logger";
-import { isRetryableError } from "../../utilities/errors";
-import { hdx } from "../observability/hyperdx";
-import { BaseMessage } from "../sqs";
+import { BaseMessage, withObservability } from "./observability";
 
 export type QueueHandler<T> = (data: T) => Promise<void>;
 
@@ -63,18 +60,7 @@ export class QueueWrapper<T extends BaseMessage> {
   async start() {
     this.worker = new Worker(
       this.name,
-      async job => {
-        try {
-          await this.handler(job.data);
-        } catch (e) {
-          if (isRetryableError(e)) {
-            logger.error("Job failed with retryable error", { error: e });
-            throw e;
-          }
-          hdx?.recordException(e);
-          logger.error("Job failed", { error: e, data: job.data });
-        }
-      },
+      withObservability<T>(this.name, this.handler),
       {
         connection: defaultConnection,
         telemetry,

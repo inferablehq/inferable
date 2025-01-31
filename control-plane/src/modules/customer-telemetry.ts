@@ -5,7 +5,7 @@ import {
   toolCallEventSchema,
 } from "./integrations/integration-events";
 import { logger } from "./observability/logger";
-import { BaseMessage } from "./sqs";
+import { BaseMessage } from "./queues/observability";
 
 const eventSchema = z.discriminatedUnion("type", [
   modelCallEventSchema,

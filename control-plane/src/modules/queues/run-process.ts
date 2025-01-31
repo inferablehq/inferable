@@ -1,6 +1,5 @@
 import { createQueue } from "./core";
 import { QueueNames } from "./core";
-import { baseMessageSchema, BaseMessage } from "../sqs";
 import { createMutex } from "../data";
 import { logger } from "../observability/logger";
 import { assertEphemeralClusterLimitations, getRun } from "../runs";
@@ -8,10 +7,10 @@ import { processRun } from "../runs/agent/run";
 import { getRunTags } from "../runs/tags";
 import { injectTraceContext } from "../observability/tracer";
 import { z } from "zod";
+import { BaseMessage, baseMessageSchema } from "./observability";
+import { RetryableError } from "../../utilities/errors";
 
 interface RunProcessMessage extends BaseMessage {
-  runId: string;
-  clusterId: string;
   lockAttempts?: number;
 }
 
@@ -20,7 +19,6 @@ const MAX_PROCESS_LOCK_ATTEMPTS = 5;
 export async function handleRunProcess(message: unknown) {
   const zodResult = baseMessageSchema
     .extend({
-      runId: z.string(),
       lockAttempts: z.number().optional(),
     })
     .safeParse(message);

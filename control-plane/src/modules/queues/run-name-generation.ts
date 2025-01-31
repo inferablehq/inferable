@@ -2,12 +2,10 @@ import { z } from "zod";
 import { env } from "../../utilities/env";
 import { logger } from "../observability/logger";
 import { generateRunName } from "../runs/agent/run";
-import { BaseMessage, baseMessageSchema } from "../sqs";
 import { createQueue, QueueNames } from "./core";
+import { BaseMessage, baseMessageSchema } from "./observability";
 
 interface GenerateNameMessage extends BaseMessage {
-  runId: string;
-  clusterId: string;
   content: string;
 }
 
