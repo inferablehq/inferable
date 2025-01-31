@@ -52,7 +52,7 @@ export const VersionedTextsSchema = z.object({
   ),
 });
 
-export const onStatusChangeSchema = z.discriminatedUnion("type", [
+export const onStatusChangeSchema = z.union([
   z.object({
     type: z.literal("function").default("function").optional(),
     statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),

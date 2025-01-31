@@ -148,9 +148,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                 onStatusChange: {
                   statuses: ["failed", "done"],
                   workflow: {
-                    name: this.name,
                     executionId,
-                    version,
                   },
                 },
                 initialPrompt: JSON.stringify(config.input),
