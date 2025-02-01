@@ -2,12 +2,12 @@ import debug from "debug";
 import path from "path";
 import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
+import { onStatusChangeSchema } from "./contract";
 import { createApiClient } from "./create-client";
 import { InferableAPIError, InferableError, PollTimeoutError } from "./errors";
 import * as links from "./links";
 import { machineId } from "./machine-id";
 import { Service, registerMachine } from "./service";
-import { Workflow } from "./workflows/workflow";
 import {
   ContextInput,
   FunctionConfig,
@@ -22,8 +22,8 @@ import {
   validateDescription,
   validateFunctionName,
   validateFunctionSchema,
-  validateServiceName,
 } from "./util";
+import { Workflow } from "./workflows/workflow";
 
 // Custom json formatter
 debug.formatters.J = (json) => {
@@ -213,11 +213,7 @@ export class Inferable {
     model?: "claude-3-5-sonnet" | "claude-3-haiku";
     resultSchema?: z.ZodType<unknown> | JsonSchemaInput;
     attachedFunctions?: Array<{ service: string; function: string }>;
-    onStatusChange?: {
-      statuses?: Array<"pending" | "running" | "paused" | "done" | "failed">;
-      function?: { service: string; function: string };
-      webhook?: string;
-    };
+    onStatusChange?: z.infer<typeof onStatusChangeSchema>;
     tags?: Record<string, string>;
     test?: {
       enabled?: boolean;
