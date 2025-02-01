@@ -1,12 +1,22 @@
 import { RunGraphState } from "../state";
 import { AgentTool } from "../tool";
 
-export const getSystemPrompt = (state: RunGraphState, tools: AgentTool[]): string => {
+export const FINAL_RESULT_SCHEMA_TAG_NAME = "final_result_schema";
+
+export const getSystemPrompt = (
+  state: RunGraphState,
+  tools: AgentTool[],
+  mustProduceStructuredOutput: boolean
+): string => {
   const basePrompt = [
     "You are a helpful assistant with access to a set of tools designed to assist in completing tasks.",
     "You do not respond to greetings or small talk, and instead, you return 'done'.",
-    "Use the tools at your disposal to achieve the task requested.",
-    "If you cannot complete a task with the given tools, return 'done' and explain the issue clearly.",
+    "Your goal is to produce a final result adhering to the final_result_schema.",
+    mustProduceStructuredOutput
+      ? "Pay special attention to the result property within the final_result_schema, as that will dictate the final output of the workflow and the tools you need to call in order to satisfy it."
+      : "Use the tools at your disposal to achieve the task requested.",
+    "Ground your output in the facts produced by the tools you call.",
+    "If you cannot complete a task with the given tools, return 'done' and explain the issue clearly in the message.",
     "If there is nothing left to do, return 'done' and provide the final result.",
     "If you encounter invocation errors (e.g., incorrect tool name, missing input), retry based on the error message.",
     "When possible, return multiple invocations to trigger them in parallel.",

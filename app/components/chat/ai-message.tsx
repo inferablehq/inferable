@@ -60,7 +60,7 @@ export const AiMessage = ({ data, createdAt, messages }: MessageContainerProps<"
 
         <div className="space-y-4">
           {(message || hasReasoning) && (
-            <div className="bg-secondary/10 rounded-lg p-4">
+            <div className="bg-secondary/10 rounded-lg p-1">
               <Markdown
                 content={message || invocations?.map(i => i.reasoning).join("\n") || ""}
                 messages={messages}

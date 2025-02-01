@@ -51,12 +51,17 @@ export const buildModelSchema = ({
     schema.properties.result = {
       ...resultSchema,
       description:
-        "Structured object describing the final result of the workflow, only provided once all tasks have been completed.",
+        "The final result of the workflow, only provided once all tasks have been completed. Pay special attention to the structure of this property as it is strongly enforced.",
     };
   } else {
     schema.properties.message = {
       type: "string",
       description: "A message describing the current state or next steps.",
+    };
+    schema.properties.result = {
+      type: "object",
+      description:
+        "The final result of the workflow, only provided once all tasks have been completed.",
     };
   }
 

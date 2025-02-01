@@ -13,7 +13,7 @@ import { ToolUseBlock } from "@anthropic-ai/sdk/resources";
 
 import { Schema, Validator } from "jsonschema";
 import { buildModelSchema, ModelOutput } from "./model-output";
-import { getSystemPrompt } from "./system-prompt";
+import { FINAL_RESULT_SCHEMA_TAG_NAME, getSystemPrompt } from "./system-prompt";
 import { handleContextWindowOverflow } from "../overflow";
 
 type RunStateUpdate = Partial<RunGraphState>;
@@ -55,15 +55,15 @@ const _handleModelCall = async (
     resultSchema: state.run.resultSchema as JsonSchemaInput,
   });
 
-  const systemPrompt = getSystemPrompt(state, relevantTools);
+  const systemPrompt = getSystemPrompt(state, relevantTools, !!state.run.resultSchema);
 
   const consolidatedSystemPrompt = [
-    `<prompt>${systemPrompt}</prompt>`,
-    `<directive>You must provide a final result adhering to the final_result_schema.</directive>`,
-    schema.properties.result
-      ? `<directive>Pay special attention to the result property within the final_result_schema, as that will dictate the final output of the workflow and the tools you need to call in order to satisfy it.</directive>`
-      : null,
-    `<final_result_schema>${JSON.stringify(schema)}</final_result_schema>`,
+    `<directives>`,
+    systemPrompt,
+    `</directives>`,
+    `<${FINAL_RESULT_SCHEMA_TAG_NAME}>`,
+    JSON.stringify(schema),
+    `</${FINAL_RESULT_SCHEMA_TAG_NAME}>`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -114,7 +114,7 @@ const _handleModelCall = async (
           id: ulid(),
           type: "agent-invalid",
           data: {
-            message: "Invalid model response.",
+            message: "Produced model output",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             details: response.raw as any,
           },
@@ -126,7 +126,8 @@ const _handleModelCall = async (
           id: ulid(),
           type: "supervisor",
           data: {
-            message: "Provided object was invalid, check your input",
+            message:
+              "You provided an invalid output. Refer to the final_result_schema for the expected format. The validation errors are mentioned below.",
             details: { errors: validation.errors },
           },
           runId: state.run.id,
@@ -235,7 +236,7 @@ const _handleModelCall = async (
           id: ulid(),
           type: "agent-invalid",
           data: {
-            message: "Invalid model response.",
+            message: "Produced model output",
             details: data,
           },
           runId: state.run.id,
@@ -246,8 +247,7 @@ const _handleModelCall = async (
           id: ulid(),
           type: "supervisor",
           data: {
-            message:
-              "Please provide a final result before stopping. Refer to the final_result_schema for the expected format. If you have insufficient information to provide a result, please provide a message describing why you can't provide a result.",
+            message: `Please provide a final result before stopping. Refer to the ${FINAL_RESULT_SCHEMA_TAG_NAME} for the expected format. If you have insufficient information to provide a result, please provide a message describing why you can't provide a result.`,
           },
           runId: state.run.id,
           clusterId: state.run.clusterId,
