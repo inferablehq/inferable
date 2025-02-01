@@ -52,30 +52,55 @@ export const VersionedTextsSchema = z.object({
   ),
 });
 
-export const onStatusChangeSchema = z.union([
-  z.object({
-    type: z.literal("function"),
-    statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
-    function: functionReference.describe("A function to call when the run status changes"),
-  }),
-  z.object({
-    type: z.literal("webhook"),
-    statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
-    webhook: z
-      .string()
-      .regex(/^https?:\/\/.+$/)
-      .describe("A webhook URL to call when the run status changes"),
-  }),
-  z.object({
-    type: z.literal("workflow"),
-    statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
-    workflow: z
-      .object({
-        executionId: z.string().describe("The execution ID of the workflow"),
-      })
-      .describe("A workflow to run when the run status changes"),
-  }),
-]);
+export const onStatusChangeSchema = z.preprocess(
+  function temporaryPreprocessForBackwardsCompatibility(val) {
+    if (val && typeof val === "object" && "type" in val) {
+      return val;
+    }
+
+    if (val && typeof val === "object" && "function" in val) {
+      return {
+        type: "function",
+        statuses: "statuses" in val ? val.statuses : ["done", "failed"],
+        function: val.function,
+      };
+    }
+
+    if (val && typeof val === "object" && "webhook" in val) {
+      return {
+        type: "webhook",
+        statuses: "statuses" in val ? val.statuses : ["done", "failed"],
+        webhook: val.webhook,
+      };
+    }
+
+    return val;
+  },
+  z.union([
+    z.object({
+      type: z.literal("function"),
+      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      function: functionReference.describe("A function to call when the run status changes"),
+    }),
+    z.object({
+      type: z.literal("webhook"),
+      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      webhook: z
+        .string()
+        .regex(/^https?:\/\/.+$/)
+        .describe("A webhook URL to call when the run status changes"),
+    }),
+    z.object({
+      type: z.literal("workflow"),
+      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      workflow: z
+        .object({
+          executionId: z.string().describe("The execution ID of the workflow"),
+        })
+        .describe("A workflow to run when the run status changes"),
+    }),
+  ])
+);
 
 export const integrationSchema = z.object({
   toolhouse: z
