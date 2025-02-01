@@ -21,7 +21,7 @@ import { trackCustomerTelemetry } from "../track-customer-telemetry";
 type CallInput = {
   system?: string | undefined;
   messages: Anthropic.MessageParam[];
-  tools?: (Anthropic.Tool | Anthropic.Beta.BetaToolComputerUse20241022)[];
+  tools?: Anthropic.Tool[];
 };
 
 type CallOutput = {
