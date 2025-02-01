@@ -548,10 +548,7 @@ export const events = pgTable(
     attention_level: integer("attention_level"),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     deleted_at: timestamp("deleted_at", { withTimezone: true }),
-    meta: json("meta")
-      .$type<Record<string, string | boolean | number | object>>()
-      .notNull()
-      .default({}),
+    meta: json("meta").$type<Record<string, unknown>>().notNull().default({}),
   },
   table => ({
     index: index("timeline_index").on(table.cluster_id, table.run_id, table.attention_level),

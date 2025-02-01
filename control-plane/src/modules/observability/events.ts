@@ -46,65 +46,10 @@ type Event = {
   tokenUsageInput?: number;
   tokenUsageOutput?: number;
   modelId?: string;
-  meta?: {
-    value?: string;
-    log?: string;
-    error?: object;
-    result?: string;
-    targetArgs?: string;
-    functionExecutionTime?: number;
-    ip?: string;
-    limit?: number;
-    attemptsRemaining?: number;
-    retryable?: boolean;
-    reason?: string;
-    pendingJobs?: number;
-    machineCount?: number;
-    replacedBy?: string;
-    config?: object;
-    listenerId?: string;
-    templateId?: string;
-    modelId?: string;
-    feedbackScore?: number;
-    feedbackComment?: string;
-    toolInput?: string;
-    summary?: string;
-    originalResultSize?: number;
-    summarySize?: number;
-    artifacts?: string[];
-    duration?: number;
-    tools?: string[];
-    messageId?: string;
-  };
+  meta?: Record<string, unknown>;
 };
 
-export const userAttentionLevels = {
-  debug: 10,
-  info: 20,
-  warning: 30,
-  error: 40,
-} as const;
-
-const typeToUserAttentionLevel = {
-  jobCreated: 10,
-  jobAcknowledged: 10,
-  functionResulted: 10,
-  jobStalled: 30,
-  jobStalledTooManyTimes: 40,
-  jobRecovered: 30,
-  machineRegistered: 10,
-  machineStalled: 30,
-  machineResourceProbe: 10,
-  modelInvocation: 10,
-  functionInvocation: 10,
-  callingFunction: 10,
-  functionErrored: 10,
-  resultSummarized: 20,
-  knowledgeArtifactsAccessed: 20,
-} as const;
-
 type InsertableEvent = Event & {
-  userAttentionLevel?: (typeof typeToUserAttentionLevel)[keyof typeof typeToUserAttentionLevel];
   createdAt: Date;
   id: string;
 };
@@ -161,7 +106,6 @@ class EventWriterBuffer {
           tool_name: e.toolName,
           meta: e.meta,
           created_at: e.createdAt,
-          attention_level: e.userAttentionLevel,
           token_usage_input: e.tokenUsageInput,
           token_usage_output: e.tokenUsageOutput,
           model_id: e.modelId,
@@ -207,8 +151,6 @@ export const write = (event: Event, syntheticDelay = 0) => {
     ...event,
     id: ulid(),
     createdAt: new Date(Date.now() + syntheticDelay),
-    userAttentionLevel:
-      typeToUserAttentionLevel[event.type as keyof typeof typeToUserAttentionLevel],
   });
 };
 
