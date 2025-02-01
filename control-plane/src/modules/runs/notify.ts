@@ -141,6 +141,6 @@ export const notifyStatusChange = async ({
       jobId,
     });
   } else {
-    throw new Error(`Unknown onStatusChange type: ${onStatusChangeDefinition.type}`);
+    throw new Error(`Unknown onStatusChange type: ${JSON.stringify(onStatusChangeDefinition)}`);
   }
 };

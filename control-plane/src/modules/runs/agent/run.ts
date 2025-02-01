@@ -1,9 +1,10 @@
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getWaitingJobIds } from "../";
 import { env } from "../../../utilities/env";
 import { NotFoundError } from "../../../utilities/errors";
 import { getClusterContextText } from "../../cluster";
+import { onStatusChangeSchema } from "../../contract";
 import { db, runs } from "../../data";
 import { embedSearchQuery } from "../../embeddings/embeddings";
 import { flagsmith } from "../../flagsmith";
@@ -20,6 +21,7 @@ import {
 } from "../../service-definitions";
 import { getRunMessages, insertRunMessage } from "../messages";
 import { notifyNewMessage, notifyStatusChange } from "../notify";
+import { generateTitle } from "../summarization";
 import { createRunGraph } from "./agent";
 import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
 import { RunGraphState } from "./state";
@@ -27,7 +29,6 @@ import { AgentTool } from "./tool";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
 import { availableStdlib } from "./tools/stdlib";
-import { generateTitle } from "../summarization";
 
 /**
  * Run a Run from the most recent saved state
@@ -46,8 +47,7 @@ export const processRun = async (
     test: boolean;
     reasoningTraces: boolean;
     enableResultGrounding: boolean;
-    onStatusChange: string | null;
-    onStatusChangeStatuses: string[] | null;
+    onStatusChange: z.infer<typeof onStatusChangeSchema> | null;
     authContext: unknown | null;
     context: unknown | null;
   },
@@ -231,7 +231,6 @@ export const processRun = async (
         id: run.id,
         clusterId: run.clusterId,
         onStatusChange: run.onStatusChange,
-        onStatusChangeStatuses: run.onStatusChangeStatuses,
         status: run.status,
         authContext: run.authContext,
         context: run.context,

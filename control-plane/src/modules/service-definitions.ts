@@ -99,13 +99,11 @@ export async function upsertServiceDefinition({
   definition,
   owner,
   type = "ephemeral",
-  isWorkflow = false,
 }: {
   service: string;
   definition: ServiceDefinition;
   owner: { clusterId: string };
   type?: "ephemeral" | "permanent";
-  isWorkflow?: boolean; // because I used type to signal permanence like an idiot
 }) {
   validateServiceRegistration({
     service,
@@ -123,7 +121,6 @@ export async function upsertServiceDefinition({
       definition,
       cluster_id: owner.clusterId,
       timestamp,
-      type: isWorkflow ? "workflow" : "tool",
     })
     .onConflictDoUpdate({
       target: [data.services.service, data.services.cluster_id],
