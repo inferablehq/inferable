@@ -57,19 +57,20 @@ const _handleModelCall = async (
 
   const systemPrompt = getSystemPrompt(state, relevantTools);
 
+  const consolidatedSystemPrompt = [
+    `<prompt>${systemPrompt}</prompt>`,
+    `<directive>You must provide a final result adhering to the final_result_schema.</directive>`,
+    schema.properties.result
+      ? `<directive>Pay special attention to the result property within the final_result_schema, as that will dictate the final output of the workflow and the tools you need to call in order to satisfy it.</directive>`
+      : null,
+    `<final_result_schema>${JSON.stringify(schema)}</final_result_schema>`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   const truncatedMessages = await handleContextWindowOverflow({
     messages: state.messages,
-    systemPrompt: `
-      <prompt>
-        ${systemPrompt}
-      </prompt>
-      <final_result_schema>
-        ${JSON.stringify(schema)}
-      </final_result_schema>
-    `
-      .split("\n")
-      .map(line => line.trim())
-      .join("\n"),
+    systemPrompt: consolidatedSystemPrompt,
     modelContextWindow: model.contextWindow,
     render: m => JSON.stringify(toAnthropicMessage(m)),
   });
