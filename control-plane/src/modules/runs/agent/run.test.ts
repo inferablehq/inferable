@@ -34,8 +34,8 @@ describe("processRun", () => {
       attachedFunctions: ["testService_someFunction"],
       modelIdentifier: null,
       onStatusChange: {
-        type: "function",
-        statuses: ["running", "pending", "paused", "done", "failed"],
+        type: "function" as const,
+        statuses: ["running", "pending", "paused", "done", "failed"] as any,
         function: {
           service: "testService",
           function: "someOtherFunction",
