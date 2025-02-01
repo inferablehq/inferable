@@ -194,7 +194,7 @@ export const buildModel = ({
               model: routing.modelId,
               temperature,
               stream: false,
-              max_tokens: 1024,
+              max_tokens: 4096,
               system: options.system,
               messages: options.messages,
               tool_choice: {

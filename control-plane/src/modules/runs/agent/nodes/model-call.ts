@@ -59,7 +59,17 @@ const _handleModelCall = async (
 
   const truncatedMessages = await handleContextWindowOverflow({
     messages: state.messages,
-    systemPrompt: systemPrompt + JSON.stringify(schema),
+    systemPrompt: `
+      <prompt>
+        ${systemPrompt}
+      </prompt>
+      <final_result_schema>
+        ${JSON.stringify(schema)}
+      </final_result_schema>
+    `
+      .split("\n")
+      .map(line => line.trim())
+      .join("\n"),
     modelContextWindow: model.contextWindow,
     render: m => JSON.stringify(toAnthropicMessage(m)),
   });
@@ -235,7 +245,8 @@ const _handleModelCall = async (
           id: ulid(),
           type: "supervisor",
           data: {
-            message: "Please provide a final result or a reason for stopping.",
+            message:
+              "Please provide a final result before stopping. Refer to the final_result_schema for the expected format. If you have insufficient information to provide a result, please provide a message describing why you can't provide a result.",
           },
           runId: state.run.id,
           clusterId: state.run.clusterId,
