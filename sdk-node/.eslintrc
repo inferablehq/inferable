@@ -1,11 +1,10 @@
 {
-  "extends": [
-    "plugin:@typescript-eslint/recommended"
-  ],
+  "extends": ["plugin:@typescript-eslint/recommended"],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "rules": {
     "@typescript-eslint/no-unused-vars": 1,
     "no-console": 1,
-  }
+    "@typescript-eslint/no-explicit-any": 1,
+  },
 }

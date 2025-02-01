@@ -239,7 +239,7 @@ const blobExtractionSchema = blobSchema
   .omit({
     id: true,
     createdAt: true,
-    workflowId: true,
+    runId: true,
     jobId: true,
   })
   .and(
@@ -277,18 +277,21 @@ export const blob = ({
   };
 };
 
-
 export const INTERRUPT_KEY = "__inferable_interrupt";
 type VALID_INTERRUPT_TYPES = "approval";
 const interruptResultSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("approval"),
   }),
-])
+]);
 
-export const extractInterrupt = (input: unknown): z.infer<typeof interruptResultSchema> | undefined => {
+export const extractInterrupt = (
+  input: unknown,
+): z.infer<typeof interruptResultSchema> | undefined => {
   if (input && typeof input === "object" && INTERRUPT_KEY in input) {
-    const parsedInterrupt = interruptResultSchema.safeParse(input[INTERRUPT_KEY]);
+    const parsedInterrupt = interruptResultSchema.safeParse(
+      input[INTERRUPT_KEY],
+    );
 
     if (!parsedInterrupt.success) {
       throw new InferableError("Found invalid Interrupt data");
@@ -296,17 +299,17 @@ export const extractInterrupt = (input: unknown): z.infer<typeof interruptResult
 
     return parsedInterrupt.data;
   }
-}
+};
 
 export class Interrupt {
   [INTERRUPT_KEY]: {
-    type: VALID_INTERRUPT_TYPES
-  }
+    type: VALID_INTERRUPT_TYPES;
+  };
 
   constructor(type: VALID_INTERRUPT_TYPES) {
     this[INTERRUPT_KEY] = {
-      type
-    }
+      type,
+    };
   }
 
   static approval() {
