@@ -269,7 +269,9 @@ describe("handleModelCall", () => {
 
     expect(supervisorMessage.data).toHaveProperty(
       "message",
-      expect.stringContaining("Provided object was invalid, check your input")
+      expect.stringContaining(
+        "You provided an invalid output. Refer to the final_result_schema for the expected format. The validation errors are mentioned below."
+      )
     );
     expect(supervisorMessage.data.details).toHaveProperty("errors");
   });

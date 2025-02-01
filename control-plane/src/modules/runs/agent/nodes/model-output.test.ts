@@ -55,7 +55,7 @@ describe("buildModelSchema", () => {
 
     expect(schema.type).toBe("object");
     expect(schema.properties).toHaveProperty("message");
-    expect(schema.properties).not.toHaveProperty("result");
+    expect(schema.properties).toHaveProperty("result");
   });
 
   it("returns a schema with 'result' when resultSchema is provided", () => {
