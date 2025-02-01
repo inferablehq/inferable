@@ -43,9 +43,7 @@ const _handleModelCall = async (
   });
 
   if (!!state.run.resultSchema) {
-    const resultSchemaErrors = validateFunctionSchema(
-      state.run.resultSchema as JsonSchemaInput
-    );
+    const resultSchemaErrors = validateFunctionSchema(state.run.resultSchema as JsonSchemaInput);
     if (resultSchemaErrors.length > 0) {
       throw new AgentError("Result schema is not invalid JSONSchema");
     }
@@ -174,7 +172,9 @@ const _handleModelCall = async (
 
   // If the model signifies that it is done but provides more invocations, clear the result and continue to allow the invocations to resolve.
   if (data.done && hasInvocations) {
-    logger.info("Model returned done and invocations, ignoring result");
+    logger.info("Model returned done and invocations, ignoring result", {
+      data,
+    });
     data.result = undefined;
     data.message = undefined;
     data.done = false;
@@ -182,7 +182,9 @@ const _handleModelCall = async (
 
   // If the model signifies that it should continue but provides no invocations, prompt it to provide an invocation.
   if (!data.done && !hasInvocations) {
-    logger.info("Model returned not done with no invocations");
+    logger.info("Model returned not done with no invocations", {
+      data,
+    });
     return {
       messages: [
         {
@@ -213,7 +215,9 @@ const _handleModelCall = async (
 
   // If the model signifies that it is done but provides no result, prompt it to provide a result.
   if (data.done && !data.result && !data.message) {
-    logger.info("Model returned done with no result");
+    logger.info("Model returned done with no result", {
+      data,
+    });
     return {
       messages: [
         {
