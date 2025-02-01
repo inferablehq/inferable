@@ -35,17 +35,25 @@ import { getEphemeralSetup } from "./workflow-test-utils";
 
     const records = await recordsAgent.run();
 
+    console.log("recordsAgent:response", { records: JSON.stringify(records) });
+
     const processedRecords = await Promise.all(
       records.result.records.map((record) => {
+        console.log("analyzeLoan:request", { loanId: record.id });
         const agent2 = ctx.agent({
-          name: "assetClassAgent",
-          systemPrompt: "Get the asset class details for a loan",
+          name: "analyzeLoan",
+          systemPrompt:
+            "Analyze the loan and return a summary of the asset classes and their risk profile",
           resultSchema: z.object({
-            recordId: z.string(),
-            summary: z.string().describe("Summary of the asset classes"),
+            loanId: z.string(),
+            summary: z
+              .string()
+              .describe(
+                "Summary of the loan, asset classes and their risk profile",
+              ),
           }),
           input: {
-            recordId: record.id,
+            loanId: record.id,
             customerId: input.customerId,
           },
         });
@@ -54,11 +62,15 @@ import { getEphemeralSetup } from "./workflow-test-utils";
       }),
     );
 
+    console.log("analyzeLoan:response", {
+      processedRecords: JSON.stringify(processedRecords),
+    });
+
     const riskProfile = await ctx
       .agent({
         name: "riskAgent",
         systemPrompt:
-          "Summarize the risk of the customer. Use the asset class details to inform the summary.",
+          "You are given a list of loans and their asset classes. Summarize the risk of the customer. Use the asset class details to inform the summary.",
         resultSchema: z.object({
           summary: z.string(),
         }),
@@ -75,7 +87,7 @@ import { getEphemeralSetup } from "./workflow-test-utils";
   await workflow.listen();
 
   await inferable.workflows.run("records-workflow", {
-    executionId: "123",
-    customerId: "456",
+    executionId: "executionId-123",
+    customerId: "customerId-123",
   });
 })();

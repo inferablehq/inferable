@@ -51,13 +51,6 @@ class WorkflowTerminableError extends Error {
   }
 }
 
-class WorkflowRetriableError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "WorkflowRetriableError";
-  }
-}
-
 export class Workflow<TInput extends WorkflowInput, name extends string> {
   private name: string;
   private inputSchema: z.ZodType<TInput>;
@@ -127,14 +120,16 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
             const runId = config.runId
               ? `${executionId}.${config.name}.${config.runId}`
               : `${executionId}.${config.name}.${cyrb53(
-                  [
+                  JSON.stringify([
                     config.systemPrompt,
                     resultSchema,
                     config.input,
                     this.name,
                     version,
-                  ].join("."),
+                  ]),
                 )}`;
+
+            console.log("---  Creating run", { runId, name: config.name });
 
             const result = await this.inferable.getClient().createRun({
               params: {
@@ -146,9 +141,10 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                 resultSchema,
                 context: config.input ? { input: config.input } : undefined,
                 onStatusChange: {
+                  type: "workflow",
                   statuses: ["failed", "done"],
                   workflow: {
-                    executionId,
+                    executionId: executionId,
                   },
                 },
                 initialPrompt: JSON.stringify(config.input),
@@ -190,7 +186,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   async listen() {
     this.versionHandlers.forEach((handler, version) => {
       const s = this.inferable.service({
-        name: `workflows.${this.name}.${version}`,
+        name: `workflows-${this.name}-${version}`,
       });
 
       s.register({

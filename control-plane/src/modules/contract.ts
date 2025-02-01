@@ -54,12 +54,12 @@ export const VersionedTextsSchema = z.object({
 
 export const onStatusChangeSchema = z.union([
   z.object({
-    type: z.literal("function").default("function").optional(),
+    type: z.literal("function"),
     statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
     function: functionReference.describe("A function to call when the run status changes"),
   }),
   z.object({
-    type: z.literal("webhook").default("webhook").optional(),
+    type: z.literal("webhook"),
     statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
     webhook: z
       .string()
@@ -67,7 +67,7 @@ export const onStatusChangeSchema = z.union([
       .describe("A webhook URL to call when the run status changes"),
   }),
   z.object({
-    type: z.literal("workflow").default("workflow").optional(),
+    type: z.literal("workflow"),
     statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
     workflow: z
       .object({
@@ -1403,7 +1403,7 @@ export const definition = {
     }),
     body: z
       .object({
-        executionId: z.string().regex(/^[0-9a-z]+$/i),
+        executionId: z.string(),
       })
       .passthrough(),
     responses: {

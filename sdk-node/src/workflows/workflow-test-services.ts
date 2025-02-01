@@ -9,21 +9,21 @@ export const createServices = async (inferable: Inferable): Promise<void> => {
   const fakeLoans = [
     {
       id: "loan-123",
-      customerId: "customer-123",
+      customerId: "customerId-123",
       amount: 1000,
       status: "active",
       assetClasses: ["123", "456"],
     },
     {
       id: "loan-124",
-      customerId: "customer-123",
+      customerId: "customerId-123",
       amount: 2000,
       status: "active",
       assetClasses: ["456", "789"],
     },
     {
       id: "loan-125",
-      customerId: "customer-124",
+      customerId: "customerId-123",
       amount: 3000,
       status: "active",
       assetClasses: ["123", "789"],
@@ -38,13 +38,17 @@ export const createServices = async (inferable: Inferable): Promise<void> => {
       }),
     },
     func: async ({ customerId }) => {
-      return {
-        records: fakeLoans
-          .filter((loan) => loan.customerId === customerId)
-          .map((loan) => ({
-            id: loan.id,
-          })),
-      };
+      console.log("getLoansForCustomer:request", { customerId });
+
+      const loans = fakeLoans
+        .filter((loan) => loan.customerId === customerId)
+        .map((loan) => ({
+          id: loan.id,
+        }));
+
+      console.log("getLoansForCustomer:response", { loans });
+
+      return loans;
     },
   });
 
@@ -56,7 +60,10 @@ export const createServices = async (inferable: Inferable): Promise<void> => {
       }),
     },
     func: async ({ loanId }) => {
-      return fakeLoans.find((loan) => loan.id === loanId);
+      console.log("getLoanDetails:request", { loanId });
+      const loan = fakeLoans.find((loan) => loan.id === loanId);
+      console.log("getLoanDetails:response", { loan });
+      return loan;
     },
   });
 
@@ -64,25 +71,26 @@ export const createServices = async (inferable: Inferable): Promise<void> => {
     name: "getAssetClassDetails",
     schema: {
       input: z.object({
-        assetClass: z.string(),
+        assetClassId: z.string(),
       }),
     },
-    func: async ({ assetClass }) => {
-      if (assetClass === "123") {
+    func: async ({ assetClassId }) => {
+      console.log("getAssetClassDetails:request", { assetClassId });
+      if (assetClassId === "123") {
         return {
           name: "property",
           risk: "low",
         };
       }
 
-      if (assetClass === "456") {
+      if (assetClassId === "456") {
         return {
           name: "government-bonds",
           risk: "very low",
         };
       }
 
-      if (assetClass === "789") {
+      if (assetClassId === "789") {
         return {
           name: "meme-coins",
           risk: "high",

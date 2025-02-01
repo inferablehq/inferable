@@ -14,7 +14,7 @@ describe("createWorkflowExecution", () => {
     // Register a workflow service
     await upsertServiceDefinition({
       isWorkflow: true,
-      service: `workflows.${workflowName}.${version}`,
+      service: `workflows-${workflowName}-${version}`,
       definition: {
         name: workflowName,
         functions: [
@@ -43,7 +43,7 @@ describe("createWorkflowExecution", () => {
     // Verify the job was created with correct parameters
     const job = await getJob({ jobId: result.jobId, clusterId: owner.clusterId });
     expect(job).toBeDefined();
-    expect(job?.service).toBe(`workflows.${workflowName}.${version}`);
+    expect(job?.service).toBe(`workflows-${workflowName}-${version}`);
     expect(job?.targetFn).toBe("handler");
   });
 
@@ -76,7 +76,7 @@ describe("createWorkflowExecution", () => {
     // Register version 1
     await upsertServiceDefinition({
       isWorkflow: true,
-      service: `workflows.${workflowName}.1`,
+      service: `workflows-${workflowName}-1`,
       definition: {
         name: workflowName,
         functions: [
@@ -98,7 +98,7 @@ describe("createWorkflowExecution", () => {
     // Register version 2
     await upsertServiceDefinition({
       isWorkflow: true,
-      service: `workflows.${workflowName}.2`,
+      service: `workflows-${workflowName}-2`,
       definition: {
         name: workflowName,
         functions: [
@@ -127,6 +127,6 @@ describe("createWorkflowExecution", () => {
     // Verify the job was created with version 2
     const job = await getJob({ jobId: result.jobId, clusterId: owner.clusterId });
     expect(job).toBeDefined();
-    expect(job?.service).toBe(`workflows.${workflowName}.2`);
+    expect(job?.service).toBe(`workflows-${workflowName}-2`);
   });
 });
