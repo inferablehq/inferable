@@ -1,3 +1,5 @@
+// to run: tsx -r dotenv/config src/workflows/demo.ts
+
 import { z } from "zod";
 import { Inferable } from "../Inferable";
 import { createServices } from "./workflow-test-services";
@@ -35,11 +37,8 @@ import { getEphemeralSetup } from "./workflow-test-utils";
 
     const records = await recordsAgent.run();
 
-    console.log("recordsAgent:response", { records: JSON.stringify(records) });
-
     const processedRecords = await Promise.all(
       records.result.records.map((record) => {
-        console.log("analyzeLoan:request", { loanId: record.id });
         const agent2 = ctx.agent({
           name: "analyzeLoan",
           systemPrompt:
@@ -61,10 +60,6 @@ import { getEphemeralSetup } from "./workflow-test-utils";
         return agent2.run();
       }),
     );
-
-    console.log("analyzeLoan:response", {
-      processedRecords: JSON.stringify(processedRecords),
-    });
 
     const riskProfile = await ctx
       .agent({
