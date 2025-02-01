@@ -225,7 +225,7 @@ describe("selfHealCalls", () => {
       clusterId: owner.clusterId,
     });
 
-    expect(job!.status).toBe("failure");
+    expect(job!.status).toBe("stalled");
   });
 
   it("should not create a job with the same id", async () => {
