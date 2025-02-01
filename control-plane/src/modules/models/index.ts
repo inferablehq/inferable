@@ -18,11 +18,6 @@ import { rateLimiter } from "../rate-limiter";
 import { addAttributes } from "../observability/tracer";
 import { trackCustomerTelemetry } from "../track-customer-telemetry";
 
-type TrackingOptions = {
-  clusterId?: string;
-  runId?: string;
-};
-
 type CallInput = {
   system?: string | undefined;
   messages: Anthropic.MessageParam[];
@@ -61,7 +56,10 @@ export const buildModel = ({
   purpose,
 }: {
   identifier: ChatIdentifiers | EmbeddingIdentifiers;
-  trackingOptions?: TrackingOptions;
+  trackingOptions?: {
+    clusterId?: string;
+    runId?: string;
+  };
   modelOptions?: {
     temperature?: number;
   };
@@ -128,7 +126,7 @@ export const buildModel = ({
               model: routing.modelId,
               temperature,
               stream: false,
-              max_tokens: 1024,
+              max_tokens: 2048,
               system: options.system,
               messages: options.messages,
               // This is enforced above
@@ -136,8 +134,11 @@ export const buildModel = ({
             });
 
             trackModelUsage({
-              ...trackingOptions,
+              clusterId: trackingOptions?.clusterId,
+              runId: trackingOptions?.runId,
               modelId: routing.modelId,
+              systemPrompt: options.system,
+              tools,
               inputTokens: response.usage.input_tokens,
               outputTokens: response.usage.output_tokens,
               temperature,
@@ -194,7 +195,7 @@ export const buildModel = ({
               model: routing.modelId,
               temperature,
               stream: false,
-              max_tokens: 4096,
+              max_tokens: 2048,
               system: options.system,
               messages: options.messages,
               tool_choice: {
@@ -345,6 +346,8 @@ const trackModelUsage = async ({
   startedAt,
   completedAt,
   purpose,
+  systemPrompt,
+  tools,
 }: {
   modelId: string;
   inputTokens?: number;
@@ -355,7 +358,11 @@ const trackModelUsage = async ({
   startedAt: number;
   completedAt: number;
   purpose?: string;
-} & TrackingOptions) => {
+  clusterId?: string;
+  runId?: string;
+  systemPrompt?: string;
+  tools?: Anthropic.Tool[];
+}) => {
   if (!clusterId) {
     logger.warn("No cluster id provided, usage tracking will be skipped", {
       modelId,
@@ -383,10 +390,12 @@ const trackModelUsage = async ({
     tokenUsageOutput: outputTokens,
     modelId,
     meta: {
+      purpose,
+      systemPrompt,
       input: input,
       output: output,
-      purpose,
       temperature,
+      tools,
     },
   });
 
