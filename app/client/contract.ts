@@ -52,6 +52,56 @@ export const VersionedTextsSchema = z.object({
   ),
 });
 
+export const onStatusChangeSchema = z.preprocess(
+  function temporaryPreprocessForBackwardsCompatibility(val) {
+    if (val && typeof val === "object" && "type" in val) {
+      return val;
+    }
+
+    if (val && typeof val === "object" && "function" in val) {
+      return {
+        type: "function",
+        statuses: "statuses" in val ? val.statuses : ["done", "failed"],
+        function: val.function,
+      };
+    }
+
+    if (val && typeof val === "object" && "webhook" in val) {
+      return {
+        type: "webhook",
+        statuses: "statuses" in val ? val.statuses : ["done", "failed"],
+        webhook: val.webhook,
+      };
+    }
+
+    return val;
+  },
+  z.union([
+    z.object({
+      type: z.literal("function"),
+      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      function: functionReference.describe("A function to call when the run status changes"),
+    }),
+    z.object({
+      type: z.literal("webhook"),
+      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      webhook: z
+        .string()
+        .regex(/^https?:\/\/.+$/)
+        .describe("A webhook URL to call when the run status changes"),
+    }),
+    z.object({
+      type: z.literal("workflow"),
+      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      workflow: z
+        .object({
+          executionId: z.string().describe("The execution ID of the workflow"),
+        })
+        .describe("A workflow to run when the run status changes"),
+    }),
+  ])
+);
+
 export const integrationSchema = z.object({
   toolhouse: z
     .object({
@@ -222,6 +272,85 @@ export const FunctionConfigSchema = z.object({
   retryCountOnStall: z.number().optional(),
   timeoutSeconds: z.number().optional(),
   private: z.boolean().default(false).optional(),
+});
+
+const RunSchema = z.object({
+  id: z
+    .string()
+    .optional()
+    .describe(
+      "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned."
+    )
+    .refine(
+      val => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
+      "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long."
+    ),
+  runId: z
+    .string()
+    .optional()
+    .describe("Deprecated. Use `id` instead.")
+    .refine(
+      val => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
+      "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long."
+    ),
+  initialPrompt: z.string().optional().describe("An initial 'human' message to trigger the run"),
+  systemPrompt: z.string().optional().describe("A system prompt for the run."),
+  name: z.string().optional().describe("The name of the run, if not provided it will be generated"),
+  model: z
+    .enum(["claude-3-5-sonnet", "claude-3-haiku"])
+    .optional()
+    .describe("The model identifier for the run"),
+  resultSchema: anyObject
+    .optional()
+    .describe(
+      "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
+    ),
+  attachedFunctions: z
+    .array(functionReference)
+    .optional()
+    .describe(
+      "An array of functions to make available to the run. By default all functions in the cluster will be available"
+    ),
+  onStatusChange: onStatusChangeSchema
+    .optional()
+    .describe("Mechanism for receiving notifications when the run status changes"),
+  tags: z.record(z.string()).optional().describe("Run tags which can be used to filter runs"),
+  test: z
+    .object({
+      enabled: z.boolean().default(false),
+      mocks: z
+        .record(
+          z.object({
+            output: z.object({}).passthrough().describe("The mock output of the function"),
+          })
+        )
+        .optional()
+        .describe(
+          "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)"
+        ),
+    })
+    .optional()
+    .describe("When provided, the run will be marked as as a test / evaluation"),
+  agentId: z.string().optional().describe("The agent ID to use"),
+  input: z
+    .object({})
+    .passthrough()
+    .describe(
+      "Structured input arguments to merge with the initial prompt. The schema must match the agent input schema if defined"
+    )
+    .optional(),
+  context: anyObject.optional().describe("Additional context to propogate to all Jobs in the Run"),
+  reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
+  callSummarization: z
+    .boolean()
+    .default(false)
+    .optional()
+    .describe("Enable summarization of oversized call results"),
+  interactive: z
+    .boolean()
+    .default(true)
+    .describe("Allow the run to be continued with follow-up messages / message edits"),
+  enableResultGrounding: z.boolean().default(false).describe("Enable result grounding"),
 });
 
 export const definition = {
@@ -738,109 +867,14 @@ export const definition = {
     headers: z.object({
       authorization: z.string(),
     }),
-    body: z.object({
-      id: z
-        .string()
-        .optional()
-        .describe(
-          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned."
-        )
-        .refine(
-          val => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
-          "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long."
-        ),
-      runId: z
-        .string()
-        .optional()
-        .describe("Deprecated. Use `id` instead.")
-        .refine(
-          val => !val || /^[0-9A-Za-z-_]{16,128}$/.test(val),
-          "Run ID must contain only alphanumeric characters, dashes, and underscores. Must be between 16 and 128 characters long."
-        ),
-      initialPrompt: z
-        .string()
-        .optional()
-        .describe("An initial 'human' message to trigger the run"),
-      systemPrompt: z.string().optional().describe("A system prompt for the run."),
-      name: z
-        .string()
-        .optional()
-        .describe("The name of the run, if not provided it will be generated"),
-      model: z
-        .enum(["claude-3-5-sonnet", "claude-3-haiku"])
-        .optional()
-        .describe("The model identifier for the run"),
-      resultSchema: anyObject
-        .optional()
-        .describe(
-          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
-        ),
-      attachedFunctions: z
-        .array(functionReference)
-        .optional()
-        .describe(
-          "An array of functions to make available to the run. By default all functions in the cluster will be available"
-        ),
-      onStatusChange: z
-        .object({
-          statuses: z
-            .array(z.enum(["pending", "running", "paused", "done", "failed"]))
-            .describe(" A list of Run statuses which should trigger the handler")
-            .optional()
-            .default(["done", "failed"]),
-          function: functionReference
-            .describe("A function to call when the run status changes")
-            .optional(),
-          webhook: z
-            .string()
-            .describe("A webhook URL to call when the run status changes")
-            .optional(),
-        })
-        .optional()
-        .describe("Mechanism for receiving notifications when the run status changes"),
-      tags: z.record(z.string()).optional().describe("Run tags which can be used to filter runs"),
-      test: z
-        .object({
-          enabled: z.boolean().default(false),
-          mocks: z
-            .record(
-              z.object({
-                output: z.object({}).passthrough().describe("The mock output of the function"),
-              })
-            )
-            .optional()
-            .describe(
-              "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)"
-            ),
-        })
-        .optional()
-        .describe("When provided, the run will be marked as as a test / evaluation"),
-      agentId: z.string().optional().describe("The agent ID to use"),
-      input: z
-        .object({})
-        .passthrough()
-        .describe(
-          "Structured input arguments to merge with the initial prompt. The schema must match the agent input schema if defined"
-        )
-        .optional(),
-      context: anyObject
-        .optional()
-        .describe("Additional context to propogate to all Jobs in the Run"),
-      reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
-      callSummarization: z
-        .boolean()
-        .default(false)
-        .optional()
-        .describe("Enable summarization of oversized call results"),
-      interactive: z
-        .boolean()
-        .default(true)
-        .describe("Allow the run to be continued with follow-up messages / message edits"),
-      enableResultGrounding: z.boolean().default(false).describe("Enable result grounding"),
-    }),
+    body: RunSchema,
     responses: {
       201: z.object({
         id: z.string().describe("The id of the newly created run"),
+        status: z
+          .enum(["pending", "running", "paused", "done", "failed"])
+          .describe("The status of the run"),
+        result: anyObject.nullable().describe("The result of the run"),
       }),
       401: z.undefined(),
       400: z.object({
@@ -907,19 +941,10 @@ export const definition = {
       authorization: z.string(),
     }),
     responses: {
-      200: z.object({
-        id: z.string(),
-        userId: z.string().nullable(),
-        status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
-        failureReason: z.string().nullable(),
-        test: z.boolean(),
-        feedbackComment: z.string().nullable(),
-        feedbackScore: z.number().nullable(),
-        context: z.any().nullable(),
-        authContext: z.any().nullable(),
+      200: RunSchema.omit({
+        test: true,
+      }).extend({
         result: anyObject.nullable(),
-        tags: z.record(z.string()).nullable(),
-        attachedFunctions: z.array(z.string()).nullable(),
       }),
       401: z.undefined(),
     },
@@ -1376,6 +1401,23 @@ export const definition = {
     body: z.object({}).passthrough(),
     responses: {
       200: z.undefined(),
+    },
+  },
+  createWorkflowExecution: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      workflowName: z.string(),
+    }),
+    body: z
+      .object({
+        executionId: z.string(),
+      })
+      .passthrough(),
+    responses: {
+      201: z.object({ jobId: z.string() }),
     },
   },
 } as const;

@@ -142,7 +142,7 @@ export const createRun = async ({
   }
 
   // Insert tags if provided
-  if (tags) {
+  if (tags && Object.keys(tags).length > 0) {
     await db.insert(runTags).values(
       Object.entries(tags).map(([key, value]) => ({
         cluster_id: clusterId,
@@ -335,6 +335,9 @@ export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; r
         authContext: runs.auth_context,
         context: runs.context,
         enableResultGrounding: runs.enable_result_grounding,
+        reasoningTraces: runs.reasoning_traces,
+        resultSchema: runs.result_schema,
+        onStatusChange: runs.on_status_change,
       })
       .from(runs)
       .where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId))),

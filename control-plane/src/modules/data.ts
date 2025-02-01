@@ -288,7 +288,7 @@ export const runs = pgTable(
   {
     id: varchar("id", { length: 1024 }).notNull(),
     on_status_change: json("on_status_change").$type<z.infer<typeof onStatusChangeSchema>>(),
-    result_schema: json("result_schema"),
+    result_schema: json("result_schema").$type<any>(),
     name: varchar("name", { length: 1024 }).default("").notNull(),
     system_prompt: varchar("system_prompt", { length: 1024 }),
     model_identifier: text("model_identifier", {

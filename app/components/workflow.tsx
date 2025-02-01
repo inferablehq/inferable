@@ -30,6 +30,8 @@ import { SendButton } from "@/components/ui/send-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import { Blob } from "./chat/blob";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 const messageSkeleton = (
   <div className="flex flex-col items-start space-y-4 p-4" key="skeleton-0">
@@ -266,6 +268,8 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
   const isAdmin = role === "org:admin";
 
   const isOwner = runTimeline?.run.userId === user.user?.id;
+
+  const router = useRouter();
 
   const elements = useMemo(() => {
     const jobElements =
@@ -613,6 +617,127 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
               </DropdownMenu>
             </div>
             <div className="flex-grow">&nbsp;</div>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const isOk = window.confirm(
+                  "This will copy the initial prompt and run everything in a new run. Is that ok?"
+                );
+
+                if (!isOk) return;
+
+                const creatingRun = toast.loading("Creating new run...");
+
+                try {
+                  const newRunId = ulid();
+
+                  const existingRun = await client
+                    .getRun({
+                      params: {
+                        clusterId,
+                        runId,
+                      },
+                      headers: {
+                        authorization: `Bearer ${await getToken()}`,
+                      },
+                    })
+                    .then(r => {
+                      if (r.status !== 200) {
+                        createErrorToast(r, `Failed to get existing run of ${runId}`);
+                        return null;
+                      }
+
+                      return r.body;
+                    });
+
+                  const firstMessage = await client
+                    .getRunTimeline({
+                      params: {
+                        clusterId,
+                        runId,
+                      },
+                      headers: {
+                        authorization: `Bearer ${await getToken()}`,
+                      },
+                      query: {
+                        messagesAfter: "0",
+                      },
+                    })
+                    .then(r => {
+                      if (r.status !== 200) {
+                        createErrorToast(r, `Failed to get existing run of ${runId}`);
+                        return null;
+                      }
+
+                      return r.body.messages.sort((a, b) => a.id.localeCompare(b.id))[0];
+                    });
+
+                  if (!firstMessage || !existingRun) {
+                    toast.dismiss(creatingRun);
+                    return;
+                  }
+
+                  const firstMessageText =
+                    "message" in firstMessage?.data ? firstMessage.data?.message : "";
+
+                  if (!firstMessageText) {
+                    const digest = Date.now().toString();
+                    toast.error(`Failed to get first message. digest=${digest}`);
+                    console.error({
+                      digest,
+                      firstMessage,
+                    });
+                    toast.dismiss(creatingRun);
+                    return;
+                  }
+
+                  await client
+                    .createRun({
+                      body: {
+                        id: newRunId,
+                        attachedFunctions: existingRun.attachedFunctions?.length
+                          ? existingRun.attachedFunctions
+                          : undefined,
+                        tags: existingRun.tags ?? {},
+                        context: existingRun.context ?? {},
+                        initialPrompt: firstMessageText,
+                        systemPrompt: existingRun.systemPrompt ?? undefined,
+                        enableResultGrounding: existingRun.enableResultGrounding ?? false,
+                        reasoningTraces: existingRun.reasoningTraces ?? false,
+                        resultSchema: existingRun.resultSchema ?? undefined,
+                        onStatusChange: existingRun.onStatusChange ?? undefined,
+                        model: existingRun.model ?? undefined,
+                        agentId: existingRun.agentId ?? undefined,
+                        input: existingRun.input ?? undefined,
+                        callSummarization: existingRun.callSummarization ?? undefined,
+                        interactive: existingRun.interactive ?? undefined,
+                      },
+                      headers: {
+                        authorization: `Bearer ${await getToken()}`,
+                      },
+                      params: {
+                        clusterId,
+                      },
+                    })
+                    .then(r => {
+                      if (r.status !== 201) {
+                        createErrorToast(r, `Failed to create new run of ${runId}`);
+                        return;
+                      }
+
+                      router.push(`/clusters/${clusterId}/runs/${r.body.id}`);
+                    });
+                } catch (e) {
+                  console.error(e);
+                } finally {
+                  toast.dismiss(creatingRun);
+                }
+              }}
+              className="gap-2"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              Rerun
+            </Button>
             <FeedbackDialog
               runId={runId}
               clusterId={clusterId}

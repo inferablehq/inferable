@@ -148,8 +148,30 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: {
-        ...run,
+        id: run.id,
+        status: run.status,
         result: run.result ?? null,
+        resultSchema: run.resultSchema ?? null,
+        systemPrompt: run.systemPrompt ?? undefined,
+        attachedFunctions:
+          run.attachedFunctions?.map(fn => {
+            const [service, functionName] = fn.split("_");
+
+            return {
+              service,
+              function: functionName,
+            };
+          }) ?? null,
+        tags: run.tags ?? null,
+        context: (run.context ?? undefined) as any,
+        reasoningTraces: run.reasoningTraces ?? null,
+        enableResultGrounding: run.enableResultGrounding ?? false,
+        authContext: run.authContext ?? null,
+        onStatusChange: run.onStatusChange ?? null,
+        userId: run.userId ?? null,
+        feedbackScore: run.feedbackScore ?? null,
+        failureReason: run.failureReason ?? null,
+        feedbackComment: run.feedbackComment ?? null,
       },
     };
   },

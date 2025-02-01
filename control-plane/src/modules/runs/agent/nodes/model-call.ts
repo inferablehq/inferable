@@ -107,6 +107,8 @@ const _handleModelCall = async (
   if (!validation.valid) {
     logger.info("Model provided invalid response object", {
       errors: validation.errors,
+      structured: response.structured,
+      raw: response.raw,
     });
     return {
       messages: [
