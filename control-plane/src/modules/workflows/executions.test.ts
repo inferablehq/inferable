@@ -13,7 +13,6 @@ describe("createWorkflowExecution", () => {
 
     // Register a workflow service
     await upsertServiceDefinition({
-      isWorkflow: true,
       service: `workflows-${workflowName}-${version}`,
       definition: {
         name: workflowName,
@@ -75,7 +74,6 @@ describe("createWorkflowExecution", () => {
 
     // Register version 1
     await upsertServiceDefinition({
-      isWorkflow: true,
       service: `workflows-${workflowName}-1`,
       definition: {
         name: workflowName,
@@ -97,7 +95,6 @@ describe("createWorkflowExecution", () => {
 
     // Register version 2
     await upsertServiceDefinition({
-      isWorkflow: true,
       service: `workflows-${workflowName}-2`,
       definition: {
         name: workflowName,
