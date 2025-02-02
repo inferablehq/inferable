@@ -1,10 +1,11 @@
-import { buildMockTools, findRelevantTools, formatJobsContext, processRun } from "./run";
+import { buildMockTools, formatJobsContext, processRun } from "./run";
 import { upsertServiceDefinition } from "../../service-definitions";
 import { createOwner } from "../../test/util";
 import { ulid } from "ulid";
 import { db, jobs, runs } from "../../data";
 import { insertRunMessage } from "../messages";
 import { and, eq } from "drizzle-orm";
+import { findRelevantTools } from "./tool-search";
 
 describe("processRun", () => {
   it("should call onStatusChange function handler", async () => {
