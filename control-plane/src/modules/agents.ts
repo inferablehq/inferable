@@ -7,9 +7,9 @@ import { BadRequestError, NotFoundError } from "../utilities/errors";
 import { RunMessageMetadata, db, agents } from "./data";
 import { logger } from "./observability/logger";
 import { VersionedEntity } from "./versioned-entities";
-import { validateFunctionSchema } from "inferable";
 import { JsonSchemaInput } from "inferable/bin/types";
 import { ChatIdentifiers } from "./models/routing";
+import { validateFunctionSchema } from "./json-schema";
 
 export const versionedAgentConfig = new VersionedEntity(
   z.object({

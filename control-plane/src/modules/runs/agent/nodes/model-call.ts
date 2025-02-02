@@ -6,8 +6,6 @@ import { addAttributes, withSpan } from "../../../observability/tracer";
 import { AgentError } from "../../../../utilities/errors";
 import { ulid } from "ulid";
 
-import { validateFunctionSchema } from "inferable";
-import { JsonSchemaInput } from "inferable/bin/types";
 import { Model } from "../../../models";
 import { ToolUseBlock } from "@anthropic-ai/sdk/resources";
 
@@ -15,6 +13,9 @@ import { Schema, Validator } from "jsonschema";
 import { buildModelSchema, ModelOutput } from "./model-output";
 import { FINAL_RESULT_SCHEMA_TAG_NAME, getSystemPrompt } from "./system-prompt";
 import { handleContextWindowOverflow } from "../overflow";
+import { JsonSchemaInput } from "../../../json-schema";
+import { validateFunctionSchema } from "../../../json-schema";
+import { z } from "zod";
 
 type RunStateUpdate = Partial<RunGraphState>;
 
@@ -26,6 +27,33 @@ export const handleModelCall = (
   model: Model,
   findRelevantTools: ReleventToolLookup
 ) => withSpan("run.modelCall", () => _handleModelCall(state, model, findRelevantTools));
+
+/**
+ * Attempts to rescue a structured result that is a string by parsing it as JSON.
+ * Sometimes the Claude gets confused and returns a stringified JSON object, which doesn't get parsed by the Anthropic SDK.
+ */
+function attemptRescueStringifiedStructuredResult(response: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const s = (response as any)?.structured;
+
+  if ("result" in s && typeof s.result === "string") {
+    try {
+      const previous = s.result;
+      s.result = JSON.parse(previous);
+      logger.info("Rescued structured result from string", {
+        previous,
+        current: s.result,
+      });
+    } catch (e) {
+      logger.warn("Detected structured result is a string, trying to parse as JSON but failed", {
+        error: e,
+        structured: s,
+      });
+    }
+  }
+
+  return s;
+}
 
 const _handleModelCall = async (
   state: RunGraphState,
@@ -101,11 +129,14 @@ const _handleModelCall = async (
     .filter(m => m.type === "tool_use" && m.name !== "extract")
     .map(m => m as ToolUseBlock);
 
+  attemptRescueStringifiedStructuredResult(response);
+
   const validation = validator.validate(response.structured, schema as Schema);
+
   const data = response.structured as ModelOutput;
 
   if (!validation.valid) {
-    logger.info("Model provided invalid response object", {
+    logger.warn("Model provided invalid response object", {
       errors: validation.errors,
       structured: response.structured,
       raw: response.raw,
