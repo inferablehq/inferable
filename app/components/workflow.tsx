@@ -380,7 +380,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                     <p className="text-xs text-gray-400">{runTimeline?.run.id}</p>
                   </div>
                 </div>
-
                 {/* {runTimeline?.run.tags && Object.keys(runTimeline?.run.tags).length > 0 && (
                   <div className="flex flex-col space-y-1">
                     <span className="text-xs font-medium text-gray-500">Tags</span>
@@ -397,7 +396,16 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                     </div>
                   </div>
                 )} */}
-
+                {runTimeline?.run.systemPrompt && (
+                  <div className="flex flex-col space-y-1">
+                    <span className="text-xs font-medium text-gray-500">System Prompt</span>
+                    <div className="flex flex-wrap gap-1">
+                      <div className="py-0.5 rounded text-xs text-gray-500">
+                        {runTimeline?.run.systemPrompt}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {runTimeline?.run.context && Object.keys(runTimeline?.run.context).length > 0 && (
                   <div className="flex flex-col space-y-1">
                     <span className="text-xs font-medium text-gray-500">Context</span>
@@ -420,7 +428,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                     </div>
                   </div>
                 )}
-
                 {runTimeline?.run.attachedFunctions &&
                 runTimeline?.run.attachedFunctions.length > 0 ? (
                   <div className="flex flex-col space-y-1">
@@ -453,7 +460,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                     </div>
                   </div>
                 )}
-
                 {runTimeline?.run.userId && (
                   <div className="flex flex-col space-y-1">
                     <span className="text-xs font-medium text-gray-500">User Context</span>
@@ -467,7 +473,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                     </div>
                   </div>
                 )}
-
                 {runTimeline?.run.status === "failed" && (
                   <div className="flex flex-row">
                     <MessageCircleWarning className="h-4 w-4 mt-1 text-red-500" />

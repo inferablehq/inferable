@@ -204,11 +204,11 @@ export const findRelevantTools = async (state: RunGraphState) => {
       );
     }
   } else {
-    const fastModel = buildModel({
+    const model = buildModel({
       purpose: "agent.tool-search-query",
-      identifier: "claude-3-haiku",
+      identifier: "claude-3-5-sonnet",
       modelOptions: {
-        temperature: 0.5,
+        temperature: 0.2,
       },
       trackingOptions: {
         clusterId: run.clusterId,
@@ -216,10 +216,10 @@ export const findRelevantTools = async (state: RunGraphState) => {
       },
     });
 
-    const searchQuery = await fastModel.call({
+    const searchQuery = await model.call({
       maxTokens: 100,
       system:
-        "You are a helpful assistant. You are give a message history conducted by an agent X. Agent X has requested your help in generating a search query to find relevant tools to call.",
+        "You are a helpful assistant. You are give a message history conducted by an agent X. Agent X has requested your help in generating a plain text search query to find relevant tools to call. The search query should be a at most 2 sentences.",
       messages: [
         toAnthropicMessage({
           type: "human",
@@ -251,7 +251,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
           type: "agent",
           id: ulid(),
           data: {
-            message: "Acknowledged. I have thought deeply, and here's my search query:",
+            message: "Acknowledged. I have thought deeply, and you must search for tools that can:",
           },
         }),
       ],
