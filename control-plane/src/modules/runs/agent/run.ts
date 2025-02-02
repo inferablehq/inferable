@@ -10,7 +10,6 @@ import { embedSearchQuery } from "../../embeddings/embeddings";
 import { flagsmith } from "../../flagsmith";
 import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
 import { ChatIdentifiers } from "../../models/routing";
-import { events } from "../../observability/events";
 import { logger } from "../../observability/logger";
 import {
   embeddableServiceFunction,
@@ -24,8 +23,8 @@ import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { generateTitle } from "../summarization";
 import { createRunGraph } from "./agent";
 import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
-import { RunGraphState } from "./state";
 import { AgentTool } from "./tool";
+import { findRelevantTools } from "./tool-search";
 import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
 import { availableStdlib } from "./tools/stdlib";
@@ -428,80 +427,6 @@ const buildAdditionalContext = async (run: {
   run.systemPrompt && (context += `\n${run.systemPrompt}`);
 
   return context;
-};
-
-export const findRelevantTools = async (state: RunGraphState) => {
-  const start = Date.now();
-  const run = state.run;
-
-  const tools: AgentTool[] = [];
-  const attachedFunctions = run.attachedFunctions ?? [];
-
-  const stdlib = availableStdlib();
-
-  // If functions are explicitly attached, skip relevant tools search
-  if (attachedFunctions.length > 0) {
-    for (const tool of attachedFunctions) {
-      if (tool.toLowerCase().startsWith("inferable_")) {
-        const internalToolName = tool.split("_")[1];
-
-        if (internalToolName === stdlib.calculator.metadata.name) {
-          tools.push(stdlib.calculator);
-          continue;
-        } else if (internalToolName === stdlib.currentDateTime.metadata.name) {
-          tools.push(stdlib.currentDateTime);
-          continue;
-        } else if (internalToolName === stdlib.getUrl.metadata.name) {
-          tools.push(stdlib.getUrl);
-          continue;
-        } else {
-          logger.warn("Tool not found in stdlib", {
-            tool,
-          });
-
-          throw new Error(`Tool ${tool} not found in cluster ${run.clusterId}`);
-        }
-      }
-
-      const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
-        run.clusterId,
-        "service-function",
-        tool
-      );
-
-      if (!serviceFunctionDetails) {
-        throw new Error(`Tool ${tool} not found in cluster ${run.clusterId}`);
-      }
-
-      tools.push(
-        buildAbstractServiceFunctionTool({
-          ...serviceFunctionDetails,
-          schema: serviceFunctionDetails.schema,
-        })
-      );
-    }
-  } else {
-    const found = await findRelatedFunctionTools(
-      run,
-      state.messages.map(m => JSON.stringify(m.data)).join(" ")
-    );
-
-    tools.push(...found);
-
-    tools.push(...Object.values(availableStdlib()));
-
-    events.write({
-      type: "functionRegistrySearchCompleted",
-      workflowId: run.id,
-      clusterId: run.clusterId,
-      meta: {
-        duration: Date.now() - start,
-        tools: tools.map(t => t.name),
-      },
-    });
-  }
-
-  return tools;
 };
 
 export const buildMockTools = async (run: {

@@ -5,6 +5,8 @@ import { logger } from "./observability/logger";
 
 const intervals: NodeJS.Timeout[] = [];
 
+const currentLocks: Record<string, ReturnType<typeof createMutex>> = {};
+
 export const registerCron = async (
   fn: () => Promise<unknown>,
   name: string,
@@ -14,6 +16,8 @@ export const registerCron = async (
 
   const intervalId = setInterval(async () => {
     const unlock = await mutex.tryLock();
+
+    currentLocks[name] = mutex;
 
     if (!unlock) {
       logger.info("Could not acquire lock, skipping cron.", {
@@ -27,6 +31,7 @@ export const registerCron = async (
     } catch (e) {
       logger.error("Cron job failed", { name, error: e });
     } finally {
+      delete currentLocks[name];
       unlock();
     }
   }, interval);
@@ -37,6 +42,10 @@ export const registerCron = async (
 };
 
 export const stop = () => {
+  Object.values(currentLocks).forEach(mutex => {
+    mutex.unlock();
+  });
+
   intervals.forEach(intervalId => {
     clearInterval(intervalId);
   });

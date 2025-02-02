@@ -22,6 +22,7 @@ type CallInput = {
   system?: string | undefined;
   messages: Anthropic.MessageParam[];
   tools?: Anthropic.Tool[];
+  maxTokens?: number;
 };
 
 type CallOutput = {
@@ -126,7 +127,7 @@ export const buildModel = ({
               model: routing.modelId,
               temperature,
               stream: false,
-              max_tokens: 2048,
+              max_tokens: options.maxTokens ?? 2048,
               system: options.system,
               messages: options.messages,
               // This is enforced above
@@ -195,7 +196,7 @@ export const buildModel = ({
               model: routing.modelId,
               temperature,
               stream: false,
-              max_tokens: 2048,
+              max_tokens: options.maxTokens ?? 2048,
               system: options.system,
               messages: options.messages,
               tool_choice: {
