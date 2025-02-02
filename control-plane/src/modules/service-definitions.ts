@@ -1,5 +1,5 @@
 import { and, eq, like, lte, sql } from "drizzle-orm";
-import { validateDescription, validateFunctionName, validateFunctionSchema } from "inferable";
+import { validateDescription, validateFunctionName, validateFunctionSchema } from "./json-schema";
 import jsonpath from "jsonpath";
 import { Validator } from "jsonschema";
 import { z } from "zod";
