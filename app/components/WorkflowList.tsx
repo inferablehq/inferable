@@ -20,7 +20,6 @@ type WorkflowListProps = {
 };
 
 const runFiltersSchema = z.object({
-  agentId: z.string().optional(),
   test: z.boolean().optional(),
 });
 
@@ -84,7 +83,6 @@ export function RunList({ clusterId }: WorkflowListProps) {
         test: runFilters.test ? "true" : undefined,
         userId: (runToggle === "mine" ? `clerk:${userId}` : undefined) ?? undefined,
         limit: Math.min(limit, 500), // Ensure limit doesn't exceed 500
-        agentId: runFilters.agentId,
       },
       params: {
         clusterId: clusterId,
@@ -111,16 +109,10 @@ export function RunList({ clusterId }: WorkflowListProps) {
   ]);
 
   useEffect(() => {
-    if (runFilters?.agentId) {
-      fetchWorkflows();
-    }
-  }, [runFilters?.agentId, fetchWorkflows]);
-
-  useEffect(() => {
     fetchWorkflows();
     const interval = setInterval(fetchWorkflows, 5000);
     return () => clearInterval(interval);
-  }, [fetchWorkflows, runFilters?.agentId]);
+  }, [fetchWorkflows]);
 
   const loadMore = () => {
     if (limit < 50) {
@@ -132,22 +124,8 @@ export function RunList({ clusterId }: WorkflowListProps) {
 
   return (
       <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[300px] lg:h-[calc(100vh-16rem)] p-2 border">
-        {(!!runFilters.agentId || !!runFilters.test) && (
+        {(!!runFilters.test) && (
           <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
-            {runFilters.agentId && (
-              <Badge
-                className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
-                onClick={() => {
-                  setRunFilters({});
-                  if (path) {
-                    router.push(path);
-                  }
-                }}
-              >
-                Filtering by Agent
-                <XIcon className="h-4 w-4" />
-              </Badge>
-            )}
             {runFilters.test && (
               <Badge
                 className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"

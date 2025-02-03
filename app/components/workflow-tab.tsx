@@ -12,9 +12,9 @@ import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
 import { truncate } from "lodash";
-import { Bot, TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon, TrashIcon } from "lucide-react";
+import { TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon, TrashIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import toast from "react-hot-toast";
 
 const statusToCircle: {
@@ -74,29 +74,6 @@ export function RunTab({
     [onRefetchWorkflows, onGoToCluster, runId, getToken]
   );
 
-  const [templates, setTemplates] = useState<{ id: string; name: string }[]>([]);
-
-  useEffect(() => {
-    getToken()
-      .then(token => {
-        return client.listAgents({
-          headers: {
-            authorization: `Bearer ${token}`,
-          },
-          params: {
-            clusterId,
-          },
-        });
-      })
-      .then(results => {
-        if (results.status === 200) {
-          setTemplates(results.body);
-        } else {
-          createErrorToast(results, "Failed to fetch Agents");
-        }
-      });
-  }, [clusterId, getToken]);
-
   return (
     <div className="flex flex-col space-y-2">
       {workflows
@@ -110,7 +87,6 @@ export function RunTab({
             onGoToWorkflow={onGoToWorkflow}
             workflows={workflows}
             userId={userId ?? null}
-            templates={templates}
             onDeleteWorkflow={deleteWorkflow}
             test={workflow.test}
           />
@@ -127,7 +103,6 @@ function RunPill({
   clusterId,
   depth = 0,
   userId,
-  templates,
 }: {
   workflow: Workflow;
   runId?: string;
@@ -138,7 +113,6 @@ function RunPill({
   userId: string | null;
   onDeleteWorkflow: (runId: string, clusterId: string) => void;
   test: boolean;
-  templates: { id: string; name: string }[];
 }) {
   const router = useRouter();
   return (
@@ -187,22 +161,6 @@ function RunPill({
                       )}`
                     );
                   }}
-                />
-              )}
-              {workflow.agentId && (
-                <Tag
-                  label={<Bot className="h-3 w-3" />}
-                  onClick={e => {
-                    e.stopPropagation();
-                    router.push(
-                      `/clusters/${clusterId}/runs?filters=${encodeURIComponent(
-                        JSON.stringify({
-                          agentId: workflow.agentId,
-                        })
-                      )}`
-                    );
-                  }}
-                  value={templates.find(t => t.id === workflow.agentId)?.name ?? "unknown"}
                 />
               )}
               {workflow.feedbackScore !== null && (

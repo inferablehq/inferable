@@ -282,10 +282,10 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
     .groupBy(sql`DATE(created_at)`, eventsTable.model_id)
     .orderBy(sql`DATE(created_at)` as SQL);
 
-  const agentRuns = await db
+  const runs = await db
     .select({
       date: sql<string>`DATE(created_at)`,
-      totalAgentRuns: sql<number>`count(*)`.mapWith(Number),
+      totalRuns: sql<number>`count(*)`.mapWith(Number),
     })
     .from(eventsTable)
     .where(
@@ -300,7 +300,7 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
 
   return {
     modelUsage,
-    agentRuns,
+    runs,
   };
 };
 

@@ -16,7 +16,6 @@ import { getUserForCluster } from "../../clerk";
 import { submitApproval } from "../../jobs/jobs";
 import { integrationSchema, unifiedMessageSchema } from "../../contract";
 import { createExternalMessage } from "../../runs/external-messages";
-import { getAgent, mergeAgentOptions } from "../../agents";
 
 const THREAD_META_KEY = "slackThreadTs";
 const CHANNEL_META_KEY = "slackChannel";
@@ -37,7 +36,6 @@ type MessageEvent = {
       email: string;
     }
   };
-  agentId?: string;
 };
 
 export const slack: InstallableIntegration = {
@@ -350,7 +348,6 @@ export const start = async (fastify: FastifyInstance) => {
           event,
           client,
           clusterId: integration.cluster_id,
-          agentId: integration.slack?.agentId,
         });
       }
     } catch (error) {
@@ -484,30 +481,11 @@ const deleteNangoConnection = async (connectionId: string) => {
   await nango.deleteConnection(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
 };
 
-const handleNewThread = async ({ event, client, clusterId, user, agentId }: MessageEvent) => {
+const handleNewThread = async ({ event, client, clusterId, user }: MessageEvent) => {
   let thread = event.ts;
   // If this message is part of a thread, associate the run with the thread rather than the message
   if (hasThread(event)) {
     thread = event.thread_ts;
-  }
-
-  let options;
-
-  if (agentId) {
-    const agent = await getAgent({
-      id: agentId,
-      clusterId,
-    });
-    if (!agent) {
-      throw new Error("Could not find agent for email");
-    }
-    options = mergeAgentOptions({}, agent);
-  }
-
-  if (options?.error) {
-    logger.error("Could not merge agent options", {
-      error: options.error,
-    })
   }
 
   if ("text" in event && event.text) {
@@ -529,8 +507,6 @@ const handleNewThread = async ({ event, client, clusterId, user, agentId }: Mess
         [THREAD_META_KEY]: thread,
         [CHANNEL_META_KEY]: event.channel,
       },
-      agentId,
-      ...options?.options
     });
 
     await client.chat.postMessage({

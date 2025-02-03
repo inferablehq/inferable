@@ -10,7 +10,6 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
 import { useAuth } from "@clerk/nextjs";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,19 +20,11 @@ import { z } from "zod";
 import { ArrowLeft, ClipboardCopy } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "@/components/loading";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { createErrorToast } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
 const formSchema = z.object({
-  agentId: z.string().optional(),
   validateSPFandDKIM: z.boolean().optional().default(false),
 });
 
@@ -43,9 +34,6 @@ const EMAIL_INGESTION_SUFIX = `run.inferable.ai`;
 // The integrations endpoint uses this magic value to generate a new connection
 const NEW_CONNECTION_ID_VALUE = "NEW";
 
-// Select component uses this value to represent no agent id
-const NO_AGENT_ID_VALUE = "NONE";
-
 export default function EmailIntegration({
   params: { clusterId },
 }: {
@@ -53,14 +41,10 @@ export default function EmailIntegration({
 }) {
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [agents, setAgents] = useState<Array<{ id: string; name: string }>>([]);
   const [connectionId, setConnectionId] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      agentId: NO_AGENT_ID_VALUE,
-    },
   });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
@@ -73,7 +57,6 @@ export default function EmailIntegration({
       },
       body: {
         email: {
-          agentId: data.agentId === NO_AGENT_ID_VALUE ? undefined : data.agentId,
           connectionId: connectionId ?? NEW_CONNECTION_ID_VALUE,
           validateSPFandDKIM: data.validateSPFandDKIM,
         },
@@ -92,16 +75,8 @@ export default function EmailIntegration({
   const fetchConfig = useCallback(async () => {
     setLoading(true);
 
-    const [integrationsResponse, agentsResponse] = await Promise.all([
+    const [integrationsResponse] = await Promise.all([
       client.getIntegrations({
-        headers: {
-          authorization: `Bearer ${await getToken()}`,
-        },
-        params: {
-          clusterId: clusterId,
-        },
-      }),
-      client.listAgents({
         headers: {
           authorization: `Bearer ${await getToken()}`,
         },
@@ -113,12 +88,7 @@ export default function EmailIntegration({
 
     setLoading(false);
 
-    if (agentsResponse.status === 200) {
-      setAgents(agentsResponse.body);
-    }
-
     if (integrationsResponse.status === 200 && integrationsResponse.body?.email) {
-      form.setValue("agentId", integrationsResponse.body.email.agentId);
       form.setValue(
         "validateSPFandDKIM",
         integrationsResponse.body.email.validateSPFandDKIM ?? false
@@ -154,8 +124,7 @@ export default function EmailIntegration({
             <CardTitle>Configure Email Integration</CardTitle>
           </div>
           <CardDescription>
-            Configure email integration settings for this cluster. Route incoming emails to specific
-            agents or use cluster defaults.
+            Configure email integration settings for this cluster.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -191,38 +160,6 @@ export default function EmailIntegration({
             </div>
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="agentId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Agent</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an agent" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value={NO_AGENT_ID_VALUE}>
-                          None (Use Cluster Defaults)
-                        </SelectItem>
-                        {agents.map(agent => (
-                          <SelectItem key={agent.id} value={agent.id}>
-                            {agent.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Select an agent to handle incoming emails, or leave empty to use cluster
-                      defaults
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="validateSPFandDKIM"

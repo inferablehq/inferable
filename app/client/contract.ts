@@ -136,14 +136,12 @@ export const integrationSchema = z.object({
       nangoConnectionId: z.string(),
       botUserId: z.string(),
       teamId: z.string(),
-      agentId: z.string().optional(),
     })
     .optional()
     .nullable(),
   email: z
     .object({
       connectionId: z.string(),
-      agentId: z.string().optional(),
       validateSPFandDKIM: z.boolean().optional(),
     })
     .optional()
@@ -331,12 +329,11 @@ const RunSchema = z.object({
     })
     .optional()
     .describe("When provided, the run will be marked as as a test / evaluation"),
-  agentId: z.string().optional().describe("The agent ID to use"),
   input: z
     .object({})
     .passthrough()
     .describe(
-      "Structured input arguments to merge with the initial prompt. The schema must match the agent input schema if defined"
+      "Structured input arguments to merge with the initial prompt."
     )
     .optional(),
   context: anyObject.optional().describe("Additional context to propogate to all Jobs in the Run"),
@@ -383,33 +380,6 @@ export const definition = {
         contract: z.string(),
       }),
     },
-  },
-
-  createStructuredOutput: {
-    method: "POST",
-    path: "/clusters/:clusterId/structured-output",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      prompt: z.string(),
-      resultSchema: anyObject
-        .optional()
-        .describe(
-          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
-        ),
-      modelId: z.enum(["claude-3-5-sonnet", "claude-3-haiku"]),
-      temperature: z
-        .number()
-        .optional()
-        .describe("The temperature to use for the model")
-        .default(0.5),
-    }),
-    responses: {
-      200: z.unknown(),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
   },
 
   // Job Endpoints
@@ -847,12 +817,12 @@ export const definition = {
             totalModelInvocations: z.number(),
           })
         ),
-        agentRuns: z.array(
+        runs: z.array(
           z.object({
             date: z.string(),
-            totalAgentRuns: z.number(),
+            totalRuns: z.number(),
           })
-        ),
+        )
       }),
     },
     pathParams: z.object({
@@ -915,7 +885,6 @@ export const definition = {
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
       tags: z.string().optional().describe("Filter runs by a tag value (value:key)"),
-      agentId: z.string().optional(),
     }),
     responses: {
       200: z.array(
@@ -926,8 +895,6 @@ export const definition = {
           createdAt: z.date(),
           status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
           test: z.boolean(),
-          agentId: z.string().nullable(),
-          agentVersion: z.number().nullable(),
           feedbackScore: z.number().nullable(),
         })
       ),
@@ -1224,158 +1191,6 @@ export const definition = {
       200: z.any(),
       404: z.undefined(),
     },
-  },
-
-  // Agent Endpoints
-  getAgent: {
-    method: "GET",
-    path: "/clusters/:clusterId/agents/:agentId",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-        clusterId: z.string(),
-        name: z.string(),
-        initialPrompt: z.string().nullable(),
-        systemPrompt: z.string().nullable(),
-        attachedFunctions: z.array(z.string()),
-        resultSchema: anyObject.nullable(),
-        inputSchema: anyObject.nullable(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-        versions: z.array(
-          z.object({
-            version: z.number(),
-            name: z.string(),
-            initialPrompt: z.string().nullable(),
-            systemPrompt: z.string().nullable(),
-            attachedFunctions: z.array(z.string()),
-            resultSchema: anyObject.nullable(),
-            inputSchema: anyObject.nullable(),
-          })
-        ),
-      }),
-      401: z.undefined(),
-      404: z.object({ message: z.string() }),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-      agentId: z.string(),
-    }),
-    query: z.object({
-      withPreviousVersions: z.enum(["true", "false"]).default("false"),
-    }),
-  },
-  createAgent: {
-    method: "POST",
-    path: "/clusters/:clusterId/agents",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      name: z.string(),
-      initialPrompt: z.string().optional(),
-      systemPrompt: z.string().optional().describe("The initial system prompt for the run."),
-      attachedFunctions: z.array(z.string()).optional(),
-      resultSchema: anyObject.optional(),
-      inputSchema: z.object({}).passthrough().optional().nullable(),
-    }),
-    responses: {
-      201: z.object({ id: z.string() }),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  upsertAgent: {
-    method: "PUT",
-    path: "/clusters/:clusterId/agents/:agentId",
-    headers: z.object({ authorization: z.string() }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      agentId: z.string().regex(userDefinedIdRegex),
-    }),
-    body: z.object({
-      name: z.string().optional(),
-      initialPrompt: z.string().optional(),
-      systemPrompt: z.string().optional().describe("The initial system prompt for the run."),
-      attachedFunctions: z.array(z.string()).optional(),
-      resultSchema: z.object({}).passthrough().optional().nullable(),
-      inputSchema: z.object({}).passthrough().optional().nullable(),
-    }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-        clusterId: z.string(),
-        name: z.string(),
-        initialPrompt: z.string().nullable(),
-        systemPrompt: z.string().nullable(),
-        attachedFunctions: z.array(z.string()),
-        resultSchema: z.unknown().nullable(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-      }),
-      401: z.undefined(),
-      404: z.object({ message: z.string() }),
-    },
-  },
-  deleteAgent: {
-    method: "DELETE",
-    path: "/clusters/:clusterId/agent/:agentId",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-      404: z.object({ message: z.string() }),
-    },
-    body: z.undefined(),
-    pathParams: z.object({
-      clusterId: z.string(),
-      agentId: z.string(),
-    }),
-  },
-  listAgents: {
-    method: "GET",
-    path: "/clusters/:clusterId/agents",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          clusterId: z.string(),
-          name: z.string(),
-          initialPrompt: z.string().nullable(),
-          systemPrompt: z.string().nullable(),
-          attachedFunctions: z.array(z.string()),
-          resultSchema: z.unknown().nullable(),
-          createdAt: z.date(),
-          updatedAt: z.date(),
-        })
-      ),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  getAgentMetrics: {
-    method: "GET",
-    path: "/clusters/:clusterId/agents/:agentId/metrics",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      200: z.array(
-        z.object({
-          createdAt: z.date(),
-          feedbackScore: z.number().nullable(),
-          jobFailureCount: z.number(),
-          timeToCompletion: z.number(),
-          jobCount: z.number(),
-        })
-      ),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-      agentId: z.string(),
-    }),
   },
 
   // Nango Endpoints

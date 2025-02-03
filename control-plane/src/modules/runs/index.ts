@@ -1,4 +1,4 @@
-import { and, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { omitBy } from "lodash";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
@@ -8,7 +8,7 @@ import {
   PaymentRequiredError,
   RunBusyError,
 } from "../../utilities/errors";
-import { clusters, db, jobs, RunMessageMetadata, runMessages, runs, runTags } from "../data";
+import { clusters, db, jobs, RunMessageMetadata, runs, runTags } from "../data";
 import { ChatIdentifiers } from "../models/routing";
 import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
@@ -25,6 +25,7 @@ import {
 import { getRunTags } from "./tags";
 import { onStatusChangeSchema } from "../contract";
 import { z } from "zod";
+import { JsonSchemaInput, validateFunctionSchema } from "../json-schema";
 
 export const createRun = async ({
   id,
@@ -38,8 +39,6 @@ export const createRun = async ({
   resultSchema,
   tags,
   attachedFunctions,
-  agentId,
-  agentVersion,
   interactive,
   reasoningTraces,
   enableSummarization,
@@ -64,8 +63,6 @@ export const createRun = async ({
   resultSchema?: unknown;
   tags?: Record<string, string>;
   attachedFunctions?: string[];
-  agentId?: string;
-  agentVersion?: number;
   interactive?: boolean;
   reasoningTraces?: boolean;
   enableSummarization?: boolean;
@@ -88,7 +85,6 @@ export const createRun = async ({
     context: runs.context,
     interactive: runs.interactive,
     enableResultGrounding: runs.enable_result_grounding,
-    agentId: runs.agent_id,
   } as const;
 
   // Insert the run with a subquery for debug value
@@ -110,8 +106,6 @@ export const createRun = async ({
       on_status_change: onStatusChangeHandler,
       result_schema: resultSchema,
       attached_functions: attachedFunctions,
-      agent_id: agentId,
-      agent_version: agentVersion,
       model_identifier: modelIdentifier,
       auth_context: {
         ...authContext,
@@ -240,7 +234,6 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
       id: runs.id,
       name: runs.name,
       userId: runs.user_id,
-      agentId: runs.agent_id,
       clusterId: runs.cluster_id,
       systemPrompt: runs.system_prompt,
       status: runs.status,
@@ -272,13 +265,11 @@ export const getClusterRuns = async ({
   userId,
   test,
   limit = 50,
-  agentId,
 }: {
   clusterId: string;
   test: boolean;
   userId?: string;
   limit?: number;
-  agentId?: string;
 }) => {
   const result = await db
     .select({
@@ -292,8 +283,6 @@ export const getClusterRuns = async ({
       failureReason: runs.failure_reason,
       debug: runs.debug,
       test: runs.test,
-      agentId: runs.agent_id,
-      agentVersion: runs.agent_version,
       feedbackScore: runs.feedback_score,
       modelIdentifier: runs.model_identifier,
       authContext: runs.auth_context,
@@ -306,7 +295,6 @@ export const getClusterRuns = async ({
         eq(runs.cluster_id, clusterId),
         eq(runs.test, test),
         ...(userId ? [eq(runs.user_id, userId)] : []),
-        ...(agentId ? [eq(runs.agent_id, agentId)] : [])
       )
     )
     .orderBy(desc(runs.created_at))
@@ -469,8 +457,6 @@ export const createRunWithMessage = async ({
   resultSchema,
   tags,
   attachedFunctions,
-  agentId,
-  agentVersion,
   reasoningTraces,
   interactive,
   enableSummarization,
@@ -492,8 +478,6 @@ export const createRunWithMessage = async ({
     attachedFunctions,
     resultSchema,
     tags,
-    agentId,
-    agentVersion,
     reasoningTraces,
     interactive,
     enableSummarization,
@@ -614,36 +598,6 @@ export const getWaitingJobIds = async ({
   return waitingJobs.map(job => job.id);
 };
 
-export const getAgentMetrics = async ({
-  clusterId,
-  agentId,
-}: {
-  clusterId: string;
-  agentId: string;
-}) => {
-  return db
-    .select({
-      createdAt: runs.created_at,
-      count: countDistinct(runs.id).as("count"),
-      feedbackScore: runs.feedback_score,
-      jobCount: countDistinct(jobs.id).as("job_count"),
-      jobFailureCount: sql<number>`COUNT(${jobs.id}) FILTER (WHERE ${jobs.status} = 'failure')`.as(
-        "job_failure_count"
-      ),
-      timeToCompletion: sql<number>`
-        EXTRACT(EPOCH FROM (
-          MAX(${runMessages.created_at}) - MIN(${runMessages.created_at})
-        ))
-      `.as("time_to_completion"),
-    })
-    .from(runs)
-    .leftJoin(jobs, eq(runs.id, jobs.run_id))
-    .leftJoin(runMessages, eq(runs.id, runMessages.run_id))
-    .where(and(eq(runs.cluster_id, clusterId), eq(runs.agent_id, agentId)))
-    .groupBy(runs.id, runs.created_at, runs.feedback_score)
-    .limit(1000);
-};
-
 export const createRetry = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
   await db
     .update(runs)
@@ -657,4 +611,48 @@ export const createRetry = async ({ clusterId, runId }: { clusterId: string; run
     clusterId,
     id: runId,
   });
+};
+
+
+export const validateSchema = ({ schema, name }: { schema: any; name: string }) => {
+  try {
+    const resultSchemaErrors = validateFunctionSchema(schema as JsonSchemaInput);
+
+    if (resultSchemaErrors.length > 0) {
+      return {
+        status: 400 as const,
+        body: {
+          message: `'${name}' is not a valid JSON Schema`,
+          errors: resultSchemaErrors,
+        },
+      };
+    }
+  } catch (error) {
+    logger.warn(`Failed to validate '${name}'`, {
+      error,
+    });
+    return {
+      status: 400 as const,
+      body: {
+        message: `Failed to validate '${name}'`,
+      },
+    };
+  }
+};
+
+export type RunOptions = {
+  id?: string;
+  initialPrompt?: string;
+  systemPrompt?: string;
+  attachedFunctions?: string[];
+  resultSchema?: unknown;
+
+  interactive?: boolean;
+  reasoningTraces?: boolean;
+  callSummarization?: boolean;
+  modelIdentifier?: ChatIdentifiers;
+  enableResultGrounding?: boolean;
+
+  input?: Record<string, unknown>;
+  messageMetadata?: RunMessageMetadata;
 };

@@ -462,7 +462,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                 )}
                 {runTimeline?.run.userId && (
                   <div className="flex flex-col space-y-1">
-                    <span className="text-xs font-medium text-gray-500">User Context</span>
+                    <span className="text-xs font-medium text-gray-500">User</span>
                     <div className="flex flex-wrap gap-1">
                       <div
                         className="bg-gray-100 px-2 py-0.5 rounded text-xs"
@@ -712,7 +712,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                         resultSchema: existingRun.resultSchema ?? undefined,
                         onStatusChange: existingRun.onStatusChange ?? undefined,
                         model: existingRun.model ?? undefined,
-                        agentId: existingRun.agentId ?? undefined,
                         input: existingRun.input ?? undefined,
                         callSummarization: existingRun.callSummarization ?? undefined,
                         interactive: existingRun.interactive ?? undefined,
