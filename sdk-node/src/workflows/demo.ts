@@ -26,7 +26,17 @@ import { getEphemeralSetup } from "./workflow-test-utils";
   workflow.version(1).define(async (ctx, input) => {
     const recordsAgent = ctx.agent({
       name: "recordsAgent",
-      systemPrompt: "Get list of loans for a customer",
+      facts: [
+        "You are a loan records processor",
+        {
+          description: "Customer ID to process",
+          data: input.customerId,
+        },
+      ],
+      goals: [
+        "Retrieve all loans associated with the customer",
+        "Return a complete list of loan records with their IDs",
+      ],
       resultSchema: z.object({
         records: z.array(z.object({ id: z.string() })),
       }),
@@ -38,34 +48,64 @@ import { getEphemeralSetup } from "./workflow-test-utils";
     const records = await recordsAgent.run();
 
     const processedRecords = await Promise.all(
-      records.result.records.map((record) => {
-        const agent2 = ctx.agent({
-          name: "analyzeLoan",
-          systemPrompt:
-            "Analyze the loan and return a summary of the asset classes and their risk profile",
-          resultSchema: z.object({
-            loanId: z.string(),
-            summary: z
-              .string()
-              .describe(
-                "Summary of the loan, asset classes and their risk profile",
-              ),
-          }),
-          input: {
-            loanId: record.id,
-            customerId: input.customerId,
-          },
-        });
+      (records.result as { records: { id: string }[] }).records.map(
+        (record) => {
+          const agent2 = ctx.agent({
+            name: "analyzeLoan",
+            facts: [
+              "You are a loan risk analyst",
+              {
+                description: "Loan ID to analyze",
+                data: record.id,
+              },
+              {
+                description: "Customer ID",
+                data: input.customerId,
+              },
+            ],
+            goals: [
+              "Analyze the loan's asset classes",
+              "Determine the risk profile for each asset class",
+              "Provide a comprehensive summary of findings",
+            ],
+            resultSchema: z.object({
+              loanId: z.string(),
+              summary: z
+                .string()
+                .describe(
+                  "Summary of the loan, asset classes and their risk profile",
+                ),
+            }),
+            input: {
+              loanId: record.id,
+              customerId: input.customerId,
+            },
+          });
 
-        return agent2.run();
-      }),
+          return agent2.run();
+        },
+      ),
     );
 
     const riskProfile = await ctx
       .agent({
         name: "riskAgent",
-        systemPrompt:
-          "You are given a list of loans and their asset classes. Summarize the risk of the customer. Use the asset class details to inform the summary.",
+        facts: [
+          "You are a senior risk assessment specialist",
+          {
+            description: "Customer ID to evaluate",
+            data: input.customerId,
+          },
+          {
+            description: "Detailed loan analysis results",
+            data: processedRecords,
+          },
+        ],
+        goals: [
+          "Review all loan analyses and their asset classes",
+          "Evaluate the overall customer risk profile",
+          "Provide a comprehensive risk summary considering all assets",
+        ],
         resultSchema: z.object({
           summary: z.string(),
         }),
@@ -76,6 +116,7 @@ import { getEphemeralSetup } from "./workflow-test-utils";
       })
       .run();
 
+    // this is a side-effect, albeit a useful one
     console.log(riskProfile);
   });
 

@@ -48,7 +48,8 @@ const riskProfile = await ctx.agent({...}).run();
 Agents are the building blocks where all side effects (API calls, database operations, etc.) are isolated. Each agent:
 
 - Has a unique name
-- Receives a system prompt
+- Receives a list of facts that inform its context
+- Has specific goals to accomplish
 - Has strictly typed inputs and outputs (validated using Zod schemas)
 - Maintains independent execution tracking
 - Can be retried independently if it fails
@@ -110,10 +111,18 @@ type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
 ```typescript
 type AgentConfig<TInput, TResult> = {
   name: string;
-  systemPrompt: string;
-  resultSchema?: z.ZodType<TResult>;
+  facts: Fact[];
+  goals: string[];
   input?: TInput;
+  resultSchema?: z.ZodType<TResult>;
   runId?: string;
+};
+
+type Fact = string | DataFact;
+
+type DataFact = {
+  description: string;
+  data: unknown;
 };
 ```
 
@@ -161,7 +170,17 @@ const workflow = inferable.workflows.create({
 workflow.version(1).define(async (ctx, input) => {
   const agent = ctx.agent({
     name: "recordsAgent",
-    systemPrompt: "Get list of loans for a customer",
+    facts: [
+      "You are a loan records processor",
+      {
+        description: "Customer ID to process",
+        data: input.customerId,
+      },
+    ],
+    goals: [
+      "Retrieve all loans associated with the customer",
+      "Ensure all loan records are valid and complete",
+    ],
     resultSchema: z.object({
       records: z.array(z.object({ id: z.string() })),
     }),
