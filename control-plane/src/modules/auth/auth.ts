@@ -41,12 +41,8 @@ export type Auth = {
       clusterId: string;
       runId: string;
     };
-    agent?: {
-      clusterId: string;
-      agentId: string;
-    };
   }): Promise<Auth>;
-  canCreate(opts: { cluster?: boolean; run?: boolean; agent?: boolean; call?: boolean }): Auth;
+  canCreate(opts: { cluster?: boolean; run?: boolean; call?: boolean }): Auth;
   isMachine(): ClusterKeyAuth;
   isClerk(): ClerkAuth;
   isAdmin(): Auth;
@@ -191,7 +187,7 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
           return this;
         },
         canManage: async function (opts) {
-          if (!opts.cluster && !opts.run && !opts.agent && !opts.job) {
+          if (!opts.cluster && !opts.run && !opts.job) {
             throw new AuthenticationError("Invalid assertion");
           }
 
@@ -213,17 +209,10 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
             });
           }
 
-          // API key can manage templates if it has access to the cluster
-          if (opts.agent) {
-            await this.canAccess({
-              cluster: { clusterId: opts.agent.clusterId },
-            });
-          }
-
           return this;
         },
         canCreate: function (opts) {
-          if (!opts.cluster && !opts.run && !opts.agent && !opts.call) {
+          if (!opts.cluster && !opts.run && !opts.call) {
             throw new AuthenticationError("Invalid assertion");
           }
 
@@ -282,7 +271,7 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
         return this;
       },
       canManage: async function (opts) {
-        if (!opts.cluster && !opts.run && !opts.agent && !opts.job) {
+        if (!opts.cluster && !opts.run && !opts.job) {
           throw new AuthenticationError("Invalid assertion");
         }
 
@@ -315,29 +304,15 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
           });
         }
 
-        if (opts.agent) {
-          await this.canAccess({
-            cluster: { clusterId: opts.agent.clusterId },
-          });
-
-          // Only admins can manage templates
-          this.isAdmin();
-        }
-
         return this;
       },
       canCreate: function (opts) {
-        if (!opts.cluster && !opts.run && !opts.agent && !opts.call) {
+        if (!opts.cluster && !opts.run && !opts.call) {
           throw new AuthenticationError("Invalid assertion");
         }
 
         // Admins can create clusters
         if (opts.cluster) {
-          this.isAdmin();
-        }
-
-        // Admins can create templates
-        if (opts.agent) {
           this.isAdmin();
         }
 
@@ -459,16 +434,12 @@ export const extractCustomAuthState = async (
       return this;
     },
     canManage: async function (opts) {
-      if (!opts.cluster && !opts.run && !opts.agent) {
+      if (!opts.cluster && !opts.run) {
         throw new AuthenticationError("Invalid assertion");
       }
 
       if (opts.cluster) {
         throw new AuthenticationError("Custom auth can not manage clusters");
-      }
-
-      if (opts.agent) {
-        throw new AuthenticationError("Custom auth can not manage templates");
       }
 
       if (opts.run && opts.run.clusterId !== clusterId) {
@@ -500,16 +471,12 @@ export const extractCustomAuthState = async (
       return this;
     },
     canCreate: function (opts) {
-      if (!opts.cluster && !opts.run && !opts.agent && !opts.call) {
+      if (!opts.cluster && !opts.run && !opts.call) {
         throw new AuthenticationError("Invalid assertion");
       }
 
       if (opts.cluster) {
         throw new AuthenticationError("Custom auth can not create clusters");
-      }
-
-      if (opts.agent) {
-        throw new AuthenticationError("Custom auth can not create templates");
       }
 
       if (opts.call) {

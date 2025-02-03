@@ -181,28 +181,6 @@ describe("extractAuthState", () => {
           });
         });
       });
-
-      describe("template", () => {
-        // API Keys can manage templates
-        describe.each(apiKeyTypes)("for %s", () => {
-          it("should succeed", async () => {
-            mockClusterAuth.isApiSecret.mockReturnValue(true);
-            mockClusterAuth.verifyApiKey.mockResolvedValue({
-              organizationId: "org_1",
-              clusterId: "cluster_1",
-              id: ulid(),
-            });
-
-            const result = await extractAuthState("");
-
-            expect(() =>
-              result!.canManage({
-                agent: { clusterId: "cluster_1", agentId: "template_1" },
-              })
-            ).toBeDefined();
-          });
-        });
-      });
     });
 
     describe("canCreate", () => {
@@ -219,23 +197,6 @@ describe("extractAuthState", () => {
 
             const result = await extractAuthState("");
             expect(() => result!.canCreate({ cluster: true })).toThrow();
-          });
-        });
-      });
-
-      describe("template", () => {
-        // API keys can create templates
-        describe.each(apiKeyTypes)("for %s", () => {
-          it("should succeed", async () => {
-            mockClusterAuth.isApiSecret.mockReturnValue(true);
-            mockClusterAuth.verifyApiKey.mockResolvedValue({
-              organizationId: "org_1",
-              clusterId: "cluster_1",
-              id: ulid(),
-            });
-
-            const result = await extractAuthState("");
-            expect(() => result!.canCreate({ agent: true })).toBeDefined();
           });
         });
       });
@@ -715,23 +676,6 @@ describe("extractCustomAuthState", () => {
         ).rejects.toThrow();
       });
     });
-
-    describe("template", () => {
-      // Customer Provided auth can not manage templates
-      it("should throw", async () => {
-        mockCustomAuth.verify.mockResolvedValue({
-          userId: "someValue",
-        });
-
-        const result = await extractCustomAuthState("abc123", owner.clusterId);
-
-        await expect(
-          result!.canManage({
-            agent: { clusterId: "cluster_1", agentId: "template_1" },
-          })
-        ).rejects.toThrow();
-      });
-    });
   });
 
   describe("canCreate", () => {
@@ -744,18 +688,6 @@ describe("extractCustomAuthState", () => {
 
         const result = await extractCustomAuthState("abc123", owner.clusterId);
         expect(() => result!.canCreate({ cluster: true })).toThrow();
-      });
-    });
-
-    describe("template", () => {
-      // Customer provided auth cannot create templates
-      it("should throw", async () => {
-        mockCustomAuth.verify.mockResolvedValue({
-          userId: "someValue",
-        });
-
-        const result = await extractCustomAuthState("abc123", owner.clusterId);
-        expect(() => result!.canCreate({ agent: true })).toThrow();
       });
     });
 
