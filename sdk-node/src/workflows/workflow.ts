@@ -164,8 +164,10 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                     executionId: executionId,
                   },
                 },
-                context: {
-                  input: config.input,
+                tags: {
+                  "workflow.name": this.name,
+                  "workflow.version": version.toString(),
+                  "workflow.executionId": executionId,
                 },
                 initialPrompt: [
                   "# Your goals",
