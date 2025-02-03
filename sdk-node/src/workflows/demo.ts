@@ -57,6 +57,12 @@ import { getEphemeralSetup } from "./workflow-test-utils";
           },
         });
 
+        ctx.effect(`logFirstAnalyzeLoan`, async () => {
+          console.log(
+            `This side effect will only be run once. It's running for ${record.id}`,
+          );
+        });
+
         return agent2.run();
       }),
     );
@@ -76,7 +82,11 @@ import { getEphemeralSetup } from "./workflow-test-utils";
       })
       .run();
 
-    console.log(riskProfile);
+    ctx.effect("logFinalResult", async () => {
+      console.log("--------------------------------");
+      console.log(riskProfile);
+      console.log("--------------------------------");
+    });
   });
 
   await workflow.listen();

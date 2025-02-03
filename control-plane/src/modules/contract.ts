@@ -1236,6 +1236,38 @@ export const definition = {
       201: z.object({ jobId: z.string() }),
     },
   },
+  setClusterKV: {
+    method: "PUT",
+    path: "/clusters/:clusterId/keys/:key",
+    pathParams: z.object({
+      clusterId: z.string(),
+      key: z.string(),
+    }),
+    body: z.object({
+      onConflict: z.enum(["replace", "doNothing"]),
+      value: z.string(),
+    }),
+    headers: z.object({ authorization: z.string() }),
+    responses: {
+      200: z.object({
+        value: z.string(),
+      }),
+    },
+  },
+  getClusterKV: {
+    method: "GET",
+    path: "/clusters/:clusterId/keys/:key/value",
+    pathParams: z.object({
+      clusterId: z.string(),
+      key: z.string(),
+    }),
+    headers: z.object({ authorization: z.string() }),
+    responses: {
+      200: z.object({
+        value: z.string(),
+      }),
+    },
+  },
 } as const;
 
 export const contract = c.router(definition);

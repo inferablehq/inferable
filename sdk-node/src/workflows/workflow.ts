@@ -4,6 +4,9 @@ import { RegisteredService } from "../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import { cyrb53 } from "../util/cybr53";
 import { InferableAPIError } from "../errors";
+import debug from "debug";
+
+const log = debug("inferable:workflow");
 
 type WorkflowInput = {
   executionId: string;
@@ -24,6 +27,10 @@ type AgentConfig<TInput, TResult> = {
 };
 
 type WorkflowContext<TInput> = {
+  effect: (
+    name: string,
+    fn: (ctx: WorkflowContext<TInput>) => Promise<void>,
+  ) => Promise<void>;
   agent: <
     TAgentInput extends { [key: string]: unknown },
     TAgentResult = unknown,
@@ -98,6 +105,39 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     input: TInput,
   ): WorkflowContext<TInput> {
     return {
+      effect: async (
+        name: string,
+        fn: (ctx: WorkflowContext<TInput>) => Promise<void>,
+      ) => {
+        const ctx = this.createContext(version, executionId, input);
+
+        const rand = crypto.randomUUID();
+
+        const result = await this.inferable.getClient().setClusterKV({
+          params: {
+            clusterId: await this.inferable.getClusterId(),
+            key: `${executionId}.${name}`,
+          },
+          body: {
+            value: rand,
+            onConflict: "doNothing",
+          },
+        });
+
+        if (result.status !== 200) {
+          throw new Error("Failed to set effect");
+        }
+
+        const canRun = result.body.value === rand;
+
+        if (canRun) {
+          log(`Effect ${name} can run. Running...`);
+          await fn(ctx);
+          log(`Effect ${name} ran successfully`);
+        } else {
+          log(`Effect ${name} has already been run`);
+        }
+      },
       agent: <
         TAgentInput extends { [key: string]: unknown },
         TAgentResult = unknown,
@@ -128,8 +168,6 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                     version,
                   ]),
                 )}`;
-
-            console.log("---  Creating run", { runId, name: config.name });
 
             const result = await this.inferable.getClient().createRun({
               params: {

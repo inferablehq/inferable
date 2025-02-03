@@ -136,14 +136,12 @@ export const integrationSchema = z.object({
       nangoConnectionId: z.string(),
       botUserId: z.string(),
       teamId: z.string(),
-      agentId: z.string().optional(),
     })
     .optional()
     .nullable(),
   email: z
     .object({
       connectionId: z.string(),
-      agentId: z.string().optional(),
       validateSPFandDKIM: z.boolean().optional(),
     })
     .optional()
@@ -274,6 +272,84 @@ export const FunctionConfigSchema = z.object({
   private: z.boolean().default(false).optional(),
 });
 
+const RunSchema = z.object({
+  id: z
+    .string()
+    .optional()
+    .describe(
+      "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned."
+    )
+    .refine(
+      val => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
+      "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long."
+    ),
+  runId: z
+    .string()
+    .optional()
+    .describe("Deprecated. Use `id` instead.")
+    .refine(
+      val => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
+      "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long."
+    ),
+  initialPrompt: z.string().optional().describe("An initial 'human' message to trigger the run"),
+  systemPrompt: z.string().optional().describe("A system prompt for the run."),
+  name: z.string().optional().describe("The name of the run, if not provided it will be generated"),
+  model: z
+    .enum(["claude-3-5-sonnet", "claude-3-haiku"])
+    .optional()
+    .describe("The model identifier for the run"),
+  resultSchema: anyObject
+    .optional()
+    .describe(
+      "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
+    ),
+  attachedFunctions: z
+    .array(functionReference)
+    .optional()
+    .describe(
+      "An array of functions to make available to the run. By default all functions in the cluster will be available"
+    ),
+  onStatusChange: onStatusChangeSchema
+    .optional()
+    .describe("Mechanism for receiving notifications when the run status changes"),
+  tags: z.record(z.string()).optional().describe("Run tags which can be used to filter runs"),
+  test: z
+    .object({
+      enabled: z.boolean().default(false),
+      mocks: z
+        .record(
+          z.object({
+            output: z.object({}).passthrough().describe("The mock output of the function"),
+          })
+        )
+        .optional()
+        .describe(
+          "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)"
+        ),
+    })
+    .optional()
+    .describe("When provided, the run will be marked as as a test / evaluation"),
+  input: z
+    .object({})
+    .passthrough()
+    .describe(
+      "Structured input arguments to merge with the initial prompt."
+    )
+    .optional(),
+  context: anyObject.optional().describe("Additional context to propogate to all Jobs in the Run"),
+  reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
+  callSummarization: z
+    .boolean()
+    .default(false)
+    .optional()
+    .describe("Enable summarization of oversized call results"),
+  interactive: z
+    .boolean()
+    .default(true)
+    .describe("Allow the run to be continued with follow-up messages / message edits"),
+  enableResultGrounding: z.boolean().default(false).describe("Enable result grounding"),
+});
+
 export const definition = {
   // Misc Endpoints
   live: {
@@ -304,33 +380,6 @@ export const definition = {
         contract: z.string(),
       }),
     },
-  },
-
-  createStructuredOutput: {
-    method: "POST",
-    path: "/clusters/:clusterId/structured-output",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      prompt: z.string(),
-      resultSchema: anyObject
-        .optional()
-        .describe(
-          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
-        ),
-      modelId: z.enum(["claude-3-5-sonnet", "claude-3-haiku"]),
-      temperature: z
-        .number()
-        .optional()
-        .describe("The temperature to use for the model")
-        .default(0.5),
-    }),
-    responses: {
-      200: z.unknown(),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
   },
 
   // Job Endpoints
@@ -768,12 +817,12 @@ export const definition = {
             totalModelInvocations: z.number(),
           })
         ),
-        agentRuns: z.array(
+        runs: z.array(
           z.object({
             date: z.string(),
-            totalAgentRuns: z.number(),
+            totalRuns: z.number(),
           })
-        ),
+        )
       }),
     },
     pathParams: z.object({
@@ -788,92 +837,7 @@ export const definition = {
     headers: z.object({
       authorization: z.string(),
     }),
-    body: z.object({
-      id: z
-        .string()
-        .optional()
-        .describe(
-          "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned."
-        )
-        .refine(
-          val => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
-          "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long."
-        ),
-      runId: z
-        .string()
-        .optional()
-        .describe("Deprecated. Use `id` instead.")
-        .refine(
-          val => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
-          "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long."
-        ),
-      initialPrompt: z
-        .string()
-        .optional()
-        .describe("An initial 'human' message to trigger the run"),
-      systemPrompt: z.string().optional().describe("A system prompt for the run."),
-      name: z
-        .string()
-        .optional()
-        .describe("The name of the run, if not provided it will be generated"),
-      model: z
-        .enum(["claude-3-5-sonnet", "claude-3-haiku"])
-        .optional()
-        .describe("The model identifier for the run"),
-      resultSchema: anyObject
-        .optional()
-        .describe(
-          "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
-        ),
-      attachedFunctions: z
-        .array(functionReference)
-        .optional()
-        .describe(
-          "An array of functions to make available to the run. By default all functions in the cluster will be available"
-        ),
-      onStatusChange: onStatusChangeSchema
-        .optional()
-        .describe("Mechanism for receiving notifications when the run status changes"),
-      tags: z.record(z.string()).optional().describe("Run tags which can be used to filter runs"),
-      test: z
-        .object({
-          enabled: z.boolean().default(false),
-          mocks: z
-            .record(
-              z.object({
-                output: z.object({}).passthrough().describe("The mock output of the function"),
-              })
-            )
-            .optional()
-            .describe(
-              "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)"
-            ),
-        })
-        .optional()
-        .describe("When provided, the run will be marked as as a test / evaluation"),
-      agentId: z.string().optional().describe("The agent ID to use"),
-      input: z
-        .object({})
-        .passthrough()
-        .describe(
-          "Structured input arguments to merge with the initial prompt. The schema must match the agent input schema if defined"
-        )
-        .optional(),
-      context: anyObject
-        .optional()
-        .describe("Additional context to propogate to all Jobs in the Run"),
-      reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
-      callSummarization: z
-        .boolean()
-        .default(false)
-        .optional()
-        .describe("Enable summarization of oversized call results"),
-      interactive: z
-        .boolean()
-        .default(true)
-        .describe("Allow the run to be continued with follow-up messages / message edits"),
-      enableResultGrounding: z.boolean().default(false).describe("Enable result grounding"),
-    }),
+    body: RunSchema,
     responses: {
       201: z.object({
         id: z.string().describe("The id of the newly created run"),
@@ -921,7 +885,6 @@ export const definition = {
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
       tags: z.string().optional().describe("Filter runs by a tag value (value:key)"),
-      agentId: z.string().optional(),
     }),
     responses: {
       200: z.array(
@@ -932,8 +895,6 @@ export const definition = {
           createdAt: z.date(),
           status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
           test: z.boolean(),
-          agentId: z.string().nullable(),
-          agentVersion: z.number().nullable(),
           feedbackScore: z.number().nullable(),
         })
       ),
@@ -947,19 +908,10 @@ export const definition = {
       authorization: z.string(),
     }),
     responses: {
-      200: z.object({
-        id: z.string(),
-        userId: z.string().nullable(),
-        status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
-        failureReason: z.string().nullable(),
-        test: z.boolean(),
-        feedbackComment: z.string().nullable(),
-        feedbackScore: z.number().nullable(),
-        context: z.any().nullable(),
-        authContext: z.any().nullable(),
+      200: RunSchema.omit({
+        test: true,
+      }).extend({
         result: anyObject.nullable(),
-        tags: z.record(z.string()).nullable(),
-        attachedFunctions: z.array(z.string()).nullable(),
       }),
       401: z.undefined(),
     },
@@ -1221,6 +1173,7 @@ export const definition = {
           tags: z.record(z.string()).nullable().optional(),
           attachedFunctions: z.array(z.string()).nullable(),
           name: z.string().nullable(),
+          systemPrompt: z.string().nullable(),
         }),
         blobs: z.array(blobSchema),
       }),
@@ -1238,158 +1191,6 @@ export const definition = {
       200: z.any(),
       404: z.undefined(),
     },
-  },
-
-  // Agent Endpoints
-  getAgent: {
-    method: "GET",
-    path: "/clusters/:clusterId/agents/:agentId",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-        clusterId: z.string(),
-        name: z.string(),
-        initialPrompt: z.string().nullable(),
-        systemPrompt: z.string().nullable(),
-        attachedFunctions: z.array(z.string()),
-        resultSchema: anyObject.nullable(),
-        inputSchema: anyObject.nullable(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-        versions: z.array(
-          z.object({
-            version: z.number(),
-            name: z.string(),
-            initialPrompt: z.string().nullable(),
-            systemPrompt: z.string().nullable(),
-            attachedFunctions: z.array(z.string()),
-            resultSchema: anyObject.nullable(),
-            inputSchema: anyObject.nullable(),
-          })
-        ),
-      }),
-      401: z.undefined(),
-      404: z.object({ message: z.string() }),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-      agentId: z.string(),
-    }),
-    query: z.object({
-      withPreviousVersions: z.enum(["true", "false"]).default("false"),
-    }),
-  },
-  createAgent: {
-    method: "POST",
-    path: "/clusters/:clusterId/agents",
-    headers: z.object({ authorization: z.string() }),
-    body: z.object({
-      name: z.string(),
-      initialPrompt: z.string().optional(),
-      systemPrompt: z.string().optional().describe("The initial system prompt for the run."),
-      attachedFunctions: z.array(z.string()).optional(),
-      resultSchema: anyObject.optional(),
-      inputSchema: z.object({}).passthrough().optional().nullable(),
-    }),
-    responses: {
-      201: z.object({ id: z.string() }),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  upsertAgent: {
-    method: "PUT",
-    path: "/clusters/:clusterId/agents/:agentId",
-    headers: z.object({ authorization: z.string() }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      agentId: z.string().regex(userDefinedIdRegex),
-    }),
-    body: z.object({
-      name: z.string().optional(),
-      initialPrompt: z.string().optional(),
-      systemPrompt: z.string().optional().describe("The initial system prompt for the run."),
-      attachedFunctions: z.array(z.string()).optional(),
-      resultSchema: z.object({}).passthrough().optional().nullable(),
-      inputSchema: z.object({}).passthrough().optional().nullable(),
-    }),
-    responses: {
-      200: z.object({
-        id: z.string(),
-        clusterId: z.string(),
-        name: z.string(),
-        initialPrompt: z.string().nullable(),
-        systemPrompt: z.string().nullable(),
-        attachedFunctions: z.array(z.string()),
-        resultSchema: z.unknown().nullable(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-      }),
-      401: z.undefined(),
-      404: z.object({ message: z.string() }),
-    },
-  },
-  deleteAgent: {
-    method: "DELETE",
-    path: "/clusters/:clusterId/agent/:agentId",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      204: z.undefined(),
-      401: z.undefined(),
-      404: z.object({ message: z.string() }),
-    },
-    body: z.undefined(),
-    pathParams: z.object({
-      clusterId: z.string(),
-      agentId: z.string(),
-    }),
-  },
-  listAgents: {
-    method: "GET",
-    path: "/clusters/:clusterId/agents",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          clusterId: z.string(),
-          name: z.string(),
-          initialPrompt: z.string().nullable(),
-          systemPrompt: z.string().nullable(),
-          attachedFunctions: z.array(z.string()),
-          resultSchema: z.unknown().nullable(),
-          createdAt: z.date(),
-          updatedAt: z.date(),
-        })
-      ),
-      401: z.undefined(),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
-  getAgentMetrics: {
-    method: "GET",
-    path: "/clusters/:clusterId/agents/:agentId/metrics",
-    headers: z.object({ authorization: z.string() }),
-    responses: {
-      200: z.array(
-        z.object({
-          createdAt: z.date(),
-          feedbackScore: z.number().nullable(),
-          jobFailureCount: z.number(),
-          timeToCompletion: z.number(),
-          jobCount: z.number(),
-        })
-      ),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-      agentId: z.string(),
-    }),
   },
 
   // Nango Endpoints
@@ -1433,6 +1234,38 @@ export const definition = {
       .passthrough(),
     responses: {
       201: z.object({ jobId: z.string() }),
+    },
+  },
+  setClusterKV: {
+    method: "PUT",
+    path: "/clusters/:clusterId/keys/:key",
+    pathParams: z.object({
+      clusterId: z.string(),
+      key: z.string(),
+    }),
+    body: z.object({
+      onConflict: z.enum(["replace", "doNothing"]),
+      value: z.string(),
+    }),
+    headers: z.object({ authorization: z.string() }),
+    responses: {
+      200: z.object({
+        value: z.string(),
+      }),
+    },
+  },
+  getClusterKV: {
+    method: "GET",
+    path: "/clusters/:clusterId/keys/:key/value",
+    pathParams: z.object({
+      clusterId: z.string(),
+      key: z.string(),
+    }),
+    headers: z.object({ authorization: z.string() }),
+    responses: {
+      200: z.object({
+        value: z.string(),
+      }),
     },
   },
 } as const;

@@ -575,6 +575,18 @@ export const workflowExecutions = pgTable(
   })
 );
 
+export const clusterKV = pgTable(
+  "cluster_kv",
+  {
+    cluster_id: varchar("cluster_id").notNull(),
+    key: varchar("key", { length: 1024 }).notNull(),
+    value: text("value").notNull(),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.cluster_id, table.key] }),
+  })
+);
+
 export const analyticsSnapshots = pgTable(
   "analytics_snapshots",
   {
