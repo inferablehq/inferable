@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ALTER COLUMN "system_prompt" SET DATA TYPE text;
