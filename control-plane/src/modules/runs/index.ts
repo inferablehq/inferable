@@ -1,5 +1,5 @@
 import { and, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { omitBy } from "lodash";
+import { conforms, omitBy } from "lodash";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
 import {
@@ -90,6 +90,33 @@ export const createRun = async ({
     enableResultGrounding: runs.enable_result_grounding,
     agentId: runs.agent_id,
   } as const;
+
+  console.log({
+    id: id ?? ulid(),
+    cluster_id: clusterId,
+    status: "pending",
+    user_id: userId ?? "SYSTEM",
+    ...(name ? { name } : {}),
+    debug: sql<boolean>`(SELECT debug FROM ${clusters} WHERE id = ${clusterId})`,
+    system_prompt: systemPrompt,
+    test,
+    test_mocks: testMocks,
+    reasoning_traces: reasoningTraces,
+    interactive: interactive,
+    enable_summarization: enableSummarization,
+    on_status_change: onStatusChangeHandler,
+    result_schema: resultSchema,
+    attached_functions: attachedFunctions,
+    agent_id: agentId,
+    agent_version: agentVersion,
+    model_identifier: modelIdentifier,
+    auth_context: {
+      ...authContext,
+      userId,
+    },
+    context: context,
+    enable_result_grounding: enableResultGrounding,
+  });
 
   // Insert the run with a subquery for debug value
   const [run] = await db

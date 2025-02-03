@@ -6,7 +6,19 @@ import { createServices } from "./workflow-test-services";
 import { getEphemeralSetup } from "./workflow-test-utils";
 
 (async function demo() {
-  const ephemeralSetup = await getEphemeralSetup();
+  const ephemeralSetup = process.env.INFERABLE_TEST_CLUSTER_ID
+    ? {
+        clusterId: process.env.INFERABLE_TEST_CLUSTER_ID,
+        apiKey: process.env.INFERABLE_TEST_API_SECRET,
+        endpoint: process.env.INFERABLE_TEST_API_ENDPOINT,
+      }
+    : await getEphemeralSetup();
+
+  if (process.env.INFERABLE_TEST_CLUSTER_ID) {
+    console.log("Using permanent setup...");
+  } else {
+    console.log("Using ephemeral setup...");
+  }
 
   const inferable = new Inferable({
     apiSecret: ephemeralSetup.apiKey,

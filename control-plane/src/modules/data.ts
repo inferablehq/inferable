@@ -290,7 +290,7 @@ export const runs = pgTable(
     on_status_change: json("on_status_change").$type<z.infer<typeof onStatusChangeSchema>>(),
     result_schema: json("result_schema").$type<any>(),
     name: varchar("name", { length: 1024 }).default("").notNull(),
-    system_prompt: varchar("system_prompt", { length: 1024 }),
+    system_prompt: text("system_prompt"),
     model_identifier: text("model_identifier", {
       enum: ["claude-3-5-sonnet", "claude-3-haiku"],
     }),

@@ -47,14 +47,17 @@ export const createWorkflowExecution = async (
     runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
   });
 
-  await db.insert(workflowExecutions).values({
-    id: parsed.data.executionId,
-    cluster_id: clusterId,
-    workflow_execution_id: parsed.data.executionId,
-    job_id: job.id,
-    workflow_name: workflowName,
-    version: latestService.version,
-  });
+  await db
+    .insert(workflowExecutions)
+    .values({
+      id: parsed.data.executionId,
+      cluster_id: clusterId,
+      workflow_execution_id: parsed.data.executionId,
+      job_id: job.id,
+      workflow_name: workflowName,
+      version: latestService.version,
+    })
+    .onConflictDoNothing();
 
   return { jobId: job.id };
 };

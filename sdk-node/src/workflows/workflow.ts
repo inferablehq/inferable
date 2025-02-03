@@ -4,6 +4,9 @@ import { RegisteredService } from "../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import { cyrb53 } from "../util/cybr53";
 import { InferableAPIError } from "../errors";
+import debug from "debug";
+
+const log = debug("inferable:workflows");
 
 type WorkflowInput = {
   executionId: string;
@@ -80,9 +83,16 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       define: (
         handler: (ctx: WorkflowContext<TInput>, input: TInput) => Promise<void>,
       ) => {
+        log("Defining workflow handler", { version, name: this.name });
         this.versionHandlers.set(version, handler);
       },
       run: async (input: TInput) => {
+        log("Running workflow", {
+          version,
+          name: this.name,
+          executionId: input.executionId,
+        });
+
         const result = await this.inferable
           .getClient()
           .createWorkflowExecution({
@@ -95,6 +105,13 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
             },
           });
 
+        log("Workflow execution created", {
+          version,
+          name: this.name,
+          executionId: input.executionId,
+          status: result.status,
+        });
+
         return result;
       },
     };
@@ -105,6 +122,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     executionId: string,
     input: TInput,
   ): WorkflowContext<TInput> {
+    log("Creating workflow context", {
+      version,
+      name: this.name,
+      executionId,
+    });
+
     return {
       agent: <
         TAgentInput extends { [key: string]: unknown },
@@ -113,14 +136,14 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         config: AgentConfig<TAgentInput, TAgentResult>,
       ) => {
         return {
-          /**
-           * Runs the agent.
-           * @param params - The parameters for the agent.
-           * @param params.input - The input for the agent. Must be a valid JSON object.
-           * @param params.runId - The runId for the agent. A unique identifier for the agent run. If not provided, it will be generated based on the agent's configuration and the input.
-           * @returns The result of the agent.
-           */
           run: async () => {
+            log("Running agent in workflow", {
+              version,
+              name: this.name,
+              executionId,
+              agentName: config.name,
+            });
+
             const resultSchema = config.resultSchema
               ? zodToJsonSchema(config.resultSchema)
               : undefined;
@@ -176,6 +199,16 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               },
             });
 
+            log("Agent run completed", {
+              version,
+              name: this.name,
+              executionId,
+              agentName: config.name,
+              runId,
+              status: result.status,
+              result: result.body,
+            });
+
             if (result.status !== 201) {
               // TODO: Add better error handling
               throw new InferableAPIError(
@@ -203,6 +236,11 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   }
 
   async listen() {
+    log("Starting workflow listeners", {
+      name: this.name,
+      versions: Array.from(this.versionHandlers.keys()),
+    });
+
     this.versionHandlers.forEach((handler, version) => {
       const s = this.inferable.service({
         name: `workflows-${this.name}-${version}`,
@@ -228,9 +266,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     });
 
     await Promise.all(this.services.map((s) => s.start()));
+    log("Workflow listeners started", { name: this.name });
   }
 
   async unlisten() {
+    log("Stopping workflow listeners", { name: this.name });
     await Promise.all(this.services.map((s) => s.stop()));
+    log("Workflow listeners stopped", { name: this.name });
   }
 }
