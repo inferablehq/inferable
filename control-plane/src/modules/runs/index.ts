@@ -1,4 +1,4 @@
-import { and, countDistinct, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { omitBy } from "lodash";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
