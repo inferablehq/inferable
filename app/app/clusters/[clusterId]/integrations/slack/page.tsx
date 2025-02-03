@@ -3,26 +3,8 @@
 import { client } from "@/client/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuth } from "@clerk/nextjs";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Loading } from "@/components/loading";
@@ -30,17 +12,8 @@ import Nango from "@nangohq/frontend";
 import toast from "react-hot-toast";
 import { ClientInferResponses } from "@ts-rest/core";
 import { contract } from "@/client/contract";
-import { z } from "zod";
-import { createErrorToast } from "@/lib/utils";
 
 const nango = new Nango();
-
-// Select component uses this value to represent no agent id
-const NO_AGENT_ID_VALUE = "NONE";
-
-const formSchema = z.object({
-  agentId: z.string().optional(),
-});
 
 export default function SlackIntegration({
   params: { clusterId },
@@ -49,30 +22,14 @@ export default function SlackIntegration({
 }) {
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [agents, setAgents] = useState<Array<{ id: string; name: string }>>([]);
   const [connection, setConnection] = useState<
     ClientInferResponses<typeof contract.getIntegrations, 200>["body"]["slack"] | null
   >(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      agentId: NO_AGENT_ID_VALUE,
-    },
-  });
-
   const fetchConfig = useCallback(async () => {
     setLoading(true);
-    const [integrationsResponse, agentsResponse] = await Promise.all([
+    const [integrationsResponse] = await Promise.all([
       client.getIntegrations({
-        headers: {
-          authorization: `Bearer ${await getToken()}`,
-        },
-        params: {
-          clusterId: clusterId,
-        },
-      }),
-      client.listAgents({
         headers: {
           authorization: `Bearer ${await getToken()}`,
         },
@@ -83,45 +40,11 @@ export default function SlackIntegration({
     ]);
     setLoading(false);
 
-    if (agentsResponse.status === 200) {
-      setAgents(agentsResponse.body);
-    }
 
     if (integrationsResponse.status === 200) {
       setConnection(integrationsResponse.body?.slack);
-      if (integrationsResponse.body?.slack?.agentId) {
-        form.setValue("agentId", integrationsResponse.body.slack.agentId);
-      }
     }
-  }, [clusterId, getToken, form]);
-
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    const response = await client.upsertIntegrations({
-      headers: {
-        authorization: `Bearer ${await getToken()}`,
-      },
-      params: {
-        clusterId: clusterId,
-      },
-      body: {
-        slack: {
-          agentId: data.agentId === NO_AGENT_ID_VALUE ? undefined : data.agentId,
-          // These are not editable, they will be ignored by the backend
-          nangoConnectionId: "",
-          botUserId: "",
-          teamId: "",
-
-        },
-      },
-    });
-
-    if (response.status === 200) {
-      toast.success("Integration updated");
-      await fetchConfig();
-    } else {
-      createErrorToast(response, "Error updating integration");
-    }
-  };
+  }, [clusterId, getToken]);
 
   const onSlackConnect = async () => {
     const response = await client.createNangoSession({
@@ -197,40 +120,6 @@ export default function SlackIntegration({
                   Slack Connected (Team: {connection?.teamId})
                 </p>
               </div>
-
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="agentId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Agent</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select an agent" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value={NO_AGENT_ID_VALUE}>None (Use Cluster Defaults)</SelectItem>
-                            {agents.map((agent) => (
-                              <SelectItem key={agent.id} value={agent.id}>
-                                {agent.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Select an agent to handle Slack messages, or leave empty to use cluster defaults
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit">Save Configuration</Button>
-                </form>
-              </Form>
             </div>
           ) : (
             <div className="flex items-center gap-2">

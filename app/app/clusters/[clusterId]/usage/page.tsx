@@ -64,7 +64,7 @@ export default async function UsagePage({
     throw new Error("Failed to fetch usage data");
   }
 
-  const { modelUsage, agentRuns } = result.body;
+  const { modelUsage, runs } = result.body;
 
   // Calculate totals for model usage
   const modelTotals = modelUsage.reduce(
@@ -82,8 +82,8 @@ export default async function UsagePage({
   );
 
   // Calculate totals for agent runs
-  const predictionsTotal = agentRuns.reduce(
-    (acc, curr) => acc + curr.totalAgentRuns,
+  const predictionsTotal = runs.reduce(
+    (acc, curr) => acc + curr.totalRuns,
     0,
   );
 
@@ -484,16 +484,6 @@ export default async function UsagePage({
                 <TableHead className="text-right">Predictions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {agentRuns.map((day) => (
-                <TableRow key={day.date}>
-                  <TableCell>{day.date}</TableCell>
-                  <TableCell className="text-right">
-                    {day.totalAgentRuns?.toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
             <TableFooter>
               <TableRow>
                 <TableCell>Total</TableCell>

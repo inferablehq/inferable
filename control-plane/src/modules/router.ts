@@ -7,7 +7,6 @@ import util from "util";
 import { getBlobData } from "./blobs";
 import * as data from "./data";
 import * as management from "./management";
-import { buildModel } from "./models";
 import * as events from "./observability/events";
 import { posthog } from "./posthog";
 import { addMessageAndResume, getRunResult } from "./runs";
@@ -33,19 +32,9 @@ import {
   createRun,
   deleteRun,
   getClusterRuns,
-  getAgentMetrics,
   getRunDetails,
   updateRunFeedback,
 } from "./runs";
-import {
-  RunOptions,
-  mergeAgentOptions,
-  deleteAgent,
-  getAgent,
-  listAgents,
-  upsertAgent,
-  validateSchema,
-} from "./agents";
 import { normalizeFunctionReference } from "./service-definitions";
 import { getClusterDetails } from "./cluster";
 import { JsonSchemaInput } from "inferable/bin/types";
@@ -60,6 +49,7 @@ import { env } from "../utilities/env";
 import { integrationByConnectionId } from "./email";
 import { NEW_CONNECTION_ID } from "./integrations/constants";
 import { createWorkflowExecution } from "./workflows/executions";
+import { RunOptions, validateSchema } from "./runs";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -202,7 +192,7 @@ export const router = initServer().router(contract, {
       }
     }
 
-    let runOptions: RunOptions = {
+    const runOptions: RunOptions = {
       id: body.id || body.runId || ulid(),
       initialPrompt: body.initialPrompt,
       systemPrompt: body.systemPrompt,
@@ -219,37 +209,8 @@ export const router = initServer().router(contract, {
       input: body.input,
     };
 
-    const agent = body.agentId
-      ? await getAgent({
-          clusterId,
-          id: body.agentId,
-        })
-      : undefined;
-
-    if (body.agentId) {
-      if (!agent) {
-        throw new NotFoundError("Agent not found");
-      }
-
-      const merged = mergeAgentOptions(runOptions, agent);
-
-      if (merged.error) {
-        return merged.error;
-      }
-
-      runOptions = merged.options;
-
-      runOptions.messageMetadata = {
-        displayable: {
-          templateName: agent.name,
-          templateId: agent.id,
-          ...body.input,
-        },
-      };
-    }
-
     if (runOptions.input) {
-      runOptions.initialPrompt = `${runOptions.initialPrompt}\n\n<DATA>\n${JSON.stringify(runOptions.input, null, 2)}\n</DATA>`;
+      runOptions.initialPrompt += `\n\n<DATA>\n${JSON.stringify(runOptions.input, null, 2)}\n</DATA>`;
     }
 
     const customAuth = auth.type === "custom" ? auth.isCustomAuth() : undefined;
@@ -263,8 +224,6 @@ export const router = initServer().router(contract, {
       test: body.test?.enabled ?? false,
       testMocks: body.test?.mocks,
       tags: body.tags,
-
-      agentId: agent?.id,
 
       // Customer Auth context (In the future all auth types should inject context into the run)
       authContext: customAuth?.context,
@@ -293,7 +252,7 @@ export const router = initServer().router(contract, {
         clusterId,
         runId: run.id,
         message: runOptions.initialPrompt,
-        type: body.agentId ? "template" : "human",
+        type: "human",
         metadata: runOptions.messageMetadata,
         skipAssert: true,
       });
@@ -312,7 +271,6 @@ export const router = initServer().router(contract, {
         cluster_id: clusterId,
         is_demo: cluster.is_demo,
         run_id: run.id,
-        agent_id: run.agentId,
         cli_version: request.headers["x-cli-version"],
         user_agent: request.headers["user-agent"],
       },
@@ -408,7 +366,7 @@ export const router = initServer().router(contract, {
   },
   listRuns: async request => {
     const { clusterId } = request.params;
-    const { test, limit, tags, agentId } = request.query;
+    const { test, limit, tags } = request.query;
     let { userId } = request.query;
 
     const auth = request.request.getAuth();
@@ -437,7 +395,6 @@ export const router = initServer().router(contract, {
         key,
         value,
         limit,
-        agentId,
         userId,
       });
 
@@ -452,7 +409,6 @@ export const router = initServer().router(contract, {
       userId,
       test: test ?? false,
       limit,
-      agentId,
     });
 
     return {
@@ -494,22 +450,6 @@ export const router = initServer().router(contract, {
         run,
         blobs,
       },
-    };
-  },
-  getAgentMetrics: async request => {
-    const { clusterId, agentId } = request.params;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
-
-    const result = await getAgentMetrics({
-      clusterId,
-      agentId,
-    });
-
-    return {
-      status: 200,
-      body: result,
     };
   },
   listRunReferences: async request => {
@@ -963,23 +903,13 @@ export const router = initServer().router(contract, {
     await auth.canManage({ cluster: { clusterId } });
 
     if (request.body.slack) {
-      const integrations = await getIntegrations({ clusterId });
-      if (!integrations.slack) {
-        throw new BadRequestError("Slack integration does not exist");
-      }
-
-      // Only the agentId is editable via the API
-      request.body.slack = {
-        agentId: request.body.slack.agentId,
-        ...integrations.slack,
-      };
+      throw new BadRequestError("Slack integration is not user editable");
     }
 
     if (request.body.email) {
       const existing = await getIntegrations({ clusterId });
 
       const connectionId = request.body.email.connectionId;
-      const agentId = request.body.email.agentId;
 
       if (connectionId === NEW_CONNECTION_ID) {
         const connectionId = crypto.randomUUID();
@@ -996,22 +926,6 @@ export const router = initServer().router(contract, {
         request.body.email.connectionId = connectionId;
       } else if (connectionId !== existing?.email?.connectionId) {
         throw new BadRequestError("Email connectionId is not user editable");
-      }
-
-      if (agentId && agentId !== existing?.email?.agentId) {
-        const agent = await getAgent({
-          clusterId,
-          id: agentId,
-        });
-
-        if (!agent) {
-          logger.warn("Attempted to connect email to non-existent agent", {
-            clusterId,
-            agentId: request.body.email.agentId,
-          });
-
-          request.body.email.agentId = undefined;
-        }
       }
     }
 
@@ -1511,235 +1425,6 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createAgent: async request => {
-    const { clusterId } = request.params;
-    const { name, initialPrompt, systemPrompt, attachedFunctions, resultSchema, inputSchema } =
-      request.body;
-
-    const auth = request.request.getAuth();
-    await auth.canManage({ cluster: { clusterId } });
-    auth.canCreate({ agent: true });
-
-    if (resultSchema) {
-      const validationError = validateSchema({
-        schema: resultSchema,
-        name: "resultSchema",
-      });
-      if (validationError) {
-        return validationError;
-      }
-    }
-
-    if (inputSchema) {
-      const validationError = validateSchema({
-        schema: inputSchema,
-        name: "inputSchema",
-      });
-      if (validationError) {
-        return validationError;
-      }
-    }
-
-    const result = await upsertAgent({
-      id: ulid(),
-      clusterId,
-      name,
-      initialPrompt,
-      systemPrompt,
-      attachedFunctions,
-      resultSchema,
-      inputSchema,
-    });
-
-    posthog?.capture({
-      distinctId: unqualifiedEntityId(auth.entityId),
-      event: "api:agent_create",
-      groups: {
-        organization: auth.organizationId,
-        cluster: clusterId,
-      },
-      properties: {
-        cluster_id: clusterId,
-        agent_id: result.id,
-        cli_version: request.headers["x-cli-version"],
-        user_agent: request.headers["user-agent"],
-      },
-    });
-
-    return {
-      status: 201,
-      body: result,
-    };
-  },
-
-  upsertAgent: async request => {
-    const { agentId, clusterId } = request.params;
-    const { name, initialPrompt, systemPrompt, attachedFunctions, resultSchema, inputSchema } =
-      request.body;
-
-    const auth = request.request.getAuth();
-
-    await auth.canManage({ cluster: { clusterId } });
-    if (agentId) {
-      await auth.canManage({ agent: { agentId, clusterId } });
-    } else {
-      auth.canCreate({ agent: true });
-    }
-
-    if (resultSchema) {
-      const validationError = validateSchema({
-        schema: resultSchema,
-        name: "resultSchema",
-      });
-      if (validationError) {
-        return validationError;
-      }
-    }
-
-    if (inputSchema) {
-      const validationError = validateSchema({
-        schema: inputSchema,
-        name: "inputSchema",
-      });
-      if (validationError) {
-        return validationError;
-      }
-    }
-
-    const result = await upsertAgent({
-      id: agentId,
-      clusterId,
-      name,
-      initialPrompt,
-      systemPrompt,
-      attachedFunctions,
-      resultSchema,
-      inputSchema,
-    });
-
-    posthog?.capture({
-      distinctId: unqualifiedEntityId(auth.entityId),
-      event: "api:agent_upsert",
-      groups: {
-        organization: auth.organizationId,
-        cluster: clusterId,
-      },
-      properties: {
-        cluster_id: clusterId,
-        agent_id: result.id,
-        cli_version: request.headers["x-cli-version"],
-        user_agent: request.headers["user-agent"],
-      },
-    });
-
-    return {
-      status: 200,
-      body: result,
-    };
-  },
-
-  getAgent: async request => {
-    const { clusterId, agentId } = request.params;
-    const { withPreviousVersions } = request.query;
-
-    const user = request.request.getAuth();
-    await user.canAccess({ cluster: { clusterId } });
-
-    const template = await getAgent({
-      clusterId,
-      id: agentId,
-      withPreviousVersions: withPreviousVersions === "true",
-    });
-
-    return {
-      status: 200,
-      body: template,
-    };
-  },
-
-  deleteAgent: async request => {
-    const { clusterId, agentId } = request.params;
-
-    const auth = request.request.getAuth();
-    await auth.canManage({ agent: { clusterId, agentId } });
-
-    await deleteAgent({
-      clusterId,
-      id: agentId,
-    });
-
-    posthog?.capture({
-      distinctId: unqualifiedEntityId(auth.entityId),
-      event: "api:agent_delete",
-      groups: {
-        organization: auth.organizationId,
-        cluster: clusterId,
-      },
-      properties: {
-        cluster_id: clusterId,
-        agent_id: agentId,
-        cli_version: request.headers["x-cli-version"],
-        user_agent: request.headers["user-agent"],
-      },
-    });
-
-    return {
-      status: 204,
-      body: undefined,
-    };
-  },
-
-  listAgents: async request => {
-    const { clusterId } = request.params;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
-
-    const templates = await listAgents({ clusterId });
-
-    return {
-      status: 200,
-      body: templates,
-    };
-  },
-
-  createStructuredOutput: async request => {
-    const { clusterId } = request.params;
-    const { prompt, resultSchema, modelId, temperature } = request.body;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ cluster: { clusterId } });
-
-    const model = buildModel({
-      identifier: modelId,
-      modelOptions: {
-        temperature,
-      },
-      purpose: "structured_output.create",
-    });
-
-    if (resultSchema) {
-      const validationError = validateSchema({
-        schema: resultSchema,
-        name: "resultSchema",
-      });
-      if (validationError) {
-        return validationError;
-      }
-    } else {
-      throw new BadRequestError("resultSchema is required");
-    }
-
-    const result = await model.structured({
-      messages: [{ role: "user", content: prompt }],
-      schema: resultSchema,
-    });
-
-    return {
-      status: 200,
-      body: result.structured,
-    };
-  },
   createWorkflowExecution: async request => {
     const { clusterId, workflowName } = request.params;
 

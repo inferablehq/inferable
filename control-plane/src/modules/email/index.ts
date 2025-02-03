@@ -12,7 +12,6 @@ import { ses } from "../ses";
 import { ulid } from "ulid";
 import { unifiedMessageSchema } from "../contract";
 import { createExternalMessage, getExternalMessage } from "../runs/external-messages";
-import { getAgent, mergeAgentOptions } from "../agents";
 import { getIntegrations } from "../integrations/integrations";
 
 const EMAIL_INIT_MESSAGE_ID_META_KEY = "emailInitMessageId";
@@ -274,7 +273,6 @@ export async function handleEmailIngestion(raw: unknown) {
   }
 
   const clusterId = connection.clusterId;
-  const agentId = connection.email?.agentId;
 
   let user: Awaited<ReturnType<typeof authenticateUser>>;
   try {
@@ -324,7 +322,6 @@ export async function handleEmailIngestion(raw: unknown) {
   }
 
   await handleNewChain({
-    agentId,
     clusterId,
     userId: user.userId,
     body: message.body,
@@ -373,7 +370,6 @@ const handleNewChain = async ({
   body,
   clusterId,
   messageId,
-  agentId,
   subject,
   source,
 }: {
@@ -381,35 +377,14 @@ const handleNewChain = async ({
   body: string;
   clusterId: string;
   messageId: string;
-  agentId?: string;
   subject: string;
   source: string;
 }) => {
   logger.info("Creating new run from email");
 
-  let options;
-
-  if (agentId) {
-    const agent = await getAgent({
-      id: agentId,
-      clusterId,
-    });
-    if (!agent) {
-      throw new Error("Could not find agent for email");
-    }
-    options = mergeAgentOptions({}, agent);
-  }
-
-  if (options?.error) {
-    logger.error("Could not merge agent options", {
-      error: options.error,
-    });
-  }
-
   await createRunWithMessage({
     userId,
     clusterId,
-    agentId,
     authContext: {
       userId,
       email: {
@@ -428,7 +403,6 @@ const handleNewChain = async ({
     },
     message: body,
     type: "human",
-    ...options?.options,
   });
 };
 

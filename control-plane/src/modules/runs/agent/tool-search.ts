@@ -1,5 +1,4 @@
 import { ulid } from "ulid";
-import { flagsmith } from "../../flagsmith";
 import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
 import { buildModel } from "../../models";
 import { ChatIdentifiers } from "../../models/routing";
@@ -150,7 +149,10 @@ async function findRelatedFunctionTools(
     })
   );
 
-  return selectedTools;
+  return {
+    selectedTools,
+    relatedTools,
+  };
 }
 
 export const findRelevantTools = async (state: RunGraphState) => {
@@ -270,7 +272,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
       });
     }
 
-    const found = await findRelatedFunctionTools(
+    const { selectedTools, relatedTools } = await findRelatedFunctionTools(
       run,
       searchQueryContent.success
         ? searchQueryContent.data.text
@@ -280,7 +282,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
             .join("\n")
     );
 
-    tools.push(...found);
+    tools.push(...selectedTools);
 
     tools.push(...Object.values(availableStdlib()));
 
@@ -290,7 +292,14 @@ export const findRelevantTools = async (state: RunGraphState) => {
       clusterId: run.clusterId,
       meta: {
         query: searchQueryContent.success ? searchQueryContent.data.text : "(message history)",
-        tools: tools.map(t => t.name),
+        tools: tools.map(t => {
+          return {
+            name: t.name,
+            description: t.description,
+            similarity: relatedTools.find(rt => `${rt.serviceName}_${rt.functionName}` === t.name)
+              ?.similarity,
+          };
+        }),
         duration: Date.now() - start,
       },
     });

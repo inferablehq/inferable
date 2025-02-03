@@ -1,14 +1,12 @@
 import { client } from "@/client/client";
 import { auth } from "@clerk/nextjs";
 import {
-  BookOpen,
   ExternalLink,
   Network,
   PlayCircle,
   Settings,
   NetworkIcon,
   BarChart2,
-  Bot,
 } from "lucide-react";
 import Link from "next/link";
 import ErrorDisplay from "./error-display";
@@ -51,9 +49,6 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
       </div>
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
         <PlayCircle className="h-4 w-4" /> Runs
-      </Link>
-      <Link href={`/clusters/${clusterId}/agents`} className={linkStyles}>
-        <Bot className="h-4 w-4" /> Agents
       </Link>
       <Link href={`/clusters/${clusterId}/integrations`} className={linkStyles}>
         <NetworkIcon className="h-4 w-4" /> Integrations

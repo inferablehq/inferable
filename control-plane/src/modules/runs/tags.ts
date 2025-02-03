@@ -7,13 +7,11 @@ export const getRunsByTag = async ({
   value,
   limit = 10,
   userId,
-  agentId,
 }: {
   clusterId: string;
   key: string;
   value: string;
   limit?: number;
-  agentId?: string;
   userId?: string
 }) => {
   return await db
@@ -27,8 +25,6 @@ export const getRunsByTag = async ({
       failureReason: runs.failure_reason,
       debug: runs.debug,
       test: runs.test,
-      agentId: runs.agent_id,
-      agentVersion: runs.agent_version,
       feedbackScore: runs.feedback_score,
     })
     .from(runTags)
@@ -37,7 +33,6 @@ export const getRunsByTag = async ({
         eq(runTags.cluster_id, clusterId),
         eq(runTags.key, key),
         eq(runTags.value, value),
-        ...(agentId ? [eq(runs.agent_id, agentId)] : []),
         ...(userId ? [eq(runs.user_id, userId)] : []),
       ),
     )
