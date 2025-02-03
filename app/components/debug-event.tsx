@@ -71,7 +71,7 @@ export function DebugEvent({
     <div className={cn("ml-8 relative group", getEventSpacing(msSincePreviousEvent))}>
       <div
         className={cn(
-          "absolute left-1 top-0 bottom-0 w-[2px] -top-4 -bottom-4 -z-10",
+          "absolute left-1 w-[2px] -top-4 -bottom-4 -z-10",
           msSincePreviousEvent < 60000
             ? "bg-border/50"
             : isSessionEnd

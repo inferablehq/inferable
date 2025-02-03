@@ -15,11 +15,19 @@ type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
   inputSchema: z.ZodType<TInput>;
 };
 
+type DataFact = {
+  description: string;
+  data: unknown;
+};
+
+type Fact = string | DataFact;
+
 type AgentConfig<TInput, TResult> = {
   name: string;
-  systemPrompt: string;
-  resultSchema?: z.ZodType<TResult>;
+  facts: Fact[];
+  goals: string[];
   input?: TInput;
+  resultSchema?: z.ZodType<TResult>;
   runId?: string;
 };
 
@@ -121,15 +129,15 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               ? `${executionId}.${config.name}.${config.runId}`
               : `${executionId}.${config.name}.${cyrb53(
                   JSON.stringify([
-                    config.systemPrompt,
-                    resultSchema,
+                    config.facts,
+                    config.goals,
                     config.input,
+                    executionId,
+                    resultSchema,
                     this.name,
                     version,
                   ]),
                 )}`;
-
-            console.log("---  Creating run", { runId, name: config.name });
 
             const result = await this.inferable.getClient().createRun({
               params: {
@@ -137,9 +145,18 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               },
               body: {
                 id: runId,
-                systemPrompt: config.systemPrompt,
+                systemPrompt: [
+                  "You are a helpful assistant.",
+                  "# Facts:",
+                  ...config.facts.map((f) => {
+                    if (typeof f === "string") {
+                      return `- ${f}`;
+                    } else {
+                      return `- ${f.description}: ${JSON.stringify(f.data)}`;
+                    }
+                  }),
+                ].join("\n"),
                 resultSchema,
-                context: config.input ? { input: config.input } : undefined,
                 onStatusChange: {
                   type: "workflow",
                   statuses: ["failed", "done"],
@@ -147,17 +164,17 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                     executionId: executionId,
                   },
                 },
-                initialPrompt: JSON.stringify(config.input),
+                context: {
+                  input: config.input,
+                },
+                initialPrompt: [
+                  "# Your goals",
+                  ...config.goals.map((g) => `- GOAL: ${g}`),
+                ].join("\n"),
               },
             });
 
             if (result.status !== 201) {
-              console.error("Failed to create run", {
-                runId,
-                status: result.status,
-                body: result.body,
-              });
-
               // TODO: Add better error handling
               throw new InferableAPIError(
                 `Failed to create run: ${result.status}`,
