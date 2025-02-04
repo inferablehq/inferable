@@ -260,7 +260,7 @@ export type MessageTypes =
 
 export type UnifiedMessageOfType<T extends MessageTypes> = Extract<UnifiedMessage, { type: T }>;
 
-export const FunctionConfigSchema = z.object({
+export const ToolConfigSchema = z.object({
   cache: z
     .object({
       keyPath: z.string(),
@@ -578,7 +578,7 @@ export const definition = {
             name: z.string(),
             description: z.string().optional(),
             schema: z.string().optional(),
-            config: FunctionConfigSchema.optional(),
+            config: ToolConfigSchema.optional(),
           })
         )
         .optional(),
@@ -1108,7 +1108,7 @@ export const definition = {
                 name: z.string(),
                 description: z.string().optional(),
                 schema: z.string().optional(),
-                config: FunctionConfigSchema.optional(),
+                config: ToolConfigSchema.optional(),
               })
             )
             .optional(),
