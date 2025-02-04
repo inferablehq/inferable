@@ -418,12 +418,12 @@ export const getWorkflowServices = async ({
     .where(
       and(
         eq(data.services.cluster_id, clusterId),
-        like(data.services.service, `workflows-${workflowName}-%`)
+        like(data.services.service, `workflows.${workflowName}.%`)
       )
     )
     .then(r =>
       r.map(r => {
-        const version = r.service.replace(`workflows-${workflowName}-`, "");
+        const version = r.service.replace(`workflows.${workflowName}.`, "");
 
         const parsed = z.string().regex(/^\d+$/).safeParse(version);
 

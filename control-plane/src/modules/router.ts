@@ -42,7 +42,7 @@ import { getSession, nango, webhookSchema } from "./integrations/nango";
 import { env } from "../utilities/env";
 import { integrationByConnectionId } from "./email";
 import { NEW_CONNECTION_ID } from "./integrations/constants";
-import { createWorkflowExecution } from "./workflows/executions";
+import { createWorkflowExecution, getWorkflowExecutionEvents } from "./workflows/executions";
 import { RunOptions, validateSchema } from "./runs";
 import { kv } from "./kv";
 import { recordPoll } from "./tools";
@@ -1520,4 +1520,24 @@ export const router = initServer().router(contract, {
       },
     };
   },
+  getWorkflowExecutionEvents: async request => {
+    const { clusterId, workflowName, executionId } = request.params;
+    const { after } = request.query;
+
+    const user = request.request.getAuth();
+    await user.canAccess({ cluster: { clusterId } });
+
+    const events = await getWorkflowExecutionEvents({
+      clusterId,
+      workflowName,
+      executionId,
+      after,
+    });
+
+    return {
+      status: 200,
+      body: events,
+    };
+  },
 });
+

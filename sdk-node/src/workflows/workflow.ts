@@ -267,7 +267,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
 
     this.versionHandlers.forEach((handler, version) => {
       const s = this.inferable.service({
-        name: `workflows-${this.name}-${version}`,
+        name: `workflows.${this.name}.${version}`,
       });
 
       s.register({

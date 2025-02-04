@@ -6,6 +6,8 @@ import { getWorkflowServices } from "../service-definitions";
 import { BadRequestError, NotFoundError } from "../../utilities/errors";
 import { db, workflowExecutions } from "../data";
 import { and, eq } from "drizzle-orm";
+import { getActivityByJobId, getActivityForTimeline } from "../observability/events";
+import { getRunsByTag } from "../runs/tags";
 
 export const createWorkflowExecution = async (
   clusterId: string,
@@ -110,3 +112,50 @@ export const resumeWorkflowExecution = async ({
 
   return { jobId: job.id };
 };
+
+export const getWorkflowExecutionEvents = async ({
+  clusterId,
+  workflowName,
+  executionId,
+  after,
+}: {
+  clusterId: string;
+  workflowName: string;
+  executionId: string;
+  after?: string;
+}) => {
+  const events = await db
+    .select({
+      jobId: workflowExecutions.job_id,
+    })
+    .from(workflowExecutions)
+    .where(
+      and(
+        eq(workflowExecutions.workflow_execution_id, executionId),
+        eq(workflowExecutions.cluster_id, clusterId),
+        eq(workflowExecutions.workflow_name, workflowName)
+      )
+    );
+
+  const handlerJobEvents = await getActivityByJobId({
+    clusterId,
+    jobId: events[0].jobId,
+  });
+
+  const associatedRuns = await getRunsByTag({
+    clusterId,
+    key: "workflow.executionId",
+    value: executionId,
+  });
+
+  const runEvents = await Promise.all(
+    associatedRuns.map((run) => getActivityForTimeline({ clusterId, runId: run.id, after }))
+  ).then((results) => results.flat());
+
+  return {
+    handlerJobEvents,
+    associatedRuns,
+    runEvents,
+  };
+};
+

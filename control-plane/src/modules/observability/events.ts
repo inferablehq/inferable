@@ -259,6 +259,29 @@ export const getActivityByClusterId = async (params: {
   return results;
 };
 
+export const getActivityByJobId = async (params: { jobId: string; clusterId: string }) => {
+  const results = await db
+    .select({
+      id: eventsTable.id,
+      clusterId: eventsTable.cluster_id,
+      type: eventsTable.type,
+      jobId: eventsTable.job_id,
+      machineId: eventsTable.machine_id,
+      service: eventsTable.service,
+      createdAt: eventsTable.created_at,
+      targetFn: eventsTable.target_fn,
+      resultType: eventsTable.result_type,
+      status: eventsTable.status,
+      workflowId: eventsTable.run_id,
+    })
+    .from(eventsTable)
+    .where(and(eq(eventsTable.job_id, params.jobId), eq(eventsTable.cluster_id, params.clusterId)))
+    .orderBy(desc(eventsTable.created_at))
+    .limit(1000);
+
+  return results;
+};
+
 export const getUsageActivity = async (params: { clusterId: string }) => {
   const sixtyDaysAgo = new Date();
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);

@@ -29,7 +29,7 @@ import { helpers } from "./workflow";
   await createServices(inferable);
 
   const workflow = inferable.workflows.create({
-    name: "records-workflow",
+    name: "records",
     inputSchema: z.object({
       executionId: z.string(),
       customerId: z.string(),
@@ -131,7 +131,7 @@ import { helpers } from "./workflow";
 
   await workflow.listen();
 
-  await inferable.workflows.run("records-workflow", {
+  await inferable.workflows.run("records", {
     executionId: "executionId-123",
     customerId: "customerId-123",
   });

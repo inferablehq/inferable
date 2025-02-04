@@ -11,6 +11,7 @@ import jsonpath from "jsonpath";
 import { logger } from "../observability/logger";
 import { embedSearchQuery } from "../embeddings/embeddings";
 import { result } from "lodash";
+import { validateToolGroup, validateToolName } from "./validations";
 
 // The time without a ping before a tool is considered expired
 const TOOL_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute
@@ -135,9 +136,8 @@ export async function upsertToolDefinition({
   group?: string;
   shouldExpire?: boolean;
 }) {
-
-  validateFunctionName(name);
-  validateServiceName(group);
+  validateToolName(name);
+  validateToolGroup(group);
   validateDescription(description);
 
   if (!schema) {
