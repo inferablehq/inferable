@@ -142,6 +142,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
 
         const rand = crypto.randomUUID();
 
+        // TODO: async/retry
         const result = await this.inferable.getClient().setClusterKV({
           params: {
             clusterId: await this.inferable.getClusterId(),
@@ -161,8 +162,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
 
         if (canRun) {
           log(`Effect ${name} can run. Running...`);
-          await fn(ctx);
-          log(`Effect ${name} ran successfully`);
+          try {
+            await fn(ctx);
+            log(`Effect ${name} ran successfully`);
+          } catch (e) {
+            log(`Effect ${name} failed`, { error: e });
+          }
         } else {
           log(`Effect ${name} has already been run`);
         }
