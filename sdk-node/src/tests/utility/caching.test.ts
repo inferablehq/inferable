@@ -6,11 +6,11 @@ describe("Caching", () => {
   const service = productService();
 
   beforeAll(async () => {
-    await service.start();
+    await service.client.tools.listen();
   }, 10000);
 
   afterAll(async () => {
-    await service.stop();
+    await service.client.tools.unlisten();
   });
 
   it("should get the cached results when possible", async () => {
@@ -24,8 +24,8 @@ describe("Caching", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: service.definition.name,
-        function: "getProduct10sCache",
+        service: "v2",
+        function: `${service.prefix}.getProduct10sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -38,8 +38,8 @@ describe("Caching", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: service.definition.name,
-        function: "getProduct10sCache",
+        service: "v2",
+        function: `${service.prefix}.getProduct10sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -70,8 +70,8 @@ describe("Caching", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: service.definition.name,
-        function: "getProduct1sCache",
+        service: "v2",
+        function: `${service.prefix}.getProduct1sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -86,8 +86,8 @@ describe("Caching", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: service.definition.name,
-        function: "getProduct1sCache",
+        service: "v2",
+        function: `${service.prefix}.getProduct1sCache`,
         input: { id: productId, random: "bar" },
       },
     });

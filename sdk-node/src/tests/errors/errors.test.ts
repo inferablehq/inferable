@@ -3,13 +3,14 @@ import { client, TEST_CLUSTER_ID } from "../utils";
 import { animalService } from "./animals";
 
 describe("Errors", () => {
+  const service = animalService();
   jest.retryTimes(2);
   beforeAll(async () => {
-    await animalService.start();
+    await service.client.tools.listen();
   }, 10000);
 
   afterAll(async () => {
-    await animalService.stop();
+    await service.client.tools.unlisten();
   });
 
   it("should get the normal error", async () => {
@@ -21,8 +22,8 @@ describe("Errors", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "animal",
-        function: "getNormalAnimal",
+        service: "v2",
+        function: `${service.prefix}.getNormalAnimal`,
         input: {},
       },
     });
@@ -51,8 +52,8 @@ describe("Errors", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "animal",
-        function: "getCustomAnimal",
+        service: "v2",
+        function: `${service.prefix}.getCustomAnimal`,
         input: {},
       },
     });

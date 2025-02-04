@@ -55,8 +55,7 @@ If you don't provide an API key or base URL, it will attempt to read them from t
 Register a "sayHello" [function](https://docs.inferable.ai/pages/functions). This file will register the function with the [control-plane](https://docs.inferable.ai/pages/control-plane).
 
 ```typescript
-// Register a simple function (using the 'default' service)
-const sayHello = client.default.register({
+const sayHello = client.tools.register({
   name: "sayHello",
   func: async (input: { to: string }, _context) => {
     return `Hello, ${to}!`;
@@ -68,8 +67,7 @@ const sayHello = client.default.register({
   },
 });
 
-// Start the 'default' service
-client.default.start();
+client.tools.start();
 ```
 
 ### Triggering a run

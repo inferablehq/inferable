@@ -16,22 +16,28 @@ export const getCustomAnimal = async () => {
   throw new AnimalError("This is a custom error");
 };
 
-export const animalService = inferableInstance().service({
-  name: "animal",
-});
+export const animalService = () => {
+  const prefix = `animal${Math.random().toString(36).substring(2, 5)}`;
+  const client = inferableInstance()
 
-animalService.register({
-  name: "getNormalAnimal",
-  func: getNormalAnimal,
-  schema: {
-    input: z.object({}),
-  },
-});
+  client.tools.register ({
+    name: `${prefix}.getNormalAnimal`,
+    func: getNormalAnimal,
+    schema: {
+      input: z.object({}),
+    },
+  });
 
-animalService.register({
-  name: "getCustomAnimal",
-  func: getCustomAnimal,
-  schema: {
-    input: z.object({}),
-  },
-});
+  client.tools.register({
+    name: `${prefix}.getCustomAnimal`,
+    func: getCustomAnimal,
+    schema: {
+      input: z.object({}),
+    },
+  });
+
+  return {
+    client,
+    prefix
+  }
+}

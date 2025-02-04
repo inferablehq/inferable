@@ -4,7 +4,7 @@ import { createServices } from "./workflow-test-services";
 import { getEphemeralSetup } from "./workflow-test-utils";
 
 // Skip until we got the server deployed
-describe.skip("workflow", () => {
+describe("workflow", () => {
   it("should run a workflow", async () => {
     const ephemeralSetup = await getEphemeralSetup();
 
@@ -32,12 +32,13 @@ describe.skip("workflow", () => {
         resultSchema: z.object({
           records: z.array(z.object({ id: z.string() })),
         }),
-        input: {
-          customerId: input.customerId,
-        },
       });
 
-      const records = await recordsAgent.run();
+      const records = await recordsAgent.trigger({
+        data: {
+          customerId: input.customerId,
+        }
+      });
 
       const processedRecords = await Promise.all(
         records.result.records.map((record) => {
@@ -48,13 +49,14 @@ describe.skip("workflow", () => {
               recordId: z.string(),
               summary: z.string().describe("Summary of the asset classes"),
             }),
-            input: {
-              recordId: record.id,
-              customerId: input.customerId,
-            },
           });
 
-          return agent2.run();
+          return agent2.trigger({
+            data: {
+              recordId: record.id,
+              customerId: input.customerId,
+            }
+          });
         }),
       );
 
@@ -66,19 +68,20 @@ describe.skip("workflow", () => {
           resultSchema: z.object({
             summary: z.string(),
           }),
-          input: {
+        })
+        .trigger({
+          data: {
             customerId: input.customerId,
             assetClassDetails: processedRecords,
-          },
-        })
-        .run();
+          }
+        });
 
       onDone(riskProfile);
     });
 
     await workflow.listen();
 
-    await inferable.workflows.run("records-workflow", {
+    await inferable.workflows.trigger("records-workflow", {
       executionId: "123",
       customerId: "456",
     });

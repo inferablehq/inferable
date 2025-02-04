@@ -29,11 +29,6 @@ export {
 } from "./types";
 
 export {
-  validateDescription,
-  validateServiceName,
-  validateFunctionName,
-  validateFunctionSchema,
-  validateFunctionArgs,
   blob,
   Interrupt
 } from "./util";

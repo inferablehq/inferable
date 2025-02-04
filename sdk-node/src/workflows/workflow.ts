@@ -1,9 +1,12 @@
 import { z } from "zod";
 import type { Inferable } from "../Inferable";
-import { RegisteredService } from "../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import { cyrb53 } from "../util/cybr53";
-import { InferableAPIError } from "../errors";
+import { InferableAPIError, InferableError } from "../errors";
+import { createApiClient } from "../create-client";
+import { PollingAgent } from "../polling";
+import { JsonSchemaInput, ToolRegistration, ToolRegistrationInput } from "../types";
+import { isZodType } from "@ts-rest/core";
 
 type WorkflowInput = {
   executionId: string;
@@ -19,6 +22,11 @@ type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
   name: name;
   inputSchema: z.ZodType<TInput>;
   logger?: Logger;
+  client: ReturnType<typeof createApiClient>;
+  getClusterId: () => Promise<string>;
+  endpoint: string;
+  machineId: string;
+  apiSecret: string;
 };
 
 type AgentConfig<TResult> = {
@@ -36,14 +44,12 @@ type WorkflowContext<TInput> = {
   agent: <TAgentResult = unknown>(
     config: AgentConfig<TAgentResult>,
   ) => {
-    run: (params: {
+    trigger: (params: {
       data: { [key: string]: unknown };
     }) => Promise<{ result: TAgentResult }>;
   };
   input: TInput;
 };
-
-const DEFAULT_FUNCTION_NAME = "handler";
 
 class WorkflowPausableError extends Error {
   constructor(message: string) {
@@ -77,15 +83,25 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     number,
     (ctx: WorkflowContext<TInput>, input: TInput) => Promise<unknown>
   > = new Map();
-  private inferable: Inferable;
-  private services: RegisteredService[] = [];
+  private pollingAgent: PollingAgent | undefined;
+  private getClusterId: () => Promise<string>;
+  private client: ReturnType<typeof createApiClient>;
   private logger?: Logger;
+
+  private endpoint: string;
+  private machineId: string;
+  private apiSecret: string;
 
   constructor(config: WorkflowConfig<TInput, name>) {
     this.name = config.name;
     this.inputSchema = config.inputSchema;
-    this.inferable = config.inferable;
     this.logger = config.logger;
+    this.client = config.client;
+
+    this.getClusterId = config.getClusterId;
+    this.endpoint = config.endpoint;
+    this.machineId = config.machineId;
+    this.apiSecret = config.apiSecret;
   }
 
   version(version: number) {
@@ -93,7 +109,10 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       define: (
         handler: (ctx: WorkflowContext<TInput>, input: TInput) => Promise<void>,
       ) => {
-        this.logger?.info("Defining workflow handler", { version, name: this.name });
+        this.logger?.info("Defining workflow handler", {
+          version,
+          name: this.name,
+        });
         this.versionHandlers.set(version, handler);
       },
       run: async (input: TInput) => {
@@ -104,11 +123,10 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         });
 
         try {
-          const result = await this.inferable
-            .getClient()
+          const result = await this.client
             .createWorkflowExecution({
               params: {
-                clusterId: await this.inferable.getClusterId(),
+                clusterId: await this.getClusterId(),
                 workflowName: this.name,
               },
               body: {
@@ -158,9 +176,9 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         const rand = crypto.randomUUID();
 
         // TODO: async/retry
-        const result = await this.inferable.getClient().setClusterKV({
+        const result = await this.client.setClusterKV({
           params: {
-            clusterId: await this.inferable.getClusterId(),
+            clusterId: await this.getClusterId(),
             key: `${executionId}.${name}`,
           },
           body: {
@@ -181,21 +199,30 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         const canRun = result.body.value === rand;
 
         if (canRun) {
-          this.logger?.info(`Effect ${name} starting execution`, { executionId });
+          this.logger?.info(`Effect ${name} starting execution`, {
+            executionId,
+          });
           try {
             await fn(ctx);
-            this.logger?.info(`Effect ${name} completed successfully`, { executionId });
+            this.logger?.info(`Effect ${name} completed successfully`, {
+              executionId,
+            });
           } catch (e) {
-            this.logger?.error(`Effect ${name} failed`, { executionId, error: e });
+            this.logger?.error(`Effect ${name} failed`, {
+              executionId,
+              error: e,
+            });
             throw e;
           }
         } else {
-          this.logger?.info(`Effect ${name} has already been run`, { executionId });
+          this.logger?.info(`Effect ${name} has already been run`, {
+            executionId,
+          });
         }
       },
       agent: <TAgentResult = unknown>(config: AgentConfig<TAgentResult>) => {
         return {
-          run: async (params: { data: { [key: string]: unknown } }) => {
+          trigger: async (params: { data: { [key: string]: unknown } }) => {
             this.logger?.info("Running agent in workflow", {
               version,
               name: this.name,
@@ -220,9 +247,9 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                   ]),
                 )}`;
 
-            const result = await this.inferable.getClient().createRun({
+            const result = await this.client.createRun({
               params: {
-                clusterId: await this.inferable.getClusterId(),
+                clusterId: await this.getClusterId(),
               },
               body: {
                 id: runId,
@@ -281,42 +308,59 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   }
 
   async listen() {
+
+    if (this.pollingAgent) {
+      throw new InferableError("Workflow already listening");
+    }
+
     this.logger?.info("Starting workflow listeners", {
       name: this.name,
       versions: Array.from(this.versionHandlers.keys()),
     });
 
-    this.versionHandlers.forEach((handler, version) => {
-      const s = this.inferable.service({
-        name: `workflows.${this.name}.${version}`,
-      });
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tools: ToolRegistration[] = [];
 
-      s.register({
+    this.versionHandlers.forEach((handler, version) => {
+      // We accept both Zod types and JSON schema as an input, convert to JSON schema if the input is a Zod type
+      const inputJson = (
+        isZodType(this.inputSchema) ? zodToJsonSchema(this.inputSchema) : this.inputSchema
+      ) as JsonSchemaInput;
+
+      tools.push({
         func: async (input: TInput) => {
           if (!input.executionId) {
-            const error = "executionId field must be provided in the workflow input, and must be a string";
+            const error =
+              "executionId field must be provided in the workflow input, and must be a string";
             this.logger?.error(error);
             throw new Error(error);
           }
           const ctx = this.createContext(version, input.executionId, input);
           return handler(ctx, input);
         },
-        name: DEFAULT_FUNCTION_NAME,
+        name: `workflows.${this.name}.${version}`,
         schema: {
           input: this.inputSchema,
+          inputJson: JSON.stringify(inputJson),
         },
       });
+    });
 
-      this.services.push(s);
+    this.pollingAgent = new PollingAgent({
+      endpoint: this.endpoint,
+      machineId: this.machineId,
+      apiSecret: this.apiSecret,
+      clusterId: await this.getClusterId(),
+      tools,
     });
 
     try {
-      await Promise.all(this.services.map((s) => s.start()));
+      await this.pollingAgent.start();
       this.logger?.info("Workflow listeners started", { name: this.name });
     } catch (error) {
       this.logger?.error("Failed to start workflow listeners", {
         name: this.name,
-        error
+        error,
       });
       throw error;
     }
@@ -326,12 +370,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     this.logger?.info("Stopping workflow listeners", { name: this.name });
 
     try {
-      await Promise.all(this.services.map((s) => s.stop()));
+      await this.pollingAgent?.stop();
       this.logger?.info("Workflow listeners stopped", { name: this.name });
     } catch (error) {
       this.logger?.error("Failed to stop workflow listeners", {
         name: this.name,
-        error
+        error,
       });
       throw error;
     }

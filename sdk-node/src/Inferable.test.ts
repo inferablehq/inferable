@@ -9,17 +9,13 @@ import {
 } from "./tests/utils";
 import { setupServer } from "msw/node";
 import { http, HttpResponse, passthrough } from "msw";
-import { statusChangeSchema } from "./types";
 
 const testService = () => {
-  const inferable = inferableInstance();
+  const client = inferableInstance();
+  const prefix = `test${Math.random().toString(36).substring(2, 15)}`;
 
-  const service = inferable.service({
-    name: `echoService${Math.random().toString(36).substring(2, 15)}`,
-  });
-
-  service.register({
-    name: "echo",
+  client.tools.register({
+    name: `${prefix}.echo`,
     func: async (input: { text: string }) => {
       return { echo: input.text };
     },
@@ -30,8 +26,8 @@ const testService = () => {
     },
   });
 
-  service.register({
-    name: "error",
+  client.tools.register({
+    name: `${prefix}.error`,
     func: async (_input) => {
       throw new Error("This is an error");
     },
@@ -42,7 +38,10 @@ const testService = () => {
     },
   });
 
-  return service;
+  return {
+    client,
+    prefix,
+  };
 };
 
 describe("Inferable", () => {
@@ -71,70 +70,13 @@ describe("Inferable", () => {
   it("should throw if invalid API secret is provided", () => {
     expect(() => new Inferable({ apiSecret: "invalid" })).toThrow();
   });
-
-  it("should register a function", async () => {
-    const d = inferableInstance();
-
-    const echo = async (param: { foo: string }) => {
-      return param.foo;
-    };
-
-    const service = d.service({ name: "test" });
-
-    service.register({
-      func: echo,
-      name: "echo",
-      schema: {
-        input: z.object({
-          foo: z.string(),
-        }),
-      },
-      description: "echoes the input",
-    });
-
-    expect(d.registeredFunctions).toEqual(["echo"]);
-  });
-
-  it("should list active and inactive services correctly", async () => {
-    const d = inferableInstance();
-
-    const service = d.service({ name: "test" });
-
-    const echo = async (param: { foo: string }) => {
-      return param.foo;
-    };
-
-    service.register({
-      func: echo,
-      name: "echo",
-      schema: {
-        input: z.object({
-          foo: z.string(),
-        }),
-      },
-      description: "echoes the input",
-    });
-
-    expect(d.activeServices).toEqual([]);
-    expect(d.inactiveServices).toEqual([]);
-
-    await service.start();
-
-    expect(d.activeServices).toEqual(["test"]);
-    expect(d.inactiveServices).toEqual([]);
-
-    await service.stop();
-
-    expect(d.activeServices).toEqual([]);
-    expect(d.inactiveServices).toEqual(["test"]);
-  });
 });
 
 describe("Functions", () => {
   it("should handle successful function calls", async () => {
     const service = testService();
 
-    await service.start();
+    await service.client.tools.listen();
 
     const results = await Promise.all(
       Array.from({ length: 10 }).map(async (_, i) => {
@@ -146,8 +88,8 @@ describe("Functions", () => {
             clusterId: TEST_CLUSTER_ID,
           },
           body: {
-            function: "echo",
-            service: service.definition.name,
+            service: "v2",
+            function: `${service.prefix}.echo`,
             input: { text: i.toString() },
           },
         });
@@ -169,7 +111,7 @@ describe("Functions", () => {
       );
     });
 
-    await service.stop();
+    await service.client.tools.unlisten();
   });
 
   it("should recover from transient polling errors", async () => {
@@ -190,7 +132,7 @@ describe("Functions", () => {
     server.listen();
 
     const service = testService();
-    await service.start();
+    await service.client.tools.listen();
 
     const result = await client.createJob({
       query: {
@@ -200,8 +142,8 @@ describe("Functions", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        function: "echo",
-        service: service.definition.name,
+        service: "v2",
+        function: `${service.prefix}.echo`,
         input: { text: "foo" },
       },
     });
@@ -226,67 +168,8 @@ describe("Functions", () => {
 
     const service = testService();
 
-    await expect(service.start).rejects.toThrow();
+    await expect(service.client.tools.listen()).rejects.toThrow();
 
     server.close();
-  });
-});
-
-// This should match the example in the readme
-describe("Inferable SDK End to End Test", () => {
-  jest.retryTimes(3);
-  it("should trigger a run, call a function, and call a status change function", async () => {
-    const client = inferableInstance();
-
-    let didCallSayHello = false;
-    let didCallOnStatusChange = false;
-
-    // Register a simple function (using the 'default' service)
-    const sayHello = client.default.register({
-      name: "sayHello",
-      func: async ({ to }: { to: string }) => {
-        didCallSayHello = true;
-        return `Hello, ${to}!`;
-      },
-      schema: {
-        input: z.object({
-          to: z.string(),
-        }),
-      },
-    });
-
-    const onStatusChange = client.default.register({
-      name: "onStatusChangeFn",
-      schema: statusChangeSchema,
-      func: (_input) => {
-        didCallOnStatusChange = true;
-      },
-    });
-
-    try {
-      await client.default.start();
-
-      const run = await client.run({
-        initialPrompt: "Say hello to John",
-        // Optional: Explicitly attach the `sayHello` function (All functions attached by default)
-        attachedFunctions: [sayHello],
-        // Optional: Define a schema for the result to conform to
-        resultSchema: z.object({
-          didSayHello: z.boolean(),
-        }),
-        // Optional: Subscribe an Inferable function to receive notifications when the run status changes
-        onStatusChange: { function: onStatusChange },
-      });
-
-      const result = await run.poll();
-
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-
-      expect(result).not.toBeNull();
-      expect(didCallSayHello).toBe(true);
-      expect(didCallOnStatusChange).toBe(true);
-    } finally {
-      await client.default.stop();
-    }
   });
 });

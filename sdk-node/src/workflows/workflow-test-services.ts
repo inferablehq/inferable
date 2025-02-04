@@ -2,10 +2,6 @@ import { z } from "zod";
 import { Inferable } from "../Inferable";
 
 export const createServices = async (inferable: Inferable): Promise<void> => {
-  const service = inferable.service({
-    name: "testService",
-  });
-
   const fakeLoans = [
     {
       id: "loan-123",
@@ -30,7 +26,7 @@ export const createServices = async (inferable: Inferable): Promise<void> => {
     },
   ];
 
-  service.register({
+  inferable.tools.register({
     name: "getLoansForCustomer",
     schema: {
       input: z.object({
@@ -52,7 +48,7 @@ export const createServices = async (inferable: Inferable): Promise<void> => {
     },
   });
 
-  service.register({
+  inferable.tools.register({
     name: "getLoanDetails",
     schema: {
       input: z.object({
@@ -67,7 +63,7 @@ export const createServices = async (inferable: Inferable): Promise<void> => {
     },
   });
 
-  service.register({
+  inferable.tools.register({
     name: "getAssetClassDetails",
     schema: {
       input: z.object({
@@ -99,5 +95,5 @@ export const createServices = async (inferable: Inferable): Promise<void> => {
     },
   });
 
-  await service.start();
+  await inferable.tools.listen();
 };

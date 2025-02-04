@@ -1,5 +1,5 @@
 import { serializeError } from "./serialize-error";
-import { FunctionRegistration } from "./types";
+import { ToolRegistration } from "./types";
 import { extractInterrupt } from "./util";
 
 export type Result<T = unknown> = {
@@ -9,8 +9,8 @@ export type Result<T = unknown> = {
 };
 
 export const executeFn = async (
-  fn: FunctionRegistration["func"],
-  args: Parameters<FunctionRegistration["func"]>,
+  fn: ToolRegistration["func"],
+  args: Parameters<ToolRegistration["func"]>,
 ): Promise<Result> => {
   const start = Date.now();
   try {

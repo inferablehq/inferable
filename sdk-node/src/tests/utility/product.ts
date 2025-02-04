@@ -28,12 +28,11 @@ export const succeedsOnSecondAttempt = async ({ id }: { id: string }) => {
 };
 
 export const productService = () => {
-  const service = inferableInstance().service({
-    name: `product${Math.random().toString(36).substring(2, 15)}`,
-  });
+  const prefix = `product${Math.random().toString(36).substring(2, 5)}`;
+  const client = inferableInstance();
 
-  service.register({
-    name: "getProduct10sCache",
+  client.tools.register({
+    name: `${prefix}.getProduct10sCache`,
     func: getProduct,
     schema: {
       input: z.object({
@@ -51,8 +50,8 @@ export const productService = () => {
     },
   });
 
-  service.register({
-    name: "getProduct1sCache",
+  client.tools.register({
+    name: `${prefix}.getProduct1sCache`,
     func: getProduct,
     schema: {
       input: z.object({
@@ -70,8 +69,8 @@ export const productService = () => {
     },
   });
 
-  service.register({
-    name: "failingFunction",
+  client.tools.register({
+    name: `${prefix}.failingFunction`,
     func: async () => {
       await new Promise((resolve) => setTimeout(resolve, 5000));
     },
@@ -86,8 +85,8 @@ export const productService = () => {
     },
   });
 
-  service.register({
-    name: "succeedsOnSecondAttempt",
+  client.tools.register({
+    name: `${prefix}.succeedsOnSecondAttempt`,
     func: succeedsOnSecondAttempt,
     schema: {
       input: z.object({
@@ -100,5 +99,8 @@ export const productService = () => {
     },
   });
 
-  return service;
+  return {
+    prefix,
+    client
+  };
 };

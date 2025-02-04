@@ -6,11 +6,11 @@ describe("retrying", () => {
   const service = productService();
 
   beforeAll(async () => {
-    await service.start();
+    await service.client.tools.listen();
   });
 
   afterAll(async () => {
-    await service.stop();
+    await service.client.tools.unlisten();
   });
 
   it("should not retry a function when attempts is 1", async () => {
@@ -24,8 +24,8 @@ describe("retrying", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: service.definition.name,
-        function: "failingFunction",
+        service: "v2",
+        function: `${service.prefix}.failingFunction`,
         input: { id: productId },
       },
     });
@@ -51,8 +51,8 @@ describe("retrying", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: service.definition.name,
-        function: "succeedsOnSecondAttempt",
+        service: "v2",
+        function: `${service.prefix}.succeedsOnSecondAttempt`,
         input: { id: productId },
       },
     });
