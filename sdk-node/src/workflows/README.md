@@ -113,7 +113,8 @@ type AgentConfig<TInput, TResult> = {
   name: string;
   facts: Fact[];
   goals: string[];
-  input?: TInput;
+  systemPrompt?: string;
+  workflowInput?: TInput;
   resultSchema?: z.ZodType<TResult>;
   runId?: string;
 };

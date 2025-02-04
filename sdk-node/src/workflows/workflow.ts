@@ -18,30 +18,20 @@ type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
   inputSchema: z.ZodType<TInput>;
 };
 
-type DataFact = {
-  description: string;
-  data: unknown;
-};
-
-type Fact = string | DataFact;
-
-type AgentConfig<TInput, TResult> = {
+type AgentConfig<TResult> = {
   name: string;
-  facts: Fact[];
-  goals: string[];
-  input?: TInput;
+  systemPrompt?: string;
   resultSchema?: z.ZodType<TResult>;
   runId?: string;
 };
 
 type WorkflowContext<TInput> = {
-  agent: <
-    TAgentInput extends { [key: string]: unknown },
-    TAgentResult = unknown,
-  >(
-    config: AgentConfig<TAgentInput, TAgentResult>,
+  agent: <TAgentResult = unknown>(
+    config: AgentConfig<TAgentResult>,
   ) => {
-    run: () => Promise<{ result: TAgentResult }>;
+    run: (params: {
+      data: { [key: string]: unknown };
+    }) => Promise<{ result: TAgentResult }>;
   };
   input: TInput;
 };
@@ -61,6 +51,17 @@ class WorkflowTerminableError extends Error {
     this.name = "WorkflowTerminableError";
   }
 }
+
+export const helpers = {
+  structuredPrompt: (params: { facts: string[]; goals: string[] }): string => {
+    return [
+      "# Facts",
+      ...params.facts.map((f) => `- ${f}`),
+      "# Your goals",
+      ...params.goals.map((g) => `- GOAL: ${g}`),
+    ].join("\n");
+  },
+};
 
 export class Workflow<TInput extends WorkflowInput, name extends string> {
   private name: string;
@@ -129,14 +130,9 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     });
 
     return {
-      agent: <
-        TAgentInput extends { [key: string]: unknown },
-        TAgentResult = unknown,
-      >(
-        config: AgentConfig<TAgentInput, TAgentResult>,
-      ) => {
+      agent: <TAgentResult = unknown>(config: AgentConfig<TAgentResult>) => {
         return {
-          run: async () => {
+          run: async (params: { data: { [key: string]: unknown } }) => {
             log("Running agent in workflow", {
               version,
               name: this.name,
@@ -152,13 +148,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               ? `${executionId}.${config.name}.${config.runId}`
               : `${executionId}.${config.name}.${cyrb53(
                   JSON.stringify([
-                    config.facts,
-                    config.goals,
-                    config.input,
+                    config.systemPrompt,
                     executionId,
                     resultSchema,
                     this.name,
                     version,
+                    params.data,
                   ]),
                 )}`;
 
@@ -168,17 +163,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               },
               body: {
                 id: runId,
-                systemPrompt: [
-                  "You are a helpful assistant.",
-                  "# Facts:",
-                  ...config.facts.map((f) => {
-                    if (typeof f === "string") {
-                      return `- ${f}`;
-                    } else {
-                      return `- ${f.description}: ${JSON.stringify(f.data)}`;
-                    }
-                  }),
-                ].join("\n"),
+                systemPrompt: config.systemPrompt,
                 resultSchema,
                 onStatusChange: {
                   type: "workflow",
@@ -192,10 +177,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                   "workflow.version": version.toString(),
                   "workflow.executionId": executionId,
                 },
-                initialPrompt: [
-                  "# Your goals",
-                  ...config.goals.map((g) => `- GOAL: ${g}`),
-                ].join("\n"),
+                initialPrompt: JSON.stringify(params.data),
               },
             });
 
