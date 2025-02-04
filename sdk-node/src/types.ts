@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FunctionConfigSchema } from "./contract";
+import { ToolConfigSchema } from "./contract";
 
 /**
  * Context object which is passed to function calls
@@ -10,7 +10,7 @@ export type ContextInput = {
   approved: boolean;
 };
 
-export type FunctionConfig = z.infer<typeof FunctionConfigSchema>;
+export type FunctionConfig = z.infer<typeof ToolConfigSchema>;
 
 export type FunctionInput<T extends z.ZodTypeAny | JsonSchemaInput> =
   T extends z.ZodObject<infer Input>
