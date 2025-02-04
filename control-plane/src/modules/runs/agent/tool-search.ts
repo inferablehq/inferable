@@ -11,6 +11,7 @@ import { AgentTool } from "./tool";
 import { buildAbstractServiceFunctionTool } from "./tools/functions";
 import { availableStdlib } from "./tools/stdlib";
 import { z } from "zod";
+import { getToolDefinition, searchTools } from "../../tools";
 
 function anonymize<T>(value: T): T {
   if (typeof value === "string") {
@@ -130,32 +131,55 @@ async function findRelatedFunctionTools(
     resultSchema: unknown | null;
     debug: boolean;
   },
-  search: string
+  search: string,
+  toolsV2?: boolean
 ) {
-  const relatedTools = search
-    ? await embeddableServiceFunction.findSimilarEntities(
+
+  if (toolsV2) {
+    const relatedTools = await searchTools({
+      query: search,
+      clusterId: run.clusterId,
+    })
+
+    const selectedTools = relatedTools.map(definition =>
+      new AgentTool({
+        name: definition.name,
+        description: (definition.description ?? `${definition.name} function`).substring(0, 1024),
+        schema: definition.schema ?? undefined,
+        func: async () => undefined,
+      })
+    );
+
+    return {
+      selectedTools,
+      relatedTools,
+    };
+  } else {
+    const relatedTools = search
+      ? await embeddableServiceFunction.findSimilarEntities(
         run.clusterId,
         "service-function",
         search,
         50 // limit to 50 results
       )
-    : [];
+      : [];
 
-  const selectedTools = relatedTools.map(toolDetails =>
-    buildAbstractServiceFunctionTool({
-      ...toolDetails,
-      description: toolDetails.description,
-      schema: toolDetails.schema,
-    })
-  );
+    const selectedTools = relatedTools.map(toolDetails =>
+      buildAbstractServiceFunctionTool({
+        ...toolDetails,
+        description: toolDetails.description,
+        schema: toolDetails.schema,
+      })
+    );
 
-  return {
-    selectedTools,
-    relatedTools,
-  };
+    return {
+      selectedTools,
+      relatedTools,
+    };
+  }
 }
 
-export const findRelevantTools = async (state: RunGraphState) => {
+export const findRelevantTools = async (state: RunGraphState, toolsV2?: boolean) => {
   const start = Date.now();
   const run = state.run;
 
@@ -188,22 +212,39 @@ export const findRelevantTools = async (state: RunGraphState) => {
         }
       }
 
-      const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
-        run.clusterId,
-        "service-function",
-        tool
-      );
+      if (toolsV2) {
+        const definition = await getToolDefinition({
+          name: tool,
+          clusterId: run.clusterId
+        });
 
-      if (!serviceFunctionDetails) {
-        throw new Error(`Tool ${tool} not found in cluster ${run.clusterId}`);
+        tools.push(
+          new AgentTool({
+            name: definition.name,
+            description: (definition.description ?? `${definition.name} function`).substring(0, 1024),
+            schema: definition.schema ?? undefined,
+            func: async () => undefined,
+          })
+        );
+      // Deprecated, to be removed once all SDKs are updated
+      } else {
+        const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
+          run.clusterId,
+          "service-function",
+          tool
+        );
+
+        if (!serviceFunctionDetails) {
+          throw new Error(`Tool ${tool} not found in cluster ${run.clusterId}`);
+        }
+
+        tools.push(
+          buildAbstractServiceFunctionTool({
+            ...serviceFunctionDetails,
+            schema: serviceFunctionDetails.schema,
+          })
+        );
       }
-
-      tools.push(
-        buildAbstractServiceFunctionTool({
-          ...serviceFunctionDetails,
-          schema: serviceFunctionDetails.schema,
-        })
-      );
     }
   } else {
     const model = buildModel({
@@ -272,7 +313,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
       });
     }
 
-    const { selectedTools, relatedTools } = await findRelatedFunctionTools(
+    const { selectedTools } = await findRelatedFunctionTools(
       run,
       searchQueryContent.success
         ? searchQueryContent.data.text
@@ -296,8 +337,6 @@ export const findRelevantTools = async (state: RunGraphState) => {
           return {
             name: t.name,
             description: t.description,
-            similarity: relatedTools.find(rt => `${rt.serviceName}_${rt.functionName}` === t.name)
-              ?.similarity,
           };
         }),
         duration: Date.now() - start,

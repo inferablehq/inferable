@@ -8,7 +8,7 @@ import { getRunTags } from "../runs/tags";
 import { injectTraceContext } from "../observability/tracer";
 import { z } from "zod";
 import { BaseMessage, baseMessageSchema } from "./observability";
-import { RetryableError } from "../../utilities/errors";
+import { flagsmith } from "../flagsmith";
 
 interface RunProcessMessage extends BaseMessage {
   lockAttempts?: number;
@@ -76,7 +76,13 @@ export async function handleRunProcess(message: unknown) {
       return;
     }
 
-    await processRun(run, tags);
+    const flags = await flagsmith?.getIdentityFlags(run.clusterId, {
+      clusterId: run.clusterId,
+    });
+
+    const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
+
+    await processRun(run, tags, undefined, toolsV2);
   } finally {
     await unlock();
   }

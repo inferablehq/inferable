@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getWaitingJobIds } from "../";
 import { env } from "../../../utilities/env";
-import { NotFoundError } from "../../../utilities/errors";
+import { AgentError, NotFoundError } from "../../../utilities/errors";
 import { getClusterContextText } from "../../cluster";
 import { onStatusChangeSchema } from "../../contract";
 import { db, runs } from "../../data";
@@ -25,9 +25,10 @@ import { createRunGraph } from "./agent";
 import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
 import { AgentTool } from "./tool";
 import { findRelevantTools } from "./tool-search";
-import { buildAbstractServiceFunctionTool, buildServiceFunctionTool } from "./tools/functions";
+import { buildAbstractServiceFunctionTool, buildServiceFunctionTool, buildTool } from "./tools/functions";
 import { buildMockFunctionTool } from "./tools/mock-function";
 import { availableStdlib } from "./tools/stdlib";
+import { availableTools, getToolDefinition } from "../../tools";
 
 /**
  * Run a Run from the most recent saved state
@@ -51,7 +52,9 @@ export const processRun = async (
     context: unknown | null;
   },
   tags?: Record<string, string>,
-  mockModelResponses?: string[]
+  mockModelResponses?: string[],
+  // Deprecated, to be removed once all SDKs are updated
+  toolsV2?: boolean,
 ) => {
   logger.info("Processing Run");
 
@@ -59,6 +62,7 @@ export const processRun = async (
   const [
     additionalContext,
     serviceDefinitions,
+    v2ToolNames,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _updateResult,
   ] = await Promise.all([
@@ -66,6 +70,7 @@ export const processRun = async (
     getServiceDefinitions({
       clusterId: run.clusterId,
     }),
+    availableTools({ clusterId: run.clusterId }),
     db.update(runs).set({ status: "running", failure_reason: "" }).where(eq(runs.id, run.id)),
   ]);
 
@@ -74,21 +79,26 @@ export const processRun = async (
 
   allAvailableTools.push(...attachedFunctions);
 
-  serviceDefinitions.flatMap((service: { service: string; definition: ServiceDefinition }) =>
-    (service.definition?.functions ?? []).forEach((f: ServiceDefinitionFunction) => {
-      // Do not attach additional tools if `attachedFunctions` is provided
-      if (attachedFunctions.length > 0 || f.config?.private) {
-        return;
-      }
+  if (toolsV2) {
+    allAvailableTools.push(...v2ToolNames);
+    // Deprecated, to be removed once all SDKs are updated
+  } else {
+    serviceDefinitions.flatMap((service: { service: string; definition: ServiceDefinition }) =>
+      (service.definition?.functions ?? []).forEach((f: ServiceDefinitionFunction) => {
+        // Do not attach additional tools if `attachedFunctions` is provided
+        if (attachedFunctions.length > 0 || f.config?.private) {
+          return;
+        }
 
-      allAvailableTools.push(
-        serviceFunctionEmbeddingId({
-          serviceName: service.definition.name,
-          functionName: f.name,
-        })
-      );
-    })
-  );
+        allAvailableTools.push(
+          serviceFunctionEmbeddingId({
+            serviceName: service.definition.name,
+            functionName: f.name,
+          })
+        );
+      })
+    );
+  }
 
   const mockToolsMap: Record<string, AgentTool> = await buildMockTools(run);
 
@@ -139,24 +149,45 @@ export const processRun = async (
         return internalTool;
       }
 
-      const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
-        run.clusterId,
-        "service-function",
-        toolCall.toolName
-      );
-
-      if (serviceFunctionDetails) {
-        return buildServiceFunctionTool({
-          ...serviceFunctionDetails,
-          schema: serviceFunctionDetails.schema,
-          run: run,
-          toolCallId: toolCall.id!,
+      if (toolsV2) {
+        const tool = await getToolDefinition({
+          name: toolCall.toolName,
+          clusterId: run.clusterId,
         });
+
+        if (!tool) {
+          throw new AgentError(`Definition for tool not found: ${toolCall.toolName}`);
+        }
+
+        return buildTool({
+          name: toolCall.toolName,
+          toolCallId: toolCall.id!,
+          run: run,
+          schema: tool.schema ?? undefined,
+          description: tool.description ?? undefined,
+        })
+      // Deprecated, to be removed once all SDKs are updated
+      } else {
+        const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
+          run.clusterId,
+          "service-function",
+          toolCall.toolName
+        );
+
+        if (serviceFunctionDetails) {
+          return buildServiceFunctionTool({
+            ...serviceFunctionDetails,
+            schema: serviceFunctionDetails.schema,
+            run: run,
+            toolCallId: toolCall.id!,
+          });
+        }
       }
+
 
       throw new NotFoundError(`Tool not found: ${toolCall.toolName}`);
     },
-    findRelevantTools,
+    findRelevantTools: (state) => findRelevantTools(state, toolsV2),
     postStepSave: async state => {
       logger.debug("Saving run state", {
         runId: run.id,
@@ -429,6 +460,7 @@ const buildAdditionalContext = async (run: {
   return context;
 };
 
+// TODO: Update to use tools rather than services
 export const buildMockTools = async (run: {
   id: string;
   clusterId: string;
