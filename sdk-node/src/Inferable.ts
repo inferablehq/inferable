@@ -23,7 +23,7 @@ import {
   validateFunctionName,
   validateFunctionSchema,
 } from "./util";
-import { Workflow } from "./workflows/workflow";
+import { helpers, Workflow } from "./workflows/workflow";
 
 // Custom json formatter
 debug.formatters.J = (json) => {
@@ -577,6 +577,7 @@ export class Inferable {
   }
 
   workflows = {
+    helpers,
     create: <TInput extends z.ZodTypeAny>({
       name,
       inputSchema,
@@ -590,9 +591,9 @@ export class Inferable {
         inputSchema,
       });
     },
-    run: async <TInput extends { executionId: string }>(
+    run: async <TWorkflowInput extends { executionId: string }>(
       name: string,
-      input: TInput,
+      input: TWorkflowInput,
     ): Promise<void> => {
       const clusterId = await this.getClusterId();
 

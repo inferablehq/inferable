@@ -1,5 +1,5 @@
 {
-  "id": "950603e6-935a-4987-bf3c-6a3dfd1faba6",
+  "id": "c972e9d7-e0c2-48f3-828c-ea3120d4ee0e",
   "prevId": "039b862d-0f0a-4e7c-9a06-a0cc84c05f60",
   "version": "7",
   "dialect": "postgresql",
@@ -330,42 +330,6 @@
           "columns": [
             "cluster_id",
             "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {}
-    },
-    "public.cluster_kv": {
-      "name": "cluster_kv",
-      "schema": "",
-      "columns": {
-        "cluster_id": {
-          "name": "cluster_id",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "key": {
-          "name": "key",
-          "type": "varchar(1024)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "value": {
-          "name": "value",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "cluster_kv_cluster_id_key_pk": {
-          "name": "cluster_kv_cluster_id_key_pk",
-          "columns": [
-            "cluster_id",
-            "key"
           ]
         }
       },
@@ -1658,6 +1622,128 @@
           "columns": [
             "cluster_id",
             "service"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.tools": {
+      "name": "tools",
+      "schema": "",
+      "columns": {
+        "cluster_id": {
+          "name": "cluster_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(1024)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group": {
+          "name": "group",
+          "type": "varchar(1024)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "schema": {
+          "name": "schema",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "config": {
+          "name": "config",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "should_expire": {
+          "name": "should_expire",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_ping_at": {
+          "name": "last_ping_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "embedding_1024": {
+          "name": "embedding_1024",
+          "type": "vector(1024)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "embedding_model": {
+          "name": "embedding_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "toolEmbedding1024Index": {
+          "name": "toolEmbedding1024Index",
+          "columns": [
+            {
+              "expression": "embedding_1024",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "vector_cosine_ops"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "hnsw",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tools_cluster_id_clusters_id_fk": {
+          "name": "tools_cluster_id_clusters_id_fk",
+          "tableFrom": "tools",
+          "tableTo": "clusters",
+          "columnsFrom": [
+            "cluster_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "tools_cluster_id_tools": {
+          "name": "tools_cluster_id_tools",
+          "columns": [
+            "cluster_id",
+            "name"
           ]
         }
       },

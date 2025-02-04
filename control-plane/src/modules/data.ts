@@ -20,6 +20,7 @@ import { env } from "../utilities/env";
 import { logger } from "./observability/logger";
 import { z } from "zod";
 import { onStatusChangeSchema } from "./contract";
+import { ToolConfig } from "./tools";
 
 export const createMutex = advisoryLock(env.DATABASE_URL);
 
@@ -189,6 +190,45 @@ export const services = pgTable(
       columns: [table.cluster_id, table.service],
       name: "services_cluster_id_service",
     }),
+  })
+);
+
+export const tools = pgTable(
+  "tools",
+  {
+    cluster_id: varchar("cluster_id")
+      .references(() => clusters.id)
+      .notNull(),
+    name: varchar("name", { length: 1024 }).notNull(),
+    group: varchar("group", { length: 1024 }).notNull(),
+    description: text("description"),
+    schema: text("schema"),
+    config: json("config").$type<ToolConfig>(),
+    hash: text("hash").notNull(),
+    should_expire: boolean("should_expire").notNull(),
+    last_ping_at: timestamp("last_ping_at", { withTimezone: true }).notNull(),
+    embedding_1024: vector("embedding_1024", {
+      dimensions: 1024, // for embed-english-v3
+    }).notNull(),
+    embedding_model: text("embedding_model", {
+      enum: ["embed-english-v3"],
+    }).notNull(),
+    created_at: timestamp("created_at", {
+      withTimezone: true,
+      precision: 6,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  table => ({
+    pk: primaryKey({
+      columns: [table.cluster_id, table.name],
+      name: "tools_cluster_id_tools",
+    }),
+    toolEmbedding1024Index: index("toolEmbedding1024Index").using(
+      "hnsw",
+      table.embedding_1024.op("vector_cosine_ops")
+    ),
   })
 );
 

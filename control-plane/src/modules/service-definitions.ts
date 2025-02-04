@@ -4,7 +4,7 @@ import jsonpath from "jsonpath";
 import { Validator } from "jsonschema";
 import { z } from "zod";
 import { InvalidJobArgumentsError, InvalidServiceRegistrationError } from "../utilities/errors";
-import { FunctionConfigSchema } from "./contract";
+import { ToolConfigSchema } from "./contract";
 import * as cron from "./cron";
 import * as data from "./data";
 import { embeddableEntitiy } from "./embeddings/embeddings";
@@ -14,7 +14,7 @@ import { packer } from "./packer";
 // The time without a ping before a service is considered expired
 const SERVICE_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute
 
-export type FunctionConfig = z.infer<typeof FunctionConfigSchema>;
+export type FunctionConfig = z.infer<typeof ToolConfigSchema>;
 
 export type ServiceDefinition = {
   name: string;
@@ -39,7 +39,7 @@ export const storedServiceDefinitionSchema = z.array(
           name: z.string(),
           description: z.string().optional(),
           schema: z.string().optional(),
-          config: FunctionConfigSchema.optional(),
+          config: ToolConfigSchema.optional(),
         })
       )
       .optional(),

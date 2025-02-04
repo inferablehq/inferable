@@ -4,9 +4,22 @@ import { z } from "zod";
 import { Inferable } from "../Inferable";
 import { createServices } from "./workflow-test-services";
 import { getEphemeralSetup } from "./workflow-test-utils";
+import { helpers } from "./workflow";
 
 (async function demo() {
-  const ephemeralSetup = await getEphemeralSetup();
+  const ephemeralSetup = process.env.INFERABLE_TEST_CLUSTER_ID
+    ? {
+        clusterId: process.env.INFERABLE_TEST_CLUSTER_ID,
+        apiKey: process.env.INFERABLE_TEST_API_SECRET,
+        endpoint: process.env.INFERABLE_TEST_API_ENDPOINT,
+      }
+    : await getEphemeralSetup();
+
+  if (process.env.INFERABLE_TEST_CLUSTER_ID) {
+    console.log("Using permanent setup...");
+  } else {
+    console.log("Using ephemeral setup...");
+  }
 
   const inferable = new Inferable({
     apiSecret: ephemeralSetup.apiKey,
@@ -26,23 +39,39 @@ import { getEphemeralSetup } from "./workflow-test-utils";
   workflow.version(1).define(async (ctx, input) => {
     const recordsAgent = ctx.agent({
       name: "recordsAgent",
-      systemPrompt: "Get list of loans for a customer",
+      systemPrompt: helpers.structuredPrompt({
+        facts: [
+          "You are a loan records processor",
+          `Customer ID to process: ${input.customerId}`,
+        ],
+        goals: [
+          "Retrieve all loans associated with the customer",
+          "Return a complete list of loan records with their IDs",
+        ],
+      }),
       resultSchema: z.object({
         records: z.array(z.object({ id: z.string() })),
       }),
-      input: {
+    });
+
+    const records = await recordsAgent.run({
+      data: {
         customerId: input.customerId,
       },
     });
-
-    const records = await recordsAgent.run();
 
     const processedRecords = await Promise.all(
       records.result.records.map((record) => {
         const agent2 = ctx.agent({
           name: "analyzeLoan",
-          systemPrompt:
-            "Analyze the loan and return a summary of the asset classes and their risk profile",
+          systemPrompt: helpers.structuredPrompt({
+            facts: ["You are a loan risk analyst"],
+            goals: [
+              "Analyze the loan's asset classes",
+              "Determine the risk profile for each asset class",
+              "Provide a comprehensive summary of findings",
+            ],
+          }),
           resultSchema: z.object({
             loanId: z.string(),
             summary: z
@@ -51,10 +80,6 @@ import { getEphemeralSetup } from "./workflow-test-utils";
                 "Summary of the loan, asset classes and their risk profile",
               ),
           }),
-          input: {
-            loanId: record.id,
-            customerId: input.customerId,
-          },
         });
 
         ctx.effect(`logFirstAnalyzeLoan`, async () => {
@@ -63,24 +88,39 @@ import { getEphemeralSetup } from "./workflow-test-utils";
           );
         });
 
-        return agent2.run();
+        return agent2.run({
+          data: {
+            loanId: record.id,
+            customerId: input.customerId,
+          },
+        });
       }),
     );
 
     const riskProfile = await ctx
       .agent({
         name: "riskAgent",
-        systemPrompt:
-          "You are given a list of loans and their asset classes. Summarize the risk of the customer. Use the asset class details to inform the summary.",
+        systemPrompt: helpers.structuredPrompt({
+          facts: [
+            "You are a senior risk assessment specialist",
+            "You are given a list of loan records and their risk profiles",
+          ],
+          goals: [
+            "Review all loan analyses and their asset classes",
+            "Evaluate the overall customer risk profile",
+            "Provide a comprehensive risk summary considering all assets",
+          ],
+        }),
         resultSchema: z.object({
           summary: z.string(),
         }),
-        input: {
+      })
+      .run({
+        data: {
           customerId: input.customerId,
           assetClassDetails: processedRecords,
         },
-      })
-      .run();
+      });
 
     ctx.effect("logFinalResult", async () => {
       console.log("--------------------------------");

@@ -71,11 +71,22 @@ export class Service {
   private async runLoop() {
     this.polling = true;
 
+    let failureCount = 0;
+
     while (this.polling) {
       try {
         await this.pollIteration();
+        if (failureCount > 0) {
+          failureCount = 0;
+          log(`Poll iteration recovered after ${failureCount} failures`);
+        }
       } catch (e) {
-        log("Failed poll iteration", e);
+        log("Failed poll iteration", {
+          failureCount,
+          error: e,
+        });
+
+        failureCount++;
       }
 
       await new Promise((resolve) =>

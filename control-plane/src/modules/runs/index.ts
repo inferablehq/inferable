@@ -294,7 +294,7 @@ export const getClusterRuns = async ({
       and(
         eq(runs.cluster_id, clusterId),
         eq(runs.test, test),
-        ...(userId ? [eq(runs.user_id, userId)] : []),
+        ...(userId ? [eq(runs.user_id, userId)] : [])
       )
     )
     .orderBy(desc(runs.created_at))
@@ -612,7 +612,6 @@ export const createRetry = async ({ clusterId, runId }: { clusterId: string; run
     id: runId,
   });
 };
-
 
 export const validateSchema = ({ schema, name }: { schema: any; name: string }) => {
   try {

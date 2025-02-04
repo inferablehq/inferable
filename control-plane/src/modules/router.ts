@@ -45,6 +45,7 @@ import { NEW_CONNECTION_ID } from "./integrations/constants";
 import { createWorkflowExecution } from "./workflows/executions";
 import { RunOptions, validateSchema } from "./runs";
 import { kv } from "./kv";
+import { upsertToolDefinition } from "./tools";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -98,6 +99,16 @@ export const router = initServer().router(contract, {
           },
           owner: machine,
         }),
+      derefedFns && derefedFns?.map(fn =>
+        upsertToolDefinition({
+          name: fn.name,
+          clusterId: machine.clusterId,
+          group: service,
+          description: fn.description,
+          schema: fn.schema,
+          config: fn.config,
+        }),
+      ),
     ]);
 
     events.write({
