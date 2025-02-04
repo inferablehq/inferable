@@ -908,10 +908,19 @@ export const definition = {
       authorization: z.string(),
     }),
     responses: {
-      200: RunSchema.omit({
-        test: true,
-      }).extend({
+      200: z.object({
+        id: z.string(),
+        userId: z.string().nullable(),
+        status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+        failureReason: z.string().nullable(),
+        test: z.boolean(),
+        feedbackComment: z.string().nullable(),
+        feedbackScore: z.number().nullable(),
+        context: z.any().nullable(),
+        authContext: z.any().nullable(),
         result: anyObject.nullable(),
+        tags: z.record(z.string()).nullable(),
+        attachedFunctions: z.array(z.string()).nullable(),
       }),
       401: z.undefined(),
     },
