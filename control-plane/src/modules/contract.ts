@@ -479,7 +479,7 @@ export const definition = {
     query: z.object({
       // Deprecated, to be removed once all SDKs are updated
       service: z.string().optional(),
-      tools: z.array(z.string()).optional(),
+      tools: z.string().optional().describe("Comma-separated list of tools to poll"),
       status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
       limit: z.coerce.number().min(1).max(20).default(10),
       acknowledge: z.coerce

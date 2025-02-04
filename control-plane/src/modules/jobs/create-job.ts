@@ -10,6 +10,7 @@ import { logger } from "../observability/logger";
 import { externalServices } from "../integrations/constants";
 import { jobDefaults } from "../data";
 import { externalToolCallQueue } from "../queues/external-tool-call";
+import { getToolDefinition } from "../tools";
 
 type CreateJobParams = {
   jobId: string;
@@ -36,6 +37,109 @@ const extractCacheKeyFromJsonPath = (path: string, args: unknown) => {
       );
     }
     throw error;
+  }
+};
+
+export const createJobV2 = async (params: {
+  service: string;
+  targetFn: string;
+  targetArgs: string;
+  owner: { clusterId: string };
+  runId: string;
+  authContext?: unknown;
+  runContext?: unknown;
+  schemaUnavailableRetryCount?: number;
+  toolCallId?: string;
+}): Promise<{
+  id: string;
+  created: boolean;
+}> => {
+  const definition = await getToolDefinition({
+    name: params.targetFn,
+    clusterId: params.owner.clusterId,
+  });
+
+  const { config, schema } = definition;
+
+  // sometimes the schema is not available immediately after the service is
+  // registered, so we retry a few times
+  if (!schema) {
+    if ((params.schemaUnavailableRetryCount ?? 0) < 3) {
+      // wait for the service to be available
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // retry
+      return createJobV2({
+        ...params,
+        schemaUnavailableRetryCount: (params.schemaUnavailableRetryCount ?? 0) + 1,
+      });
+    } else {
+      throw new NotFoundError("Tool not found");
+    }
+  }
+
+  const args = await parseJobArgs({
+    schema,
+    args: params.targetArgs,
+  });
+
+  const jobConfig = {
+    timeoutIntervalSeconds: config?.timeoutSeconds ?? jobDefaults.timeoutIntervalSeconds,
+    maxAttempts: config?.retryCountOnStall
+      ? config?.retryCountOnStall + 1
+      : jobDefaults.maxAttempts,
+    jobId: params.toolCallId ?? ulid(),
+  };
+
+  if (config?.cache?.keyPath && config?.cache?.ttlSeconds) {
+    const cacheKey = extractCacheKeyFromJsonPath(config.cache.keyPath, args);
+
+    const { id, created } = await createJobStrategies.cached({
+      ...jobConfig,
+      service: params.service,
+      targetFn: params.targetFn,
+      targetArgs: params.targetArgs,
+      owner: params.owner,
+      cacheKey: cacheKey,
+      cacheTTLSeconds: config.cache.ttlSeconds,
+      runId: params.runId,
+      authContext: params.authContext,
+      runContext: params.runContext,
+    });
+
+    if (created) {
+      onAfterJobCreated({
+        ...params,
+        ...jobConfig,
+        config,
+        jobId: id,
+      });
+    }
+
+    return { id, created };
+  } else {
+    const { id, created } = await createJobStrategies.default({
+      ...jobConfig,
+      service: params.service,
+      targetFn: params.targetFn,
+      targetArgs: params.targetArgs,
+      owner: params.owner,
+      runId: params.runId,
+      authContext: params.authContext,
+      runContext: params.runContext,
+    });
+
+    if (created) {
+      onAfterJobCreated({
+        ...params,
+        ...jobConfig,
+        config: config ?? undefined,
+        jobId: id,
+      });
+    }
+
+    // end();
+    return { id, created };
   }
 };
 

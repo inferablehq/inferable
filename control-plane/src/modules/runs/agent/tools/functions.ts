@@ -49,13 +49,11 @@ export const buildTool = ({
     // This relies on idempotency based on toolCallId, this will be called multiple times:
     // - First tiem will create the job
     // - Subsequent times will return the job
-    const { id } = await jobs.createJob({
+    const { id } = await jobs.createJobV2({
       service: "v2",
       targetFn: name,
       targetArgs: requestArgs,
-      owner: {
-        clusterId: run.clusterId,
-      },
+      owner: { clusterId: run.clusterId },
       authContext: run.authContext,
       runContext: run.context,
       runId: run.id,

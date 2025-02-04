@@ -320,7 +320,8 @@ export const findRelevantTools = async (state: RunGraphState, toolsV2?: boolean)
         : state.messages
             .map(m => JSON.stringify(m.data))
             .concat(run.systemPrompt ?? "")
-            .join("\n")
+            .join("\n"),
+      toolsV2
     );
 
     tools.push(...selectedTools);

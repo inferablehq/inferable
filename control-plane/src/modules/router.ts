@@ -739,10 +739,15 @@ export const router = initServer().router(contract, {
   },
   listJobs: async request => {
     const { clusterId } = request.params;
-    const { service, tools, limit, acknowledge, status } = request.query;
+    const { service, limit, acknowledge, status } = request.query;
+    const tools = request.query.tools?.split(",").map(t => t.trim());
 
     if (!tools && !service) {
       throw new BadRequestError("At least one of tools or service must be specified");
+    }
+
+    if (tools && service) {
+      throw new BadRequestError("Only one of tools or service must be specified");
     }
 
     if (acknowledge && status !== "pending") {

@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
 import { env } from "../../utilities/env";
 import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
@@ -9,8 +9,9 @@ import { packer } from "../packer";
 import { resumeRun } from "../runs";
 import { notifyApprovalRequest } from "../runs/notify";
 import { selfHealJobs } from "./self-heal-jobs";
+import { logger } from "../observability/logger";
 
-export { createJob } from "./create-job";
+export { createJob, createJobV2 } from "./create-job";
 export { acknowledgeJob, persistJobResult } from "./job-results";
 
 export type ResultType = "resolution" | "rejection" | "interrupt";
@@ -243,19 +244,19 @@ const waitForPendingJobsByTools = async ({
   start: number;
   tools: string[];
 }): Promise<void> => {
-  const hasPendingJobs = await data.db
-    .execute<{ count: number }>(
-      sql`
-    SELECT COUNT(*) AS count
-    FROM jobs
-    WHERE status = 'pending'
-      AND cluster_id = ${clusterId}
-      AND target_fn IN (${tools})
-    LIMIT 1
-  `
+const hasPendingJobs = await data.db
+  .select({ count: sql<number>`COUNT(*)` })
+  .from(data.jobs)
+  .where(
+    and(
+      eq(data.jobs.status, "pending"),
+      eq(data.jobs.cluster_id, clusterId),
+      inArray(data.jobs.target_fn, tools)
     )
-    .then(r => Number(r.rows[0].count) > 0)
-    .catch(() => true);
+  )
+  .limit(1)
+  .then(r => Number(r[0]?.count || 0) > 0)
+  .catch(() => true);
 
   if (hasPendingJobs) {
     return;
@@ -346,7 +347,7 @@ export const pollJobsByTools = async ({
          WHERE
            status = 'pending'
            AND cluster_id = ${clusterId}
-           AND target_fn IN (${tools})
+           AND target_fn IN (${tools.map(t => `'${t}'`).join(",")})
          LIMIT ${limit}
          FOR UPDATE SKIP LOCKED
        )
