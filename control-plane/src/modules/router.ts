@@ -46,6 +46,7 @@ import { createWorkflowExecution } from "./workflows/executions";
 import { RunOptions, validateSchema } from "./runs";
 import { kv } from "./kv";
 import { upsertToolDefinition } from "./tools";
+import { recordPoll, upsertToolDefinition } from "./tools";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -750,7 +751,11 @@ export const router = initServer().router(contract, {
   },
   listJobs: async request => {
     const { clusterId } = request.params;
-    const { service, limit, acknowledge, status } = request.query;
+    const { service, tools, limit, acknowledge, status } = request.query;
+
+    if (!tools && !service) {
+      throw new BadRequestError("At least one of tools or service must be specified");
+    }
 
     if (acknowledge && status !== "pending") {
       throw new BadRequestError("Only pending jobs can be acknowledged");
@@ -769,51 +774,93 @@ export const router = initServer().router(contract, {
     const machine = request.request.getAuth().isMachine();
     machine.canAccess({ cluster: { clusterId } });
 
-    const [, servicePing, pollResult] = await Promise.all([
-      upsertMachine({
-        clusterId,
-        machineId,
-        sdkVersion: request.headers["x-machine-sdk-version"],
-        sdkLanguage: request.headers["x-machine-sdk-language"],
-        xForwardedFor: request.headers["x-forwarded-for"],
-        ip: request.request.ip,
-      }),
-      recordServicePoll({
-        clusterId,
-        service,
-      }),
-      jobs.pollJobs({
-        clusterId,
-        machineId,
-        service,
-        limit,
-      }),
-    ]);
 
-    if (servicePing === false) {
-      logger.info("Machine polling for unregistered service", {
-        service,
-      });
-      return {
-        status: 410,
-        body: {
-          message: `Service ${service} is not registered`,
-        },
-      };
+    let result;
+
+    // Deprecated, to be removed once all SDKs are updated
+    if (service) {
+      const [, servicePing, pollResult] = await Promise.all([
+        upsertMachine({
+          clusterId,
+          machineId,
+          sdkVersion: request.headers["x-machine-sdk-version"],
+          sdkLanguage: request.headers["x-machine-sdk-language"],
+          xForwardedFor: request.headers["x-forwarded-for"],
+          ip: request.request.ip,
+        }),
+        recordServicePoll({
+          clusterId,
+          service,
+        }),
+        jobs.pollJobs({
+          clusterId,
+          machineId,
+          service: service!,
+          limit,
+        })
+      ]);
+
+      if (servicePing === false) {
+        logger.info("Machine polling for unregistered service", {
+          service,
+        });
+        return {
+          status: 410,
+          body: {
+            message: `Service ${service} is not registered`,
+          },
+        };
+      }
+      result = pollResult;
+    } else if (tools) {
+      const [, missingTools, pollResult] = await Promise.all([
+        upsertMachine({
+          clusterId,
+          machineId,
+          sdkVersion: request.headers["x-machine-sdk-version"],
+          sdkLanguage: request.headers["x-machine-sdk-language"],
+          xForwardedFor: request.headers["x-forwarded-for"],
+          ip: request.request.ip,
+        }),
+        recordPoll({
+          clusterId,
+          tools,
+        }),
+        jobs.pollJobsByTools({
+          clusterId,
+          machineId,
+          tools,
+          limit,
+        })
+      ]);
+
+      if (missingTools.length > 0) {
+        logger.info("Machine polling for unregistered tools", {
+          service,
+        });
+        return {
+          status: 410,
+          body: {
+            message: `Polling for unregistered tools: ${missingTools.join(", ")}`,
+          },
+        };
+      }
+      result = pollResult;
     }
+
 
     request.reply.header("retry-after", 1);
 
     return {
       status: 200,
-      body: pollResult.map(job => ({
+      body: result?.map(job => ({
         id: job.id,
         function: job.targetFn,
         input: packer.unpack(job.targetArgs),
         authContext: job.authContext,
         runContext: job.runContext,
         approved: job.approved,
-      })),
+      })) ?? [],
     };
   },
   createJobBlob: async request => {

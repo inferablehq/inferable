@@ -14,6 +14,100 @@ export const SpecialResultTypes = {
 } as const;
 
 /**
+ * Used for executing tool calls.
+ */
+export const buildTool = ({
+  name,
+  toolCallId,
+  description,
+  schema,
+  run,
+}: {
+  name: string;
+  toolCallId: string;
+  description?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema?: string;
+  run: {
+    clusterId: string;
+    id: string;
+    enableSummarization?: boolean;
+    authContext?: unknown;
+    context?: unknown;
+  };
+}): AgentTool => {
+  const tool = new AgentTool({
+    name,
+    description: (description ?? `${name} function`).substring(0, 1024),
+    schema,
+    func: async () => undefined,
+  });
+
+  tool.func = async input => {
+    const requestArgs = packer.pack(input);
+
+    // This relies on idempotency based on toolCallId, this will be called multiple times:
+    // - First tiem will create the job
+    // - Subsequent times will return the job
+    const { id } = await jobs.createJob({
+      service: "v2",
+      targetFn: name,
+      targetArgs: requestArgs,
+      owner: {
+        clusterId: run.clusterId,
+      },
+      authContext: run.authContext,
+      runContext: run.context,
+      runId: run.id,
+      toolCallId,
+    });
+
+    const job = await jobs.getJob({
+      jobId: id,
+      clusterId: run.clusterId,
+    });
+
+    if (!job) {
+      throw new NotFoundError("Coud not find job for function call");
+    }
+
+    const result = job?.result ? packer.unpack(job.result) : null;
+    const resultType = job?.resultType;
+    const status = job?.status;
+
+    // TODO: Rename jobTimeout
+    // This is a misnomer, we pause the run while waiting for jobs to resolve.
+    if (["pending", "running"].includes(status)) {
+      return JSON.stringify({
+        result: JSON.stringify([id]),
+        resultType: SpecialResultTypes.jobTimeout,
+        status: "success",
+      });
+    }
+
+    // This can happen on job / machine stall, where all retries are exhausted.
+    if (!resultType || !result) {
+      return JSON.stringify({
+        result: {
+          message: "Job did not return a result.",
+        },
+        resultType: "rejection",
+        status: "failure",
+      });
+    }
+
+    return JSON.stringify({
+      result,
+      resultType,
+      status,
+    });
+  };
+
+  return tool;
+};
+
+// Deprecated, to be removed once all SDKs are updated
+/**
  * Build a tool from a service function without any handler.
  * Used for attaching tools definitions to models, the concrete implementation is returned as needed.
  */
@@ -38,6 +132,7 @@ export const buildAbstractServiceFunctionTool = ({
   });
 };
 
+// Deprecated, to be removed once all SDKs are updated
 /**
  * Build a tool from a service function.
  * Used for executing tool calls.

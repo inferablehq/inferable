@@ -3,24 +3,100 @@ import * as crypto from "crypto";
 import * as data from "../data";
 import { ToolConfigSchema } from "../contract";
 import { z } from "zod";
-import { and, eq, lte } from "drizzle-orm";
+import { and, desc, cosineDistance, eq, inArray, lte, sql } from "drizzle-orm";
 import { buildModel } from "../models";
 import { validateDescription, validateFunctionName, validateFunctionSchema, validateServiceName } from "inferable";
 import { InvalidServiceRegistrationError } from "../../utilities/errors";
 import jsonpath from "jsonpath";
 import { logger } from "../observability/logger";
+import { embedSearchQuery } from "../embeddings/embeddings";
+import { result } from "lodash";
 
 // The time without a ping before a tool is considered expired
 const TOOL_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute
 
 export type ToolConfig = z.infer<typeof ToolConfigSchema>;
 
-export async function recordToolPoll({
+export async function availableTools({
   clusterId,
-  name,
 }: {
   clusterId: string;
+}) {
+  const results = await data.db
+    .select({
+      name: data.tools.name,
+    })
+    .from(data.tools)
+    .where(eq(data.tools.cluster_id, clusterId))
+
+  return results.map(r => r.name);
+}
+
+export const getToolDefinition = async ({
+  name,
+  clusterId
+}: {
   name: string;
+  clusterId: string;
+}) => {
+  const [tool] = await data.db
+    .select({
+      name: data.tools.name,
+      description: data.tools.description,
+      schema: data.tools.schema,
+    })
+    .from(data.tools)
+    .where(
+      and(
+        eq(data.tools.name, name),
+        eq(data.tools.cluster_id, clusterId)
+      )
+    )
+
+  return tool;
+};
+
+export const searchTools = async ({
+  query,
+  clusterId,
+  limit = 10
+}: {
+  query: string;
+  clusterId: string;
+  limit?: number;
+}) => {
+  const embedding = await embedSearchQuery(query);
+
+  const similarity = sql<number>`1 - (${cosineDistance(
+    data.tools.embedding_1024,
+    embedding,
+  )})`;
+
+  const results = await data.db
+    .select({
+      name: data.tools.name,
+      description: data.tools.description,
+      schema: data.tools.schema,
+      similarity,
+    })
+    .from(data.tools)
+    .where(
+      and(
+        eq(data.tools.cluster_id, clusterId),
+      ),
+    )
+    .orderBy((t) => desc(t.similarity))
+    .limit(limit);
+
+  return results;
+};
+
+export async function recordPoll({
+  clusterId,
+  tools,
+}: {
+  clusterId: string;
+  tools: string[];
 }) {
   const result = await data.db
     .update(data.tools)
@@ -30,18 +106,15 @@ export async function recordToolPoll({
     .where(
       and(
         eq(data.tools.cluster_id, clusterId),
-        eq(data.tools.name, name)
+        inArray(data.tools.name, tools)
       )
     )
     .returning({
-      tools: data.tools.name,
+      tool: data.tools.name,
     });
 
-  if (result.length === 0) {
-    return false;
-  }
-
-  return true;
+  // Return any missing tools
+  return tools.filter(t => !result.find(r => r.tool === t));
 }
 
 export async function upsertToolDefinition({

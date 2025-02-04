@@ -232,6 +232,45 @@ export const getJobReferences = async ({
   return withTokens.filter(j => j.tokens.some(t => t !== null));
 };
 
+const waitForPendingJobsByTools = async ({
+  clusterId,
+  timeout,
+  start,
+  tools,
+}: {
+  clusterId: string;
+  timeout: number;
+  start: number;
+  tools: string[];
+}): Promise<void> => {
+  const hasPendingJobs = await data.db
+    .execute<{ count: number }>(
+      sql`
+    SELECT COUNT(*) AS count
+    FROM jobs
+    WHERE status = 'pending'
+      AND cluster_id = ${clusterId}
+      AND target_fn IN (${tools})
+    LIMIT 1
+  `
+    )
+    .then(r => Number(r.rows[0].count) > 0)
+    .catch(() => true);
+
+  if (hasPendingJobs) {
+    return;
+  }
+
+  if (Date.now() - start > timeout) {
+    return;
+  }
+
+  // wait for 500ms
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return waitForPendingJobsByTools({ clusterId, timeout, start, tools });
+};
+
+// Deprecated, to be removed once all SDKs are updated
 const waitForPendingJobs = async ({
   clusterId,
   timeout,
@@ -270,6 +309,83 @@ const waitForPendingJobs = async ({
   return waitForPendingJobs({ clusterId, timeout, start, service });
 };
 
+export const pollJobsByTools = async ({
+  tools,
+  clusterId,
+  machineId,
+  limit,
+  timeout = env.JOB_LONG_POLLING_TIMEOUT,
+}: {
+  tools: string[];
+  clusterId: string;
+  machineId: string;
+  limit: number;
+  timeout?: number;
+}) => {
+  await waitForPendingJobsByTools({ clusterId, timeout, start: Date.now(), tools });
+
+  type Result = {
+    id: string;
+    target_fn: string;
+    target_args: string;
+    auth_context: unknown;
+    run_context: unknown;
+    approved: boolean;
+  };
+
+  const results = await data.db.execute<Result>(sql`
+     UPDATE
+       jobs SET status = 'running',
+       remaining_attempts = remaining_attempts - 1,
+       last_retrieved_at = now(),
+       executing_machine_id=${machineId}
+     WHERE
+       id IN (
+         SELECT id
+         FROM jobs
+         WHERE
+           status = 'pending'
+           AND cluster_id = ${clusterId}
+           AND target_fn IN (${tools})
+         LIMIT ${limit}
+         FOR UPDATE SKIP LOCKED
+       )
+       AND cluster_id = ${clusterId}
+     RETURNING id, target_fn, target_args, auth_context, run_context, approved`);
+
+  const jobs: {
+    id: string;
+    targetFn: string;
+    targetArgs: string;
+    authContext: unknown;
+    runContext: unknown;
+    approved: boolean;
+  }[] = results.rows.map(row => ({
+    id: row.id as string,
+    targetFn: row.target_fn as string,
+    targetArgs: row.target_args as string,
+    authContext: row.auth_context,
+    runContext: row.run_context,
+    approved: row.approved,
+  }));
+
+  jobs.forEach(job => {
+    events.write({
+      type: "jobAcknowledged",
+      jobId: job.id,
+      clusterId,
+      machineId,
+      targetFn: job.targetFn,
+      meta: {
+        targetArgs: job.targetArgs,
+      },
+    });
+  });
+
+  return jobs;
+};
+
+// Deprecated, to be removed once all SDKs are updated
 export const pollJobs = async ({
   service,
   clusterId,
