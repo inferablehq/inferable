@@ -45,8 +45,8 @@ import { NEW_CONNECTION_ID } from "./integrations/constants";
 import { createWorkflowExecution } from "./workflows/executions";
 import { RunOptions, validateSchema } from "./runs";
 import { kv } from "./kv";
+import { recordPoll } from "./tools";
 import { upsertToolDefinition } from "./tools";
-import { recordPoll, upsertToolDefinition } from "./tools";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -146,29 +146,17 @@ export const router = initServer().router(contract, {
       status: 200,
       body: {
         id: run.id,
-        status: run.status,
-        result: run.result ?? null,
-        resultSchema: run.resultSchema ?? null,
-        systemPrompt: run.systemPrompt ?? undefined,
-        attachedFunctions:
-          run.attachedFunctions?.map(fn => {
-            const [service, functionName] = fn.split("_");
-
-            return {
-              service,
-              function: functionName,
-            };
-          }) ?? null,
-        tags: run.tags ?? null,
-        context: (run.context ?? undefined) as any,
-        reasoningTraces: run.reasoningTraces ?? null,
-        enableResultGrounding: run.enableResultGrounding ?? false,
-        authContext: run.authContext ?? null,
-        onStatusChange: run.onStatusChange ?? null,
         userId: run.userId ?? null,
-        feedbackScore: run.feedbackScore ?? null,
+        status: run.status,
         failureReason: run.failureReason ?? null,
+        test: run.test ?? false,
         feedbackComment: run.feedbackComment ?? null,
+        feedbackScore: run.feedbackScore ?? null,
+        context: run.context ?? null,
+        authContext: run.authContext ?? null,
+        result: run.result ?? null,
+        tags: run.tags ?? null,
+        attachedFunctions: run.attachedFunctions ?? null,
       },
     };
   },

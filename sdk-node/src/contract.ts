@@ -12,9 +12,6 @@ const machineHeaders = {
   "x-sentinel-unmask-keys": z.string().optional(),
 };
 
-// Alphanumeric, underscore, hyphen, no whitespace. From 6 to 128 characters.
-const userDefinedIdRegex = /^[a-zA-Z0-9-_]{6,128}$/;
-
 const functionReference = z.object({
   service: z.string(),
   function: z.string(),
@@ -480,7 +477,9 @@ export const definition = {
     method: "GET",
     path: "/clusters/:clusterId/jobs",
     query: z.object({
-      service: z.string(),
+      // Deprecated, to be removed once all SDKs are updated
+      service: z.string().optional(),
+      tools: z.array(z.string()).optional(),
       status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
       limit: z.coerce.number().min(1).max(20).default(10),
       acknowledge: z.coerce
