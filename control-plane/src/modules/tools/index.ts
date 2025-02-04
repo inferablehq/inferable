@@ -5,13 +5,11 @@ import { ToolConfigSchema } from "../contract";
 import { z } from "zod";
 import { and, desc, cosineDistance, eq, inArray, lte, sql } from "drizzle-orm";
 import { buildModel } from "../models";
-import { validateDescription, validateFunctionName, validateFunctionSchema, validateServiceName } from "inferable";
 import { InvalidServiceRegistrationError } from "../../utilities/errors";
 import jsonpath from "jsonpath";
 import { logger } from "../observability/logger";
 import { embedSearchQuery } from "../embeddings/embeddings";
-import { result } from "lodash";
-import { validateToolGroup, validateToolName } from "./validations";
+import { validateToolName, validateToolDescription, validateToolSchema } from "./validations";
 
 // The time without a ping before a tool is considered expired
 const TOOL_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute
@@ -125,7 +123,6 @@ export async function upsertToolDefinition({
   schema,
   config,
   clusterId,
-  group = "default",
   shouldExpire = true,
 }: {
   name: string;
@@ -133,18 +130,16 @@ export async function upsertToolDefinition({
   schema?: string;
   config?: ToolConfig;
   clusterId: string;
-  group?: string;
   shouldExpire?: boolean;
 }) {
   validateToolName(name);
-  validateToolGroup(group);
-  validateDescription(description);
+  validateToolDescription(description);
 
   if (!schema) {
     throw new InvalidServiceRegistrationError("Schema is required");
   }
 
-  const errors = validateFunctionSchema(JSON.parse(schema));
+  const errors = validateToolSchema(JSON.parse(schema));
   if (errors.length > 0) {
     throw new InvalidServiceRegistrationError(
       `${name} schema invalid: ${JSON.stringify(errors)}`
@@ -205,7 +200,6 @@ export async function upsertToolDefinition({
       config,
       cluster_id: clusterId,
       last_ping_at: new Date(),
-      group,
       should_expire: shouldExpire,
       embedding_1024: embedding,
       embedding_model: "embed-english-v3",
@@ -217,7 +211,6 @@ export async function upsertToolDefinition({
         config,
         schema,
         description,
-        group,
         last_ping_at: new Date(),
       },
     });

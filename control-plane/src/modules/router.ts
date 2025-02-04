@@ -104,7 +104,6 @@ export const router = initServer().router(contract, {
         upsertToolDefinition({
           name: fn.name,
           clusterId: machine.clusterId,
-          group: service,
           description: fn.description,
           schema: fn.schema,
           config: fn.config,

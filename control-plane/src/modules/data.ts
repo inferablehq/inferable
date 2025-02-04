@@ -200,7 +200,6 @@ export const tools = pgTable(
       .references(() => clusters.id)
       .notNull(),
     name: varchar("name", { length: 1024 }).notNull(),
-    group: varchar("group", { length: 1024 }).notNull(),
     description: text("description"),
     schema: text("schema"),
     config: json("config").$type<ToolConfig>(),

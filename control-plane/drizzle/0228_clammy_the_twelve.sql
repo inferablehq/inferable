@@ -1,0 +1,1 @@
+ALTER TABLE "tools" DROP COLUMN IF EXISTS "group";
