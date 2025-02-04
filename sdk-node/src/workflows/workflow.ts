@@ -4,18 +4,21 @@ import { RegisteredService } from "../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import { cyrb53 } from "../util/cybr53";
 import { InferableAPIError } from "../errors";
-import debug from "debug";
-
-const log = debug("inferable:workflows");
 
 type WorkflowInput = {
   executionId: string;
+};
+
+type Logger = {
+  info: (message: string, meta?: Record<string, unknown>) => void;
+  error: (message: string, meta?: Record<string, unknown>) => void;
 };
 
 type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
   inferable: Inferable;
   name: name;
   inputSchema: z.ZodType<TInput>;
+  logger?: Logger;
 };
 
 type AgentConfig<TResult> = {
@@ -76,11 +79,13 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   > = new Map();
   private inferable: Inferable;
   private services: RegisteredService[] = [];
+  private logger?: Logger;
 
   constructor(config: WorkflowConfig<TInput, name>) {
     this.name = config.name;
     this.inputSchema = config.inputSchema;
     this.inferable = config.inferable;
+    this.logger = config.logger;
   }
 
   version(version: number) {
@@ -88,36 +93,46 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       define: (
         handler: (ctx: WorkflowContext<TInput>, input: TInput) => Promise<void>,
       ) => {
-        log("Defining workflow handler", { version, name: this.name });
+        this.logger?.info("Defining workflow handler", { version, name: this.name });
         this.versionHandlers.set(version, handler);
       },
       run: async (input: TInput) => {
-        log("Running workflow", {
+        this.logger?.info("Running workflow", {
           version,
           name: this.name,
           executionId: input.executionId,
         });
 
-        const result = await this.inferable
-          .getClient()
-          .createWorkflowExecution({
-            params: {
-              clusterId: await this.inferable.getClusterId(),
-              workflowName: this.name,
-            },
-            body: {
-              executionId: input.executionId,
-            },
+        try {
+          const result = await this.inferable
+            .getClient()
+            .createWorkflowExecution({
+              params: {
+                clusterId: await this.inferable.getClusterId(),
+                workflowName: this.name,
+              },
+              body: {
+                executionId: input.executionId,
+              },
+            });
+
+          this.logger?.info("Workflow execution created", {
+            version,
+            name: this.name,
+            executionId: input.executionId,
+            status: result.status,
           });
 
-        log("Workflow execution created", {
-          version,
-          name: this.name,
-          executionId: input.executionId,
-          status: result.status,
-        });
-
-        return result;
+          return result;
+        } catch (error) {
+          this.logger?.error("Failed to create workflow execution", {
+            version,
+            name: this.name,
+            executionId: input.executionId,
+            error,
+          });
+          throw error;
+        }
       },
     };
   }
@@ -127,7 +142,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     executionId: string,
     input: TInput,
   ): WorkflowContext<TInput> {
-    log("Creating workflow context", {
+    this.logger?.info("Creating workflow context", {
       version,
       name: this.name,
       executionId,
@@ -155,27 +170,33 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         });
 
         if (result.status !== 200) {
+          this.logger?.error("Failed to set effect", {
+            name,
+            executionId,
+            status: result.status,
+          });
           throw new Error("Failed to set effect");
         }
 
         const canRun = result.body.value === rand;
 
         if (canRun) {
-          log(`Effect ${name} can run. Running...`);
+          this.logger?.info(`Effect ${name} starting execution`, { executionId });
           try {
             await fn(ctx);
-            log(`Effect ${name} ran successfully`);
+            this.logger?.info(`Effect ${name} completed successfully`, { executionId });
           } catch (e) {
-            log(`Effect ${name} failed`, { error: e });
+            this.logger?.error(`Effect ${name} failed`, { executionId, error: e });
+            throw e;
           }
         } else {
-          log(`Effect ${name} has already been run`);
+          this.logger?.info(`Effect ${name} has already been run`, { executionId });
         }
       },
       agent: <TAgentResult = unknown>(config: AgentConfig<TAgentResult>) => {
         return {
           run: async (params: { data: { [key: string]: unknown } }) => {
-            log("Running agent in workflow", {
+            this.logger?.info("Running agent in workflow", {
               version,
               name: this.name,
               executionId,
@@ -223,7 +244,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               },
             });
 
-            log("Agent run completed", {
+            this.logger?.info("Agent run completed", {
               version,
               name: this.name,
               executionId,
@@ -260,7 +281,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   }
 
   async listen() {
-    log("Starting workflow listeners", {
+    this.logger?.info("Starting workflow listeners", {
       name: this.name,
       versions: Array.from(this.versionHandlers.keys()),
     });
@@ -273,9 +294,9 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       s.register({
         func: async (input: TInput) => {
           if (!input.executionId) {
-            throw new Error(
-              "executionId field must be provided in the workflow input, and must be a string",
-            );
+            const error = "executionId field must be provided in the workflow input, and must be a string";
+            this.logger?.error(error);
+            throw new Error(error);
           }
           const ctx = this.createContext(version, input.executionId, input);
           return handler(ctx, input);
@@ -289,13 +310,30 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       this.services.push(s);
     });
 
-    await Promise.all(this.services.map((s) => s.start()));
-    log("Workflow listeners started", { name: this.name });
+    try {
+      await Promise.all(this.services.map((s) => s.start()));
+      this.logger?.info("Workflow listeners started", { name: this.name });
+    } catch (error) {
+      this.logger?.error("Failed to start workflow listeners", {
+        name: this.name,
+        error
+      });
+      throw error;
+    }
   }
 
   async unlisten() {
-    log("Stopping workflow listeners", { name: this.name });
-    await Promise.all(this.services.map((s) => s.stop()));
-    log("Workflow listeners stopped", { name: this.name });
+    this.logger?.info("Stopping workflow listeners", { name: this.name });
+
+    try {
+      await Promise.all(this.services.map((s) => s.stop()));
+      this.logger?.info("Workflow listeners stopped", { name: this.name });
+    } catch (error) {
+      this.logger?.error("Failed to stop workflow listeners", {
+        name: this.name,
+        error
+      });
+      throw error;
+    }
   }
 }
