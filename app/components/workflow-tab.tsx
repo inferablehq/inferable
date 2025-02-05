@@ -27,6 +27,55 @@ const statusToCircle: {
   failed: <SmallDeadRedCircle />,
 };
 
+type WorkflowGroup = {
+  executionId: string | null;
+  workflowName: string | null;
+  workflowVersion: string | null;
+  workflows: Workflow[];
+};
+
+function groupWorkflowsByExecution(workflows: Workflow[]): WorkflowGroup[] {
+  const groups: { [key: string]: {
+    workflows: Workflow[];
+    workflowName: string | null;
+    workflowVersion: string | null;
+  } } = {};
+
+  workflows.forEach(workflow => {
+    const executionId = workflow.tags?.['workflow.executionId'];
+    if (executionId) {
+      if (!groups[executionId]) {
+        groups[executionId] = {
+          workflows: [],
+          workflowName: workflow.tags?.['workflow.name'] ?? null,
+          workflowVersion: workflow.tags?.['workflow.version'] ?? null
+        };
+      }
+      groups[executionId].workflows.push(workflow);
+    } else {
+      // Create a separate group for each standalone run
+      groups[`standalone-${workflow.id}`] = {
+        workflows: [workflow],
+        workflowName: null,
+        workflowVersion: null
+      };
+    }
+  });
+
+  const result: WorkflowGroup[] = Object.entries(groups).map(([key, { workflows, workflowName, workflowVersion }]) => ({
+    executionId: key.startsWith('standalone-') ? null : key,
+    workflowName,
+    workflowVersion,
+    workflows: workflows.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1)),
+  }));
+
+  return result.sort((a, b) => {
+    const latestA = a.workflows[0]?.createdAt ?? '';
+    const latestB = b.workflows[0]?.createdAt ?? '';
+    return latestA > latestB ? -1 : 1;
+  });
+}
+
 export function RunTab({
   clusterId,
   workflows,
@@ -74,23 +123,73 @@ export function RunTab({
     [onRefetchWorkflows, onGoToCluster, runId, getToken]
   );
 
+  const workflowGroups = groupWorkflowsByExecution(workflows);
+
   return (
-    <div className="flex flex-col space-y-2">
-      {workflows
-        .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
-        .map(workflow => (
-          <RunPill
-            key={workflow.id}
-            workflow={workflow}
-            runId={runId as string | undefined}
-            clusterId={clusterId}
-            onGoToWorkflow={onGoToWorkflow}
-            workflows={workflows}
-            userId={userId ?? null}
-            onDeleteWorkflow={deleteWorkflow}
-            test={workflow.test}
-          />
-        ))}
+    <div className="flex flex-col space-y-2 w-full">
+      {workflowGroups.map(group => (
+        <div
+          key={group.executionId ?? 'ungrouped'}
+          className="border rounded-lg overflow-hidden w-full"
+        >
+          <div className="bg-slate-100 border-b w-full">
+            <div className="px-4 py-2 border-b border-slate-200">
+              <div className="uppercase tracking-wider text-slate-500 font-medium text-xs">
+                {group.executionId ? 'Workflow' : 'Run'}
+              </div>
+            </div>
+            <div className="px-4 py-2 space-y-1 text-xs font-mono">
+              {group.executionId ? (
+                <>
+                  {group.workflowName && (
+                    <div className="flex items-baseline">
+                      <span className="text-blue-600 w-24 shrink-0">name:</span>
+                      <span className="text-slate-900">
+                        {group.workflowName.length > 40 ? group.workflowName.slice(0, 40) + '...' : group.workflowName}
+                      </span>
+                    </div>
+                  )}
+                  {group.workflowVersion && (
+                    <div className="flex items-baseline">
+                      <span className="text-blue-600 w-24 shrink-0">version:</span>
+                      <span className="text-slate-600">v{group.workflowVersion}</span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline">
+                    <span className="text-blue-600 w-24 shrink-0">execution_id:</span>
+                    <span className="text-slate-600">
+                      {group.executionId.length > 40 ? group.executionId.slice(0, 40) + '...' : group.executionId}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-baseline">
+                  <span className="text-blue-600 w-24 shrink-0">run_id:</span>
+                  <span className="text-slate-600">
+                    {group.workflows[0].id.length > 40 ? group.workflows[0].id.slice(0, 40) + '...' : group.workflows[0].id}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-stretch divide-y p-3 w-full">
+            {group.workflows.map((workflow, idx) => (
+              <RunPill
+                key={workflow.id}
+                workflow={workflow}
+                runId={runId as string | undefined}
+                clusterId={clusterId}
+                onGoToWorkflow={onGoToWorkflow}
+                workflows={workflows}
+                userId={userId ?? null}
+                onDeleteWorkflow={deleteWorkflow}
+                test={workflow.test}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -101,7 +200,6 @@ function RunPill({
   onGoToWorkflow,
   onDeleteWorkflow,
   clusterId,
-  depth = 0,
   userId,
 }: {
   workflow: Workflow;
@@ -109,7 +207,6 @@ function RunPill({
   clusterId: string;
   onGoToWorkflow: (clusterId: string, runId: string) => void;
   workflows: Workflow[];
-  depth?: number;
   userId: string | null;
   onDeleteWorkflow: (runId: string, clusterId: string) => void;
   test: boolean;
@@ -118,35 +215,46 @@ function RunPill({
   return (
     <div
       key={workflow.id}
-      className={`grid grid-cols-[20px_1fr] items-start hover:text-black border p-2 rounded-md shadow-sm
-                    ${
-                      runId === workflow.id ? "bg-gray-100" : "text-slate-600 bg-white"
-                    } cursor-pointer mt-2 ${depth > 0 ? "opacity-90" : ""}`}
+      className={`
+        grid grid-cols-[20px_1fr] items-start hover:bg-gray-50/50 py-3 first:pt-0 last:pb-0
+        relative pl-4 cursor-pointer rounded-md w-full
+        ${runId === workflow.id
+          ? "text-slate-900 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-blue-500"
+          : "text-slate-600"
+        }
+      `}
       onClick={e => {
         e.stopPropagation();
         onGoToWorkflow(clusterId, workflow.id);
       }}
     >
       <div className="p-1">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm">
           {workflow.status ? statusToCircle[workflow.status] : workflow.status}
         </div>
       </div>
-      <div>
+      <div className="min-w-0 pr-4">
         <span className="flex space-x-2 items-center">
-          <p className="text-xs text-muted-foreground font-mono tracking-tighter">
+          <p className="text-xs text-muted-foreground font-mono tracking-tighter truncate">
             Created {userId === workflow.userId && "by you "}
             {formatRelative(new Date(workflow.createdAt).getTime(), new Date().getTime())}
           </p>
         </span>
-        <div className="flex justify-between items-end">
-          <div>
-            <p className="text-sm font-medium leading-none break-word mt-1">
-              {truncate(workflow.name, {
-                length: 100,
-              }) || "..."}{" "}
+        <div className="flex justify-between items-end gap-1">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium leading-none mt-0.5">
+              {workflow.name ? (workflow.name.length > 40 ? workflow.name.slice(0, 40) + '...' : workflow.name) : '...'}
             </p>
-            <div className="flex flex-wrap">
+            <div className="flex flex-wrap mt-1 gap-1">
+              {workflow.tags && Object.entries(workflow.tags)
+                .filter(([key]) => !['workflow.name', 'workflow.version', 'workflow.executionId'].includes(key))
+                .map(([key, value]) => (
+                  <Tag
+                    key={key}
+                    label={key}
+                    value={value}
+                  />
+              ))}
               {workflow.test && (
                 <Tag
                   label={<TestTubeIcon className="h-3 w-3" />}
@@ -205,14 +313,28 @@ function Tag({
   onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
-    <div className="flex flex-col items-start text-xs mt-1 flex-wrap" onClick={onClick}>
+    <div
+      className="inline-block mr-1 mt-0.5"
+      onClick={onClick}
+    >
       <div
-        className={`flex space-x-1 bg-white border mt-1 py-1 px-2 rounded-sm text-gray-600 mr-1 mb-1 items-center h-8 ${
-          onClick ? "hover:bg-gray-100" : ""
-        }`}
+        className={`
+          inline-flex items-center h-5 px-1.5
+          bg-gray-50 border rounded-md text-xs
+          ${onClick ? "cursor-pointer hover:bg-gray-100 hover:border-gray-300" : ""}
+        `}
       >
-        <span className="text-gray-400 flex items-center h-full">{label}</span>
-        {value && <span className="truncate text-ellipsis">{value}</span>}
+        <span className="text-gray-500 flex items-center">
+          {label}
+        </span>
+        {value && (
+          <>
+            <span className="mx-1 text-gray-400">=</span>
+            <span className="text-gray-700 font-medium truncate max-w-[150px]">
+              {value}
+            </span>
+          </>
+        )}
       </div>
     </div>
   );

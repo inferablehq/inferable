@@ -253,7 +253,7 @@ function FunctionCall({
                 <div className="mb-4">
                   <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-2">
                     <Code2 size={16} className="text-primary/70" />
-                    <span>Function Metadata</span>
+                    <span>Metadata</span>
                   </div>
                   <div className="ml-6 bg-muted rounded-md p-3">
                     <div className="grid grid-cols-2 gap-2 text-sm">

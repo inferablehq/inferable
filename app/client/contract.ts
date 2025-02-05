@@ -12,9 +12,6 @@ const machineHeaders = {
   "x-sentinel-unmask-keys": z.string().optional(),
 };
 
-// Alphanumeric, underscore, hyphen, no whitespace. From 6 to 128 characters.
-const userDefinedIdRegex = /^[a-zA-Z0-9-_]{6,128}$/;
-
 const functionReference = z.object({
   service: z.string(),
   function: z.string(),
@@ -260,7 +257,7 @@ export type MessageTypes =
 
 export type UnifiedMessageOfType<T extends MessageTypes> = Extract<UnifiedMessage, { type: T }>;
 
-export const FunctionConfigSchema = z.object({
+export const ToolConfigSchema = z.object({
   cache: z
     .object({
       keyPath: z.string(),
@@ -480,7 +477,9 @@ export const definition = {
     method: "GET",
     path: "/clusters/:clusterId/jobs",
     query: z.object({
-      service: z.string(),
+      // Deprecated, to be removed once all SDKs are updated
+      service: z.string().optional(),
+      tools: z.string().optional().describe("Comma-separated list of tools to poll"),
       status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
       limit: z.coerce.number().min(1).max(20).default(10),
       acknowledge: z.coerce
@@ -578,7 +577,17 @@ export const definition = {
             name: z.string(),
             description: z.string().optional(),
             schema: z.string().optional(),
-            config: FunctionConfigSchema.optional(),
+            config: ToolConfigSchema.optional(),
+          })
+        )
+        .optional(),
+      tools: z
+        .array(
+          z.object({
+            name: z.string(),
+            description: z.string().optional(),
+            schema: z.string().optional(),
+            config: ToolConfigSchema.optional(),
           })
         )
         .optional(),
@@ -896,6 +905,7 @@ export const definition = {
           status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
           test: z.boolean(),
           feedbackScore: z.number().nullable(),
+          tags: z.record(z.string()).nullable(),
         })
       ),
       401: z.undefined(),
@@ -908,10 +918,19 @@ export const definition = {
       authorization: z.string(),
     }),
     responses: {
-      200: RunSchema.omit({
-        test: true,
-      }).extend({
+      200: z.object({
+        id: z.string(),
+        userId: z.string().nullable(),
+        status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+        failureReason: z.string().nullable(),
+        test: z.boolean(),
+        feedbackComment: z.string().nullable(),
+        feedbackScore: z.number().nullable(),
+        context: z.any().nullable(),
+        authContext: z.any().nullable(),
         result: anyObject.nullable(),
+        tags: z.record(z.string()).nullable(),
+        attachedFunctions: z.array(z.string()).nullable(),
       }),
       401: z.undefined(),
     },
@@ -1108,7 +1127,7 @@ export const definition = {
                 name: z.string(),
                 description: z.string().optional(),
                 schema: z.string().optional(),
-                config: FunctionConfigSchema.optional(),
+                config: ToolConfigSchema.optional(),
               })
             )
             .optional(),
@@ -1234,6 +1253,54 @@ export const definition = {
       .passthrough(),
     responses: {
       201: z.object({ jobId: z.string() }),
+    },
+  },
+  getWorkflowExecutionEvents: {
+    method: "GET",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions/:executionId/events",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      workflowName: z.string(),
+      executionId: z.string(),
+    }),
+    query: z.object({
+      after: z.string().optional(),
+    }),
+    responses: {
+      200: z.object({
+        handlerJobEvents: z.array(z.object({
+          id: z.string(),
+          clusterId: z.string(),
+          type: z.string(),
+          jobId: z.string().nullable(),
+          machineId: z.string().nullable(),
+          service: z.string().nullable(),
+          createdAt: z.date(),
+          targetFn: z.string().nullable(),
+          resultType: z.string().nullable(),
+          status: z.string().nullable(),
+          workflowId: z.string().nullable(),
+        })),
+        associatedRuns: z.array(z.object({
+          id: z.string(),
+          status: z.string(),
+          createdAt: z.date(),
+        })),
+        runEvents: z.array(z.object({
+          id: z.string(),
+          clusterId: z.string(),
+          type: z.string(),
+          jobId: z.string().nullable(),
+          machineId: z.string().nullable(),
+          service: z.string().nullable(),
+          createdAt: z.date(),
+          targetFn: z.string().nullable(),
+          resultType: z.string().nullable(),
+          status: z.string().nullable(),
+          workflowId: z.string().nullable(),
+        })),
+      }),
     },
   },
   setClusterKV: {

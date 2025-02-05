@@ -1,21 +1,10 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Blocks, Cpu, Plus, PlusCircleIcon } from "lucide-react";
-import { useState } from "react";
 import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
 
-import { client } from "@/client/client";
-import { contract } from "@/client/contract";
 import {
   Table,
   TableBody,
@@ -24,16 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn, createErrorToast } from "@/lib/utils";
-import { useAuth } from "@clerk/nextjs";
-import { ClientInferResponseBody } from "@ts-rest/core";
+import { cn } from "@/lib/utils";
 import { formatDistance, formatRelative } from "date-fns";
 import { AppWindowIcon } from "lucide-react";
-import toast from "react-hot-toast";
 import ToolContextButton from "./chat/ToolContextButton";
 import { EventsOverlayButton } from "./events-overlay";
-import { ClusterState, Service, useClusterState } from "./useClusterState";
 import { QuickStartDemo } from "./quick-start-demo";
+import { ClusterState, Service, useClusterState } from "./useClusterState";
 
 function toServiceName(name: string) {
   return <span>{name}</span>;
@@ -47,130 +33,94 @@ function toFunctionName(name: string, serviceName: string) {
   return <span>{name}</span>;
 }
 
-function ServiceCard({ service, clusterId }: { service: Service; clusterId: string }) {
-  const isActive =
-    new Date(service.timestamp) > new Date() ||
-    Date.now() - new Date(service.timestamp).getTime() < 1000 * 60;
 
-  const { cluster } = useClusterState(clusterId);
-  const isDemoCluster = cluster?.isDemo === true;
+
+function FlatToolsList({ services, clusterId }: { services: Service[]; clusterId: string }) {
+  const allTools = services.flatMap(service =>
+    (service.functions || []).map(func => ({
+      ...func,
+      group: service.name,
+      timestamp: service.timestamp,
+    }))
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div
-      className={cn(
-        "rounded-xl p-5 shadow-sm border transition-all duration-200 hover:shadow-md",
-        isActive ? "bg-green-50/30 border-green-100" : "bg-gray-50/30 border-gray-100"
-      )}
-    >
-      <div className="flex items-center justify-between mb-4 pb-4 border-b border-border/50">
-        <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            {service.name === "InferableApplications" ? (
-              <AppWindowIcon className="w-5 h-5 text-primary" />
-            ) : (
-              <Blocks className="w-5 h-5 text-primary" />
-            )}
-          </div>
-          <div>
-            <div className="text-base font-medium flex items-center justify-between gap-2 mb-2">
-              <span>{toServiceName(service.name)}</span>
-              {isDemoCluster && service.name === "sqlite" && (
-                <a
-                  href="https://github.com/inferablehq/inferable/blob/main/demos/typescript/sql-to-text/service.ts"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-3 py-1 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors duration-200"
-                >
-                  View Demo Source →
-                </a>
-              )}
-              {isDemoCluster && service.name === "terminal" && (
-                <a
-                  href="https://github.com/inferablehq/inferable/blob/main/demos/typescript/terminal-copilot/service.ts"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-3 py-1 rounded-md bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors duration-200"
-                >
-                  View Demo Source →
-                </a>
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground font-mono flex items-center gap-2">
-              <span>
-                {service.functions?.length || 0} Function
-                {service.functions?.length !== 1 ? "s" : ""}
-              </span>
-              <span
-                className={cn(
-                  "px-2 py-0.5 rounded-full text-xs font-medium",
-                  isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-                )}
-              >
-                {isActive ? "Active" : "Inactive"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="w-1/3">Name</TableHead>
+            <TableHead className="w-1/3">Group</TableHead>
+            <TableHead className="w-1/3">Last Update</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {allTools.map(tool => {
+            const isActive =
+              new Date(tool.timestamp) > new Date() ||
+              Date.now() - new Date(tool.timestamp).getTime() < 1000 * 60;
 
-      <div className="space-y-4">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-2/3">Function</TableHead>
-              <TableHead className="w-1/3">Last Update</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {service.functions
-              ?.sort((a, b) => a.name.localeCompare(b.name))
-              .map(func => (
-                <TableRow key={func.name} className="hover:bg-secondary/40">
-                  <TableCell className="w-2/3">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
-                          {toFunctionName(func.name, service.name)}
-                        </span>
-                        <ToolContextButton
-                          clusterId={clusterId}
-                          service={service.name}
-                          functionName={func.name}
-                        />
-                      </div>
-                      <div
-                        className="truncate text-xs text-muted-foreground max-w-[40vw] font-mono"
-                        title={func.description || "No description"}
-                      >
-                        {func.description || "No description"}
-                      </div>
+            return (
+              <TableRow key={`${tool.group}-${tool.name}`} className="hover:bg-secondary/40">
+                <TableCell>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {toFunctionName(tool.name, tool.group)}
+                      </span>
+                      <ToolContextButton
+                        clusterId={clusterId}
+                        service={tool.group}
+                        functionName={tool.name}
+                      />
                     </div>
-                  </TableCell>
-                  <TableCell className="w-1/3">
-                    {new Date(service.timestamp) > new Date() ? (
-                      <div className="text-sm text-muted-foreground flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500" />
-                        <span>Permanent Sync</span>
-                      </div>
-                    ) : (
+                    <div
+                      className="truncate text-xs text-muted-foreground max-w-[40vw] font-mono"
+                      title={tool.description || "No description"}
+                    >
+                      {tool.description || "No description"}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                      {tool.group === "InferableApplications" ? (
+                        <AppWindowIcon className="w-3 h-3 text-primary" />
+                      ) : (
+                        <Blocks className="w-3 h-3 text-primary" />
+                      )}
+                    </div>
+                    <span className="font-medium">{toServiceName(tool.group)}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {new Date(tool.timestamp) > new Date() ? (
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500" />
+                      <span>Permanent Sync</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className={cn("w-2 h-2 rounded-full", isActive ? "bg-green-500" : "bg-gray-300")} />
                       <span className="font-mono text-sm">
-                        {formatDistance(new Date(service.timestamp), new Date(), {
+                        {formatDistance(new Date(tool.timestamp), new Date(), {
                           addSuffix: true,
                         })}
                       </span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-      </div>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }
 
-export default function ServicesOverview({ clusterId }: { clusterId: string }) {
-  const { services, cluster } = useClusterState(clusterId);
+export default function ServicesOverview({ clusterId, services }: { clusterId: string, services: Service[] }) {
   const sortedServices = services.sort((a: Service, b: Service) => a.name.localeCompare(b.name));
 
   return (
@@ -186,8 +136,8 @@ export default function ServicesOverview({ clusterId }: { clusterId: string }) {
                 <PlusCircleIcon className="w-5 h-5 text-gray-600" />
               </div>
               <div className="text-center">
-                <h3 className="font-medium text-gray-900">No Services Connected</h3>
-                <p className="text-sm text-gray-500">Click here to add your first service</p>
+                <h3 className="font-medium text-gray-900">No Tools Connected</h3>
+                <p className="text-sm text-gray-500">Click here to add your first tool</p>
               </div>
             </Button>
           </SheetTrigger>
@@ -199,9 +149,9 @@ export default function ServicesOverview({ clusterId }: { clusterId: string }) {
                     <Plus className="w-5 h-5 text-primary" />
                   </div>
                   <div className="space-y-1">
-                    <div className="font-mono text-xl">Create New Service</div>
+                    <div className="font-mono text-xl">Create New Tool</div>
                     <div className="text-sm text-muted-foreground">
-                      Get started with a new service in your cluster
+                      Get started with a new tool in your cluster
                     </div>
                   </div>
                 </div>
@@ -213,11 +163,7 @@ export default function ServicesOverview({ clusterId }: { clusterId: string }) {
           </SheetContent>
         </Sheet>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {sortedServices.map((service, index) => (
-            <ServiceCard key={service.name} service={service} clusterId={clusterId} />
-          ))}
-        </div>
+        <FlatToolsList services={services} clusterId={clusterId} />
       )}
     </div>
   );
@@ -232,144 +178,13 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     cluster,
   } = useClusterState(clusterId);
 
+  const workflowServices = services.filter(service => service.name.includes('workflows.'));
+
+  const toolServices = services.filter(service => !service.name.includes('workflows.'));
+
   return (
     <div className="flex flex-col space-y-3 w-full">
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
-          >
-            <div className="absolute -top-1.5 -right-1.5">
-              <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              </div>
-            </div>
-            <div className="flex items-center gap-4 w-full">
-              <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
-                <Blocks className="w-5 h-5 text-gray-700" />
-              </div>
-              <div className="flex flex-col items-start gap-0.5">
-                <span className="font-semibold text-gray-900">Standard Library</span>
-                <span className="text-xs text-green-600">Available</span>
-              </div>
-            </div>
-          </Button>
-        </SheetTrigger>
-        <SheetContent style={{ minWidth: "80%" }} className="overflow-y-auto h-screen">
-          <SheetHeader className="pb-6">
-            <SheetTitle>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Blocks className="w-5 h-5 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <div className="font-mono text-xl">Standard Library</div>
-                  <div className="text-sm text-muted-foreground">
-                    Built-in tools ready to use. These tools are always available for runs.{" "}
-                    <a
-                      href="https://docs.inferable.ai/pages/standard-lib"
-                      className="text-primary hover:underline"
-                    >
-                      View Documentation →
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </SheetTitle>
-          </SheetHeader>
-          <div className="space-y-6">
-            {isInitialLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Description</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="font-mono">calculator</TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-between gap-4">
-                            <div>
-                              Performs arithmetic calculations using a sandboxed Python interpreter
-                              for secure and isolated execution
-                            </div>
-                            <a
-                              href={`/clusters/${clusterId}/runs?prompt=Calculate (5 * 3) + (10 / 2) using the calculator tool`}
-                              className="shrink-0"
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-xs whitespace-nowrap"
-                              >
-                                Test: Basic Arithmetic
-                              </Button>
-                            </a>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-mono">currentDateTime</TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-between gap-4">
-                            <div>
-                              Returns the current time in both ISO 8601 format and Unix timestamp
-                            </div>
-                            <a
-                              href={`/clusters/${clusterId}/runs?prompt=What is the current date and time? Please show both ISO format and Unix timestamp`}
-                              className="shrink-0"
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-xs whitespace-nowrap"
-                              >
-                                Test: Get Current Time
-                              </Button>
-                            </a>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-mono">getUrl</TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-between gap-4">
-                            <div>
-                              Fetches and parses web content into markdown format, with an allowlist
-                              of trusted domains for security
-                            </div>
-                            <a
-                              href={`/clusters/${clusterId}/runs?prompt=What's the current top story on Hacker News?`}
-                              className="shrink-0"
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-xs whitespace-nowrap"
-                              >
-                                Test: Fetch Hacker News
-                              </Button>
-                            </a>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+
 
       <Sheet>
         <SheetTrigger asChild>
@@ -444,7 +259,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                   <span className="text-xs font-medium text-amber-700">Loading</span>
                 </div>
-              ) : services.length > 0 ? (
+              ) : toolServices.length > 0 ? (
                 <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 </div>
@@ -459,10 +274,10 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                 <Blocks className="w-5 h-5 text-gray-700" />
               </div>
               <div className="flex flex-col items-start gap-0.5">
-                <span className="font-semibold text-gray-900">Services</span>
+                <span className="font-semibold text-gray-900">Tools</span>
                 <span className="text-xs text-gray-500 font-mono">
-                  {services.reduce((acc, service) => acc + (service.functions?.length || 0), 0)}{" "}
-                  Functions
+                  {toolServices.reduce((acc, service) => acc + (service.functions?.length || 0), 0)}{" "}
+                  Tool{toolServices.length > 1 ? 's' : ''}
                 </span>
               </div>
             </div>
@@ -476,9 +291,9 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                   <Blocks className="w-5 h-5 text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <div className="font-mono text-xl">Service Details</div>
+                  <div className="font-mono text-xl">Tools</div>
                   <div className="text-sm text-muted-foreground">
-                    Manage and monitor your cluster services
+                    Manage and monitor your cluster tools
                   </div>
                 </div>
               </div>
@@ -490,7 +305,71 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <ServicesOverview clusterId={clusterId} />
+              <ServicesOverview clusterId={clusterId} services={toolServices} />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
+          >
+            <div className="absolute -top-1.5 -right-1.5">
+              {isInitialLoading ? (
+                <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 shadow-sm">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-xs font-medium text-amber-700">Loading</span>
+                </div>
+              ) : workflowServices.length > 0 ? (
+                <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 shadow-sm">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-4 w-full">
+              <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
+                <Blocks className="w-5 h-5 text-gray-700" />
+              </div>
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-semibold text-gray-900">Workflows</span>
+                <span className="text-xs text-gray-500 font-mono">
+                  {workflowServices.reduce((acc, service) => acc + (service.functions?.length || 0), 0)}{" "}
+                  Workflow{workflowServices.length > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
+          </Button>
+        </SheetTrigger>
+        <SheetContent style={{ minWidth: "80%" }} className="overflow-y-auto h-screen">
+          <SheetHeader className="pb-6">
+            <SheetTitle>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Blocks className="w-5 h-5 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <div className="font-mono text-xl">Workflows</div>
+                  <div className="text-sm text-muted-foreground">
+                    Manage and monitor your cluster workflows
+                  </div>
+                </div>
+              </div>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-6">
+            {isInitialLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <ServicesOverview clusterId={clusterId} services={workflowServices} />
             )}
           </div>
         </SheetContent>
@@ -644,25 +523,6 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
 
         <div className="mt-4 space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <a
-              href="https://github.com/inferablehq/inferable/tree/main/adapters/stdlib-adapter"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block"
-            >
-              <Button
-                variant="outline"
-                className="w-full h-auto py-4 bg-white hover:bg-gray-50 border-gray-200"
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#4CAF50] flex items-center justify-center">
-                    <span className="text-white font-bold">S</span>
-                  </div>
-                  <span className="text-sm">Standard Library</span>
-                  <span className="text-xs text-green-600">Available</span>
-                </div>
-              </Button>
-            </a>
             <a
               href="https://github.com/inferablehq/inferable/tree/main/adapters/graphql-adapter"
               target="_blank"

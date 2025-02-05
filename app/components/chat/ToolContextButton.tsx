@@ -65,7 +65,7 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button size="sm" variant="secondary" className="text-xs text-muted-foreground">
-          Function metadata →
+          Definition →
         </Button>
       </SheetTrigger>
       <SheetContent className="sm:max-w-[800px] overflow-y-auto">
@@ -86,7 +86,7 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="functionName">Function Name</Label>
+                  <Label htmlFor="functionName">Name</Label>
                   <pre className="p-2">{functionDetails.name}</pre>
                 </div>
                 {functionDetails.description && (

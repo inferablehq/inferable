@@ -288,8 +288,11 @@ export const getClusterRuns = async ({
       authContext: runs.auth_context,
       context: runs.context,
       enableResultGrounding: runs.enable_result_grounding,
+      tagKey: runTags.key,
+      tagValue: runTags.value,
     })
     .from(runs)
+    .leftJoin(runTags, eq(runs.id, runTags.run_id))
     .where(
       and(
         eq(runs.cluster_id, clusterId),
@@ -300,7 +303,18 @@ export const getClusterRuns = async ({
     .orderBy(desc(runs.created_at))
     .limit(limit);
 
-  return result;
+  const resultWithTags = result.reduce((acc, run) => {
+    acc[run.id] = {
+      ...run,
+      tags: {
+        ...(acc[run.id]?.tags ?? {}),
+        ...(run.tagKey && run.tagValue ? { [run.tagKey]: run.tagValue } : {}),
+      },
+    };
+    return acc;
+  }, {} as Record<string, typeof result[number] & { tags: Record<string, string> }>);
+
+  return Object.values(resultWithTags);
 };
 
 export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {

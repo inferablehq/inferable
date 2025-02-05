@@ -132,7 +132,7 @@ import { helpers } from "./workflow";
   await workflow.listen();
 
   await inferable.workflows.run("records", {
-    executionId: "executionId-123",
+    executionId: Date.now().toString(),
     customerId: "customerId-123",
   });
 })();

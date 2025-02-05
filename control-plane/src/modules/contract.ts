@@ -905,6 +905,7 @@ export const definition = {
           status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
           test: z.boolean(),
           feedbackScore: z.number().nullable(),
+          tags: z.record(z.string()).nullable(),
         })
       ),
       401: z.undefined(),

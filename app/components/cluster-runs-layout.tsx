@@ -28,51 +28,17 @@ interface ClusterRunsLayoutProps {
 }
 
 export function ClusterRunsLayout({ clusterId, children }: ClusterRunsLayoutProps) {
-  const isSmallScreen = useMediaQuery("(max-width: 1024px)");
-  const [isMinimized, setIsMinimized] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const key = `cluster-runs-layout-minimized-${isSmallScreen ? "small" : "large"}`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : false;
-  });
-
-  // Save to localStorage whenever isMinimized changes
-  useEffect(() => {
-    const key = `cluster-runs-layout-minimized-${isSmallScreen ? "small" : "large"}`;
-    localStorage.setItem(key, JSON.stringify(isMinimized));
-  }, [isMinimized, isSmallScreen]);
-
-  // On small screens, show maximized by default unless explicitly minimized
-  const isMaximized = isSmallScreen ? !isMinimized : isMinimized;
-
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-6 w-full">
-      {!isMaximized && (
-        <div className="w-full lg:w-[300px] flex-shrink-0 transition-all duration-300">
-          <RunList clusterId={clusterId} />
-        </div>
-      )}
-      <div
-        className={`w-full relative transition-all duration-300`}
-      >
-        <button
-          onClick={() => setIsMinimized(!isMinimized)}
-          className="absolute top-2 right-2 p-1.5 rounded-md bg-white hover:bg-gray-50 shadow-sm ring-1 ring-gray-200 transition-all z-10"
-          aria-label={isMaximized ? "Show sidebars" : "Hide sidebars"}
-        >
-          {isMaximized ? (
-            <Minimize2 className="w-3.5 h-3.5" />
-          ) : (
-            <Maximize2 className="w-3.5 h-3.5" />
-          )}
-        </button>
+    <div className="flex flex-row gap-6 p-6 w-full">
+      <div className="flex-shrink-0 transition-all duration-300">
+        <RunList clusterId={clusterId} />
+      </div>
+      <div className="relative transition-all duration-300 flex-grow">
         {children}
       </div>
-      {!isMaximized && (
-        <div className="w-full lg:w-[200px] flex-shrink-0 transition-all duration-300">
-          <ClusterDetails clusterId={clusterId} />
-        </div>
-      )}
+      <div className="flex-shrink-0 transition-all duration-300">
+        <ClusterDetails clusterId={clusterId} />
+      </div>
     </div>
   );
 }

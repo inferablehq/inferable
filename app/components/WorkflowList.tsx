@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
-import { PlayIcon, PlusIcon, UserIcon, XIcon } from "lucide-react";
+import { PlayIcon, PlusIcon, UserIcon, XIcon, ExternalLinkIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
@@ -123,83 +123,71 @@ export function RunList({ clusterId }: WorkflowListProps) {
   };
 
   return (
-      <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[300px] lg:h-[calc(100vh-16rem)] p-2 border">
-        {(!!runFilters.test) && (
-          <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
-            {runFilters.test && (
-              <Badge
-                className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
-                onClick={() => {
-                  setRunFilters({});
-                  if (path) {
-                    router.push(path);
-                  }
-                }}
+      <>
+        <div className="flex gap-2 mb-4">
+          <Button
+            onClick={() => router.push(`/clusters/${clusterId}/runs`)}
+            className="w-full"
+            variant="outline"
+            size="sm"
+          >
+            Start a Conversation
+          </Button>
+          <Button
+            onClick={() => window.open('https://docs.inferable.ai/pages/workflows', '_blank')}
+            className="w-full"
+            variant="outline"
+            size="sm"
+          >
+            Run a Workflow
+            <ExternalLinkIcon className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+        <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-16rem)] ">
+          {(!!runFilters.test) && (
+            <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
+              {runFilters.test && (
+                <Badge
+                  className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
+                  onClick={() => {
+                    setRunFilters({});
+                    if (path) {
+                      router.push(path);
+                    }
+                  }}
+                >
+                  Filtering By Test Runs
+                  <XIcon className="h-4 w-4" />
+                </Badge>
+              )}
+            </div>
+          )}
+          <div className="rounded-none">
+            <RunTab
+              workflows={workflows}
+              onGoToWorkflow={goToWorkflow}
+              onRefetchWorkflows={fetchWorkflows}
+              onGoToCluster={goToCluster}
+              clusterId={clusterId}
+            />
+            {hasMore && (
+              <Button
+                onClick={loadMore}
+                className="w-full mt-4"
+                variant="outline"
+                size="sm"
               >
-                Filtering By Test Runs
-                <XIcon className="h-4 w-4" />
-              </Badge>
+                Load More
+              </Button>
+            )}
+            {!hasMore && limit >= 50 && (
+              <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
+                Maximum number of runs loaded. Delete some runs to load older
+                ones.
+              </p>
             )}
           </div>
-        )}
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1 bg-secondary/50 p-0.5 rounded-md">
-            <button
-              onClick={() => setRunToggle("all")}
-              className={`px-2.5 py-0.5 rounded text-xs flex items-center gap-1.5 transition-colors
-                ${runToggle === "all"
-                  ? "bg-white text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/50"
-                }`}
-            >
-              <PlayIcon className="h-3 w-3" />
-              <span className="text-xs hidden lg:block">All Runs</span>
-            </button>
-            <button
-              onClick={() => setRunToggle("mine")}
-              className={`px-2.5 py-0.5 rounded text-xs flex items-center gap-1.5 transition-colors
-                ${runToggle === "mine"
-                  ? "bg-white text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/50"
-                }`}
-            >
-              <UserIcon className="h-3 w-3" />
-              <span className="text-xs hidden lg:block">My Runs</span>
-            </button>
-          </div>
-          <button
-            onClick={() => router.push(`/clusters/${clusterId}/runs`)}
-            className="px-2 py-0.5 rounded text-xs flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-          >
-            <PlusIcon className="h-3 w-3" />
-            <span className="text-xs hidden lg:block">New</span>
-          </button>
-        </div>
-        <div className="rounded-none">
-          <RunTab
-            workflows={workflows}
-            onGoToWorkflow={goToWorkflow}
-            onRefetchWorkflows={fetchWorkflows}
-            onGoToCluster={goToCluster}
-            clusterId={clusterId}
-          />
-          {hasMore && (
-            <Button
-              onClick={loadMore}
-              className="w-full mt-4"
-              variant="outline"
-              size="sm"
-            >
-              Load More
-            </Button>
-          )}
-          {!hasMore && limit >= 50 && (
-            <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
-              Maximum number of runs loaded. Delete some runs to load older
-              ones.
-            </p>
-          )}
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+      </>
   );
 }
