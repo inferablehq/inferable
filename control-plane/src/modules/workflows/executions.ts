@@ -8,11 +8,14 @@ import { db, workflowExecutions } from "../data";
 import { and, eq } from "drizzle-orm";
 import { getActivityByJobId, getActivityForTimeline } from "../observability/events";
 import { getRunsByTag } from "../runs/tags";
+import { getWorkflowTools } from "../tools";
+import { logger } from "../observability/logger";
 
 export const createWorkflowExecution = async (
   clusterId: string,
   workflowName: string,
-  input: unknown
+  input: unknown,
+  toolsV2?: boolean
 ) => {
   const parsed = z
     .object({
@@ -25,29 +28,64 @@ export const createWorkflowExecution = async (
     throw new Error("Invalid input");
   }
 
-  const services = await getWorkflowServices({ clusterId, workflowName });
+  let job: Awaited<ReturnType<typeof jobs.createJob>>;
+  let version: number;
 
-  if (services.length === 0) {
-    throw new BadRequestError(
-      `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
-    );
-  }
+  if (toolsV2) {
+    const tools = await getWorkflowTools({ clusterId, workflowName });
 
-  const latestService = services.reduce((latest, service) => {
-    if (service.version > latest.version) {
-      return service;
+    if (tools.length === 0) {
+      throw new BadRequestError(
+        `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
+      );
     }
 
-    return latest;
-  }, services[0]);
+    const latest = tools.reduce((latest, service) => {
+      if (service.version > latest.version) {
+        return service;
+      }
 
-  const job = await jobs.createJob({
-    owner: { clusterId },
-    service: latestService.service,
-    targetFn: "handler",
-    targetArgs: packer.pack(parsed.data),
-    runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
-  });
+      return latest;
+    }, tools[0]);
+
+    version = latest.version;
+
+    logger.info(`Using workflow tool ${latest.name} for ${workflowName}`);
+
+    job = await jobs.createJobV2({
+      owner: { clusterId },
+      service: "v2",
+      targetFn: latest.name,
+      targetArgs: packer.pack(parsed.data),
+      runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
+    });
+  } else {
+    const services = await getWorkflowServices({ clusterId, workflowName });
+
+    if (services.length === 0) {
+      throw new BadRequestError(
+        `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
+      );
+    }
+
+    const latest = services.reduce((latest, service) => {
+      if (service.version > latest.version) {
+        return service;
+      }
+
+      return latest;
+    }, services[0]);
+
+    version = latest.version;
+
+    job = await jobs.createJob({
+      owner: { clusterId },
+      service: latest.service,
+      targetFn: "handler",
+      targetArgs: packer.pack(parsed.data),
+      runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
+    });
+  }
 
   await db
     .insert(workflowExecutions)
@@ -57,7 +95,7 @@ export const createWorkflowExecution = async (
       workflow_execution_id: parsed.data.executionId,
       job_id: job.id,
       workflow_name: workflowName,
-      version: latestService.version,
+      version: version,
     })
     .onConflictDoNothing();
 

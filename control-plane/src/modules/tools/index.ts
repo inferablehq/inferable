@@ -3,7 +3,7 @@ import * as crypto from "crypto";
 import * as data from "../data";
 import { ToolConfigSchema } from "../contract";
 import { z } from "zod";
-import { and, desc, cosineDistance, eq, inArray, lte, sql } from "drizzle-orm";
+import { and, desc, cosineDistance, eq, inArray, lte, sql, like } from "drizzle-orm";
 import { buildModel } from "../models";
 import { InvalidServiceRegistrationError as InvalidToolRegistrationError } from "../../utilities/errors";
 import jsonpath from "jsonpath";
@@ -15,6 +15,42 @@ import { validateToolName, validateToolDescription, validateToolSchema } from ".
 const TOOL_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute
 
 export type ToolConfig = z.infer<typeof ToolConfigSchema>;
+
+export const getWorkflowTools = async ({
+  clusterId,
+  workflowName,
+}: {
+  clusterId: string;
+  workflowName: string;
+}) => {
+  return data.db
+    .select({
+      name: data.tools.name,
+    })
+    .from(data.tools)
+    .where(
+      and(
+        eq(data.tools.cluster_id, clusterId),
+        like(data.tools.name, `workflows.${workflowName}.%`)
+      )
+    )
+    .then(r =>
+      r.map(r => {
+        const version = r.name.replace(`workflows.${workflowName}.`, "");
+
+        const parsed = z.string().regex(/^\d+$/).safeParse(version);
+
+        if (!parsed.success) {
+          throw new Error(`Invalid version ${version} for service ${r.name}`);
+        }
+
+        return {
+          name: r.name,
+          version: parseInt(parsed.data),
+        };
+      })
+    );
+};
 
 export async function availableTools({
   clusterId,

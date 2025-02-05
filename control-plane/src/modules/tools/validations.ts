@@ -32,8 +32,8 @@ export function validateToolName(name: string) {
   }
 
   // allows alphanumeric, and dots
-  if (!/^[a-zA-Z0-9.]+$/.test(name)) {
-    throw new InvalidServiceRegistrationError(`Tool name must be alphanumeric and can contain dots, got ${name}`);
+  if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
+    throw new InvalidServiceRegistrationError(`Tool name must be alphanumeric and can contain hyphen, underscore and priod, got ${name}`);
   }
 }
 

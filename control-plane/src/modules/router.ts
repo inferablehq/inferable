@@ -47,6 +47,7 @@ import { RunOptions, validateSchema } from "./runs";
 import { kv } from "./kv";
 import { recordPoll } from "./tools";
 import { upsertToolDefinition } from "./tools";
+import { flagsmith } from "./flagsmith";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -1485,7 +1486,13 @@ export const router = initServer().router(contract, {
     machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
-    const result = await createWorkflowExecution(clusterId, workflowName, request.body);
+    const flags = await flagsmith?.getIdentityFlags(clusterId, {
+      clusterId: clusterId,
+    });
+
+    const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
+
+    const result = await createWorkflowExecution(clusterId, workflowName, request.body, toolsV2);
 
     return {
       status: 201,
