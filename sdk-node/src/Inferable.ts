@@ -1,10 +1,8 @@
 import debug from "debug";
 import path from "path";
 import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
-import { onStatusChangeSchema } from "./contract";
 import { createApiClient } from "./create-client";
-import { InferableAPIError, InferableError, PollTimeoutError } from "./errors";
+import { InferableAPIError, InferableError } from "./errors";
 import * as links from "./links";
 import { machineId } from "./machine-id";
 import { PollingAgent, registerMachine } from "./polling";
@@ -12,11 +10,9 @@ import {
   ContextInput,
   ToolConfig,
   ToolInput,
-  ToolRegistration,
   ToolRegistrationInput,
   JsonSchemaInput,
 } from "./types";
-import { isZodType } from "./util";
 import { helpers, Workflow } from "./workflows/workflow";
 
 // Custom json formatter
@@ -66,7 +62,7 @@ export class Inferable {
 
   private pollingAgents: PollingAgent[] = [];
 
-  private toolsRegistry: { [key: string]: ToolRegistration } = {};
+  private toolsRegistry: { [key: string]: ToolRegistrationInput<any> } = {};
 
   /**
    * Initializes a new Inferable instance.
@@ -202,17 +198,11 @@ export class Inferable {
       throw new InferableError(`Tool name '${name}' is already registered.`);
     }
 
-    // We accept both Zod types and JSON schema as an input, convert to JSON schema if the input is a Zod type
-    const inputJson = (
-      isZodType(inputSchema) ? zodToJsonSchema(inputSchema) : inputSchema
-    ) as JsonSchemaInput;
-
-    const registration: ToolRegistration<T> = {
+    const registration: ToolRegistrationInput<T> = {
       name,
       func,
       schema: {
         input: inputSchema,
-        inputJson: JSON.stringify(inputJson),
       },
       config,
       description,

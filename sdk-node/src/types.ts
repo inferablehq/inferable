@@ -88,17 +88,3 @@ export type ToolRegistrationInput<
   config?: ToolConfig;
   description?: string;
 };
-
-export interface ToolRegistration<
-  T extends JsonSchemaInput | z.ZodTypeAny = any,
-> {
-  name: string;
-  group?: string;
-  description?: string;
-  schema: {
-    input: T;
-    inputJson: string;
-  };
-  func: (args: ToolInput<T>, context: ContextInput) => any;
-  config?: ToolConfig;
-}

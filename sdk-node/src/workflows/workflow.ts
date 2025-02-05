@@ -5,8 +5,7 @@ import { cyrb53 } from "../util/cybr53";
 import { InferableAPIError, InferableError } from "../errors";
 import { createApiClient } from "../create-client";
 import { PollingAgent } from "../polling";
-import { JsonSchemaInput, ToolRegistration, ToolRegistrationInput } from "../types";
-import { isZodType } from "@ts-rest/core";
+import { ToolRegistrationInput } from "../types";
 
 type WorkflowInput = {
   executionId: string;
@@ -319,14 +318,9 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     });
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tools: ToolRegistration[] = [];
+    const tools: ToolRegistrationInput<any>[] = [];
 
     this.versionHandlers.forEach((handler, version) => {
-      // We accept both Zod types and JSON schema as an input, convert to JSON schema if the input is a Zod type
-      const inputJson = (
-        isZodType(this.inputSchema) ? zodToJsonSchema(this.inputSchema) : this.inputSchema
-      ) as JsonSchemaInput;
-
       tools.push({
         func: async (input: TInput) => {
           if (!input.executionId) {
@@ -341,8 +335,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         name: `workflows.${this.name}.${version}`,
         schema: {
           input: this.inputSchema,
-          inputJson: JSON.stringify(inputJson),
-        },
+        }
       });
     });
 

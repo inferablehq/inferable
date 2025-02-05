@@ -4,8 +4,9 @@ import { createApiClient } from "./create-client";
 import { InferableAPIError, InferableError } from "./errors";
 import { serializeError } from "./serialize-error";
 import { executeFn, Result } from "./execute-fn";
-import { ToolRegistration } from "./types";
-import { extractBlobs, validateFunctionArgs } from "./util";
+import { ToolRegistrationInput } from "./types";
+import { extractBlobs, isZodType, validateFunctionArgs } from "./util";
+import zodToJsonSchema from "zod-to-json-schema";
 
 const DEFAULT_RETRY_AFTER_SECONDS = 10;
 
@@ -24,7 +25,7 @@ export class PollingAgent {
   public clusterId: string;
   public polling = false;
 
-  private tools: ToolRegistration[] = [];
+  private tools: ToolRegistrationInput<any>[] = [];
 
   private client: ReturnType<typeof createApiClient>;
 
@@ -35,7 +36,7 @@ export class PollingAgent {
     machineId: string;
     apiSecret: string;
     clusterId: string;
-    tools: ToolRegistration[];
+    tools: ToolRegistrationInput<any>[];
   }) {
 
     this.client = createApiClient({
@@ -285,12 +286,11 @@ export class PollingAgent {
 
 export const registerMachine = async (
   client: ReturnType<typeof createApiClient>,
-  tools?: ToolRegistration[]
+  tools?: ToolRegistrationInput<any>[]
 ) => {
   log("registering machine", {
     tools: tools?.map((f) => f.name),
   });
-
   const registerResult = await client.createMachine({
     headers: {
       "x-sentinel-no-mask": "1",
@@ -299,7 +299,7 @@ export const registerMachine = async (
       tools: tools?.map((func) => ({
         name: func.name,
         description: func.description,
-        schema: func.schema.inputJson,
+        schema: JSON.stringify(isZodType(func.schema?.input) ? zodToJsonSchema(func.schema?.input) : func.schema?.input),
         config: func.config,
       })),
     },
