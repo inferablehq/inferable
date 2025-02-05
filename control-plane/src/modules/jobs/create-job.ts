@@ -3,14 +3,14 @@ import { ulid } from "ulid";
 import { InvalidJobArgumentsError, NotFoundError } from "../../utilities/errors";
 import * as data from "../data";
 import * as events from "../observability/events";
-import { FunctionConfig, getServiceDefinition, parseJobArgs } from "../service-definitions";
+import { parseJobArgs } from "../service-definitions";
 import { extractWithJsonPath } from "../util";
 import { injectTraceContext } from "../observability/tracer";
 import { logger } from "../observability/logger";
 import { externalServices } from "../integrations/constants";
 import { jobDefaults } from "../data";
 import { externalToolCallQueue } from "../queues/external-tool-call";
-import { getToolDefinition } from "../tools";
+import { getToolDefinition, ToolConfig } from "../tools";
 
 type CreateJobParams = {
   jobId: string;
@@ -147,106 +147,6 @@ export const createJobV2 = async (params: {
   }
 };
 
-export const createJob = async (params: {
-  service: string;
-  targetFn: string;
-  targetArgs: string;
-  owner: { clusterId: string };
-  runId: string;
-  authContext?: unknown;
-  runContext?: unknown;
-  schemaUnavailableRetryCount?: number;
-  toolCallId?: string;
-}): Promise<{
-  id: string;
-  created: boolean;
-}> => {
-  const serviceDefinition = await getServiceDefinition({
-    owner: params.owner,
-    service: params.service,
-  });
-
-  const { config, schema } =
-    serviceDefinition?.functions?.find(f => f.name === params.targetFn) ?? {};
-
-  // sometimes the schema is not available immediately after the service is
-  // registered, so we retry a few times
-  if (!schema && (params.schemaUnavailableRetryCount ?? 0) < 3) {
-    // wait for the service to be available
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // retry
-    return createJob({
-      ...params,
-      schemaUnavailableRetryCount: (params.schemaUnavailableRetryCount ?? 0) + 1,
-    });
-  }
-
-  const args = await parseJobArgs({
-    schema,
-    args: params.targetArgs,
-  });
-
-  const jobConfig = {
-    timeoutIntervalSeconds: config?.timeoutSeconds ?? jobDefaults.timeoutIntervalSeconds,
-    maxAttempts: config?.retryCountOnStall
-      ? config?.retryCountOnStall + 1
-      : jobDefaults.maxAttempts,
-    jobId: params.toolCallId ?? ulid(),
-  };
-
-  if (config?.cache?.keyPath && config?.cache?.ttlSeconds) {
-    const cacheKey = extractCacheKeyFromJsonPath(config.cache.keyPath, args);
-
-    const { id, created } = await createJobStrategies.cached({
-      ...jobConfig,
-      service: params.service,
-      targetFn: params.targetFn,
-      targetArgs: params.targetArgs,
-      owner: params.owner,
-      cacheKey: cacheKey,
-      cacheTTLSeconds: config.cache.ttlSeconds,
-      runId: params.runId,
-      authContext: params.authContext,
-      runContext: params.runContext,
-    });
-
-    if (created) {
-      onAfterJobCreated({
-        ...params,
-        ...jobConfig,
-        config,
-        jobId: id,
-      });
-    }
-
-    return { id, created };
-  } else {
-    const { id, created } = await createJobStrategies.default({
-      ...jobConfig,
-      service: params.service,
-      targetFn: params.targetFn,
-      targetArgs: params.targetArgs,
-      owner: params.owner,
-      runId: params.runId,
-      authContext: params.authContext,
-      runContext: params.runContext,
-    });
-
-    if (created) {
-      onAfterJobCreated({
-        ...params,
-        ...jobConfig,
-        config,
-        jobId: id,
-      });
-    }
-
-    // end();
-    return { id, created };
-  }
-};
-
 const createJobStrategies = {
   cached: async ({
     service,
@@ -353,7 +253,7 @@ const onAfterJobCreated = async ({
   jobId,
   runId,
   config,
-}: CreateJobParams & { jobId: string; config?: FunctionConfig }) => {
+}: CreateJobParams & { jobId: string; config?: ToolConfig }) => {
   events.write({
     type: "jobCreated",
     clusterId: owner.clusterId,

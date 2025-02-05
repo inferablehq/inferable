@@ -18,7 +18,6 @@ import * as queues from "./modules/queues/index";
 import * as clusters from "./modules/cluster";
 import * as redis from "./modules/redis";
 import * as router from "./modules/router";
-import * as serviceDefinitions from "./modules/service-definitions";
 import * as tools from "./modules/tools";
 import * as cron from "./modules/cron";
 import { env } from "./utilities/env";
@@ -169,7 +168,6 @@ const startTime = Date.now();
   await Promise.all([
     events.initialize(),
     jobs.start(),
-    serviceDefinitions.start(),
     tools.start(),
     models.start(),
     redis.start(),

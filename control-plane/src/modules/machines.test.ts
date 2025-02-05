@@ -1,7 +1,6 @@
 import { upsertMachine } from "./machines";
 import { createCluster, getClusterMachines } from "./management";
 import * as redis from "./redis";
-import { getServiceDefinitions, upsertServiceDefinition } from "./service-definitions";
 
 describe("machines", () => {
   beforeAll(async () => {
@@ -18,21 +17,6 @@ describe("machines", () => {
       });
 
       const machineId = Math.random().toString();
-
-      const services = ["service1", "service2"];
-
-      await Promise.all(
-        services.map(service =>
-          upsertServiceDefinition({
-            service,
-            definition: {
-              name: service,
-              functions: [],
-            },
-            owner: { clusterId: id },
-          })
-        )
-      );
 
       const timeBeforePing = Date.now();
 
@@ -52,12 +36,6 @@ describe("machines", () => {
       expect(machines[0].id).toBe(machineId);
       expect(machines[0].lastPingAt).toBeInstanceOf(Date);
       expect(machines[0].lastPingAt?.getTime()).toBeGreaterThanOrEqual(timeBeforePing);
-
-      expect(
-        await getServiceDefinitions({
-          clusterId: id,
-        }).then(services => services.map(s => s.service))
-      ).toEqual(services);
     });
   });
 });

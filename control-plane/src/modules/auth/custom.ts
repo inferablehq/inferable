@@ -2,14 +2,11 @@ import { AuthenticationError, JobPollTimeoutError } from "../../utilities/errors
 import { packer } from "../packer";
 import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
-import { getServiceDefinition } from "../service-definitions";
 import { createCache, hashFromSecret } from "../../utilities/cache";
 import { getClusterDetails } from "../management";
 import { getClusterBackgroundRun } from "../runs";
 import { z } from "zod";
-import { logger } from "../observability/logger";
 import { getToolDefinition } from "../tools";
-import { flagsmith } from "../flagsmith";
 
 const customAuthContextCache = createCache<{
   status: "pending" | "running" | "success" | "failure" | "stalled";
@@ -63,86 +60,38 @@ export const verify = async ({
     );
   }
 
-  const flags = await flagsmith?.getIdentityFlags(clusterId, {
-    clusterId: clusterId,
-  });
-
-  const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
-
-  if (toolsV2) {
-    logger.info("Using tools v2 for Custom auth processing")
-  }
-
   let authService: string | undefined;
   let authFunction: string | undefined;
 
-  let id: string | undefined;
-
   try {
-    if (toolsV2) {
-      const definition = await getToolDefinition({
-        clusterId,
-        name: handleCustomAuthFunction,
-      });
+    const definition = await getToolDefinition({
+      clusterId,
+      name: handleCustomAuthFunction,
+    });
 
-      if (!definition) {
-        throw new AuthenticationError(
-          `${authFunction} is not registered`,
-          "https://docs.inferable.ai/pages/custom-auth"
-        );
-      }
-
-      authService = "v2";
-      authFunction = definition.name;
+    const authService = "v2";
+    const authFunction = definition.name;
 
 
-      const result = await jobs.createJobV2({
-        service: authService,
-        targetFn: authFunction,
-        targetArgs: packer.pack({
-          token,
-        }),
-        owner: {
-          clusterId,
-        },
-        runId: getClusterBackgroundRun(clusterId),
-      });
-
-      id = result.id
-
-    } else {
-      [authService, authFunction] = handleCustomAuthFunction?.split("_") ?? [];
-
-      const serviceDefinition = await getServiceDefinition({
-        service: authService,
-        owner: {
-          clusterId: clusterId,
-        },
-      });
-
-      const functionDefinition = serviceDefinition?.functions?.find(f => f.name === authFunction);
-
-      if (!functionDefinition) {
-        throw new AuthenticationError(
-          `${authFunction} is not registered`,
-          "https://docs.inferable.ai/pages/custom-auth"
-        );
-      }
-
-      const result = await jobs.createJob({
-        service: authService,
-        targetFn: authFunction,
-        targetArgs: packer.pack({
-          token,
-        }),
-        owner: {
-          clusterId,
-        },
-        runId: getClusterBackgroundRun(clusterId),
-      });
-
-      id = result.id
+    if (!definition) {
+      throw new AuthenticationError(
+        `${authFunction} is not registered`,
+        "https://docs.inferable.ai/pages/custom-auth"
+      );
     }
+
+    const { id } = await jobs.createJobV2({
+      service: authService,
+      targetFn: authFunction,
+      targetArgs: packer.pack({
+        token,
+      }),
+      owner: {
+        clusterId,
+      },
+      runId: getClusterBackgroundRun(clusterId),
+    });
+
 
   const result = await getJobStatusSync({
     jobId: id,

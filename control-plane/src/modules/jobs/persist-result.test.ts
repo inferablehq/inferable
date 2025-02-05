@@ -1,5 +1,5 @@
 import { createOwner } from "../test/util";
-import { createJob, getJobStatusSync, persistJobResult } from "./jobs";
+import { createJobV2, getJobStatusSync, persistJobResult } from "./jobs";
 import { acknowledgeJob } from "./job-results";
 import * as redis from "../redis";
 import { getClusterBackgroundRun } from "../runs";
@@ -22,7 +22,7 @@ describe("persistJobResult", () => {
     const targetFn = "testTargetFn";
     const targetArgs = "testTargetArgs";
 
-    const createJobResult = await createJob({
+    const createJobResult = await createJobV2({
       targetFn,
       targetArgs,
       owner,
@@ -68,7 +68,7 @@ describe("persistJobResult", () => {
     const targetArgs = "testTargetArgs";
     const service = "testService";
 
-    const createJobResult = await createJob({
+    const createJobResult = await createJobV2({
       targetFn,
       targetArgs,
       owner,
@@ -120,7 +120,7 @@ describe("persistJobResult", () => {
     const targetArgs = "testTargetArgs";
     const service = "testService";
 
-    const createJobResult = await createJob({
+    const createJobResult = await createJobV2({
       targetFn,
       targetArgs,
       owner,

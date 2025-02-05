@@ -76,17 +76,7 @@ export async function handleRunProcess(message: unknown) {
       return;
     }
 
-    const flags = await flagsmith?.getIdentityFlags(run.clusterId, {
-      clusterId: run.clusterId,
-    });
-
-    const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
-    if (toolsV2) {
-      logger.info("Using tools v2 for Run processing")
-    }
-
-
-    await processRun(run, tags, undefined, toolsV2);
+    await processRun(run, tags, undefined);
   } finally {
     await unlock();
   }

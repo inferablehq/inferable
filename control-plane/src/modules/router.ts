@@ -11,13 +11,11 @@ import * as events from "./observability/events";
 import { posthog } from "./posthog";
 import { addMessageAndResume, getRunResult } from "./runs";
 import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
-import { getServiceDefinitions, serviceFunctionEmbeddingId } from "./service-definitions";
 import { unqualifiedEntityId } from "./auth/auth";
 import { upsertMachine } from "./machines";
 import { ILLEGAL_SERVICE_NAMES } from "./machines/constants";
 import { dereferenceSync } from "dereference-json-schema";
 import { safeParse } from "../utilities/safe-parse";
-import { upsertServiceDefinition } from "./service-definitions";
 import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
 import { packer } from "./packer";
 import * as jobs from "./jobs/jobs";
@@ -25,7 +23,6 @@ import { getClusterBackgroundRun } from "./runs";
 import { contract, interruptSchema } from "./contract";
 import { logger } from "./observability/logger";
 import { createBlob } from "./blobs";
-import { recordServicePoll } from "./service-definitions";
 import { getJob } from "./jobs/jobs";
 import { BadRequestError, NotFoundError, AuthenticationError } from "../utilities/errors";
 import { createRun, deleteRun, getClusterRuns, getRunDetails, updateRunFeedback } from "./runs";
@@ -44,9 +41,8 @@ import { NEW_CONNECTION_ID } from "./integrations/constants";
 import { createWorkflowExecution, getWorkflowExecutionEvents } from "./workflows/executions";
 import { RunOptions, validateSchema } from "./runs";
 import { kv } from "./kv";
-import { recordPoll } from "./tools";
+import { getToolDefinition, getToolDefinitions, recordPoll } from "./tools";
 import { upsertToolDefinition } from "./tools";
-import { flagsmith } from "./flagsmith";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -99,15 +95,6 @@ export const router = initServer().router(contract, {
         xForwardedFor: request.headers["x-forwarded-for"],
         ip: request.request.ip,
       }),
-      service &&
-        upsertServiceDefinition({
-          service,
-          definition: {
-            name: service,
-            functions: derefedFns,
-          },
-          owner: machine,
-        }),
       derefedFns && Promise.all(derefedFns?.map(fn =>
         upsertToolDefinition({
           name: fn.name,
@@ -194,27 +181,7 @@ export const router = initServer().router(contract, {
       }
     }
 
-    const flags = await flagsmith?.getIdentityFlags(clusterId, {
-      clusterId: clusterId,
-    });
-
-    const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
-
-    const normalizeFunctionReference = (fn: string | { service: string; function: string }) =>
-      typeof fn === "object"
-        ? serviceFunctionEmbeddingId({
-          serviceName: fn.service,
-          functionName: fn.function,
-        })
-        : fn;
-
-
-    let attachedFunctions: string[] | undefined;
-    if (toolsV2) {
-      attachedFunctions = body.attachedFunctions?.map((f) => typeof f === "string" ? f : f.function);
-    } else {
-      attachedFunctions = body.attachedFunctions?.map(normalizeFunctionReference);
-    }
+    const attachedFunctions = body.attachedFunctions?.map((f) => typeof f === "string" ? f : f.function);
 
     const runOptions: RunOptions = {
       id: body.id || body.runId || ulid(),
@@ -776,14 +743,6 @@ export const router = initServer().router(contract, {
     const { service, limit, acknowledge, status } = request.query;
     const tools = request.query.tools?.split(",").map(t => t.trim());
 
-    if (!tools && !service) {
-      throw new BadRequestError("At least one of tools or service must be specified");
-    }
-
-    if (tools && service) {
-      throw new BadRequestError("Only one of tools or service must be specified");
-    }
-
     if (acknowledge && status !== "pending") {
       throw new BadRequestError("Only pending jobs can be acknowledged");
     }
@@ -802,78 +761,39 @@ export const router = initServer().router(contract, {
     machine.canAccess({ cluster: { clusterId } });
 
 
-    let result;
+    const [, missingTools, pollResult] = await Promise.all([
+      upsertMachine({
+        clusterId,
+        machineId,
+        sdkVersion: request.headers["x-machine-sdk-version"],
+        sdkLanguage: request.headers["x-machine-sdk-language"],
+        xForwardedFor: request.headers["x-forwarded-for"],
+        ip: request.request.ip,
+      }),
+      tools && recordPoll({
+        clusterId,
+        tools,
+      }),
+      tools&& jobs.pollJobsByTools({
+        clusterId,
+        machineId,
+        tools,
+        limit,
+      })
+    ]);
 
-    // Deprecated, to be removed once all SDKs are updated
-    if (service) {
-      const [, servicePing, pollResult] = await Promise.all([
-        upsertMachine({
-          clusterId,
-          machineId,
-          sdkVersion: request.headers["x-machine-sdk-version"],
-          sdkLanguage: request.headers["x-machine-sdk-language"],
-          xForwardedFor: request.headers["x-forwarded-for"],
-          ip: request.request.ip,
-        }),
-        recordServicePoll({
-          clusterId,
-          service,
-        }),
-        jobs.pollJobs({
-          clusterId,
-          machineId,
-          service: service!,
-          limit,
-        })
-      ]);
-
-      if (servicePing === false) {
-        logger.info("Machine polling for unregistered service", {
-          service,
-        });
-        return {
-          status: 410,
-          body: {
-            message: `Service ${service} is not registered`,
-          },
-        };
-      }
-      result = pollResult;
-    } else if (tools) {
-      const [, missingTools, pollResult] = await Promise.all([
-        upsertMachine({
-          clusterId,
-          machineId,
-          sdkVersion: request.headers["x-machine-sdk-version"],
-          sdkLanguage: request.headers["x-machine-sdk-language"],
-          xForwardedFor: request.headers["x-forwarded-for"],
-          ip: request.request.ip,
-        }),
-        recordPoll({
-          clusterId,
-          tools,
-        }),
-        jobs.pollJobsByTools({
-          clusterId,
-          machineId,
-          tools,
-          limit,
-        })
-      ]);
-
-      if (missingTools.length > 0) {
-        logger.info("Machine polling for unregistered tools", {
-          service,
-        });
-        return {
-          status: 410,
-          body: {
-            message: `Polling for unregistered tools: ${missingTools.join(", ")}`,
-          },
-        };
-      }
-      result = pollResult;
+    if ((missingTools?.length ?? 0) > 0) {
+      logger.info("Machine polling for unregistered tools", {
+        service,
+      });
+      return {
+        status: 410,
+        body: {
+          message: `Polling for unregistered tools: ${missingTools?.join(", ")}`,
+        },
+      };
     }
+    const result = pollResult;
 
 
     request.reply.header("retry-after", 1);
@@ -1458,25 +1378,25 @@ export const router = initServer().router(contract, {
     const user = request.request.getAuth();
     await user.canAccess({ cluster: { clusterId } });
 
-    const services = await getServiceDefinitions({
+    const tools = await getToolDefinitions({
       clusterId,
     });
 
-    const transformedServices = services.map(service => ({
-      name: service.service,
-      timestamp: service.timestamp ?? new Date(),
-      description: service.definition.description,
-      functions: service.definition.functions?.map(fn => ({
-        name: fn.name,
-        description: fn.description,
-        schema: fn.schema,
-        config: fn.config,
-      })),
-    }));
-
     return {
       status: 200,
-      body: transformedServices,
+      body: [
+        {
+          name: "default",
+          timestamp: new Date(),
+          description: "default",
+          functions: tools.map(tool => ({
+            name: tool.name,
+            description: tool.description ?? undefined,
+            schema: tool.schema ?? undefined,
+            config: tool.config ?? undefined,
+          }))
+        }
+      ],
     };
   },
   getBlobData: async request => {
@@ -1512,17 +1432,7 @@ export const router = initServer().router(contract, {
     machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
-    const flags = await flagsmith?.getIdentityFlags(clusterId, {
-      clusterId: clusterId,
-    });
-
-    const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
-
-    if (toolsV2) {
-      logger.info("Using tools v2 for Workflow Execution")
-    }
-
-    const result = await createWorkflowExecution(clusterId, workflowName, request.body, toolsV2);
+    const result = await createWorkflowExecution(clusterId, workflowName, request.body);
 
     return {
       status: 201,

@@ -9,9 +9,8 @@ import { packer } from "../packer";
 import { resumeRun } from "../runs";
 import { notifyApprovalRequest } from "../runs/notify";
 import { selfHealJobs } from "./self-heal-jobs";
-import { logger } from "../observability/logger";
 
-export { createJob, createJobV2 } from "./create-job";
+export { createJobV2 } from "./create-job";
 export { acknowledgeJob, persistJobResult } from "./job-results";
 
 export type ResultType = "resolution" | "rejection" | "interrupt";
@@ -270,45 +269,6 @@ const hasPendingJobs = await data.db
   return waitForPendingJobsByTools({ clusterId, timeout, start, tools });
 };
 
-// Deprecated, to be removed once all SDKs are updated
-const waitForPendingJobs = async ({
-  clusterId,
-  timeout,
-  start,
-  service,
-}: {
-  clusterId: string;
-  timeout: number;
-  start: number;
-  service: string;
-}): Promise<void> => {
-  const hasPendingJobs = await data.db
-    .execute<{ count: number }>(
-      sql`
-    SELECT COUNT(*) AS count
-    FROM jobs
-    WHERE status = 'pending'
-      AND cluster_id = ${clusterId}
-      AND service = ${service}
-    LIMIT 1
-  `
-    )
-    .then(r => Number(r.rows[0].count) > 0)
-    .catch(() => true);
-
-  if (hasPendingJobs) {
-    return;
-  }
-
-  if (Date.now() - start > timeout) {
-    return;
-  }
-
-  // wait for 500ms
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return waitForPendingJobs({ clusterId, timeout, start, service });
-};
-
 export const pollJobsByTools = async ({
   tools,
   clusterId,
@@ -389,83 +349,6 @@ export const pollJobsByTools = async ({
   return jobs;
 };
 
-// Deprecated, to be removed once all SDKs are updated
-export const pollJobs = async ({
-  service,
-  clusterId,
-  machineId,
-  limit,
-  timeout = env.JOB_LONG_POLLING_TIMEOUT,
-}: {
-  service: string;
-  clusterId: string;
-  machineId: string;
-  limit: number;
-  timeout?: number;
-}) => {
-  await waitForPendingJobs({ clusterId, timeout, start: Date.now(), service });
-
-  type Result = {
-    id: string;
-    target_fn: string;
-    target_args: string;
-    auth_context: unknown;
-    run_context: unknown;
-    approved: boolean;
-  };
-
-  const results = await data.db.execute<Result>(sql`
-     UPDATE
-       jobs SET status = 'running',
-       remaining_attempts = remaining_attempts - 1,
-       last_retrieved_at = now(),
-       executing_machine_id=${machineId}
-     WHERE
-       id IN (
-         SELECT id
-         FROM jobs
-         WHERE
-           status = 'pending'
-           AND cluster_id = ${clusterId}
-           AND service = ${service}
-         LIMIT ${limit}
-         FOR UPDATE SKIP LOCKED
-       )
-       AND cluster_id = ${clusterId}
-     RETURNING id, target_fn, target_args, auth_context, run_context, approved`);
-
-  const jobs: {
-    id: string;
-    targetFn: string;
-    targetArgs: string;
-    authContext: unknown;
-    runContext: unknown;
-    approved: boolean;
-  }[] = results.rows.map(row => ({
-    id: row.id as string,
-    targetFn: row.target_fn as string,
-    targetArgs: row.target_args as string,
-    authContext: row.auth_context,
-    runContext: row.run_context,
-    approved: row.approved,
-  }));
-
-  jobs.forEach(job => {
-    events.write({
-      type: "jobAcknowledged",
-      jobId: job.id,
-      clusterId,
-      service,
-      machineId,
-      targetFn: job.targetFn,
-      meta: {
-        targetArgs: job.targetArgs,
-      },
-    });
-  });
-
-  return jobs;
-};
 
 export async function requestApproval({ jobId, clusterId }: { jobId: string; clusterId: string }) {
   const [updated] = await data.db

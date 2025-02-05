@@ -67,6 +67,24 @@ export async function availableTools({
   return results.map(r => r.name);
 }
 
+export const getToolDefinitions = async ({
+  clusterId,
+}: {
+    clusterId: string;
+  }) => {
+  const results = await data.db
+    .select({
+      name: data.tools.name,
+      description: data.tools.description,
+      schema: data.tools.schema,
+      config: data.tools.config,
+    })
+    .from(data.tools)
+    .where(eq(data.tools.cluster_id, clusterId))
+
+  return results;
+};
+
 export const getToolDefinition = async ({
   name,
   clusterId
@@ -151,6 +169,40 @@ export async function recordPoll({
 
   // Return any missing tools
   return tools.filter(t => !result.find(r => r.tool === t));
+}
+
+export async function deleteToolDefinition({
+  name,
+  clusterId,
+}: {
+    name: string;
+    clusterId: string;
+  }) {
+  await data.db
+  .delete(data.tools)
+  .where(
+    and(
+      eq(data.tools.name, name),
+      eq(data.tools.cluster_id, clusterId)
+    )
+  );
+}
+
+export async function deleteToolDefinitionByPrefix({
+  prefix,
+  clusterId,
+}: {
+    prefix: string;
+    clusterId: string;
+  }) {
+  await data.db
+  .delete(data.tools)
+  .where(
+    and(
+      like(data.tools.name, `${prefix}%`),
+      eq(data.tools.cluster_id, clusterId)
+    )
+  );
 }
 
 export async function upsertToolDefinition({

@@ -58,7 +58,7 @@ describe("event-aggregation", () => {
 
     const jobIds = await Promise.all(
       mockJobs.map(async ({ targetFn, targetArgs, result, resultType }, i) => {
-        const job = await jobs.createJob({
+        const job = await jobs.createJobV2({
           owner: {
             clusterId,
           },

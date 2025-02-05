@@ -9,9 +9,9 @@ import * as data from "../data";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
-import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { InstallableIntegration } from "./types";
 import { toolhouseIntegration } from "./constants";
+import { deleteToolDefinitionByPrefix, upsertToolDefinition } from "../tools";
 
 const ToolHouseResultSchema = z.array(
   z.object({
@@ -159,20 +159,13 @@ const syncToolHouseService = async ({
 
   const tools = (await toolhouse.getTools()) as Anthropic.Messages.Tool[];
 
-  await upsertServiceDefinition({
-    service: toolhouseIntegration,
-    type: "permanent",
-    definition: {
-      name: toolhouseIntegration,
-      functions: tools.map(tool => {
-        return {
-          name: toInferableName(tool.name),
-          description: tool.description,
-          schema: JSON.stringify(tool.input_schema),
-        };
-      }),
-    },
-    owner: { clusterId },
+  tools.forEach(tool => {
+    upsertToolDefinition({
+      name: toInferableName(tool.name),
+      clusterId,
+      description: tool.description,
+      schema: JSON.stringify(tool.input_schema),
+    })
   });
 };
 
@@ -231,11 +224,9 @@ export const toolhouse: InstallableIntegration = {
     });
   },
   onDeactivate: async (clusterId: string, _: z.infer<typeof integrationSchema>) => {
-    await deleteServiceDefinition({
-      service: toolhouseIntegration,
-      owner: {
-        clusterId,
-      },
+    await deleteToolDefinitionByPrefix({
+      clusterId,
+      prefix: toolhouseIntegration,
     })
   },
   handleCall,

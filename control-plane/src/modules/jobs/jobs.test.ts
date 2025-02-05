@@ -1,12 +1,12 @@
 import { ulid } from "ulid";
 import { packer } from "../packer";
-import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
-import { createJob, pollJobs, getJob, requestApproval, submitApproval } from "./jobs";
+import { createJobV2, pollJobsByTools, getJob, requestApproval, submitApproval } from "./jobs";
 import { acknowledgeJob, persistJobResult } from "./job-results";
 import { selfHealJobs } from "./self-heal-jobs";
 import * as redis from "../redis";
 import { getClusterBackgroundRun } from "../runs";
+import { upsertToolDefinition } from "../tools";
 
 const mockTargetFn = "testTargetFn";
 const mockTargetArgs = packer.pack({ test: "test" });
@@ -24,21 +24,13 @@ describe("createJob", () => {
   it("should create a job", async () => {
     const owner = await createOwner();
 
-    await upsertServiceDefinition({
-      service: "testService",
-      definition: {
-        name: "testService",
-        functions: [
-          {
-            name: mockTargetFn,
-            schema: mockTargetSchema,
-          },
-        ],
-      },
-      owner,
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      clusterId: owner.clusterId,
     });
 
-    const result = await createJob({
+    const result = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -63,25 +55,17 @@ describe("selfHealCalls", () => {
   it("should mark a job for retries, once it has timed out", async () => {
     const owner = await createOwner();
 
-    await upsertServiceDefinition({
-      service: "testService",
-      definition: {
-        name: "testService",
-        functions: [
-          {
-            name: mockTargetFn,
-            schema: mockTargetSchema,
-            config: {
-              retryCountOnStall: 1,
-              timeoutSeconds: 1,
-            },
-          },
-        ],
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      config: {
+        retryCountOnStall: 1,
+        timeoutSeconds: 1,
       },
-      owner,
+      clusterId: owner.clusterId,
     });
 
-    const createJobResult = await createJob({
+    const createJobResult = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -122,24 +106,16 @@ describe("selfHealCalls", () => {
   it("should not stall a job waiting for approval", async () => {
     const owner = await createOwner();
 
-    await upsertServiceDefinition({
-      service: "testService",
-      definition: {
-        name: "testService",
-        functions: [
-          {
-            name: mockTargetFn,
-            schema: mockTargetSchema,
-            config: {
-              timeoutSeconds: 1,
-            },
-          },
-        ],
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      config: {
+        timeoutSeconds: 1,
       },
-      owner,
+      clusterId: owner.clusterId,
     });
 
-    const createJobResult = await createJob({
+    const createJobResult = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -176,25 +152,17 @@ describe("selfHealCalls", () => {
   it("should not retry a job that has reached max attempts", async () => {
     const owner = await createOwner();
 
-    await upsertServiceDefinition({
-      service: "testService",
-      definition: {
-        name: "testService",
-        functions: [
-          {
-            name: mockTargetFn,
-            schema: mockTargetSchema,
-            config: {
-              retryCountOnStall: 0,
-              timeoutSeconds: 1,
-            },
-          },
-        ],
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      config: {
+        timeoutSeconds: 1,
+        retryCountOnStall: 1,
       },
-      owner,
+      clusterId: owner.clusterId,
     });
 
-    const createJobResult = await createJob({
+    const createJobResult = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -231,22 +199,14 @@ describe("selfHealCalls", () => {
   it("should not create a job with the same id", async () => {
     const owner = await createOwner();
 
-    await upsertServiceDefinition({
-      service: "testService",
-      definition: {
-        name: "testService",
-        functions: [
-          {
-            name: mockTargetFn,
-            schema: mockTargetSchema,
-          },
-        ],
-      },
-      owner,
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      clusterId: owner.clusterId,
     });
 
     const toolCallId = ulid();
-    const createJobResult1 = await createJob({
+    const createJobResult1 = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -258,7 +218,7 @@ describe("selfHealCalls", () => {
     expect(createJobResult1.id).toBeDefined();
     expect(createJobResult1.created).toBe(true);
 
-    const createJobResult2 = await createJob({
+    const createJobResult2 = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -274,27 +234,19 @@ describe("selfHealCalls", () => {
   it("should not create a job with cached result", async () => {
     const owner = await createOwner();
 
-    await upsertServiceDefinition({
-      service: "testService",
-      definition: {
-        name: "testService",
-        functions: [
-          {
-            name: mockTargetFn,
-            schema: mockTargetSchema,
-            config: {
-              cache: {
-                keyPath: "$.test",
-                ttlSeconds: 10,
-              },
-            },
-          },
-        ],
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      config: {
+        cache: {
+          keyPath: "$.test",
+          ttlSeconds: 10,
+        },
       },
-      owner,
+      clusterId: owner.clusterId,
     });
 
-    const createJobResult1 = await createJob({
+    const createJobResult1 = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -319,7 +271,7 @@ describe("selfHealCalls", () => {
     expect(createJobResult1.id).toBeDefined();
     expect(createJobResult1.created).toBe(true);
 
-    const createJobResult2 = await createJob({
+    const createJobResult2 = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -342,18 +294,11 @@ describe("pollJobs", () => {
 
     await redis.start();
 
-    await upsertServiceDefinition({
-      service,
-      definition: {
-        name: service,
-        functions: [
-          {
-            name: mockTargetFn,
-            schema: mockTargetSchema,
-          },
-        ],
-      },
-      owner,
+
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      clusterId: owner.clusterId,
     });
   });
 
@@ -362,7 +307,7 @@ describe("pollJobs", () => {
   });
 
   it("should acknlowledge polled jobs", async () => {
-    const job1 = await createJob({
+    const job1 = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -370,21 +315,21 @@ describe("pollJobs", () => {
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
-    const result = await pollJobs({
+    const result = await pollJobsByTools({
       clusterId: owner.clusterId,
       limit: 10,
       machineId,
-      service,
+      tools: [mockTargetFn],
     });
 
     expect(result.length).toBe(1);
     expect(result[0].id).toBe(job1.id);
 
-    const result2 = await pollJobs({
+    const result2 = await pollJobsByTools({
       clusterId: owner.clusterId,
       limit: 10,
       machineId,
-      service,
+      tools: [mockTargetFn],
     });
 
     expect(result2.length).toBe(0);
@@ -399,7 +344,7 @@ describe("pollJobs", () => {
   });
 
   it("should only relase job once", async () => {
-    await createJob({
+    await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -408,11 +353,11 @@ describe("pollJobs", () => {
     });
 
     const poll = () =>
-      pollJobs({
+      pollJobsByTools({
         clusterId: owner.clusterId,
         limit: 10,
         machineId: `testMachineId-${Math.random()}`,
-        service,
+        tools: [mockTargetFn],
       });
 
     const results = await Promise.all([
@@ -436,22 +381,14 @@ describe("submitApproval", () => {
   beforeAll(async () => {
     owner = await createOwner();
 
-    await upsertServiceDefinition({
-      service: "testService",
-      definition: {
-        name: "testService",
-        functions: [
-          {
-            name: mockTargetFn,
-            schema: mockTargetSchema,
-          },
-        ],
-      },
-      owner,
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      clusterId: owner.clusterId,
     });
   });
   it("should mark job as approved", async () => {
-    const result = await createJob({
+    const result = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
@@ -507,7 +444,7 @@ describe("submitApproval", () => {
   });
 
   it("should mark job as denied", async () => {
-    const result = await createJob({
+    const result = await createJobV2({
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,

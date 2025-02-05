@@ -3,10 +3,10 @@ import { z } from "zod";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
-import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
 import { InstallableIntegration } from "./types";
 import { tavilyIntegration } from "./constants";
 import { integrationSchema } from "../contract";
+import { deleteToolDefinitionByPrefix, upsertToolDefinition } from "../tools";
 
 const TavilySearchParamsSchema = z.object({
   query: z.string(),
@@ -118,18 +118,20 @@ const syncTavilyService = async ({ clusterId, apiKey }: { clusterId: string; api
     return;
   }
 
-  await upsertServiceDefinition({
-    type: "permanent",
-    service: tavilyIntegration,
-    definition,
-    owner: { clusterId },
+  definition.functions.forEach(async fn => {
+    await upsertToolDefinition({
+      name: `tavily_${fn.name}`,
+      clusterId,
+      description: fn.description,
+      schema: fn.schema,
+    })
   });
 };
 
 const unsyncTavilyService = async ({ clusterId }: { clusterId: string }) => {
-  await deleteServiceDefinition({
-    service: "Tavily",
-    owner: { clusterId },
+  await deleteToolDefinitionByPrefix({
+    prefix: "tavily_",
+    clusterId,
   });
 };
 

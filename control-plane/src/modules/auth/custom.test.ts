@@ -1,11 +1,11 @@
 import { AuthenticationError } from "../../utilities/errors";
-import { pollJobs } from "../jobs/jobs";
+import { pollJobsByTools } from "../jobs/jobs";
 import { acknowledgeJob, persistJobResult } from "../jobs/job-results";
 import { editClusterDetails } from "../management";
 import { packer } from "../packer";
-import { upsertServiceDefinition } from "../service-definitions";
 import { createOwner } from "../test/util";
 import { verify } from "./custom";
+import { upsertToolDefinition } from "../tools";
 
 describe("custom auth verification", () => {
   let owner: Awaited<ReturnType<typeof createOwner>>;
@@ -27,31 +27,23 @@ describe("custom auth verification", () => {
     });
 
     // Register the auth service and function
-    await upsertServiceDefinition({
-      service: mockAuthService,
-      definition: {
-        name: mockAuthService,
-        functions: [
-          {
-            name: mockAuthFunction,
-            schema: JSON.stringify({
-              type: "object",
-              properties: {
-                token: { type: "string" },
-              },
-              required: ["token"],
-            }),
-          },
-        ],
-      },
-      owner,
+    await upsertToolDefinition({
+      name: mockAuthFunction,
+      schema: JSON.stringify({
+        type: "object",
+        properties: {
+          token: { type: "string" },
+        },
+        required: ["token"],
+      }),
+      clusterId: owner.clusterId,
     });
 
     authHandler = setInterval(async () => {
-      const nextJobId = await pollJobs({
+      const nextJobId = await pollJobsByTools({
         clusterId: owner.clusterId,
         machineId: "test-machine",
-        service: mockAuthService,
+        tools: ['verifyAuth'],
         limit: 10,
       });
 

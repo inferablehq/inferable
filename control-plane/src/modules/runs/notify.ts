@@ -118,48 +118,21 @@ export const notifyStatusChange = async ({
     );
   } else if (onStatusChangeDefinition.type === "function") {
 
-    const flags = await flagsmith?.getIdentityFlags(run.clusterId, {
-      clusterId: run.clusterId,
+    const { id } = await jobs.createJobV2({
+      service: onStatusChangeDefinition.function.service,
+      targetFn: onStatusChangeDefinition.function.function,
+      targetArgs: packer.pack(await getRunPayload()),
+      authContext: run.authContext,
+      runContext: run.context,
+      owner: {
+        clusterId: run.clusterId,
+      },
+      runId: getClusterBackgroundRun(run.clusterId),
     });
 
-    const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
-
-    if (toolsV2) {
-      logger.info("Using tools v2 for OnStatusChange")
-
-      const { id } = await jobs.createJobV2({
-        service: onStatusChangeDefinition.function.service,
-        targetFn: onStatusChangeDefinition.function.function,
-        targetArgs: packer.pack(await getRunPayload()),
-        authContext: run.authContext,
-        runContext: run.context,
-        owner: {
-          clusterId: run.clusterId,
-        },
-        runId: getClusterBackgroundRun(run.clusterId),
-      });
-
-      logger.info("Created job with run result", {
-        jobId: id,
-      });
-
-    } else {
-      const { id } = await jobs.createJob({
-        service: onStatusChangeDefinition.function.service,
-        targetFn: onStatusChangeDefinition.function.function,
-        targetArgs: packer.pack(await getRunPayload()),
-        authContext: run.authContext,
-        runContext: run.context,
-        owner: {
-          clusterId: run.clusterId,
-        },
-        runId: getClusterBackgroundRun(run.clusterId),
-      });
-
-      logger.info("Created job with run result", {
-        jobId: id,
-      });
-    }
+    logger.info("Created job with run result", {
+      jobId: id,
+    });
 
   } else if (onStatusChangeDefinition.type === "workflow") {
     const { jobId } = await resumeWorkflowExecution({

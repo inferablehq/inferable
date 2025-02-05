@@ -4,10 +4,9 @@ import { BadRequestError } from "../../utilities/errors";
 import { acknowledgeJob, getJob, persistJobResult } from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../packer";
-import { deleteServiceDefinition, upsertServiceDefinition } from "../service-definitions";
-import { valtownIntegration } from "./constants";
 import { InstallableIntegration } from "./types";
 import { integrationSchema } from "../contract";
+import { deleteToolDefinitionByPrefix, upsertToolDefinition } from "../tools";
 
 // Schema for the /meta endpoint response
 const valtownMetaSchema = z.object({
@@ -109,25 +108,19 @@ const syncValTownService = async ({
 
   const meta = await fetchValTownMeta({ endpoint, token });
 
-  await deleteServiceDefinition({
-    service: valtownIntegration,
-    owner: { clusterId },
+  await deleteToolDefinitionByPrefix({
+    prefix: "valtown_",
+    clusterId,
   });
 
-  await upsertServiceDefinition({
-    type: "permanent",
-    service: valtownIntegration,
-    definition: {
-      name: valtownIntegration,
-      description: meta.description,
-      functions: meta.functions.map(fn => ({
-        name: fn.name,
-        description: fn.description,
-        schema: JSON.stringify(fn.input),
-      })),
-    },
-    owner: { clusterId },
-  });
+  meta.functions.forEach((fn) => {
+    upsertToolDefinition({
+      name: `valtown_${fn.name}`,
+      clusterId,
+      description: fn.description,
+      schema: JSON.stringify(fn.input),
+    })
+  })
 };
 
 const unsyncValTownService = async ({
@@ -135,9 +128,9 @@ const unsyncValTownService = async ({
 }: {
   clusterId: string;
 }) => {
-  await deleteServiceDefinition({
-    service: "valtown",
-    owner: { clusterId },
+  await deleteToolDefinitionByPrefix({
+    prefix: "valtown_",
+    clusterId,
   });
 };
 

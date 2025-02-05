@@ -2,31 +2,19 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getWaitingJobIds } from "../";
 import { env } from "../../../utilities/env";
-import { AgentError, NotFoundError } from "../../../utilities/errors";
+import { AgentError } from "../../../utilities/errors";
 import { getClusterContextText } from "../../cluster";
 import { onStatusChangeSchema } from "../../contract";
 import { db, runs } from "../../data";
 import { embedSearchQuery } from "../../embeddings/embeddings";
-import { flagsmith } from "../../flagsmith";
-import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
 import { ChatIdentifiers } from "../../models/routing";
 import { logger } from "../../observability/logger";
-import {
-  embeddableServiceFunction,
-  getServiceDefinitions,
-  ServiceDefinition,
-  ServiceDefinitionFunction,
-  serviceFunctionEmbeddingId,
-} from "../../service-definitions";
 import { getRunMessages, insertRunMessage } from "../messages";
 import { notifyNewMessage, notifyStatusChange } from "../notify";
 import { generateTitle } from "../summarization";
 import { createRunGraph } from "./agent";
-import { mostRelevantKMeansCluster } from "./nodes/tool-parser";
-import { AgentTool } from "./tool";
 import { findRelevantTools } from "./tool-search";
-import { buildAbstractServiceFunctionTool, buildServiceFunctionTool, buildTool } from "./tools/functions";
-import { buildMockFunctionTool } from "./tools/mock-function";
+import { buildTool } from "./tools/functions";
 import { availableStdlib } from "./tools/stdlib";
 import { availableTools, getToolDefinition } from "../../tools";
 
@@ -54,22 +42,17 @@ export const processRun = async (
   tags?: Record<string, string>,
   mockModelResponses?: string[],
   // Deprecated, to be removed once all SDKs are updated
-  toolsV2?: boolean,
 ) => {
   logger.info("Processing Run");
 
   // Parallelize fetching additional context and service definitions
   const [
     additionalContext,
-    serviceDefinitions,
-    v2ToolNames,
+    toolNames,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _updateResult,
   ] = await Promise.all([
     buildAdditionalContext(run),
-    getServiceDefinitions({
-      clusterId: run.clusterId,
-    }),
     availableTools({ clusterId: run.clusterId }),
     db.update(runs).set({ status: "running", failure_reason: "" }).where(eq(runs.id, run.id)),
   ]);
@@ -79,28 +62,7 @@ export const processRun = async (
 
   allAvailableTools.push(...attachedFunctions);
 
-  if (toolsV2) {
-    allAvailableTools.push(...v2ToolNames);
-    // Deprecated, to be removed once all SDKs are updated
-  } else {
-    serviceDefinitions.flatMap((service: { service: string; definition: ServiceDefinition }) =>
-      (service.definition?.functions ?? []).forEach((f: ServiceDefinitionFunction) => {
-        // Do not attach additional tools if `attachedFunctions` is provided
-        if (attachedFunctions.length > 0 || f.config?.private) {
-          return;
-        }
-
-        allAvailableTools.push(
-          serviceFunctionEmbeddingId({
-            serviceName: service.definition.name,
-            functionName: f.name,
-          })
-        );
-      })
-    );
-  }
-
-  const mockToolsMap: Record<string, AgentTool> = await buildMockTools(run);
+  allAvailableTools.push(...toolNames);
 
   if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
     //https://github.com/inferablehq/inferable/blob/main/load-tests/script.js
@@ -137,57 +99,30 @@ export const processRun = async (
         throw new Error("Can not return tool without call ID");
       }
 
-      const mockTool = mockToolsMap[toolCall.toolName];
-
-      if (mockTool) {
-        return mockTool;
-      }
-
       const internalTool = availableStdlib()[toolCall.toolName];
 
       if (internalTool) {
         return internalTool;
       }
 
-      if (toolsV2) {
-        const tool = await getToolDefinition({
-          name: toolCall.toolName,
-          clusterId: run.clusterId,
-        });
+      const tool = await getToolDefinition({
+        name: toolCall.toolName,
+        clusterId: run.clusterId,
+      });
 
-        if (!tool) {
-          throw new AgentError(`Definition for tool not found: ${toolCall.toolName}`);
-        }
-
-        return buildTool({
-          name: toolCall.toolName,
-          toolCallId: toolCall.id!,
-          run: run,
-          schema: tool.schema ?? undefined,
-          description: tool.description ?? undefined,
-        })
-      // Deprecated, to be removed once all SDKs are updated
-      } else {
-        const serviceFunctionDetails = await embeddableServiceFunction.getEntity(
-          run.clusterId,
-          "service-function",
-          toolCall.toolName
-        );
-
-        if (serviceFunctionDetails) {
-          return buildServiceFunctionTool({
-            ...serviceFunctionDetails,
-            schema: serviceFunctionDetails.schema,
-            run: run,
-            toolCallId: toolCall.id!,
-          });
-        }
+      if (!tool) {
+        throw new AgentError(`Definition for tool not found: ${toolCall.toolName}`);
       }
 
-
-      throw new NotFoundError(`Tool not found: ${toolCall.toolName}`);
+      return buildTool({
+        name: toolCall.toolName,
+        toolCallId: toolCall.id!,
+        run: run,
+        schema: tool.schema ?? undefined,
+        description: tool.description ?? undefined,
+      })
     },
-    findRelevantTools: (state) => findRelevantTools(state, toolsV2),
+    findRelevantTools: (state) => findRelevantTools(state),
     postStepSave: async state => {
       logger.debug("Saving run state", {
         runId: run.id,
@@ -345,107 +280,6 @@ export const formatJobsContext = (
   return `<previous_jobs status="${status}">\n${jobEntries}\n</previous_jobs>`;
 };
 
-async function findRelatedFunctionTools(
-  run: {
-    id: string;
-    clusterId: string;
-    modelIdentifier: ChatIdentifiers | null;
-    resultSchema: unknown | null;
-    debug: boolean;
-  },
-  search: string
-) {
-  const flags = await flagsmith?.getIdentityFlags(run.clusterId, {
-    clusterId: run.clusterId,
-  });
-
-  const useKmeans = flags?.isFeatureEnabled("use_kmeans_clustering");
-
-  const relatedToolsSearchResults = search
-    ? await embeddableServiceFunction.findSimilarEntities(
-        run.clusterId,
-        "service-function",
-        search,
-        50 // limit to 50 results
-      )
-    : [];
-
-  let relatedTools = relatedToolsSearchResults;
-
-  if (useKmeans && relatedToolsSearchResults?.length > 30) {
-    logger.info("Using kmeans clustering for related tool search");
-    relatedTools = mostRelevantKMeansCluster(relatedToolsSearchResults);
-  }
-
-  const toolContexts = await Promise.all(
-    relatedTools.map(async toolDetails => {
-      const [resolvedJobs, rejectedJobs] = await Promise.all([
-        getLatestJobsResultedByFunctionName({
-          clusterId: run.clusterId,
-          service: toolDetails.serviceName,
-          functionName: toolDetails.functionName,
-          limit: 3,
-          resultType: "resolution",
-        }).then(jobs => {
-          return jobs?.map(j => ({
-            targetArgs: anonymize(j.targetArgs),
-            result: anonymize(j.result),
-          }));
-        }),
-        getLatestJobsResultedByFunctionName({
-          clusterId: run.clusterId,
-          service: toolDetails.serviceName,
-          functionName: toolDetails.functionName,
-          limit: 3,
-          resultType: "rejection",
-        }).then(jobs => {
-          return jobs?.map(j => ({
-            targetArgs: anonymize(j.targetArgs),
-            result: anonymize(j.result),
-          }));
-        }),
-      ]);
-
-      const contextArr: string[] = [];
-
-      const successJobsContext = formatJobsContext(resolvedJobs, "success");
-      if (successJobsContext) {
-        contextArr.push(successJobsContext);
-      }
-
-      const failedJobsContext = formatJobsContext(rejectedJobs, "failed");
-      if (failedJobsContext) {
-        contextArr.push(failedJobsContext);
-      }
-
-      return {
-        serviceName: toolDetails.serviceName,
-        functionName: toolDetails.functionName,
-        toolContext: contextArr.map(c => c.trim()).join("\n\n"),
-      };
-    })
-  );
-
-  const selectedTools = relatedTools.map(toolDetails =>
-    buildAbstractServiceFunctionTool({
-      ...toolDetails,
-      description: [
-        toolDetails.description,
-        toolContexts.find(
-          c =>
-            c?.serviceName === toolDetails.serviceName &&
-            c?.functionName === toolDetails.functionName
-        )?.toolContext,
-      ]
-        .filter(Boolean)
-        .join("\n\n"),
-      schema: toolDetails.schema,
-    })
-  );
-
-  return selectedTools;
-}
-
 const buildAdditionalContext = async (run: {
   id: string;
   clusterId: string;
@@ -458,90 +292,6 @@ const buildAdditionalContext = async (run: {
   run.systemPrompt && (context += `\n${run.systemPrompt}`);
 
   return context;
-};
-
-// TODO: Update to use tools rather than services
-export const buildMockTools = async (run: {
-  id: string;
-  clusterId: string;
-  testMocks: Record<string, { output: Record<string, unknown> }> | null;
-  test: boolean;
-}) => {
-  const mocks: Record<string, AgentTool> = {};
-  if (!run.testMocks || Object.keys(run.testMocks).length === 0) {
-    return mocks;
-  }
-
-  if (!run.test) {
-    logger.warn("Run is not marked as test enabled but contains mocks. Mocks will be ignored.");
-    return mocks;
-  }
-
-  const serviceDefinitions = await getServiceDefinitions({
-    clusterId: run.clusterId,
-  });
-
-  for (const [key, value] of Object.entries(run.testMocks)) {
-    const [serviceName, functionName] = key.split("_");
-    if (!serviceName || !functionName) {
-      logger.warn("Invalid mock key", {
-        key,
-      });
-      continue;
-    }
-
-    const mockResult = value.output;
-    if (!mockResult) {
-      logger.warn("Invalid mock output", {
-        key,
-        value,
-      });
-      continue;
-    }
-
-    const serviceDefinition = serviceDefinitions.find(sd => sd.service === serviceName);
-
-    if (!serviceDefinition) {
-      logger.warn("Service definition not found for mock. Mocks must refer to existing services.", {
-        key,
-        serviceName,
-      });
-      continue;
-    }
-
-    const functionDefinition = serviceDefinition.definition.functions?.find(
-      f => f.name === functionName
-    );
-
-    if (!functionDefinition) {
-      logger.warn(
-        "Function definition not found for mock. Mocks must refer to existing functions.",
-        {
-          key,
-          serviceName,
-          functionName,
-        }
-      );
-      continue;
-    }
-
-    mocks[key] = buildMockFunctionTool({
-      functionName,
-      serviceName,
-      description: functionDefinition.description,
-      schema: functionDefinition.schema,
-      mockResult,
-    });
-  }
-
-  const mockKeys = Object.keys(mocks);
-  if (mockKeys.length > 0) {
-    logger.info("Built mock tools", {
-      mockKeys,
-    });
-  }
-
-  return mocks;
 };
 
 export const generateRunName = async ({

@@ -2,7 +2,6 @@ import { z } from "zod";
 import * as jobs from "../jobs/jobs";
 import { packer } from "../packer";
 import { getClusterBackgroundRun } from "../runs";
-import { getWorkflowServices } from "../service-definitions";
 import { BadRequestError, NotFoundError } from "../../utilities/errors";
 import { db, workflowExecutions } from "../data";
 import { and, eq } from "drizzle-orm";
@@ -10,13 +9,11 @@ import { getActivityByJobId, getActivityForTimeline } from "../observability/eve
 import { getRunsByTag } from "../runs/tags";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
-import { flagsmith } from "../flagsmith";
 
 export const createWorkflowExecution = async (
   clusterId: string,
   workflowName: string,
   input: unknown,
-  toolsV2?: boolean
 ) => {
   const parsed = z
     .object({
@@ -29,64 +26,33 @@ export const createWorkflowExecution = async (
     throw new Error("Invalid input");
   }
 
-  let job: Awaited<ReturnType<typeof jobs.createJob>>;
-  let version: number;
+  const tools = await getWorkflowTools({ clusterId, workflowName });
 
-  if (toolsV2) {
-    const tools = await getWorkflowTools({ clusterId, workflowName });
-
-    if (tools.length === 0) {
-      throw new BadRequestError(
-        `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
-      );
-    }
-
-    const latest = tools.reduce((latest, service) => {
-      if (service.version > latest.version) {
-        return service;
-      }
-
-      return latest;
-    }, tools[0]);
-
-    version = latest.version;
-
-    logger.info(`Using workflow tool ${latest.name} for ${workflowName}`);
-
-    job = await jobs.createJobV2({
-      owner: { clusterId },
-      service: "v2",
-      targetFn: latest.name,
-      targetArgs: packer.pack(parsed.data),
-      runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
-    });
-  } else {
-    const services = await getWorkflowServices({ clusterId, workflowName });
-
-    if (services.length === 0) {
-      throw new BadRequestError(
-        `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
-      );
-    }
-
-    const latest = services.reduce((latest, service) => {
-      if (service.version > latest.version) {
-        return service;
-      }
-
-      return latest;
-    }, services[0]);
-
-    version = latest.version;
-
-    job = await jobs.createJob({
-      owner: { clusterId },
-      service: latest.service,
-      targetFn: "handler",
-      targetArgs: packer.pack(parsed.data),
-      runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
-    });
+  if (tools.length === 0) {
+    throw new BadRequestError(
+      `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
+    );
   }
+
+  const latest = tools.reduce((latest, service) => {
+    if (service.version > latest.version) {
+      return service;
+    }
+
+    return latest;
+  }, tools[0]);
+
+  const version = latest.version;
+
+  logger.info(`Using workflow tool ${latest.name} for ${workflowName}`);
+
+  const job = await jobs.createJobV2({
+    owner: { clusterId },
+    service: "v2",
+    targetFn: latest.name,
+    targetArgs: packer.pack(parsed.data),
+    runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
+  });
 
   await db
     .insert(workflowExecutions)
@@ -137,46 +103,19 @@ export const resumeWorkflowExecution = async ({
     );
   }
 
-  const flags = await flagsmith?.getIdentityFlags(clusterId, {
-    clusterId: clusterId,
+  // create a new job for the workflow execution
+  // and feed in the existing job's args
+  const job = await jobs.createJobV2({
+    owner: {
+      clusterId,
+    },
+    service: existingJob.service,
+    targetFn: existingJob.targetFn,
+    targetArgs: existingJob.targetArgs,
+    runId: existingJob.runId,
   });
 
-  const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
-
-  let jobId: string;
-  if (toolsV2) {
-    logger.info("Using tools V2 for resuming workflow execution");
-    // create a new job for the workflow execution
-    // and feed in the existing job's args
-    const job = await jobs.createJobV2({
-      owner: {
-        clusterId,
-      },
-      service: existingJob.service,
-      targetFn: existingJob.targetFn,
-      targetArgs: existingJob.targetArgs,
-      runId: existingJob.runId,
-    });
-
-    jobId = job.id;
-  } else {
-    // create a new job for the workflow execution
-    // and feed in the existing job's args
-    const job = await jobs.createJob({
-      owner: {
-        clusterId,
-      },
-      service: existingJob.service,
-      targetFn: existingJob.targetFn,
-      targetArgs: existingJob.targetArgs,
-      runId: existingJob.runId,
-    });
-
-    jobId = job.id;
-  }
-
-
-  return { jobId };
+  return { jobId: job.id };
 };
 
 export const getWorkflowExecutionEvents = async ({
