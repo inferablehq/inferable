@@ -335,6 +335,9 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         name: `workflows.${this.name}.${version}`,
         schema: {
           input: this.inputSchema,
+        },
+        config: {
+          private: true
         }
       });
     });
