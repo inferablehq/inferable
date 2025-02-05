@@ -5,6 +5,7 @@ import type { JSONSchema4Type } from "json-schema";
 import type { JsonSchema7Type } from "zod-to-json-schema";
 import { logger } from "../observability/logger";
 import { z } from "zod";
+import { InvalidServiceRegistrationError } from "../../utilities/errors";
 
 type ValidationError = {
   path: string;
@@ -22,24 +23,24 @@ export type JsonSchemaInput = {
 
 export function validateToolName(name: string) {
   if (!name) {
-    throw new Error("Tool name is required");
+    throw new InvalidServiceRegistrationError("Tool name is required");
   }
 
-  // must be 30 characters or less
-  if (name.length > 30) {
-    throw new Error("Tool name must be 50 characters or less");
+  // must be 50 characters or less
+  if (name.length > 50) {
+    throw new InvalidServiceRegistrationError("Tool name must be 50 characters or less");
   }
 
   // allows alphanumeric, and dots
   if (!/^[a-zA-Z0-9.]+$/.test(name)) {
-    throw new Error(`Tool name must be alphanumeric and can contain dots, got ${name}`);
+    throw new InvalidServiceRegistrationError(`Tool name must be alphanumeric and can contain dots, got ${name}`);
   }
 }
 
 export const validatePropertyName = (name: string) => {
   const ALLOWED_PROPERTY_NAME_CHARACTERS = /^[a-zA-Z0-9_]+$/;
   if (!ALLOWED_PROPERTY_NAME_CHARACTERS.test(name)) {
-    throw new Error(
+    throw new InvalidServiceRegistrationError(
       `Property name must only contain letters, numbers and underscore '_'. Got: ${name}`,
     );
   }
@@ -47,7 +48,7 @@ export const validatePropertyName = (name: string) => {
 
 export const validateToolDescription = (description?: string) => {
   if (description === "") {
-    throw new Error("Tool description must not be empty");
+    throw new InvalidServiceRegistrationError("Tool description must not be empty");
   }
 };
 

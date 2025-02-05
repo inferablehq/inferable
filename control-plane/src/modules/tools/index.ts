@@ -5,7 +5,7 @@ import { ToolConfigSchema } from "../contract";
 import { z } from "zod";
 import { and, desc, cosineDistance, eq, inArray, lte, sql } from "drizzle-orm";
 import { buildModel } from "../models";
-import { InvalidServiceRegistrationError } from "../../utilities/errors";
+import { InvalidServiceRegistrationError as InvalidToolRegistrationError } from "../../utilities/errors";
 import jsonpath from "jsonpath";
 import { logger } from "../observability/logger";
 import { embedSearchQuery } from "../embeddings/embeddings";
@@ -136,12 +136,12 @@ export async function upsertToolDefinition({
   validateToolDescription(description);
 
   if (!schema) {
-    throw new InvalidServiceRegistrationError("Schema is required");
+    throw new InvalidToolRegistrationError("Schema is required");
   }
 
   const errors = validateToolSchema(JSON.parse(schema));
   if (errors.length > 0) {
-    throw new InvalidServiceRegistrationError(
+    throw new InvalidToolRegistrationError(
       `${name} schema invalid: ${JSON.stringify(errors)}`
     );
   }
@@ -150,7 +150,7 @@ export async function upsertToolDefinition({
     try {
       jsonpath.parse(config.cache.keyPath);
     } catch {
-      throw new InvalidServiceRegistrationError(
+      throw new InvalidToolRegistrationError(
         `${name} cache.keyPath is invalid`,
         "https://docs.inferable.ai/pages/functions#config-cache"
       );

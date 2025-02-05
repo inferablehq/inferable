@@ -59,6 +59,10 @@ export const createJobV2 = async (params: {
     clusterId: params.owner.clusterId,
   });
 
+  if (!definition) {
+    throw new NotFoundError(`Tool ${params.targetFn} not found`);
+  }
+
   const { config, schema } = definition;
 
   // sometimes the schema is not available immediately after the service is

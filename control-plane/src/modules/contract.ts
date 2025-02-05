@@ -581,6 +581,16 @@ export const definition = {
           })
         )
         .optional(),
+      tools: z
+        .array(
+          z.object({
+            name: z.string(),
+            description: z.string().optional(),
+            schema: z.string().optional(),
+            config: ToolConfigSchema.optional(),
+          })
+        )
+        .optional(),
     }),
     responses: {
       200: z.object({

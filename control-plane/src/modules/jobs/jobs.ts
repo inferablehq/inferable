@@ -256,7 +256,6 @@ const hasPendingJobs = await data.db
   )
   .limit(1)
   .then(r => Number(r[0]?.count || 0) > 0)
-  .catch(() => true);
 
   if (hasPendingJobs) {
     return;
@@ -323,6 +322,10 @@ export const pollJobsByTools = async ({
   limit: number;
   timeout?: number;
 }) => {
+  if (tools.length === 0) {
+    return [];
+  }
+
   await waitForPendingJobsByTools({ clusterId, timeout, start: Date.now(), tools });
 
   type Result = {
@@ -347,7 +350,7 @@ export const pollJobsByTools = async ({
          WHERE
            status = 'pending'
            AND cluster_id = ${clusterId}
-           AND target_fn IN (${tools.map(t => `'${t}'`).join(",")})
+           AND target_fn IN (${sql.join(tools, sql`, `)})
          LIMIT ${limit}
          FOR UPDATE SKIP LOCKED
        )

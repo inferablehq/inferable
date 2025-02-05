@@ -60,13 +60,21 @@ export const router = initServer().router(contract, {
       throw new BadRequestError("Request does not contain machine ID header");
     }
 
-    const { service, functions } = request.body;
+    const { service } = request.body;
+    const tools = request.body.tools ?? request.body.functions;
+
+    if (request.body.functions) {
+      logger.info("Machine is polling using deprecated functions field", {
+        clusterId: machine.clusterId,
+        machineId,
+      })
+    }
 
     if (service && ILLEGAL_SERVICE_NAMES.includes(service)) {
       throw new BadRequestError(`Service name ${service} is reserved and cannot be used.`);
     }
 
-    const derefedFns = functions?.map(fn => {
+    const derefedFns = tools?.map(fn => {
       const schema = fn.schema ? safeParse(fn.schema) : { success: true, data: undefined };
 
       if (!schema.success) {
@@ -100,14 +108,14 @@ export const router = initServer().router(contract, {
           },
           owner: machine,
         }),
-      derefedFns && derefedFns?.map(fn =>
+      derefedFns && Promise.all(derefedFns?.map(fn =>
         upsertToolDefinition({
           name: fn.name,
           clusterId: machine.clusterId,
           description: fn.description,
           schema: fn.schema,
           config: fn.config,
-        }),
+        })),
       ),
     ]);
 
@@ -572,7 +580,7 @@ export const router = initServer().router(contract, {
     const { function: fn, input, service } = request.body;
     const { waitTime } = request.query;
 
-    const { id } = await jobs.createJob({
+    const { id } = await jobs.createJobV2({
       service: service,
       targetFn: fn,
       targetArgs: packer.pack(input),
