@@ -9,7 +9,6 @@ import { upsertToolDefinition } from "../tools";
 
 describe("custom auth verification", () => {
   let owner: Awaited<ReturnType<typeof createOwner>>;
-  const mockAuthService = "authService";
   const mockAuthFunction = "verifyAuth";
   const mockToken = "test-token";
   const mockAuthResult = { userId: "test-user", roles: ["admin"] };
@@ -23,7 +22,7 @@ describe("custom auth verification", () => {
     await editClusterDetails({
       organizationId: owner.organizationId,
       clusterId: owner.clusterId,
-      handleCustomAuthFunction: `${mockAuthService}_${mockAuthFunction}`,
+      handleCustomAuthFunction: `${mockAuthFunction}`,
     });
 
     // Register the auth service and function

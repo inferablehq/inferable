@@ -26,7 +26,7 @@ describe("processRun", () => {
       id: Math.random().toString(36).substring(2),
       clusterId: owner.clusterId,
       status: "running" as const,
-      attachedFunctions: ["testService_someFunction"],
+      attachedFunctions: ["someFunction"],
       modelIdentifier: null,
       onStatusChange: {
         type: "function" as const,
@@ -81,7 +81,7 @@ describe("processRun", () => {
         done: false,
         invocations: [
           {
-            toolName: "testService_someFunction",
+            toolName: "someFunction",
             input: {},
           },
         ],
@@ -126,7 +126,7 @@ describe("findRelevantTools", () => {
       id: Math.random().toString(36).substring(2),
       clusterId: owner.clusterId,
       status: "running" as const,
-      attachedFunctions: ["testService_someFunction"],
+      attachedFunctions: ["someFunction"],
       modelIdentifier: null,
       resultSchema: null,
       debug: false,
@@ -155,8 +155,8 @@ describe("findRelevantTools", () => {
       allAvailableTools: [],
     });
 
-    expect(tools.map(tool => tool.name)).toContain("testService_someFunction");
-    expect(tools.map(tool => tool.name)).not.toContain("testService_someOtherFunction");
+    expect(tools.map(tool => tool.name)).toContain("someFunction");
+    expect(tools.map(tool => tool.name)).not.toContain("someOtherFunction");
   });
 });
 

@@ -2,11 +2,17 @@ import * as jobs from "../jobs/jobs";
 import { createOwner } from "../test/util";
 import { getClusterBackgroundRun } from "../runs";
 import * as events from "./events";
+import { upsertToolDefinition } from "../tools";
 
-jest.mock("../service-definitions", () => ({
-  ...jest.requireActual("../service-definitions"),
-  parseJobArgs: jest.fn(),
-}));
+
+const mockTargetSchema = JSON.stringify({
+  type: "object",
+  properties: {
+    test: {
+      type: "string",
+    },
+  },
+});
 
 describe("event-aggregation", () => {
   const clusterId = Math.random().toString();
@@ -14,6 +20,18 @@ describe("event-aggregation", () => {
 
   const simulateActivity = async () => {
     await createOwner({
+      clusterId,
+    });
+
+    await upsertToolDefinition({
+      name: "fn1",
+      schema: mockTargetSchema,
+      clusterId,
+    });
+
+    await upsertToolDefinition({
+      name: "fn2",
+      schema: mockTargetSchema,
       clusterId,
     });
 

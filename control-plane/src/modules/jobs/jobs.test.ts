@@ -157,7 +157,7 @@ describe("selfHealCalls", () => {
       schema: mockTargetSchema,
       config: {
         timeoutSeconds: 1,
-        retryCountOnStall: 1,
+        retryCountOnStall: 0,
       },
       clusterId: owner.clusterId,
     });

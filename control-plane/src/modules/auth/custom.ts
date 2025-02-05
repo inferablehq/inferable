@@ -69,16 +69,16 @@ export const verify = async ({
       name: handleCustomAuthFunction,
     });
 
-    const authService = "v2";
-    const authFunction = definition.name;
-
-
     if (!definition) {
       throw new AuthenticationError(
-        `${authFunction} is not registered`,
+        `${handleCustomAuthFunction} is not registered`,
         "https://docs.inferable.ai/pages/custom-auth"
       );
     }
+
+    const authService = "v2";
+    const authFunction = definition.name;
+
 
     const { id } = await jobs.createJobV2({
       service: authService,
