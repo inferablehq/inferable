@@ -7,9 +7,11 @@ import { createCache, hashFromSecret } from "../../utilities/cache";
 import { getClusterDetails } from "../management";
 import { getClusterBackgroundRun } from "../runs";
 import { z } from "zod";
+import { logger } from "../observability/logger";
+import { getToolDefinition } from "../tools";
+import { flagsmith } from "../flagsmith";
 
 const customAuthContextCache = createCache<{
-  service: string;
   status: "pending" | "running" | "success" | "failure" | "stalled";
   result: string | null;
   resultType: jobs.ResultType | null;
@@ -54,99 +56,142 @@ export const verify = async ({
 
   const { handleCustomAuthFunction } = await getClusterDetails({ clusterId });
 
-  const [authService, authFunction] = handleCustomAuthFunction?.split("_") ?? [];
+  if (!handleCustomAuthFunction) {
+    throw new AuthenticationError(
+      "Custom auth is not configured for this cluster",
+      "https://docs.inferable.ai/pages/custom-auth"
+    );
+  }
+
+  const flags = await flagsmith?.getIdentityFlags(clusterId, {
+    clusterId: clusterId,
+  });
+
+  const toolsV2 = flags?.isFeatureEnabled("use_tools_v2");
+
+  if (toolsV2) {
+    logger.info("Using tools v2 for Custom auth processing")
+  }
+
+  let authService: string | undefined;
+  let authFunction: string | undefined;
 
   try {
-    const serviceDefinition = await getServiceDefinition({
-      service: authService,
-      owner: {
-        clusterId: clusterId,
-      },
-    });
-
-    const functionDefinition = serviceDefinition?.functions?.find(f => f.name === authFunction);
-
-    if (!functionDefinition) {
-      throw new AuthenticationError(
-        `${authFunction} is not registered`,
-        "https://docs.inferable.ai/pages/custom-auth"
-      );
-    }
-
-    const { id } = await jobs.createJob({
-      service: authService,
-      targetFn: authFunction,
-      targetArgs: packer.pack({
-        token,
-      }),
-      owner: {
+    if (toolsV2) {
+      const definition = await getToolDefinition({
         clusterId,
-      },
-      runId: getClusterBackgroundRun(clusterId),
-    });
+        name: handleCustomAuthFunction,
+      });
 
-    const result = await getJobStatusSync({
-      jobId: id,
-      owner: { clusterId },
-      ttl: 10_000,
-    });
+      if (!definition) {
+        throw new AuthenticationError(
+          `${authFunction} is not registered`,
+          "https://docs.inferable.ai/pages/custom-auth"
+        );
+      }
 
-    if (result.status == "success" && result.resultType !== "resolution") {
-      throw new AuthenticationError(
-        "Custom auth token is not valid",
-        "https://docs.inferable.ai/pages/custom-auth"
-      );
-    }
+      authService = "v2";
+      authFunction = definition.name;
+    } else {
+      [authService, authFunction] = handleCustomAuthFunction?.split("_") ?? [];
 
-    // This isn't expected
-    if (result.status != "success") {
-      throw new Error(`Failed to call ${authFunction}: ${result.result}`);
-    }
-
-    if (!result.result) {
-      throw new AuthenticationError(
-        `${authService}_${authFunction} did not return a result`,
-        "https://docs.inferable.ai/pages/custom-auth"
-      );
-    }
-
-    const parsed = customAuthResultSchema.safeParse(packer.unpack(result.result));
-
-    if (!parsed.success) {
-      throw new AuthenticationError(
-        `${authService}_${authFunction} returned invalid result object`,
-        "https://docs.inferable.ai/pages/custom-auth"
-      );
-    }
-
-    await customAuthContextCache.set(secretHash, result, 300);
-
-    return parsed.data;
-  } catch (e) {
-    if (e instanceof JobPollTimeoutError) {
-      throw new AuthenticationError(
-        `Call to ${authService}_${authFunction} did not complete in time`,
-        "https://docs.inferable.ai/pages/custom-auth"
-      );
-    }
-
-    // Cache the auth error for 1 minute
-    if (e instanceof AuthenticationError) {
-      await customAuthContextCache.set(
-        secretHash,
-        {
-          service: authService,
-          status: "success",
-          result: packer.pack({
-            error: `Custom auth token is not valid`,
-          }),
-          resultType: "resolution",
+      const serviceDefinition = await getServiceDefinition({
+        service: authService,
+        owner: {
+          clusterId: clusterId,
         },
-        60
-      );
-      throw e;
+      });
+
+      const functionDefinition = serviceDefinition?.functions?.find(f => f.name === authFunction);
+
+      if (!functionDefinition) {
+        throw new AuthenticationError(
+          `${authFunction} is not registered`,
+          "https://docs.inferable.ai/pages/custom-auth"
+        );
+      }
     }
 
+  if (!authService || !authFunction) {
+    throw new AuthenticationError(
+      "Custom auth is not configured",
+      "https://docs.inferable.ai/pages/custom-auth"
+    )
+  }
+
+  const { id } = await jobs.createJob({
+    service: authService,
+    targetFn: authFunction,
+    targetArgs: packer.pack({
+      token,
+    }),
+    owner: {
+      clusterId,
+    },
+    runId: getClusterBackgroundRun(clusterId),
+  });
+
+  const result = await getJobStatusSync({
+    jobId: id,
+    owner: { clusterId },
+    ttl: 10_000,
+  });
+
+  if (result.status == "success" && result.resultType !== "resolution") {
+    throw new AuthenticationError(
+      "Custom auth token is not valid",
+      "https://docs.inferable.ai/pages/custom-auth"
+    );
+  }
+
+  // This isn't expected
+  if (result.status != "success") {
+    throw new Error(`Failed to call ${authFunction}: ${result.result}`);
+  }
+
+  if (!result.result) {
+    throw new AuthenticationError(
+      `${authService}_${authFunction} did not return a result`,
+      "https://docs.inferable.ai/pages/custom-auth"
+    );
+  }
+
+  const parsed = customAuthResultSchema.safeParse(packer.unpack(result.result));
+
+  if (!parsed.success) {
+    throw new AuthenticationError(
+      `${authService}_${authFunction} returned invalid result object`,
+      "https://docs.inferable.ai/pages/custom-auth"
+    );
+  }
+
+  await customAuthContextCache.set(secretHash, result, 300);
+
+  return parsed.data;
+} catch (e) {
+  if (e instanceof JobPollTimeoutError) {
+    throw new AuthenticationError(
+      `Call to ${authService}_${authFunction} did not complete in time`,
+      "https://docs.inferable.ai/pages/custom-auth"
+    );
+  }
+
+  // Cache the auth error for 1 minute
+  if (e instanceof AuthenticationError) {
+    await customAuthContextCache.set(
+      secretHash,
+      {
+        status: "success",
+        result: packer.pack({
+          error: `Custom auth token is not valid`,
+        }),
+        resultType: "resolution",
+      },
+      60
+    );
     throw e;
   }
+
+  throw e;
+}
 };
