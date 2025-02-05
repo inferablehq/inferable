@@ -21,15 +21,13 @@ func TestRegisterFunc(t *testing.T) {
 		APIEndpoint: apiEndpoint,
 		APISecret:   "test-secret",
 	})
-	service, _ := i.RegisterService("TestService1")
-
 	type TestInput struct {
 		A int `json:"a"`
 		B int `json:"b"`
 	}
 
 	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
-	_, err := service.RegisterFunc(Function{
+	err := i.Tools.RegisterFunc(Tool{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
@@ -37,7 +35,7 @@ func TestRegisterFunc(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to register the same function again
-	_, err = service.RegisterFunc(Function{
+	err = i.Tools.RegisterFunc(Tool{
 		Func: testFunc,
 		Name: "TestFunc",
 	})
@@ -45,7 +43,7 @@ func TestRegisterFunc(t *testing.T) {
 
 	// Try to register a function with invalid input
 	invalidFunc := func(a, b int) int { return a + b }
-	_, err = service.RegisterFunc(Function{
+	err = i.Tools.RegisterFunc(Tool{
 		Func: invalidFunc,
 		Name: "InvalidFunc",
 	})
@@ -59,15 +57,13 @@ func TestRegisterFuncWithInlineStruct(t *testing.T) {
 		APIEndpoint: apiEndpoint,
 		APISecret:   "test-secret",
 	})
-	service, _ := i.RegisterService("TestService1")
-
 	testFunc := func(input struct {
 		A int `json:"a"`
 		B int `json:"b"`
 	}, ctx ContextInput) int {
 		return input.A + input.B
 	}
-	_, err := service.RegisterFunc(Function{
+	err := i.Tools.RegisterFunc(Tool{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
@@ -75,7 +71,7 @@ func TestRegisterFuncWithInlineStruct(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to register the same function again
-	_, err = service.RegisterFunc(Function{
+	err = i.Tools.RegisterFunc(Tool{
 		Func: testFunc,
 		Name: "TestFunc",
 	})
@@ -83,7 +79,7 @@ func TestRegisterFuncWithInlineStruct(t *testing.T) {
 
 	// Try to register a function with invalid input
 	invalidFunc := func(a, b int) int { return a + b }
-	_, err = service.RegisterFunc(Function{
+	err = i.Tools.RegisterFunc(Tool{
 		Func: invalidFunc,
 		Name: "InvalidFunc",
 	})
@@ -104,7 +100,6 @@ func TestRegistrationAndConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// Register a service
-	service, err := i.RegisterService("TestService1")
 	require.NoError(t, err)
 
 	// Register a test function
@@ -120,7 +115,7 @@ func TestRegistrationAndConfig(t *testing.T) {
 
 	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
 
-	_, err = service.RegisterFunc(Function{
+	err = i.Tools.RegisterFunc(Tool{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
@@ -129,7 +124,7 @@ func TestRegistrationAndConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// Call Listen to trigger registration
-	err = service.Start()
+	err = i.Tools.Listen()
 	require.NoError(t, err)
 }
 
@@ -146,10 +141,6 @@ func TestServiceStartAndReceiveMessage(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Register a service
-	service, err := i.RegisterService("TestServiceSuccess")
-	require.NoError(t, err)
-
 	// Register a test function
 	type TestInput struct {
 		Message string `json:"message"`
@@ -157,7 +148,7 @@ func TestServiceStartAndReceiveMessage(t *testing.T) {
 
 	testFunc := func(input TestInput, ctx ContextInput) string { return "Received: " + input.Message }
 
-	_, err = service.RegisterFunc(Function{
+	err = i.Tools.RegisterFunc(Tool{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
@@ -165,17 +156,17 @@ func TestServiceStartAndReceiveMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start the service
-	err = service.Start()
+	err = i.Tools.Listen()
 	require.NoError(t, err)
 
 	// Ensure the service is stopped at the end of the test
-	defer service.Stop()
+	defer i.Tools.Unlisten()
 
 	// Use executeJobSync to invoke the function
 	testMessage := "Hello, SQS!"
 	executeCallUrl := fmt.Sprintf("%s/clusters/%s/jobs?waitTime=20", apiEndpoint, clusterId)
 	payload := map[string]interface{}{
-		"service":  "TestServiceSuccess",
+		"service":  "v2",
 		"function": "TestFunc",
 		"input": map[string]string{
 			"message": testMessage,
@@ -221,10 +212,6 @@ func TestServiceStartAndReceiveFailingMessage(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Register a service
-	service, err := i.RegisterService("TestServiceFail")
-	require.NoError(t, err)
-
 	// Register a test function
 	type TestInput struct {
 		Message string `json:"message"`
@@ -233,7 +220,7 @@ func TestServiceStartAndReceiveFailingMessage(t *testing.T) {
 	// Purposfuly failing function
 	testFailingFunc := func(input TestInput, ctx ContextInput) (*string, error) { return nil, fmt.Errorf("test error") }
 
-	_, err = service.RegisterFunc(Function{
+	err = i.Tools.RegisterFunc(Tool{
 		Func:        testFailingFunc,
 		Name:        "FailingFunc",
 		Description: "Test function",
@@ -241,11 +228,11 @@ func TestServiceStartAndReceiveFailingMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start the service
-	err = service.Start()
+	err = i.Tools.Listen()
 	require.NoError(t, err)
 
 	// Ensure the service is stopped at the end of the test
-	defer service.Stop()
+	defer i.Tools.Unlisten()
 
 	// Use executeJobSync to invoke the function
 	testMessage := "Hello, SQS!"

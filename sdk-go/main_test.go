@@ -1,9 +1,7 @@
 package inferable
 
 import (
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/inferablehq/inferable/sdk-go/internal/util"
 )
@@ -39,12 +37,7 @@ func TestInferableFunctions(t *testing.T) {
 		t.Fatalf("Error creating Inferable instance: %v", err)
 	}
 
-	service, err := inferableInstance.RegisterService("string_operations")
-	if err != nil {
-		t.Fatalf("Error registering service: %v", err)
-	}
-
-	_, err = service.RegisterFunc(Function{
+	err = inferableInstance.Tools.RegisterFunc(Tool{
 		Func:        echo,
 		Description: "Echoes the input string",
 		Name:        "echo",
@@ -53,7 +46,7 @@ func TestInferableFunctions(t *testing.T) {
 		t.Fatalf("Error registering echo function: %v", err)
 	}
 
-	_, err = service.RegisterFunc(Function{
+	err = inferableInstance.Tools.RegisterFunc(Tool{
 		Func:        reverse,
 		Description: "Reverses the input string",
 		Name:        "reverse",
@@ -67,7 +60,7 @@ func TestInferableFunctions(t *testing.T) {
 	}
 	t.Run("Echo Function", func(t *testing.T) {
 		testInput := EchoInput{Input: "Hello, Inferable!"}
-		result, err := inferableInstance.callFunc("string_operations", "echo", testInput, ContextInput{})
+		result, err := inferableInstance.callFunc("echo", testInput, ContextInput{})
 		if err != nil {
 			t.Fatalf("Error calling echo function: %v", err)
 		}
@@ -84,7 +77,7 @@ func TestInferableFunctions(t *testing.T) {
 
 	t.Run("Reverse Function", func(t *testing.T) {
 		testInput := ReverseInput{Input: "Hello, Inferable!"}
-		result, err := inferableInstance.callFunc("string_operations", "reverse", testInput, ContextInput{})
+		result, err := inferableInstance.callFunc("reverse", testInput, ContextInput{})
 		if err != nil {
 			t.Fatalf("Error calling reverse function: %v", err)
 		}
@@ -142,84 +135,4 @@ func TestInferableFunctions(t *testing.T) {
 			t.Logf("Machine ID is consistent: %s", id1)
 		}
 	})
-}
-
-// This should match the example in the readme
-func TestInferableE2E(t *testing.T) {
-	machineSecret, _, _, apiEndpoint := util.GetTestVars()
-
-	client, err := New(InferableOptions{
-		APIEndpoint: apiEndpoint,
-		APISecret:   machineSecret,
-	})
-
-	if err != nil {
-		t.Fatalf("Error creating Inferable instance: %v", err)
-	}
-
-	didCallSayHello := false
-	didCallResultHandler := false
-
-	sayHello, err := client.Default.RegisterFunc(Function{
-		Func: func(input EchoInput, ctx ContextInput) string {
-			didCallSayHello = true
-			return "Hello " + input.Input
-		},
-		Name:        "SayHello",
-		Description: "A simple greeting function",
-	})
-
-	if err != nil {
-		t.Fatalf("Error registering SayHello function: %v", err)
-	}
-
-	resultHandler, err := client.Default.RegisterFunc(Function{
-		Func: func(input OnStatusChangeInput, ctx ContextInput) string {
-			didCallResultHandler = true
-			fmt.Println("OnStatusChange: ", input)
-			return ""
-		},
-		Name: "ResultHandler",
-	})
-
-	if err != nil {
-		t.Fatalf("Error registering ResultHandler function: %v", err)
-	}
-
-	client.Default.Start()
-
-	run, err := client.CreateRun(CreateRunInput{
-		InitialPrompt: "Say hello to John Smith",
-		AttachedFunctions: []*FunctionReference{
-			sayHello,
-		},
-		OnStatusChange: &OnStatusChange{
-			Function: resultHandler,
-		},
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Run started: ", run.ID)
-	result, err := run.Poll(nil)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("Run Result: ", result)
-
-	time.Sleep(1000 * time.Millisecond)
-
-	if result == nil {
-		t.Error("Result is nil")
-	}
-
-	if !didCallSayHello {
-		t.Error("SayHello function was not called")
-	}
-
-	if !didCallResultHandler {
-		t.Error("OnStatusChange function was not called")
-	}
 }

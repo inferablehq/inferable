@@ -20,7 +20,7 @@ const (
 	DefaultRetryAfter          = 10
 )
 
-type Function struct {
+type Tool struct {
 	Name        string
 	Description string
 	schema      interface{}
@@ -34,9 +34,8 @@ type ContextInput struct {
 	Approved    bool        `json:"approved"`
 }
 
-type service struct {
-	Name       string
-	Functions  map[string]Function
+type pollingAgent struct {
+	Tools      map[string]Tool
 	inferable  *Inferable
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -62,18 +61,10 @@ type callResult struct {
 	Meta       callResultMeta `json:"meta"`
 }
 
-type FunctionReference struct {
-	Service  string `json:"service"`
-	Function string `json:"function"`
-}
-
-// Registers a function against the service.
+// Registers a Tool against
 //
 // Parameters:
-// - input: The function definition.
-//
-// Returns:
-// A function reference.
+// - input: The Tool definition.
 //
 // Example:
 //
@@ -82,10 +73,8 @@ type FunctionReference struct {
 //	    ApiSecret: "API_SECRET",
 //	})
 //
-//	// Define and register the service
-//	service := client.Service("MyService")
 //
-//	sayHello, err := service.RegisterFunc(Function{
+//	sayHello, err := client.Tools.Register(Tool{
 //	  Func:        func(input EchoInput) string {
 //	    didCallSayHello = true
 //	    return "Hello " + input.Input
@@ -99,25 +88,25 @@ type FunctionReference struct {
 //
 //	// Stop the service on shutdown
 //	defer service.Stop()
-func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
+func (s *pollingAgent) RegisterFunc(fn Tool) error {
 	if s.isPolling() {
-		return nil, fmt.Errorf("functions must be registered before starting the service")
+		return fmt.Errorf("tool must be registered before starting the service")
 	}
 
-	if _, exists := s.Functions[fn.Name]; exists {
-		return nil, fmt.Errorf("function with name '%s' already registered for service '%s'", fn.Name, s.Name)
+	if _, exists := s.Tools[fn.Name]; exists {
+		return fmt.Errorf("tool with name '%s' already registered", fn.Name)
 	}
 
 	// Validate that the function has exactly one argument and it's a struct
 	fnType := reflect.TypeOf(fn.Func)
 	if fnType.NumIn() != 2 {
-		return nil, fmt.Errorf("function '%s' must have exactly two arguments", fn.Name)
+		return fmt.Errorf("tool '%s' must have exactly two arguments", fn.Name)
 	}
 	arg1Type := fnType.In(0)
 	arg2Type := fnType.In(1)
 
 	if arg2Type.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("function '%s' second argument must be a struct (ContextInput)", fn.Name)
+		return fmt.Errorf("tool '%s' second argument must be a struct (ContextInput)", fn.Name)
 	}
 
 	// Set the argument type to the referenced type
@@ -126,7 +115,7 @@ func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 	}
 
 	if arg1Type.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("function '%s' first argument must be a struct or a pointer to a struct", fn.Name)
+		return fmt.Errorf("tool '%s' first argument must be a struct or a pointer to a struct", fn.Name)
 	}
 
 	// Get the schema for the input struct
@@ -134,7 +123,7 @@ func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 	schema := reflector.Reflect(reflect.New(arg1Type).Interface())
 
 	if schema == nil {
-		return nil, fmt.Errorf("failed to get schema for function '%s'", fn.Name)
+		return fmt.Errorf("failed to get schema for tool '%s'", fn.Name)
 	}
 
 	// Extract the relevant part of the schema
@@ -149,22 +138,22 @@ func (s *service) RegisterFunc(fn Function) (*FunctionReference, error) {
 
 	defsString, err := json.Marshal(defs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal schema for function '%s': %v", fn.Name, err)
+		return fmt.Errorf("failed to marshal schema for tool '%s': %v", fn.Name, err)
 	}
 
 	if strings.Contains(string(defsString), "\"$ref\":\"#/$defs") {
-		return nil, fmt.Errorf("schema for function '%s' contains a $ref to an external definition. this is currently not supported. see https://go.inferable.ai/go-schema-limitation for details", fn.Name)
+		return fmt.Errorf("schema for tool '%s' contains a $ref to an external definition. this is currently not supported. see https://go.inferable.ai/go-schema-limitation for details", fn.Name)
 	}
 
 	defs.AdditionalProperties = jsonschema.FalseSchema
 	fn.schema = defs
 
-	s.Functions[fn.Name] = fn
-	return &FunctionReference{Service: s.Name, Function: fn.Name}, nil
+	s.Tools[fn.Name] = fn
+	return nil
 }
 
-// Start initializes the service, registers the machine, and starts polling for messages
-func (s *service) Start() error {
+// Start polling for jobs, registers the machine, and starts polling for messages
+func (s *pollingAgent) Listen() error {
 	_, err := s.inferable.registerMachine(s)
 	if err != nil {
 		return fmt.Errorf("failed to register machine: %v", err)
@@ -188,8 +177,8 @@ func (s *service) Start() error {
 					failureCount++
 
 					if failureCount > MaxConsecutivePollFailures {
-						log.Printf("Too many consecutive poll failures, exiting service: %s", s.Name)
-						s.Stop()
+						log.Printf("Too many consecutive poll failures, exiting service")
+						s.Unlisten()
 					}
 
 					log.Printf("Failed to poll: %v", err)
@@ -198,19 +187,19 @@ func (s *service) Start() error {
 		}
 	}()
 
-	log.Printf("Service '%s' started and polling for messages", s.Name)
+	log.Printf("started and polling for messages")
 	return nil
 }
 
 // Stop stops the service and cancels the polling
-func (s *service) Stop() {
+func (s *pollingAgent) Unlisten() {
 	if s.cancel != nil {
 		s.cancel()
-		log.Printf("Service '%s' stopped", s.Name)
+		log.Printf("stopped polling for messages")
 	}
 }
 
-func (s *service) poll() error {
+func (s *pollingAgent) poll() error {
 	headers := map[string]string{
 		"Authorization":          "Bearer " + s.inferable.apiSecret,
 		"X-Machine-ID":           s.inferable.machineID,
@@ -223,8 +212,17 @@ func (s *service) poll() error {
 		return fmt.Errorf("failed to get cluster id: %v", err)
 	}
 
+	// Build comma-seperated tools list
+	toolList := ""
+	for _, tool := range s.Tools {
+		toolList = toolList + tool.Name + ","
+	}
+	if len(toolList) > 0 {
+		toolList = toolList[:len(toolList)-1]
+	}
+
 	options := client.FetchDataOptions{
-		Path:    fmt.Sprintf("/clusters/%s/jobs?acknowledge=true&service=%s&status=pending&limit=10", clusterId, s.Name),
+		Path:    fmt.Sprintf("/clusters/%s/jobs?acknowledge=true&tools=%s&status=pending&limit=10", clusterId, toolList),
 		Method:  "GET",
 		Headers: headers,
 	}
@@ -269,9 +267,9 @@ func (s *service) poll() error {
 	return nil
 }
 
-func (s *service) handleMessage(msg callMessage) error {
+func (s *pollingAgent) handleMessage(msg callMessage) error {
 	// Find the target function
-	fn, ok := s.Functions[msg.Function]
+	fn, ok := s.Tools[msg.Function]
 	if !ok {
 		log.Printf("Received call for unknown function: %s", msg.Function)
 		return nil
@@ -364,7 +362,7 @@ func (s *service) handleMessage(msg callMessage) error {
 	return nil
 }
 
-func (s *service) persistJobResult(jobID string, result callResult) error {
+func (s *pollingAgent) persistJobResult(jobID string, result callResult) error {
 	payloadJSON, err := json.Marshal(result)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload for persistJobResult: %v", err)
@@ -397,14 +395,14 @@ func (s *service) persistJobResult(jobID string, result callResult) error {
 	return nil
 }
 
-func (s *service) getSchema() (map[string]interface{}, error) {
-	if len(s.Functions) == 0 {
-		return nil, fmt.Errorf("no functions registered for service '%s'", s.Name)
+func (s *pollingAgent) getSchema() (map[string]interface{}, error) {
+	if len(s.Tools) == 0 {
+		return nil, fmt.Errorf("no tools registered")
 	}
 
 	schema := make(map[string]interface{})
 
-	for _, fn := range s.Functions {
+	for _, fn := range s.Tools {
 		schema[fn.Name] = map[string]interface{}{
 			"input": fn.schema,
 			"name":  fn.Name,
@@ -414,6 +412,6 @@ func (s *service) getSchema() (map[string]interface{}, error) {
 	return schema, nil
 }
 
-func (s *service) isPolling() bool {
+func (s *pollingAgent) isPolling() bool {
 	return s.cancel != nil
 }

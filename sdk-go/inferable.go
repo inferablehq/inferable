@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"time"
 
 	"github.com/inferablehq/inferable/sdk-go/internal/client"
 	"github.com/inferablehq/inferable/sdk-go/internal/util"
@@ -19,17 +18,13 @@ const (
 	DefaultAPIEndpoint = "https://api.inferable.ai"
 )
 
-type functionRegistry struct {
-	services map[string]*service
-}
-
 type Inferable struct {
-	client           *client.Client
-	apiEndpoint      string
-	apiSecret        string
-	functionRegistry functionRegistry
-	machineID        string
-	clusterID        string
+	client      *client.Client
+	apiEndpoint string
+	apiSecret   string
+	machineID   string
+	clusterID   string
+	Tools       *pollingAgent
 	// Convenience reference to a service with the name 'default'.
 	//
 	// Returns:
@@ -42,7 +37,7 @@ type Inferable struct {
 	//      ApiSecret: "API_SECRET",
 	//  })
 	//
-	//  client.Default.RegisterFunc(Function{
+	//  client.Tools.Register(Function{
 	//    Func:        func(input EchoInput) string {
 	//      didCallSayHello = true
 	//      return "Hello " + input.Input
@@ -52,11 +47,10 @@ type Inferable struct {
 	//  })
 	//
 	//  // Start the service
-	//  client.Default.Start()
+	//  client.Tools.Listen()
 	//
 	//  // Stop the service on shutdown
 	//  defer client.Default.Stop()
-	Default *service
 }
 
 type InferableOptions struct {
@@ -80,39 +74,6 @@ type HandleCustomAuthInput struct {
 	Token string `json:"token"`
 }
 
-type runResult = OnStatusChangeInput
-
-type RunTemplate struct {
-	ID    string                 `json:"id"`
-	Input map[string]interface{} `json:"input"`
-}
-
-type OnStatusChange struct {
-	Function *FunctionReference `json:"function"`
-}
-
-type CreateRunInput struct {
-	AttachedFunctions []*FunctionReference `json:"attachedFunctions,omitempty"`
-	InitialPrompt     string               `json:"initialPrompt"`
-	OnStatusChange    *OnStatusChange      `json:"onStatusChange,omitempty"`
-	ResultSchema      interface{}          `json:"resultSchema,omitempty"`
-	Metadata          map[string]string    `json:"metadata,omitempty"`
-	Template          *RunTemplate         `json:"template,omitempty"`
-	ReasoningTraces   bool                 `json:"reasoningTraces"`
-	Interactive       bool                 `json:"interactive"`
-	CallSummarization bool                 `json:"callSummarization"`
-}
-
-type PollOptions struct {
-	MaxWaitTime *time.Duration
-	Interval    *time.Duration
-}
-
-type runReference struct {
-	ID   string
-	Poll func(options *PollOptions) (*runResult, error)
-}
-
 func New(options InferableOptions) (*Inferable, error) {
 	if options.APIEndpoint == "" {
 		options.APIEndpoint = DefaultAPIEndpoint
@@ -131,220 +92,34 @@ func New(options InferableOptions) (*Inferable, error) {
 	}
 
 	inferable := &Inferable{
-		client:           client,
-		apiEndpoint:      options.APIEndpoint,
-		apiSecret:        options.APISecret,
-		functionRegistry: functionRegistry{services: make(map[string]*service)},
-		machineID:        machineID,
+		client:      client,
+		apiEndpoint: options.APIEndpoint,
+		apiSecret:   options.APISecret,
+		machineID:   machineID,
 	}
 
 	// Automatically register the default service
-	inferable.Default, err = inferable.RegisterService("default")
+	inferable.Tools, err = inferable.createPollingAgent()
 	if err != nil {
-		return nil, fmt.Errorf("error registering default service: %v", err)
+		return nil, fmt.Errorf("error creating polling agent: %v", err)
 	}
 
 	return inferable, nil
 }
 
-// Registers a service with Inferable. This will register all functions on the service.
-//
-// Parameters:
-// - input: The service definition.
-//
-// Returns:
-// A registered service instance.
-//
-// Example:
-//
-//	// Create a new Inferable instance with an API secret
-//	client := inferable.New(InferableOptions{
-//	    ApiSecret: "API_SECRET",
-//	})
-//
-//	// Define and register the service
-//	service := client.Service("MyService")
-//
-//	sayHello, err := service.RegisterFunc(Function{
-//	  Func:        func(input EchoInput) string {
-//	    didCallSayHello = true
-//	    return "Hello " + input.Input
-//	  },
-//	  Name:        "SayHello",
-//	  Description: "A simple greeting function",
-//	})
-//
-//	// Start the service
-//	service.Start()
-//
-//	// Stop the service on shutdown
-//	defer service.Stop()
-func (i *Inferable) RegisterService(serviceName string) (*service, error) {
-	if _, exists := i.functionRegistry.services[serviceName]; exists {
-		return nil, fmt.Errorf("service with name '%s' already registered", serviceName)
-	}
+func (i *Inferable) createPollingAgent() (*pollingAgent, error) {
 
-	service := &service{
-		Name:      serviceName,
-		Functions: make(map[string]Function),
+	agent := &pollingAgent{
+		Tools:     make(map[string]Tool),
 		inferable: i, // Set the reference to the Inferable instance
 	}
-	i.functionRegistry.services[serviceName] = service
-	return service, nil
+	return agent, nil
 }
 
-func (i *Inferable) getRun(runID string) (*runResult, error) {
-	// Prepare headers
-	headers := map[string]string{
-		"Authorization":          "Bearer " + i.apiSecret,
-		"X-Machine-ID":           i.machineID,
-		"X-Machine-SDK-Version":  Version,
-		"X-Machine-SDK-Language": "go",
-	}
-
-	clusterId, err := i.getClusterId()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cluster id: %v", err)
-	}
-
-	options := client.FetchDataOptions{
-		Path:    fmt.Sprintf("/clusters/%s/runs/%s", clusterId, runID),
-		Method:  "GET",
-		Headers: headers,
-	}
-
-	responseData, _, err, _ := i.fetchData(options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get run: %v", err)
-	}
-	var result runResult
-	err = json.Unmarshal(responseData, &result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
-	}
-	return &result, nil
-}
-
-// Creates a run and returns a reference to it.
-//
-// Parameters:
-// - input: The run definition.
-//
-// Returns:
-// A run reference.
-//
-// Example:
-//
-//	// Create a new Inferable instance with an API secret
-//	client := inferable.New(InferableOptions{
-//	    ApiSecret: "API_SECRET",
-//	})
-//
-//	run, err := client.Run(CreateRunInput{
-//	    Message: "Hello world",
-//	})
-//
-//	if err != nil {
-//	    log.Fatal("Failed to create run:", err)
-//	}
-//
-//	fmt.Println("Started run with ID:", run.ID)
-//
-//	result, err := run.Poll()
-//	if err != nil {
-//	    log.Fatal("Failed to poll run result:", err)
-//	}
-//
-//	fmt.Println("Run result:", result)
-func (i *Inferable) CreateRun(input CreateRunInput) (*runReference, error) {
-	clusterId, err := i.getClusterId()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cluster id: %v", err)
-	}
-
-	// Marshal the payload to JSON
-	jsonPayload, err := json.Marshal(input)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal payload: %v", err)
-	}
-
-	// Prepare headers
-	headers := map[string]string{
-		"Authorization":          "Bearer " + i.apiSecret,
-		"X-Machine-ID":           i.machineID,
-		"X-Machine-SDK-Version":  Version,
-		"X-Machine-SDK-Language": "go",
-	}
-
-	options := client.FetchDataOptions{
-		Path:    fmt.Sprintf("/clusters/%s/runs", clusterId),
-		Method:  "POST",
-		Headers: headers,
-		Body:    string(jsonPayload),
-	}
-
-	responseData, _, err, _ := i.fetchData(options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create run: %v", err)
-	}
-
-	// Parse the response
-	var response struct {
-		ID string `json:"id"`
-	}
-
-	err = json.Unmarshal(responseData, &response)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse run response: %v", err)
-	}
-
-	return &runReference{
-		ID: response.ID,
-		Poll: func(options *PollOptions) (*runResult, error) {
-			// Default values for polling options
-			maxWaitTime := 60 * time.Second
-			interval := 500 * time.Millisecond
-
-			if options != nil {
-				if options.MaxWaitTime != nil {
-					maxWaitTime = *options.MaxWaitTime
-				}
-
-				if options.Interval != nil {
-					interval = *options.Interval
-				}
-			}
-
-			start := time.Now()
-			end := start.Add(maxWaitTime)
-
-			for time.Now().Before(end) {
-				pollResult, err := i.getRun(response.ID)
-				if err != nil {
-					return nil, fmt.Errorf("failed to poll for run: %w", err)
-				}
-
-				if pollResult.Status != "paused" && pollResult.Status != "pending" && pollResult.Status != "running" {
-					return pollResult, nil
-				}
-
-				time.Sleep(interval)
-			}
-
-			return nil, fmt.Errorf("max wait time reached, polling stopped")
-		},
-	}, nil
-}
-
-func (i *Inferable) callFunc(serviceName, funcName string, args ...interface{}) ([]reflect.Value, error) {
-	service, exists := i.functionRegistry.services[serviceName]
+func (i *Inferable) callFunc(funcName string, args ...interface{}) ([]reflect.Value, error) {
+	fn, exists := i.Tools.Tools[funcName]
 	if !exists {
-		return nil, fmt.Errorf("service with name '%s' not found", serviceName)
-	}
-
-	fn, exists := service.Functions[funcName]
-	if !exists {
-		return nil, fmt.Errorf("function with name '%s' not found in service '%s'", funcName, serviceName)
+		return nil, fmt.Errorf("function with name '%s' not found", funcName)
 	}
 
 	// Get the reflect.Value of the function
@@ -363,31 +138,6 @@ func (i *Inferable) callFunc(serviceName, funcName string, args ...interface{}) 
 
 	// Call the function
 	return fnValue.Call(inArgs), nil
-}
-
-func (i *Inferable) toJSONDefinition() ([]byte, error) {
-	definitions := make([]map[string]interface{}, 0)
-
-	for serviceName, service := range i.functionRegistry.services {
-		serviceDef := make(map[string]interface{})
-		functions := make([]map[string]interface{}, 0)
-
-		for _, function := range service.Functions {
-			funcDef := map[string]interface{}{
-				"name":        function.Name,
-				"description": function.Description,
-				"schema":      function.schema,
-			}
-			functions = append(functions, funcDef)
-		}
-
-		serviceDef["service"] = serviceName
-		serviceDef["functions"] = functions
-
-		definitions = append(definitions, serviceDef)
-	}
-
-	return json.MarshalIndent(definitions, "", "  ")
 }
 
 func (i *Inferable) fetchData(options client.FetchDataOptions) ([]byte, http.Header, error, int) {
@@ -441,34 +191,32 @@ func (i *Inferable) getClusterId() (string, error) {
 	return i.clusterID, nil
 }
 
-func (i *Inferable) registerMachine(s *service) (string, error) {
+func (i *Inferable) registerMachine(s *pollingAgent) (string, error) {
 
 	// Prepare the payload for registration
 	payload := struct {
-		Service   string `json:"service,omitempty"`
-		Functions []struct {
+		Service string `json:"service,omitempty"`
+		Tools   []struct {
 			Name        string `json:"name"`
 			Description string `json:"description,omitempty"`
 			Schema      string `json:"schema,omitempty"`
-		} `json:"functions,omitempty"`
+		} `json:"tools,omitempty"`
 	}{}
 
 	if s != nil {
-		payload.Service = s.Name
-
 		// Check if there are any registered functions
-		if len(s.Functions) == 0 {
-			return "", fmt.Errorf("cannot register service '%s': no functions registered", s.Name)
+		if len(s.Tools) == 0 {
+			return "", fmt.Errorf("cannot register machine with no functions")
 		}
 
 		// Add registered functions to the payload
-		for _, fn := range s.Functions {
+		for _, fn := range s.Tools {
 			schemaJSON, err := json.Marshal(fn.schema)
 			if err != nil {
 				return "", fmt.Errorf("failed to marshal schema for function '%s': %v", fn.Name, err)
 			}
 
-			payload.Functions = append(payload.Functions, struct {
+			payload.Tools = append(payload.Tools, struct {
 				Name        string `json:"name"`
 				Description string `json:"description,omitempty"`
 				Schema      string `json:"schema,omitempty"`
