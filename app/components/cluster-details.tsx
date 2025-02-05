@@ -175,7 +175,6 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     services,
     isLoading: isInitialLoading,
     liveMachineCount,
-    cluster,
   } = useClusterState(clusterId);
 
   const workflowServices = services.filter(service => service.name.includes('workflows.'));

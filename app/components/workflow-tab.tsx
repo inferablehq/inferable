@@ -11,7 +11,6 @@ import { Workflow } from "@/lib/types";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
-import { truncate } from "lodash";
 import { TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon, TrashIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback } from "react";
@@ -174,7 +173,7 @@ export function RunTab({
           </div>
 
           <div className="flex flex-col items-stretch divide-y p-3 w-full">
-            {group.workflows.map((workflow, idx) => (
+            {group.workflows.map((workflow) => (
               <RunPill
                 key={workflow.id}
                 workflow={workflow}
