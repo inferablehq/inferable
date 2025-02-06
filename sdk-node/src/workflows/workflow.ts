@@ -39,8 +39,12 @@ type AgentConfig<TResult> = {
 type WorkflowContext<TInput> = {
   effect: (
     name: string,
-    fn: (ctx: WorkflowContext<TInput>) => Promise<void>,
+    fn: () => Promise<void>,
   ) => Promise<void>;
+  result: <TResult>(
+    name: string,
+    fn: () => Promise<TResult>,
+  ) => Promise<TResult>;
   agent: <TAgentResult = unknown>(
     config: AgentConfig<TAgentResult>,
   ) => {
@@ -219,6 +223,62 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
             executionId,
           });
         }
+      },
+      result: async <TResult>(
+        name: string,
+        fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,
+      ): Promise<TResult> => {
+        const ctx = this.createContext(version, executionId, input);
+
+        const serialize = (value: unknown) => JSON.stringify({ value });
+        const deserialize = (value: string) => {
+          try {
+            return JSON.parse(value).value;
+          } catch (e) {
+            return null;
+          }
+        };
+
+        const existingValue = await this.client.getClusterKV({
+          params: {
+            clusterId: await this.getClusterId(),
+            key: `${executionId}.${name}`,
+          },
+        });
+
+        if (existingValue.status === 200) {
+          const existingValueParsed = deserialize(existingValue.body.value);
+
+          if (existingValueParsed) {
+            return existingValueParsed;
+          }
+        }
+
+        const result = await fn(ctx);
+
+        // TODO: async/retry
+        const setResult = await this.client.setClusterKV({
+          params: {
+            clusterId: await this.getClusterId(),
+            key: `${executionId}.${name}`,
+          },
+          body: {
+            value: serialize(result),
+            onConflict: "doNothing",
+          },
+        });
+
+        if (setResult.status !== 200) {
+          this.logger?.error("Failed to set result", {
+            name,
+            executionId,
+            status: setResult.status,
+          });
+
+          throw new Error("Failed to set result");
+        }
+
+        return deserialize(setResult.body.value);
       },
       agent: <TAgentResult = unknown>(config: AgentConfig<TAgentResult>) => {
         return {

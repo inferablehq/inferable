@@ -123,9 +123,17 @@ import { helpers } from "./workflow";
         },
       });
 
+    const randomResult = await ctx.result("randomResult", async () => {
+      return fetch("https://api.inferable.ai/live").then(
+        (res) => res.json() as Promise<{ status: string }>,
+      );
+    });
+
     ctx.effect("logFinalResult", async () => {
       console.log("--------------------------------");
       console.log(riskProfile);
+      console.log("--------------------------------");
+      console.log(randomResult);
       console.log("--------------------------------");
     });
   });
