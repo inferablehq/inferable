@@ -15,32 +15,35 @@ Reliable AI Agents with Durable Execution for Distributed Systems.
 
 Inferable is a platform for building production-ready AI Agents. At a high level, it allows you to:
 
-- Register **Tools** from your existing distributed systems.
-- Define **Agents** that can use these tools to perform multi-step reasoning.
-- Create **Durable Workflows** to combine agent reasoning with deterministic code execution.
+- Register **Tools** from your new or existing distributed systems.
+- Define **Agents** that can use these tools to perform multi-step reasoning and take actions.
+- Create **Durable Workflows** that compose agent intractions with "workflow as code".
 
 <p align="center">
 <img src="./assets/deployment.png" alt="Inferable Deployment" width="800" />
 </p>
 
-## Features
+## 👉 High-level Features
 
-### Tools
-- Wrap your existing code as tools, and let agents trigger them.
-- Tools run on your own infrastructure, Inferable takes care of the orchestration.
-- Built-in retry, caching, and failover support for tools.
+### 🧰 Tools
+- Wrap your existing code as [tools](https://docs.inferable.ai/pages/tools), and let agents trigger them with our SDKs.
+- Tools run on your [own infrastructure](https://docs.inferable.ai/pages/enterprise#on-premise-tool-execution-and-data-localization), Inferable takes care of the orchestration.
+- Built-in [retry, caching](https://docs.inferable.ai/pages/tool-configuration), and [failover](https://docs.inferable.ai/pages/tool-failures) support for tools.
 
-### Agents
-- Multi-step agents who can iteratively design their own execution plan.
-- Context-aware tool selection based on Tool Discovery.
-- Composable agents with structured outputs.
+### 🤖 Agents
+- [Multi-step reasoning agents](https://docs.inferable.ai/pages/agents) who can iteratively design their own execution plan.
+- Context-aware [tool selection](https://docs.inferable.ai/pages/agent-tools) and built-in Service Discovery for tools.
+- [Composable agents](https://docs.inferable.ai/pages/multiple-agents) with structured outputs.
 
-### Workflows
-- Define "workflow as code" to orchestrate agents and tools.
-- Mix agent reasoning with deterministic code execution to build complex workflows.
-- All workflows are durable, and run on your own infrastructure.
+### 📜 Workflows
+- Define "[workflow as code](https://docs.inferable.ai/pages/workflows)" to orchestrate agents and tools.
+- Mix agent reasoning with deterministic code execution to build [complex workflows](https://docs.inferable.ai/pages/multiple-agents).
+- All workflows are [durable](https://docs.inferable.ai/pages/workflow-durability), and run on your own infrastructure.
 
-<img src="./assets/deployment.png" alt="Inferable Deployment" width="800" />
+**...with minimal adoption curve**
+- [No network ingress](https://docs.inferable.ai/pages/enterprise#private-networking) needed. Everything works via long-polling HTTP endpoints.
+- [Trigger workflows](https://docs.inferable.ai/pages/your-first-workflow#triggering-workflows) from external events, or from other workflows. It's just HTTP.
+- Fully [open-source](https://github.com/inferablehq/inferable) and self-hostable.
 
 ## ⚡️ Quick Start
 
