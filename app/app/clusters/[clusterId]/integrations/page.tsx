@@ -33,7 +33,7 @@ import { useState, useCallback, useEffect } from "react";
 import { toast } from "react-hot-toast";
 
 type IntegrationConfig = {
-  [K in "langfuse" | "tavily" | "zapier" | "valtown" | "slack" | "email" | "toolhouse"]: {
+  [K in "langfuse" | "slack"]: {
     name: string;
     description: string;
     icon: LucideIcon;
@@ -60,33 +60,6 @@ const config: IntegrationConfig = {
     order: 1,
     docs: "https://docs.inferable.ai/pages/langfuse",
   },
-  tavily: {
-    name: "Tavily",
-    description: "Use Tavily to search the web for information",
-    icon: Search,
-    stage: "stable",
-    category: "Tools",
-    order: 2,
-    docs: "https://docs.inferable.ai/pages/tavily",
-  },
-  zapier: {
-    name: "Zapier",
-    description: "Integrate your Inferable Runs with Zapier",
-    icon: Zap,
-    stage: "stable",
-    category: "Triggers",
-    order: 3,
-    docs: "https://docs.inferable.ai/pages/zapier",
-  },
-  valtown: {
-    name: "Val.town",
-    description: "Register a service with a Val from Val.town",
-    icon: FunctionSquare,
-    stage: "stable",
-    category: "Tools",
-    order: 4,
-    docs: "https://docs.inferable.ai/pages/valtown",
-  },
   slack: {
     name: "Slack",
     description: "Trigger Runs from your Slack workspace",
@@ -95,24 +68,6 @@ const config: IntegrationConfig = {
     category: "Triggers",
     order: 5,
     docs: "https://docs.inferable.ai/pages/slack",
-  },
-  email: {
-    name: "Email",
-    description: "Trigger Runs via Email",
-    icon: Mail,
-    stage: "beta",
-    category: "Triggers",
-    order: 6,
-    docs: "https://docs.inferable.ai/pages/email",
-  },
-  toolhouse: {
-    name: "Toolhouse",
-    description: "Connect your toolhouse.ai tools directly to your Inferable Runs",
-    icon: Wrench,
-    stage: "beta",
-    category: "Tools",
-    order: 7,
-    docs: "https://docs.inferable.ai/pages/toolhouse",
   },
 };
 
@@ -215,7 +170,7 @@ export default function IntegrationsPage({
         Connect your Inferable cluster with other tools and services
       </p>
 
-      {["Triggers", "Observability", "Tools"].map(category => (
+      {["Triggers", "Observability"].map(category => (
         <div key={category}>
           <h2 className="text-xl font-semibold mt-6">{category}</h2>
           <p className="text-sm text-muted-foreground mb-4">
