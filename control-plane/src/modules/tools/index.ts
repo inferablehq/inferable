@@ -10,11 +10,57 @@ import jsonpath from "jsonpath";
 import { logger } from "../observability/logger";
 import { embedSearchQuery } from "../embeddings/embeddings";
 import { validateToolName, validateToolDescription, validateToolSchema } from "./validations";
+import { Validator } from "jsonschema";
+import { InvalidJobArgumentsError } from "../../utilities/errors";
+import { packer } from "../packer";
 
 // The time without a ping before a tool is considered expired
 const TOOL_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute
 
 export type ToolConfig = z.infer<typeof ToolConfigSchema>;
+
+const validator = new Validator();
+
+export const parseJobArgs = async ({
+  schema,
+  args,
+}: {
+  schema?: string;
+  args: string;
+}): Promise<object> => {
+  try {
+    args = packer.unpack(args);
+  } catch {
+    logger.error("Could not unpack arguments", {
+      args,
+    });
+    throw new InvalidJobArgumentsError("Could not unpack arguments");
+  }
+
+  if (typeof args !== "object" || Array.isArray(args) || args === null) {
+    logger.error("Invalid job arguments", {
+      args,
+    });
+    throw new InvalidJobArgumentsError("Argument must be an object");
+  }
+
+  if (!schema) {
+    logger.error("No schema found for job arguments", {
+      args,
+      schema,
+    });
+
+    throw new InvalidJobArgumentsError("No schema found for job arguments");
+  }
+
+  const result = validator.validate(args, JSON.parse(schema));
+
+  if (result.errors.length) {
+    throw new InvalidJobArgumentsError(result.errors.join(", "));
+  }
+
+  return args;
+};
 
 export const getWorkflowTools = async ({
   clusterId,
@@ -52,26 +98,18 @@ export const getWorkflowTools = async ({
     );
 };
 
-export async function availableTools({
-  clusterId,
-}: {
-  clusterId: string;
-}) {
+export async function availableTools({ clusterId }: { clusterId: string }) {
   const results = await data.db
     .select({
       name: data.tools.name,
     })
     .from(data.tools)
-    .where(eq(data.tools.cluster_id, clusterId))
+    .where(eq(data.tools.cluster_id, clusterId));
 
   return results.map(r => r.name);
 }
 
-export const getToolDefinitions = async ({
-  clusterId,
-}: {
-    clusterId: string;
-  }) => {
+export const getToolDefinitions = async ({ clusterId }: { clusterId: string }) => {
   const results = await data.db
     .select({
       name: data.tools.name,
@@ -80,16 +118,12 @@ export const getToolDefinitions = async ({
       config: data.tools.config,
     })
     .from(data.tools)
-    .where(eq(data.tools.cluster_id, clusterId))
+    .where(eq(data.tools.cluster_id, clusterId));
 
   return results;
 };
 
-export const listTools = async ({
-  clusterId,
-}: {
-  clusterId: string;
-}) => {
+export const listTools = async ({ clusterId }: { clusterId: string }) => {
   const tools = await data.db
     .select({
       name: data.tools.name,
@@ -108,7 +142,7 @@ export const listTools = async ({
 
 export const getToolDefinition = async ({
   name,
-  clusterId
+  clusterId,
 }: {
   name: string;
   clusterId: string;
@@ -121,12 +155,7 @@ export const getToolDefinition = async ({
       config: data.tools.config,
     })
     .from(data.tools)
-    .where(
-      and(
-        eq(data.tools.name, name),
-        eq(data.tools.cluster_id, clusterId)
-      )
-    )
+    .where(and(eq(data.tools.name, name), eq(data.tools.cluster_id, clusterId)));
 
   return tool;
 };
@@ -134,7 +163,7 @@ export const getToolDefinition = async ({
 export const searchTools = async ({
   query,
   clusterId,
-  limit = 10
+  limit = 10,
 }: {
   query: string;
   clusterId: string;
@@ -142,10 +171,7 @@ export const searchTools = async ({
 }) => {
   const embedding = await embedSearchQuery(query);
 
-  const similarity = sql<number>`1 - (${cosineDistance(
-    data.tools.embedding_1024,
-    embedding,
-  )})`;
+  const similarity = sql<number>`1 - (${cosineDistance(data.tools.embedding_1024, embedding)})`;
 
   const results = await data.db
     .select({
@@ -155,35 +181,20 @@ export const searchTools = async ({
       similarity,
     })
     .from(data.tools)
-    .where(
-      and(
-        eq(data.tools.cluster_id, clusterId),
-      ),
-    )
-    .orderBy((t) => desc(t.similarity))
+    .where(and(eq(data.tools.cluster_id, clusterId)))
+    .orderBy(t => desc(t.similarity))
     .limit(limit);
 
   return results;
 };
 
-export async function recordPoll({
-  clusterId,
-  tools,
-}: {
-  clusterId: string;
-  tools: string[];
-}) {
+export async function recordPoll({ clusterId, tools }: { clusterId: string; tools: string[] }) {
   const result = await data.db
     .update(data.tools)
     .set({
       last_ping_at: new Date(),
     })
-    .where(
-      and(
-        eq(data.tools.cluster_id, clusterId),
-        inArray(data.tools.name, tools)
-      )
-    )
+    .where(and(eq(data.tools.cluster_id, clusterId), inArray(data.tools.name, tools)))
     .returning({
       tool: data.tools.name,
     });
@@ -196,34 +207,24 @@ export async function deleteToolDefinition({
   name,
   clusterId,
 }: {
-    name: string;
-    clusterId: string;
-  }) {
+  name: string;
+  clusterId: string;
+}) {
   await data.db
-  .delete(data.tools)
-  .where(
-    and(
-      eq(data.tools.name, name),
-      eq(data.tools.cluster_id, clusterId)
-    )
-  );
+    .delete(data.tools)
+    .where(and(eq(data.tools.name, name), eq(data.tools.cluster_id, clusterId)));
 }
 
 export async function deleteToolDefinitionByPrefix({
   prefix,
   clusterId,
 }: {
-    prefix: string;
-    clusterId: string;
-  }) {
+  prefix: string;
+  clusterId: string;
+}) {
   await data.db
-  .delete(data.tools)
-  .where(
-    and(
-      like(data.tools.name, `${prefix}%`),
-      eq(data.tools.cluster_id, clusterId)
-    )
-  );
+    .delete(data.tools)
+    .where(and(like(data.tools.name, `${prefix}%`), eq(data.tools.cluster_id, clusterId)));
 }
 
 export async function upsertToolDefinition({
@@ -250,9 +251,7 @@ export async function upsertToolDefinition({
 
   const errors = validateToolSchema(JSON.parse(schema));
   if (errors.length > 0) {
-    throw new InvalidToolRegistrationError(
-      `${name} schema invalid: ${JSON.stringify(errors)}`
-    );
+    throw new InvalidToolRegistrationError(`${name} schema invalid: ${JSON.stringify(errors)}`);
   }
 
   if (config?.cache) {
@@ -268,12 +267,14 @@ export async function upsertToolDefinition({
 
   const hash = crypto
     .createHash("sha256")
-    .update(JSON.stringify({
-      name,
-      description,
-      schema,
-      config
-    }))
+    .update(
+      JSON.stringify({
+        name,
+        description,
+        schema,
+        config,
+      })
+    )
     .digest("hex");
 
   // Check if definition has changed
@@ -284,7 +285,7 @@ export async function upsertToolDefinition({
       and(
         eq(data.tools.cluster_id, clusterId),
         eq(data.tools.name, name),
-        eq(data.tools.hash, hash),
+        eq(data.tools.hash, hash)
       )
     );
 
@@ -297,7 +298,7 @@ export async function upsertToolDefinition({
       name,
       description,
       schema,
-    }),
+    })
   );
 
   await data.db
@@ -331,11 +332,10 @@ export const cleanExpiredToolDefinitions = async (): Promise<void> => {
     .where(
       and(
         eq(data.tools.should_expire, true),
-        lte(
-          data.tools.last_ping_at, new Date(Date.now() - TOOL_LIVE_THRESHOLD_MS)
-        )
+        lte(data.tools.last_ping_at, new Date(Date.now() - TOOL_LIVE_THRESHOLD_MS))
       )
-    ).returning({
+    )
+    .returning({
       clusterId: data.tools.cluster_id,
       name: data.tools.name,
     });
@@ -344,7 +344,6 @@ export const cleanExpiredToolDefinitions = async (): Promise<void> => {
     tools: toolDefinitions,
   });
 };
-
 
 export const start = () =>
   cron.registerCron(cleanExpiredToolDefinitions, "clean-tool-definitions", {

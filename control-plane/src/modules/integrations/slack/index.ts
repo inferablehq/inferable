@@ -168,14 +168,12 @@ export const handleApprovalRequest = async ({
   jobId,
   runId,
   clusterId,
-  service,
   targetFn,
   tags,
 }: {
   jobId: string;
   runId: string;
   clusterId: string;
-  service: string;
   targetFn: string;
   tags?: Record<string, string>;
 }) => {
@@ -197,7 +195,7 @@ export const handleApprovalRequest = async ({
 
   const client = new webApi.WebClient(token);
 
-  const text = `I need your approval to call \`${service}.${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`;
+  const text = `I need your approval to call \`${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`;
 
   await client?.chat.postMessage({
     thread_ts: tags[THREAD_META_KEY],

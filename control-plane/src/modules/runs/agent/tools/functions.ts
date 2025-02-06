@@ -48,7 +48,6 @@ export const buildTool = ({
     // - First tiem will create the job
     // - Subsequent times will return the job
     const { id } = await jobs.createJobV2({
-      service: "v2",
       targetFn: name,
       targetArgs: requestArgs,
       owner: { clusterId: run.clusterId },

@@ -36,7 +36,6 @@ type Event = {
   type: EventTypes;
   jobId?: string;
   machineId?: string;
-  service?: string;
   targetFn?: string;
   resultType?: string;
   status?: string;
@@ -97,7 +96,6 @@ class EventWriterBuffer {
           type: e.type,
           job_id: e.jobId,
           machine_id: e.machineId,
-          service: e.service,
           target_fn: e.targetFn,
           result_type: e.resultType,
           status: e.status,
@@ -166,7 +164,6 @@ export const getActivityForTimeline = async (params: {
       type: eventsTable.type,
       jobId: eventsTable.job_id,
       machineId: eventsTable.machine_id,
-      service: eventsTable.service,
       createdAt: eventsTable.created_at,
       targetFn: eventsTable.target_fn,
       resultType: eventsTable.result_type,
@@ -195,7 +192,6 @@ export const getMetaForActivity = async (params: { clusterId: string; eventId: s
       type: eventsTable.type,
       jobId: eventsTable.job_id,
       machineId: eventsTable.machine_id,
-      service: eventsTable.service,
       createdAt: eventsTable.created_at,
       targetFn: eventsTable.target_fn,
       resultType: eventsTable.result_type,
@@ -220,7 +216,6 @@ export const getActivityByClusterId = async (params: {
     type?: string;
     jobId?: string;
     machineId?: string;
-    service?: string;
     workflowId?: string;
   };
   includeMeta?: boolean;
@@ -232,7 +227,6 @@ export const getActivityByClusterId = async (params: {
       type: eventsTable.type,
       jobId: eventsTable.job_id,
       machineId: eventsTable.machine_id,
-      service: eventsTable.service,
       createdAt: eventsTable.created_at,
       targetFn: eventsTable.target_fn,
       resultType: eventsTable.result_type,
@@ -248,7 +242,6 @@ export const getActivityByClusterId = async (params: {
           params.filters?.type && eq(eventsTable.type, params.filters.type),
           params.filters?.jobId && eq(eventsTable.job_id, params.filters.jobId),
           params.filters?.machineId && eq(eventsTable.machine_id, params.filters.machineId),
-          params.filters?.service && eq(eventsTable.service, params.filters.service),
           params.filters?.workflowId && eq(eventsTable.run_id, params.filters.workflowId),
         ].filter(Boolean) as SQL[])
       )
@@ -267,7 +260,6 @@ export const getActivityByJobId = async (params: { jobId: string; clusterId: str
       type: eventsTable.type,
       jobId: eventsTable.job_id,
       machineId: eventsTable.machine_id,
-      service: eventsTable.service,
       createdAt: eventsTable.created_at,
       targetFn: eventsTable.target_fn,
       resultType: eventsTable.result_type,

@@ -60,7 +60,6 @@ export const verify = async ({
     );
   }
 
-  let authService: string | undefined;
   let authFunction: string | undefined;
 
   try {
@@ -76,12 +75,9 @@ export const verify = async ({
       );
     }
 
-    const authService = "v2";
     const authFunction = definition.name;
 
-
     const { id } = await jobs.createJobV2({
-      service: authService,
       targetFn: authFunction,
       targetArgs: packer.pack({
         token,
@@ -92,68 +88,67 @@ export const verify = async ({
       runId: getClusterBackgroundRun(clusterId),
     });
 
+    const result = await getJobStatusSync({
+      jobId: id,
+      owner: { clusterId },
+      ttl: 10_000,
+    });
 
-  const result = await getJobStatusSync({
-    jobId: id,
-    owner: { clusterId },
-    ttl: 10_000,
-  });
+    if (result.status == "success" && result.resultType !== "resolution") {
+      throw new AuthenticationError(
+        "Custom auth token is not valid",
+        "https://docs.inferable.ai/pages/custom-auth"
+      );
+    }
 
-  if (result.status == "success" && result.resultType !== "resolution") {
-    throw new AuthenticationError(
-      "Custom auth token is not valid",
-      "https://docs.inferable.ai/pages/custom-auth"
-    );
-  }
+    // This isn't expected
+    if (result.status != "success") {
+      throw new Error(`Failed to call ${authFunction}: ${result.result}`);
+    }
 
-  // This isn't expected
-  if (result.status != "success") {
-    throw new Error(`Failed to call ${authFunction}: ${result.result}`);
-  }
+    if (!result.result) {
+      throw new AuthenticationError(
+        `${authFunction} did not return a result`,
+        "https://docs.inferable.ai/pages/custom-auth"
+      );
+    }
 
-  if (!result.result) {
-    throw new AuthenticationError(
-      `${authService}_${authFunction} did not return a result`,
-      "https://docs.inferable.ai/pages/custom-auth"
-    );
-  }
+    const parsed = customAuthResultSchema.safeParse(packer.unpack(result.result));
 
-  const parsed = customAuthResultSchema.safeParse(packer.unpack(result.result));
+    if (!parsed.success) {
+      throw new AuthenticationError(
+        `${authFunction} returned invalid result object`,
+        "https://docs.inferable.ai/pages/custom-auth"
+      );
+    }
 
-  if (!parsed.success) {
-    throw new AuthenticationError(
-      `${authService}_${authFunction} returned invalid result object`,
-      "https://docs.inferable.ai/pages/custom-auth"
-    );
-  }
+    await customAuthContextCache.set(secretHash, result, 300);
 
-  await customAuthContextCache.set(secretHash, result, 300);
+    return parsed.data;
+  } catch (e) {
+    if (e instanceof JobPollTimeoutError) {
+      throw new AuthenticationError(
+        `Call to ${authFunction} did not complete in time`,
+        "https://docs.inferable.ai/pages/custom-auth"
+      );
+    }
 
-  return parsed.data;
-} catch (e) {
-  if (e instanceof JobPollTimeoutError) {
-    throw new AuthenticationError(
-      `Call to ${authService}_${authFunction} did not complete in time`,
-      "https://docs.inferable.ai/pages/custom-auth"
-    );
-  }
+    // Cache the auth error for 1 minute
+    if (e instanceof AuthenticationError) {
+      await customAuthContextCache.set(
+        secretHash,
+        {
+          status: "success",
+          result: packer.pack({
+            error: `Custom auth token is not valid`,
+          }),
+          resultType: "resolution",
+        },
+        60
+      );
+      throw e;
+    }
 
-  // Cache the auth error for 1 minute
-  if (e instanceof AuthenticationError) {
-    await customAuthContextCache.set(
-      secretHash,
-      {
-        status: "success",
-        result: packer.pack({
-          error: `Custom auth token is not valid`,
-        }),
-        resultType: "resolution",
-      },
-      60
-    );
     throw e;
   }
-
-  throw e;
-}
 };

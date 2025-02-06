@@ -26,7 +26,6 @@ export const getJobStatusSync = async ({
 }) => {
   let jobResult:
     | {
-        service: string;
         status: "pending" | "running" | "success" | "failure" | "stalled";
         result: string | null;
         resultType: ResultType | null;
@@ -38,7 +37,6 @@ export const getJobStatusSync = async ({
   do {
     const [job] = await data.db
       .select({
-        service: data.jobs.service,
         status: data.jobs.status,
         result: data.jobs.result,
         resultType: data.jobs.result_type,
@@ -59,7 +57,6 @@ export const getJobStatusSync = async ({
 
   if (jobResult) {
     events.write({
-      service: jobResult.service,
       clusterId: owner.clusterId,
       jobId,
       type: "jobStatusRequest",
@@ -81,7 +78,6 @@ export const getJob = async ({ clusterId, jobId }: { clusterId: string; jobId: s
         clusterId: data.jobs.cluster_id,
         status: data.jobs.status,
         targetFn: data.jobs.target_fn,
-        service: data.jobs.service,
         executingMachineId: data.jobs.executing_machine_id,
         targetArgs: data.jobs.target_args,
         result: data.jobs.result,
@@ -110,13 +106,11 @@ export const getJob = async ({ clusterId, jobId }: { clusterId: string; jobId: s
 
 export const getLatestJobsResultedByFunctionName = async ({
   clusterId,
-  service,
   functionName,
   limit,
   resultType,
 }: {
   clusterId: string;
-  service: string;
   functionName: string;
   limit: number;
   resultType: ResultType;
@@ -132,7 +126,6 @@ export const getLatestJobsResultedByFunctionName = async ({
       and(
         eq(data.jobs.cluster_id, clusterId),
         eq(data.jobs.target_fn, functionName),
-        eq(data.jobs.service, service),
         eq(data.jobs.result_type, resultType)
       )
     )
@@ -154,7 +147,6 @@ export const getJobsForRun = async ({
       id: data.jobs.id,
       status: data.jobs.status,
       targetFn: data.jobs.target_fn,
-      service: data.jobs.service,
       resultType: data.jobs.result_type,
       createdAt: data.jobs.created_at,
       approvalRequested: data.jobs.approval_requested,
@@ -162,11 +154,7 @@ export const getJobsForRun = async ({
     })
     .from(data.jobs)
     .where(
-      and(
-        eq(data.jobs.cluster_id, clusterId),
-        eq(data.jobs.run_id, runId),
-        gt(data.jobs.id, after)
-      )
+      and(eq(data.jobs.cluster_id, clusterId), eq(data.jobs.run_id, runId), gt(data.jobs.id, after))
     );
 };
 
@@ -184,54 +172,6 @@ function walkJson(obj: unknown): string[] {
   return [];
 }
 
-export const getJobReferences = async ({
-  clusterId,
-  runId,
-  token,
-  before,
-}: {
-  clusterId: string;
-  runId: string;
-  token: string;
-  before: Date;
-}) => {
-  const jobs = await data.db
-    .select({
-      id: data.jobs.id,
-      result: data.jobs.result,
-      createdAt: data.jobs.created_at,
-      status: data.jobs.status,
-      targetFn: data.jobs.target_fn,
-      service: data.jobs.service,
-      executingMachineId: data.jobs.executing_machine_id,
-    })
-    .from(data.jobs)
-    .where(
-      and(
-        eq(data.jobs.cluster_id, clusterId),
-        eq(data.jobs.run_id, runId),
-        lte(data.jobs.created_at, before)
-      )
-    );
-
-  const withTokens = jobs.map(j => ({
-    ...j,
-    tokens: walkJson(packer.unpack(j.result ?? JSON.stringify({ value: "" }))).map(t => {
-      const partial = t.includes(token);
-      if (partial) {
-        return {
-          partial: true,
-          exact: t === token,
-        };
-      } else {
-        return null;
-      }
-    }),
-  }));
-
-  return withTokens.filter(j => j.tokens.some(t => t !== null));
-};
-
 const waitForPendingJobsByTools = async ({
   clusterId,
   timeout,
@@ -243,18 +183,18 @@ const waitForPendingJobsByTools = async ({
   start: number;
   tools: string[];
 }): Promise<void> => {
-const hasPendingJobs = await data.db
-  .select({ count: sql<number>`COUNT(*)` })
-  .from(data.jobs)
-  .where(
-    and(
-      eq(data.jobs.status, "pending"),
-      eq(data.jobs.cluster_id, clusterId),
-      inArray(data.jobs.target_fn, tools)
+  const hasPendingJobs = await data.db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(data.jobs)
+    .where(
+      and(
+        eq(data.jobs.status, "pending"),
+        eq(data.jobs.cluster_id, clusterId),
+        inArray(data.jobs.target_fn, tools)
+      )
     )
-  )
-  .limit(1)
-  .then(r => Number(r[0]?.count || 0) > 0)
+    .limit(1)
+    .then(r => Number(r[0]?.count || 0) > 0);
 
   if (hasPendingJobs) {
     return;
@@ -349,7 +289,6 @@ export const pollJobsByTools = async ({
   return jobs;
 };
 
-
 export async function requestApproval({ jobId, clusterId }: { jobId: string; clusterId: string }) {
   const [updated] = await data.db
     .update(data.jobs)
@@ -360,7 +299,6 @@ export async function requestApproval({ jobId, clusterId }: { jobId: string; clu
       jobId: data.jobs.id,
       clusterId: data.jobs.cluster_id,
       runId: data.jobs.run_id,
-      service: data.jobs.service,
       targetFn: data.jobs.target_fn,
     })
     .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
@@ -371,7 +309,6 @@ export async function requestApproval({ jobId, clusterId }: { jobId: string; clu
       jobId,
       clusterId,
       workflowId: updated.runId,
-      service: updated.service,
       targetFn: updated.targetFn,
     });
   }
@@ -383,15 +320,15 @@ export async function requestApproval({ jobId, clusterId }: { jobId: string; clu
 
 export async function cancelJob({ jobId, clusterId }: { jobId: string; clusterId: string }) {
   await data.db
-  .update(data.jobs)
-  .set({
-    status: "success",
-    result_type: "rejection",
-    result: packer.pack({
-      message: "This call was cancelled by the user.",
-    }),
-  })
-  .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
+    .update(data.jobs)
+    .set({
+      status: "success",
+      result_type: "rejection",
+      result: packer.pack({
+        message: "This call was cancelled by the user.",
+      }),
+    })
+    .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
 }
 
 export async function submitApproval({
@@ -424,7 +361,6 @@ export async function submitApproval({
       )
       .returning({
         runId: data.jobs.run_id,
-        service: data.jobs.service,
         targetFn: data.jobs.target_fn,
       });
 
@@ -434,7 +370,6 @@ export async function submitApproval({
         jobId,
         clusterId,
         workflowId: updated.runId,
-        service: updated.service,
         targetFn: updated.targetFn,
       });
     }
@@ -451,7 +386,6 @@ export async function submitApproval({
       })
       .returning({
         runId: data.jobs.run_id,
-        service: data.jobs.service,
         targetFn: data.jobs.target_fn,
         resultType: data.jobs.result_type,
       })
@@ -471,7 +405,6 @@ export async function submitApproval({
         jobId,
         clusterId,
         workflowId: updated.runId,
-        service: updated.service,
         targetFn: updated.targetFn,
       });
     }

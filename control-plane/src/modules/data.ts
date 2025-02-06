@@ -89,7 +89,8 @@ export const jobs = pgTable(
     timeout_interval_seconds: integer("timeout_interval_seconds")
       .notNull()
       .default(jobDefaults.timeoutIntervalSeconds),
-    service: varchar("service", { length: 1024 }).notNull(),
+    // TODO: Deprecated, remove this column
+    service: varchar("service", { length: 1024 }),
     run_id: varchar("run_id", { length: 1024 }).notNull(),
     auth_context: json("auth_context"),
     run_context: json("run_context"),
@@ -578,7 +579,6 @@ export const events = pgTable(
     type: varchar("type", { length: 1024 }).notNull(),
     job_id: varchar("job_id", { length: 1024 }),
     machine_id: varchar("machine_id", { length: 1024 }),
-    service: varchar("service", { length: 1024 }),
     target_fn: varchar("target_fn", { length: 1024 }),
     result_type: varchar("result_type", { length: 1024 }),
     status: varchar("status", { length: 1024 }),

@@ -28,7 +28,6 @@ export async function selfHealJobs() {
     )
     .returning({
       id: data.jobs.id,
-      service: data.jobs.service,
       targetFn: data.jobs.target_fn,
       clusterId: data.jobs.cluster_id,
       remainingAttempts: data.jobs.remaining_attempts,
@@ -37,7 +36,6 @@ export async function selfHealJobs() {
 
   stalledByTimeout.forEach(row => {
     events.write({
-      service: row.service,
       clusterId: row.clusterId,
       jobId: row.id,
       type: "jobStalled",
@@ -64,7 +62,6 @@ export async function selfHealJobs() {
     .where(eq(data.jobs.status, "stalled"))
     .returning({
       id: data.jobs.id,
-      service: data.jobs.service,
       targetFn: data.jobs.target_fn,
       targetArgs: data.jobs.target_args,
       clusterId: data.jobs.cluster_id,
@@ -76,14 +73,12 @@ export async function selfHealJobs() {
   stalledJobs.forEach(row => {
     if (row.status === "pending") {
       events.write({
-        service: row.service,
         clusterId: row.clusterId,
         jobId: row.id,
         type: "jobRecovered",
       });
     } else {
       events.write({
-        service: row.service,
         clusterId: row.clusterId,
         jobId: row.id,
         type: "jobStalledTooManyTimes",

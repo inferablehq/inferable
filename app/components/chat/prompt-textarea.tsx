@@ -11,13 +11,7 @@ import { isFeatureEnabled } from "@/lib/features";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest } from "@ts-rest/core";
-import {
-  Blocks,
-  ChevronDown,
-  ChevronRight,
-  PlusCircleIcon,
-  Settings2Icon
-} from "lucide-react";
+import { Blocks, ChevronDown, ChevronRight, PlusCircleIcon, Settings2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QuickStartDemo } from "../quick-start-demo";
@@ -113,14 +107,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       }
 
       if (options.attachedFunctions && options.attachedFunctions.length > 0) {
-        body.attachedFunctions = options.attachedFunctions?.map(fn => {
-          const [service, functionName] = fn.split("_");
-
-          return {
-            service,
-            function: functionName,
-          };
-        });
+        body.tools = options.attachedFunctions;
       }
 
       body.initialPrompt = options.initialPrompt;
@@ -190,7 +177,6 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       [section]: !prev[section],
     }));
   };
-
 
   const noServicesAndMachines = !tools.length && !machines.length;
 
@@ -364,16 +350,16 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             {collapsedSections.functions ? (
               <ChevronRight className="h-3.5 w-3.5" />
             ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
             <span className="font-medium">Attached Functions</span>
             <span className="text-[11px] text-muted-foreground ml-2">
               {options.attachedFunctions.length} selected
             </span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Select tools and APIs that the AI can use to help complete your request. The agent
-            will automatically determine when to use these functions.
+            Select tools and APIs that the AI can use to help complete your request. The agent will
+            automatically determine when to use these functions.
           </p>
           <div className={cn("mt-2", collapsedSections.functions && "hidden")}>
             <MultiSelect
@@ -401,8 +387,8 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             {collapsedSections.schema ? (
               <ChevronRight className="h-3.5 w-3.5" />
             ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
             <span className="font-medium">Result Schema</span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
@@ -457,13 +443,13 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             {collapsedSections.context ? (
               <ChevronRight className="h-3.5 w-3.5" />
             ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
             <span className="font-medium">Run Context</span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Provide additional context as JSON that will be passed into all function calls. It
-            is <span className="font-bold">not</span> visible to the agent. See the{" "}
+            Provide additional context as JSON that will be passed into all function calls. It is{" "}
+            <span className="font-bold">not</span> visible to the agent. See the{" "}
             <a
               className="text-xs text-primary hover:text-primary/90 hover:underline"
               href="https://docs.inferable.ai/pages/runs#context"
@@ -513,13 +499,12 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             {collapsedSections.options ? (
               <ChevronRight className="h-3.5 w-3.5" />
             ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
             <span className="font-medium">Options</span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Configure how the AI agent processes your request and interacts with available
-            tools.
+            Configure how the AI agent processes your request and interacts with available tools.
           </p>
           <div className={cn("mt-2 space-y-4", collapsedSections.options && "hidden")}>
             <div className="flex items-center space-x-2">

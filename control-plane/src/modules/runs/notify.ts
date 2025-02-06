@@ -15,17 +15,15 @@ export const notifyApprovalRequest = async ({
   jobId,
   clusterId,
   runId,
-  service,
   targetFn,
 }: {
   jobId: string;
   clusterId: string;
   runId: string;
-  service: string;
   targetFn: string;
 }) => {
   const tags = await getRunTags({ clusterId, runId });
-  await slack.handleApprovalRequest({ jobId, clusterId, runId, service, targetFn, tags });
+  await slack.handleApprovalRequest({ jobId, clusterId, runId, targetFn, tags });
 };
 
 export const notifyNewMessage = async ({
@@ -113,9 +111,7 @@ export const notifyStatusChange = async ({
       }
     );
   } else if (onStatusChangeDefinition.type === "function") {
-
     const { id } = await jobs.createJobV2({
-      service: onStatusChangeDefinition.function.service,
       targetFn: onStatusChangeDefinition.function.function,
       targetArgs: packer.pack(await getRunPayload()),
       authContext: run.authContext,
@@ -129,7 +125,6 @@ export const notifyStatusChange = async ({
     logger.info("Created job with run result", {
       jobId: id,
     });
-
   } else if (onStatusChangeDefinition.type === "workflow") {
     const { jobId } = await resumeWorkflowExecution({
       clusterId: run.clusterId,

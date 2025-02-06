@@ -19,7 +19,6 @@ import { getIntegrations, upsertIntegrations } from "./integrations/integrations
 import { getSession, nango, webhookSchema } from "./integrations/nango";
 import { validateConfig } from "./integrations/toolhouse";
 import * as jobs from "./jobs/jobs";
-import { getJob, getJobReferences } from "./jobs/jobs";
 import { kv } from "./kv";
 import { upsertMachine } from "./machines";
 import * as management from "./management";
@@ -462,25 +461,6 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  listRunReferences: async request => {
-    const { clusterId, runId } = request.params;
-    const { token, before } = request.query;
-
-    const auth = request.request.getAuth();
-    await auth.canAccess({ run: { clusterId, runId } });
-
-    const jobReferences = await getJobReferences({
-      clusterId,
-      runId,
-      token,
-      before: new Date(before),
-    });
-
-    return {
-      status: 200,
-      body: jobReferences,
-    };
-  },
   createApiKey: async request => {
     const { name } = request.body;
     const { clusterId } = request.params;
@@ -592,9 +572,12 @@ export const router = initServer().router(contract, {
       logger.warn("Using deprecated createJob.function field");
     }
 
+    if (!fn && !tool) {
+      throw new BadRequestError("No function or tool provided");
+    }
+
     const { id } = await jobs.createJobV2({
-      service: "v2",
-      targetFn: tool ?? fn,
+      targetFn: (tool ?? fn)!,
       targetArgs: packer.pack(input),
       owner: { clusterId },
       runId: getClusterBackgroundRun(clusterId),
@@ -701,7 +684,7 @@ export const router = initServer().router(contract, {
           jobId,
         });
 
-        const job = await getJob({ clusterId, jobId });
+        const job = await jobs.getJob({ clusterId, jobId });
 
         if (!job) {
           throw new NotFoundError("Job not found");

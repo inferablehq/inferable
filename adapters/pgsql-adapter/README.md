@@ -92,7 +92,7 @@ await client.tools.listen();
 
 // Handle cleanup
 process.on('SIGTERM', async () => {
-  await service.tools.unlisten();
+  await client.tools.unlisten();
 });
 ```
 

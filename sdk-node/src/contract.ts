@@ -408,8 +408,8 @@ export const definition = {
       authorization: z.string(),
     }),
     body: z.object({
-      function: z.string(),
-      tool: z.string(),
+      function: z.string().optional(),
+      tool: z.string().optional(),
       input: z.object({}).passthrough(),
     }),
     responses: {
@@ -994,32 +994,6 @@ export const definition = {
     responses: {
       200: z.array(unifiedMessageSchema),
       401: z.undefined(),
-    },
-  },
-
-  listRunReferences: {
-    method: "GET",
-    path: "/clusters/:clusterId/runs/:runId/references",
-    headers: z.object({ authorization: z.string() }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      runId: z.string(),
-    }),
-    query: z.object({
-      token: z.string(),
-      before: z.string(),
-    }),
-    responses: {
-      200: z.array(
-        z.object({
-          id: z.string(),
-          result: z.string().nullable(),
-          createdAt: z.date(),
-          status: z.string(),
-          targetFn: z.string(),
-          executingMachineId: z.string().nullable(),
-        })
-      ),
     },
   },
 

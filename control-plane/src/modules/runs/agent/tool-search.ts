@@ -66,7 +66,6 @@ export const getToolContexts = async ({
 }: {
   clusterId: string;
   relatedTools: {
-    serviceName: string;
     functionName: string;
   }[];
 }) => {
@@ -75,7 +74,6 @@ export const getToolContexts = async ({
       const [resolvedJobs, rejectedJobs] = await Promise.all([
         getLatestJobsResultedByFunctionName({
           clusterId,
-          service: toolDetails.serviceName,
           functionName: toolDetails.functionName,
           limit: 3,
           resultType: "resolution",
@@ -87,7 +85,6 @@ export const getToolContexts = async ({
         }),
         getLatestJobsResultedByFunctionName({
           clusterId,
-          service: toolDetails.serviceName,
           functionName: toolDetails.functionName,
           limit: 3,
           resultType: "rejection",
@@ -112,7 +109,6 @@ export const getToolContexts = async ({
       }
 
       return {
-        serviceName: toolDetails.serviceName,
         functionName: toolDetails.functionName,
         toolContext: contextArr.map(c => c.trim()).join("\n\n"),
       };
@@ -130,21 +126,21 @@ async function findRelatedFunctionTools(
     resultSchema: unknown | null;
     debug: boolean;
   },
-  search: string,
+  search: string
 ) {
-
   const relatedTools = await searchTools({
     query: search,
     clusterId: run.clusterId,
-  })
+  });
 
-  const selectedTools = relatedTools.map(definition =>
-    new AgentTool({
-      name: definition.name,
-      description: (definition.description ?? `${definition.name} function`).substring(0, 1024),
-      schema: definition.schema ?? undefined,
-      func: async () => undefined,
-    })
+  const selectedTools = relatedTools.map(
+    definition =>
+      new AgentTool({
+        name: definition.name,
+        description: (definition.description ?? `${definition.name} function`).substring(0, 1024),
+        schema: definition.schema ?? undefined,
+        func: async () => undefined,
+      })
   );
 
   return {
@@ -188,7 +184,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
 
       const definition = await getToolDefinition({
         name: tool,
-        clusterId: run.clusterId
+        clusterId: run.clusterId,
       });
 
       if (!definition) {
@@ -278,7 +274,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
         : state.messages
             .map(m => JSON.stringify(m.data))
             .concat(run.systemPrompt ?? "")
-            .join("\n"),
+            .join("\n")
     );
 
     tools.push(...selectedTools);

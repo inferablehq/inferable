@@ -4,7 +4,6 @@ import { getClusterBackgroundRun } from "../runs";
 import * as events from "./events";
 import { upsertToolDefinition } from "../tools";
 
-
 const mockTargetSchema = JSON.stringify({
   type: "object",
   properties: {
@@ -16,7 +15,6 @@ const mockTargetSchema = JSON.stringify({
 
 describe("event-aggregation", () => {
   const clusterId = Math.random().toString();
-  const service = "testService";
 
   const simulateActivity = async () => {
     await createOwner({
@@ -80,7 +78,6 @@ describe("event-aggregation", () => {
           owner: {
             clusterId,
           },
-          service,
           targetFn,
           targetArgs,
           runId: getClusterBackgroundRun(clusterId),

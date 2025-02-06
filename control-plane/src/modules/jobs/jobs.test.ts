@@ -34,7 +34,6 @@ describe("createJob", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -69,7 +68,6 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -119,7 +117,6 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -166,7 +163,6 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -210,7 +206,6 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       toolCallId,
       runId: getClusterBackgroundRun(owner.clusterId),
     });
@@ -222,7 +217,6 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       toolCallId,
       runId: getClusterBackgroundRun(owner.clusterId),
     });
@@ -250,7 +244,6 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -275,7 +268,6 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -287,13 +279,11 @@ describe("selfHealCalls", () => {
 describe("pollJobs", () => {
   let owner: Awaited<ReturnType<typeof createOwner>>;
   const machineId = "testMachineId";
-  const service = "testService";
 
   beforeAll(async () => {
     owner = await createOwner();
 
     await redis.start();
-
 
     await upsertToolDefinition({
       name: mockTargetFn,
@@ -311,7 +301,6 @@ describe("pollJobs", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service,
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -348,7 +337,6 @@ describe("pollJobs", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service,
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -392,7 +380,6 @@ describe("submitApproval", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -448,7 +435,6 @@ describe("submitApproval", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 

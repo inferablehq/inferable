@@ -1611,6 +1611,13 @@
       "when": 1738804051780,
       "tag": "0230_bent_strong_guy",
       "breakpoints": true
+    },
+    {
+      "idx": 231,
+      "version": "7",
+      "when": 1738880737792,
+      "tag": "0231_easy_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

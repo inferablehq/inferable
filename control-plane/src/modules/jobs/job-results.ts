@@ -38,7 +38,6 @@ export async function acknowledgeJob({
       )
     )
     .returning({
-      service: data.jobs.service,
       targetFn: data.jobs.target_fn,
       targetArgs: data.jobs.target_args,
     });
@@ -51,7 +50,6 @@ export async function acknowledgeJob({
     type: "jobAcknowledged",
     jobId,
     clusterId: clusterId,
-    service: job.service,
     machineId,
     targetFn: job.targetFn,
     meta: {
@@ -89,7 +87,6 @@ export async function persistJobResult({
       )
     )
     .returning({
-      service: data.jobs.service,
       targetFn: data.jobs.target_fn,
       runId: data.jobs.run_id,
     });
@@ -100,7 +97,6 @@ export async function persistJobResult({
     });
     events.write({
       type: "functionResultedButNotPersisted",
-      service: updateResult[0]?.service,
       clusterId: owner.clusterId,
       jobId,
       machineId,
@@ -121,7 +117,6 @@ export async function persistJobResult({
 
     events.write({
       type: "functionResulted",
-      service: updateResult[0]?.service,
       clusterId: owner.clusterId,
       jobId,
       machineId,

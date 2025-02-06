@@ -3,18 +3,13 @@ import { ulid } from "ulid";
 import { InvalidJobArgumentsError, NotFoundError } from "../../utilities/errors";
 import * as data from "../data";
 import * as events from "../observability/events";
-import { parseJobArgs } from "../service-definitions";
+import { parseJobArgs } from "../tools";
 import { extractWithJsonPath } from "../util";
-import { injectTraceContext } from "../observability/tracer";
-import { logger } from "../observability/logger";
-import { externalServices } from "../integrations/constants";
 import { jobDefaults } from "../data";
-import { externalToolCallQueue } from "../queues/external-tool-call";
 import { getToolDefinition, ToolConfig } from "../tools";
 
 type CreateJobParams = {
   jobId: string;
-  service: string;
   targetFn: string;
   targetArgs: string;
   owner: { clusterId: string };
@@ -41,7 +36,6 @@ const extractCacheKeyFromJsonPath = (path: string, args: unknown) => {
 };
 
 export const createJobV2 = async (params: {
-  service: string;
   targetFn: string;
   targetArgs: string;
   owner: { clusterId: string };
@@ -100,7 +94,6 @@ export const createJobV2 = async (params: {
 
     const { id, created } = await createJobStrategies.cached({
       ...jobConfig,
-      service: params.service,
       targetFn: params.targetFn,
       targetArgs: params.targetArgs,
       owner: params.owner,
@@ -124,7 +117,6 @@ export const createJobV2 = async (params: {
   } else {
     const { id, created } = await createJobStrategies.default({
       ...jobConfig,
-      service: params.service,
       targetFn: params.targetFn,
       targetArgs: params.targetArgs,
       owner: params.owner,
@@ -149,7 +141,6 @@ export const createJobV2 = async (params: {
 
 const createJobStrategies = {
   cached: async ({
-    service,
     targetFn,
     targetArgs,
     owner,
@@ -176,7 +167,6 @@ const createJobStrategies = {
         and(
           eq(data.jobs.cache_key, cacheKey),
           eq(data.jobs.cluster_id, owner.clusterId),
-          eq(data.jobs.service, service),
           eq(data.jobs.target_fn, targetFn),
           eq(data.jobs.status, "success"),
           eq(data.jobs.result_type, "resolution"),
@@ -198,7 +188,6 @@ const createJobStrategies = {
         target_args: targetArgs,
         status: "pending",
         cluster_id: owner.clusterId,
-        service,
         cache_key: cacheKey,
         remaining_attempts: maxAttempts,
         timeout_interval_seconds: timeoutIntervalSeconds,
@@ -212,7 +201,6 @@ const createJobStrategies = {
     return { id: jobId, created: !!inserted };
   },
   default: async ({
-    service,
     targetFn,
     targetArgs,
     owner,
@@ -231,7 +219,6 @@ const createJobStrategies = {
         target_args: targetArgs,
         status: "pending",
         cluster_id: owner.clusterId,
-        service,
         remaining_attempts: maxAttempts,
         timeout_interval_seconds: timeoutIntervalSeconds,
         run_id: runId,
@@ -246,7 +233,6 @@ const createJobStrategies = {
 };
 
 const onAfterJobCreated = async ({
-  service,
   targetFn,
   targetArgs,
   owner,
@@ -259,24 +245,9 @@ const onAfterJobCreated = async ({
     clusterId: owner.clusterId,
     jobId,
     targetFn,
-    service,
     meta: {
       targetArgs,
       config,
     },
   });
-
-  if (externalServices.includes(service)) {
-    await externalToolCallQueue
-      .send({
-        clusterId: owner.clusterId,
-        runId,
-        jobId,
-        service,
-        ...injectTraceContext(),
-      })
-      .catch(e => {
-        logger.error("Failed to send external call to queue", { error: e });
-      });
-  }
 };

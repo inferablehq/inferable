@@ -166,9 +166,7 @@ export default function IntegrationsPage({
   return (
     <div className="p-6">
       <h1 className="text-2xl mb-2">Integrations</h1>
-      <p className="text-gray-500 mb-6">
-        Connect your Inferable cluster with other tools and services
-      </p>
+      <p className="text-gray-500 mb-6">Connect your Inferable cluster with other tools</p>
 
       {["Triggers", "Observability"].map(category => (
         <div key={category}>

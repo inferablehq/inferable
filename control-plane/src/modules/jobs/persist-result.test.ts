@@ -29,7 +29,7 @@ describe("persistJobResult", () => {
       name: "machineStallTestFn",
       schema: mockTargetSchema,
       clusterId: owner.clusterId,
-    })
+    });
   });
 
   afterAll(async () => {
@@ -44,7 +44,6 @@ describe("persistJobResult", () => {
       targetFn,
       targetArgs,
       owner,
-      service: "testService",
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -75,7 +74,6 @@ describe("persistJobResult", () => {
     expect(status).toStrictEqual({
       result: "foo",
       resultType: "resolution",
-      service: "testService",
       status: "success",
     });
   });
@@ -83,13 +81,11 @@ describe("persistJobResult", () => {
   it("should only accept the machine that's assigned to the job", async () => {
     const targetFn = "machineStallTestFn";
     const targetArgs = "testTargetArgs";
-    const service = "testService";
 
     const createJobResult = await createJobV2({
       targetFn,
       targetArgs,
       owner,
-      service,
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -126,7 +122,6 @@ describe("persistJobResult", () => {
     expect(status).toStrictEqual({
       result: "foo",
       resultType: "resolution",
-      service,
       status: "success",
     });
   });
@@ -134,13 +129,11 @@ describe("persistJobResult", () => {
   it("should not accept result for already resolved job", async () => {
     const targetFn = "machineStallTestFn";
     const targetArgs = "testTargetArgs";
-    const service = "testService";
 
     const createJobResult = await createJobV2({
       targetFn,
       targetArgs,
       owner,
-      service,
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -177,7 +170,6 @@ describe("persistJobResult", () => {
     expect(status).toStrictEqual({
       result: "foo",
       resultType: "resolution",
-      service,
       status: "success",
     });
   });

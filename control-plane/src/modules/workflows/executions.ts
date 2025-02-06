@@ -13,7 +13,7 @@ import { logger } from "../observability/logger";
 export const createWorkflowExecution = async (
   clusterId: string,
   workflowName: string,
-  input: unknown,
+  input: unknown
 ) => {
   const parsed = z
     .object({
@@ -34,9 +34,9 @@ export const createWorkflowExecution = async (
     );
   }
 
-  const latest = tools.reduce((latest, service) => {
-    if (service.version > latest.version) {
-      return service;
+  const latest = tools.reduce((latest, tool) => {
+    if (tool.version > latest.version) {
+      return tool;
     }
 
     return latest;
@@ -48,7 +48,6 @@ export const createWorkflowExecution = async (
 
   const job = await jobs.createJobV2({
     owner: { clusterId },
-    service: "v2",
     targetFn: latest.name,
     targetArgs: packer.pack(parsed.data),
     runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
@@ -109,7 +108,6 @@ export const resumeWorkflowExecution = async ({
     owner: {
       clusterId,
     },
-    service: existingJob.service,
     targetFn: existingJob.targetFn,
     targetArgs: existingJob.targetArgs,
     runId: existingJob.runId,
@@ -154,8 +152,8 @@ export const getWorkflowExecutionEvents = async ({
   });
 
   const runEvents = await Promise.all(
-    associatedRuns.map((run) => getActivityForTimeline({ clusterId, runId: run.id, after }))
-  ).then((results) => results.flat());
+    associatedRuns.map(run => getActivityForTimeline({ clusterId, runId: run.id, after }))
+  ).then(results => results.flat());
 
   return {
     handlerJobEvents,
@@ -163,4 +161,3 @@ export const getWorkflowExecutionEvents = async ({
     runEvents,
   };
 };
-
