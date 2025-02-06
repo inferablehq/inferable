@@ -11,7 +11,7 @@ const client = new Inferable({
   apiSecret: process.env.INFERABLE_API_SECRET,
 });
 
-client.default.register({
+client.tools.register({
   name: "exec",
   func: async ({ command, arg }: { command: string; arg: string }) => {
     assert(arg.startsWith("./"), "can only access paths starting with ./");
@@ -33,6 +33,6 @@ client.default.register({
   },
 });
 
-client.default.start().then(() => {
+client.tools.listen().then(() => {
   console.log("Inferable demo service started");
 });
