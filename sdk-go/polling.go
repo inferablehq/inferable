@@ -88,7 +88,7 @@ type callResult struct {
 //
 //	// Stop the service on shutdown
 //	defer service.Stop()
-func (s *pollingAgent) RegisterFunc(fn Tool) error {
+func (s *pollingAgent) Register(fn Tool) error {
 	if s.isPolling() {
 		return fmt.Errorf("tool must be registered before starting the service")
 	}
