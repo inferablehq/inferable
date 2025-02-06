@@ -37,7 +37,7 @@ func TestInferableFunctions(t *testing.T) {
 		t.Fatalf("Error creating Inferable instance: %v", err)
 	}
 
-	err = inferableInstance.Tools.RegisterFunc(Tool{
+	err = inferableInstance.Tools.Register(Tool{
 		Func:        echo,
 		Description: "Echoes the input string",
 		Name:        "echo",
@@ -46,7 +46,7 @@ func TestInferableFunctions(t *testing.T) {
 		t.Fatalf("Error registering echo function: %v", err)
 	}
 
-	err = inferableInstance.Tools.RegisterFunc(Tool{
+	err = inferableInstance.Tools.Register(Tool{
 		Func:        reverse,
 		Description: "Reverses the input string",
 		Name:        "reverse",

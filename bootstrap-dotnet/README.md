@@ -42,7 +42,7 @@ If you don't provide an API key or base URL, it will attempt to read them from t
 
 ### Registering the Exec Function
 
-This bootstrap demonstrates registering a secure command execution [function](https://docs.inferable.ai/pages/functions):
+This bootstrap demonstrates registering a secure command execution [tools](https://docs.inferable.ai/pages/tools):
 
 ```csharp
 public class ExecInput
@@ -54,13 +54,13 @@ public class ExecInput
     public string Arg { get; set; }      // Must start with "./"
 }
 
-client.Default.RegisterFunction(new FunctionRegistration<ExecInput> {
+client.RegisterTool(new ToolRegistration<ExecInput> {
     Name = "exec",
     Description = "Executes a system command (only 'ls' and 'cat' are allowed)",
     Func = new Func<ExecInput, object?>(ExecService.Exec),
 });
 
-await client.Default.StartAsync();
+await client.ListenAsync();
 ```
 
 ### Using the Function

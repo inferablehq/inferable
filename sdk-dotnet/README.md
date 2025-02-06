@@ -43,7 +43,7 @@ If you don't provide an API key or base URL, it will attempt to read them from t
 
 ### Registering a Function
 
-Register a "sayHello" [function](https://docs.inferable.ai/pages/functions). This file will register the function with the [control-plane](https://docs.inferable.ai/pages/control-plane).
+Register a "sayHello" [tool](https://docs.inferable.ai/pages/tools). This file will register the function with the [control-plane](https://docs.inferable.ai/pages/control-plane).
 
 ```cs
 public class MyInput
@@ -51,7 +51,7 @@ public class MyInput
     public string Message { get; set; }
 }
 
-client.Default.RegisterFunction(new FunctionRegistration<MyInput>
+client.RegisterTool(new ToolRegistration<MyInput>
 {
     Name = "SayHello",
     Description = "A simple greeting function",
@@ -60,7 +60,7 @@ client.Default.RegisterFunction(new FunctionRegistration<MyInput>
     }),
 });
 
-_ = client.Default.Start();
+_ = client.ListenAsync();
 ```
 
 <details>
@@ -87,7 +87,7 @@ public struct UserInput
   public string Email { get; set; }
 }
 
-client.Default.RegisterFunction(new FunctionRegistration<MyInput>
+client.RegisterTool(new ToolRegistration<MyInput>
 {
     Name = "SayHello",
     Description = "A simple greeting function",
@@ -102,46 +102,6 @@ In this example, the UserInput class uses [System.Text.Json.Serialization](https
 - The email field is ignored when writing null.
 
 </details>
-
-### Triggering a run
-
-The following code will create an [Inferable run](https://docs.inferable.ai/pages/runs) with the prompt "Say hello to John" and the `sayHello` function attached.
-
-> You can inspect the progress of the run:
->
-> - in the [playground UI](https://app.inferable.ai/) via `inf app`
-> - in the [CLI](https://www.npmjs.com/package/@inferable/cli) via `inf runs list`
-
-```cs
-var run = await inferable.CreateRunAsync(new CreateRunInput
-{
-  InitialPrompt = "Say hello to John",
-  // Optional: Explicitly attach the `sayHello` function (All functions attached by default)
-  AttachedFunctions = new List<FunctionReference>
-  {
-    new FunctionReference {
-      Function = "SayHello",
-      Service = "default"
-    }
-  },
-  // Optional: Define a schema for the result to conform to
-  ResultSchema = JsonSchema.FromType<RunOutput>();
-  // Optional: Subscribe an Inferable function to receive notifications when the run status changes
-  //OnStatusChange = new OnStatusChange<RunOutput>
-  //{
-  //  Function = OnStatusChangeFunction
-  //}
-});
-
-Console.WriteLine($"Run started: {run.ID}");
-
-// Wait for the run to complete and log
-var result = await run.PollAsync(null);
-
-Console.WriteLine($"Run result: {result}");
-```
-
-> Runs can also be triggered via the [API](https://docs.inferable.ai/pages/invoking-a-run-api), [CLI](https://www.npmjs.com/package/@inferable/cli) or [playground UI](https://app.inferable.ai/).
 
 ## Documentation
 

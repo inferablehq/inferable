@@ -37,7 +37,7 @@ namespace Inferable.API
 
     async private Task RethrowWithContext(HttpRequestException e, HttpResponseMessage response)
     {
-        throw new Exception($"Failed to get run. Response: {await response.Content.ReadAsStringAsync()}", e);
+        throw new Exception($"Response: {await response.Content.ReadAsStringAsync()}", e);
     }
 
 
@@ -77,54 +77,12 @@ namespace Inferable.API
       }
     }
 
-    async public Task<CreateRunResult> CreateRunAsync(string clusterId, CreateRunInput input)
+    async public Task<(List<JobMessage>, int?)> ListJobs(string clusterId, string[] tools)
     {
-      string jsonData = JsonSerializer.Serialize(input);
+      var toolString = string.Join(",", tools);
 
-      HttpResponseMessage response = await _client.PostAsync(
-          $"/clusters/{clusterId}/runs",
-          new StringContent(jsonData, Encoding.UTF8, "application/json")
-          );
-
-      try {
-        response.EnsureSuccessStatusCode();
-      } catch (HttpRequestException e) {
-        await RethrowWithContext(e, response);
-      }
-
-      string responseBody = await response.Content.ReadAsStringAsync();
-      var result = JsonSerializer.Deserialize<CreateRunResult>(responseBody);
-
-      return result;
-    }
-
-    async public Task<GetRunResult> GetRun(string clusterId, string runId)
-    {
       HttpResponseMessage response = await _client.GetAsync(
-          $"/clusters/{clusterId}/runs/{runId}"
-          );
-
-      try {
-      try {
-        response.EnsureSuccessStatusCode();
-      } catch (HttpRequestException e) {
-        await RethrowWithContext(e, response);
-      }
-
-      } catch (HttpRequestException e) {
-        throw new Exception($"Failed to get run. Status Code: {response.StatusCode}, Response: {await response.Content.ReadAsStringAsync()}", e);
-      }
-
-      string responseBody = await response.Content.ReadAsStringAsync();
-      var result = JsonSerializer.Deserialize<GetRunResult>(responseBody);
-
-      return result;
-    }
-
-    async public Task<(List<CallMessage>, int?)> ListJobs(string clusterId, string service)
-    {
-      HttpResponseMessage response = await _client.GetAsync(
-          $"/clusters/{clusterId}/jobs?service={service}&acknowledge=true"
+          $"/clusters/{clusterId}/jobs?tools={toolString}&acknowledge=true"
           );
 
       try {
@@ -134,7 +92,7 @@ namespace Inferable.API
       }
 
       string responseBody = await response.Content.ReadAsStringAsync();
-      var result = JsonSerializer.Deserialize<List<CallMessage>>(responseBody) ?? new List<CallMessage>();
+      var result = JsonSerializer.Deserialize<List<JobMessage>>(responseBody) ?? new List<JobMessage>();
 
       var retryAfterHeader = response.Headers.RetryAfter?.ToString() ?? "";
 
@@ -150,7 +108,7 @@ namespace Inferable.API
       return (result, int.Parse(retryAfterHeader));
     }
 
-    async public Task<CreateCallResult> CreateJob(string clusterId, CreateCallInput input)
+    async public Task<CreateJobResult> CreateJob(string clusterId, CreateJobInput input)
     {
       string jsonData = JsonSerializer.Serialize(input);
 
@@ -166,7 +124,7 @@ namespace Inferable.API
       }
 
       string responseBody = await response.Content.ReadAsStringAsync();
-      return JsonSerializer.Deserialize<CreateCallResult>(responseBody);
+      return JsonSerializer.Deserialize<CreateJobResult>(responseBody);
     }
   }
 }

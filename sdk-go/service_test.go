@@ -27,7 +27,7 @@ func TestRegisterFunc(t *testing.T) {
 	}
 
 	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
-	err := i.Tools.RegisterFunc(Tool{
+	err := i.Tools.Register(Tool{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
@@ -35,7 +35,7 @@ func TestRegisterFunc(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to register the same function again
-	err = i.Tools.RegisterFunc(Tool{
+	err = i.Tools.Register(Tool{
 		Func: testFunc,
 		Name: "TestFunc",
 	})
@@ -43,7 +43,7 @@ func TestRegisterFunc(t *testing.T) {
 
 	// Try to register a function with invalid input
 	invalidFunc := func(a, b int) int { return a + b }
-	err = i.Tools.RegisterFunc(Tool{
+	err = i.Tools.Register(Tool{
 		Func: invalidFunc,
 		Name: "InvalidFunc",
 	})
@@ -63,7 +63,7 @@ func TestRegisterFuncWithInlineStruct(t *testing.T) {
 	}, ctx ContextInput) int {
 		return input.A + input.B
 	}
-	err := i.Tools.RegisterFunc(Tool{
+	err := i.Tools.Register(Tool{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
@@ -71,7 +71,7 @@ func TestRegisterFuncWithInlineStruct(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to register the same function again
-	err = i.Tools.RegisterFunc(Tool{
+	err = i.Tools.Register(Tool{
 		Func: testFunc,
 		Name: "TestFunc",
 	})
@@ -79,7 +79,7 @@ func TestRegisterFuncWithInlineStruct(t *testing.T) {
 
 	// Try to register a function with invalid input
 	invalidFunc := func(a, b int) int { return a + b }
-	err = i.Tools.RegisterFunc(Tool{
+	err = i.Tools.Register(Tool{
 		Func: invalidFunc,
 		Name: "InvalidFunc",
 	})
@@ -115,7 +115,7 @@ func TestRegistrationAndConfig(t *testing.T) {
 
 	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
 
-	err = i.Tools.RegisterFunc(Tool{
+	err = i.Tools.Register(Tool{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
@@ -148,7 +148,7 @@ func TestServiceStartAndReceiveMessage(t *testing.T) {
 
 	testFunc := func(input TestInput, ctx ContextInput) string { return "Received: " + input.Message }
 
-	err = i.Tools.RegisterFunc(Tool{
+	err = i.Tools.Register(Tool{
 		Func:        testFunc,
 		Name:        "TestFunc",
 		Description: "Test function",
@@ -220,7 +220,7 @@ func TestServiceStartAndReceiveFailingMessage(t *testing.T) {
 	// Purposfuly failing function
 	testFailingFunc := func(input TestInput, ctx ContextInput) (*string, error) { return nil, fmt.Errorf("test error") }
 
-	err = i.Tools.RegisterFunc(Tool{
+	err = i.Tools.Register(Tool{
 		Func:        testFailingFunc,
 		Name:        "FailingFunc",
 		Description: "Test function",

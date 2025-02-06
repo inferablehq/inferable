@@ -19,7 +19,7 @@ type ExecOutput struct {
 func Exec(input struct {
 	Command string `json:"command"`
 	Arg     string `json:"arg"`
-}) ExecOutput {
+}, ctx inferable.ContextInput) ExecOutput {
 	allowedCommands := map[string]bool{
 		"ls":  true,
 		"cat": true,
@@ -75,7 +75,7 @@ func main() {
 	}
 
 	// Register the exec function
-	_, err = client.Default.RegisterFunc(inferable.Function{
+	err = client.Tools.Register(inferable.Tool{
 		Func:        Exec,
 		Name:        "exec",
 		Description: "Executes a system command",
@@ -84,7 +84,7 @@ func main() {
 		panic(err)
 	}
 
-	err = client.Default.Start()
+	err = client.Tools.Listen()
 	if err != nil {
 		panic(err)
 	}

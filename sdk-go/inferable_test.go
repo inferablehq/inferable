@@ -32,7 +32,7 @@ func TestCallFunc(t *testing.T) {
 	}
 
 	testFunc := func(input TestInput, ctx ContextInput) int { return input.A + input.B }
-	err := i.Tools.RegisterFunc(Tool{
+	err := i.Tools.Register(Tool{
 		Func: testFunc,
 		Name: "TestFunc",
 	})

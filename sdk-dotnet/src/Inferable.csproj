@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Inferable</PackageId>
-    <Version>0.0.25</Version>
+    <Version>0.0.26</Version>
     <Authors>Inferable</Authors>
     <Company>Inferable</Company>
     <Description>Client library for interacting with the Inferable API</Description>
