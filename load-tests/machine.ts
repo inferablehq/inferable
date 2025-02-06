@@ -9,7 +9,7 @@ const client = new Inferable({
   machineId,
 })
 
-client.default.register({
+client.tools.register({
   func: (_, context) => {
     console.log("Handling request", context)
     return {
@@ -19,7 +19,7 @@ client.default.register({
   name: "searchHaystack",
 })
 
-client.default.start().then(() => {
+client.tools.listen().then(() => {
   console.log("Machine started", {
     machineId
   })
