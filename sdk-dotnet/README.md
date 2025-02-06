@@ -43,7 +43,7 @@ If you don't provide an API key or base URL, it will attempt to read them from t
 
 ### Registering a Function
 
-Register a "sayHello" [function](https://docs.inferable.ai/pages/functions). This file will register the function with the [control-plane](https://docs.inferable.ai/pages/control-plane).
+Register a "sayHello" [tool](https://docs.inferable.ai/pages/tools). This file will register the function with the [control-plane](https://docs.inferable.ai/pages/control-plane).
 
 ```cs
 public class MyInput
@@ -51,7 +51,7 @@ public class MyInput
     public string Message { get; set; }
 }
 
-client.Tools.Register(new ToolRegistration<MyInput>
+client.RegisterTool(new ToolRegistration<MyInput>
 {
     Name = "SayHello",
     Description = "A simple greeting function",
@@ -60,7 +60,7 @@ client.Tools.Register(new ToolRegistration<MyInput>
     }),
 });
 
-_ = client.Default.Start();
+_ = client.ListenAsync();
 ```
 
 <details>
@@ -87,7 +87,7 @@ public struct UserInput
   public string Email { get; set; }
 }
 
-client.Tools.RegisterTool(new FunctionRegistration<MyInput>
+client.RegisterTool(new ToolRegistration<MyInput>
 {
     Name = "SayHello",
     Description = "A simple greeting function",

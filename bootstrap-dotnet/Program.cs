@@ -31,17 +31,16 @@ class Program
         var serviceProvider = services.BuildServiceProvider();
         var client = serviceProvider.GetRequiredService<InferableClient>();
 
-        // Check if "trigger" command was passed
-        if (args.Length > 0 && args[0].ToLower() == "trigger")
-        {
-            await RunSourceInspection.RunAsync(client);
-            return;
-        }
-
         // Default behavior - run the service
         Console.WriteLine("Starting client...");
-        Register.RegisterFunctions(client);
-        await client.Default.StartAsync();
+
+        client.RegisterTool(new ToolRegistration<ExecInput> {
+            Name = "exec",
+            Description = "Executes a system command (only 'ls' and 'cat' are allowed)",
+            Func = new Func<ExecInput, object?>(ExecService.Exec),
+        });
+
+        await client.ListenAsync();
 
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();
