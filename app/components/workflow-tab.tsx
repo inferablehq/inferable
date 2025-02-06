@@ -6,12 +6,11 @@ import {
   SmallLiveBlueCircle,
   SmallLiveGreenCircle,
 } from "@/components/circles";
-import { Button } from "@/components/ui/button";
 import { Workflow } from "@/lib/types";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
-import { TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon, TrashIcon } from "lucide-react";
+import { TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback } from "react";
 import toast from "react-hot-toast";
