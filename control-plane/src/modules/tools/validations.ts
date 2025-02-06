@@ -21,7 +21,7 @@ export type JsonSchemaInput = {
   $schema: string;
 };
 
-export function validateToolName(name: string) {
+export function validateToolName(name: string, isPrivate: boolean) {
   if (!name) {
     throw new InvalidServiceRegistrationError("Tool name is required");
   }
@@ -31,9 +31,24 @@ export function validateToolName(name: string) {
     throw new InvalidServiceRegistrationError("Tool name must be 50 characters or less");
   }
 
-  // allows alphanumeric, and dots
-  if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
-    throw new InvalidServiceRegistrationError(`Tool name must be alphanumeric and can contain hyphen, underscore and priod, got ${name}`);
+  logger.info("Validating tool name", {
+    name,
+    isPrivate,
+  });
+
+  // Private functions are less restrictive as they don't pass through the model
+  if (isPrivate) {
+    // private functions can have alphanumeric, hyphen, underscore and period
+    // The inclusion of period is to support workflow handlers
+    if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
+      throw new InvalidServiceRegistrationError(`Private Tools can have alphanumeric, hyphen, underscore and period, got ${name}`);
+    }
+  } else {
+    // public functions can have alphanumeric, hyphen, underscore
+    // https://docs.anthropic.com/en/docs/build-with-claude/tool-use
+    if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+      throw new InvalidServiceRegistrationError(`Tools can have alphanumeric, hyphen and underscore got ${name}`);
+    }
   }
 }
 

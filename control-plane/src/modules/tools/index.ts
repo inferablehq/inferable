@@ -220,7 +220,7 @@ export async function upsertToolDefinition({
   clusterId: string;
   shouldExpire?: boolean;
 }) {
-  validateToolName(name);
+  validateToolName(name, config?.private ?? false);
   validateToolDescription(description);
 
   if (!schema) {
