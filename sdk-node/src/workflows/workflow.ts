@@ -31,6 +31,7 @@ type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
 type AgentConfig<TResult> = {
   name: string;
   systemPrompt?: string;
+  tools?: string[];
   resultSchema?: z.ZodType<TResult>;
   runId?: string;
 };
@@ -255,6 +256,11 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                 id: runId,
                 systemPrompt: config.systemPrompt,
                 resultSchema,
+                attachedFunctions: config.tools?.map((tool) => ({
+                  // Ignored, to be removed
+                  service: "v2",
+                  function: tool,
+                })),
                 onStatusChange: {
                   type: "workflow",
                   statuses: ["failed", "done"],

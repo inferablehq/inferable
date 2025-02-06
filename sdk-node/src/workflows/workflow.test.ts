@@ -40,6 +40,7 @@ describe("workflow", () => {
       onStart(input);
       const searchAgent = ctx.agent({
         name: "search",
+        tools: ["searchHaystack"],
         systemPrompt: helpers.structuredPrompt({
           facts: ["You are haystack searcher"],
           goals: ["Find the special word in the haystack"],
