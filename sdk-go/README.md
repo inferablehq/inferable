@@ -49,7 +49,7 @@ type MyInput struct {
     Message string `json:"message"`
 }
 
-sayHello, err := client.Default.RegisterFunc(inferable.Function{
+err := client.Tools.Register(inferable.Tool{
     Func:        myFunc,
     Name:        "SayHello",
     Description: "A simple greeting function",
@@ -88,9 +88,8 @@ func createUser(input UserInput, ctx inferable.ContextInput) string {
     // Function implementation
 }
 
-service, _ := client.RegisterService("UserService")
 
-err := service.RegisterFunc(inferable.Function{
+err := client.Tools.Register(inferable.Tool{
     Func:        createUser,
     Name:        "CreateUser",
     Description: "Creates a new user",
@@ -114,42 +113,6 @@ When this function is registered, the Inferable Go SDK will use these jsonschema
 The [invopop/jsonschema library](https://pkg.go.dev/github.com/invopop/jsonschema) provides many more options for schema customization, including support for enums, pattern validation, numeric ranges, and more.
 
 </details>
-
-### Triggering a run
-
-The following code will create an [Inferable run](https://docs.inferable.ai/pages/runs) with the prompt "Say hello to John" and the `sayHello` function attached.
-
-> You can inspect the progress of the run:
->
-> - in the [playground UI](https://app.inferable.ai/) via `inf app`
-> - in the [CLI](https://www.npmjs.com/package/@inferable/cli) via `inf runs list`
-
-```go
-  run, err := client.CreateRun(inferable.CreateRunInput{
-    InitialPrompt: "Say hello to John Smith",
-    // Optional: Explicitly attach the functions (All functions attached by default)
-    AttachedFunctions: []*inferable.FunctionReference{
-      inferable.FunctionReference{
-        Function: "SayHello",
-        Service: "default",
-      }
-    },
-    // Optional: Subscribe an Inferable function to receive notifications when the run status changes
-    //OnStatusChange: &inferable.OnStatusChange{
-    //  Function: OnStatusChangeFunction
-    //}
-  })
-
-  fmt.Println("Run started: ", run.ID)
-  result, err := run.Poll(nil)
-  if err != nil {
-    panic(err)
-  }
-  fmt.Println("Run Result: ", result)
-
-```
-
-> Runs can also be triggered via the [API](https://docs.inferable.ai/pages/invoking-a-run-api), [CLI](https://www.npmjs.com/package/@inferable/cli) or [playground UI](https://app.inferable.ai/).
 
 ## Documentation
 
