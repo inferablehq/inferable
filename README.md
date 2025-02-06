@@ -4,7 +4,7 @@
 
 # Inferable
 
-Reliable AI Agents with Durable Execution for Distributed Systems.
+Build production-ready AI Agents with Durable Execution.
 
 ![NPM Version](https://img.shields.io/npm/v/inferable?color=32CD32&style=for-the-badge) ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/inferablehq/inferable?filename=sdk-go%2Fgo.mod&color=32CD32&style=for-the-badge) ![NuGet Version](https://img.shields.io/nuget/v/inferable?color=32CD32&style=for-the-badge)
 ![License](https://img.shields.io/github/license/inferablehq/inferable?color=32CD32&style=for-the-badge)
