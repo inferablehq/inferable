@@ -1,1 +1,0 @@
-{"suggestions":[{"name":"Add index for jobs timeout monitoring","remediation":"CREATE INDEX idx_jobs_timeout_monitoring ON jobs(status, last_retrieved_at) WHERE timeout_interval_seconds IS NOT NULL;"},{"name":"Add index for machine status updates","remediation":"CREATE INDEX idx_machines_status_ping ON machines(status, last_ping_at);"}]}
