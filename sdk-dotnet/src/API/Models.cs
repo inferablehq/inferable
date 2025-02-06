@@ -20,15 +20,10 @@ namespace Inferable.API
   public struct CreateMachineInput
   {
     [
-      JsonPropertyName("service"),
+      JsonPropertyName("tools"),
       JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
     ]
-    public string Service { get; set; }
-    [
-      JsonPropertyName("functions"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
-    ]
-    public List<Function> Functions { get; set; }
+    public List<Tool> Tools { get; set; }
   }
 
   public struct CreateMachineResult
@@ -37,7 +32,7 @@ namespace Inferable.API
     public required string ClusterId { get; set; }
   }
 
-  public struct CallMessage
+  public struct JobMessage
   {
     [JsonPropertyName("id")]
     public required string Id { get; set; }
@@ -65,7 +60,7 @@ namespace Inferable.API
     public CreateResultMeta Meta { get; set; }
   }
 
-  public struct CreateCallInput
+  public struct CreateJobInput
   {
     [JsonPropertyName("service")]
     public required string Service { get; set; }
@@ -77,7 +72,7 @@ namespace Inferable.API
     public required object Input { get; set; }
   }
 
-  public struct CreateCallResult
+  public struct CreateJobResult
   {
     // TODO Make enum
     [JsonPropertyName("resultType")]
@@ -91,7 +86,7 @@ namespace Inferable.API
     public required string Status { get; set; }
   }
 
-  public struct Function
+  public struct Tool
   {
     [JsonPropertyName("name")]
     public string? Name { get; set; }
@@ -109,10 +104,10 @@ namespace Inferable.API
       JsonPropertyName("config"),
       JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
     ]
-    public FunctionConfig? Config { get; set; }
+    public ToolConfig? Config { get; set; }
   }
 
-  public struct FunctionConfig
+  public struct ToolConfig
   {
     [
       JsonPropertyName("requiresApproval"),
@@ -131,101 +126,5 @@ namespace Inferable.API
       JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
     ]
     public int? TimeoutSeconds { get; set; }
-  }
-
-  public struct CreateRunInput
-  {
-    [JsonPropertyName("initialPrompt")]
-    public string? InitialPrompt { get; set; }
-
-    [
-      JsonPropertyName("attachedFunctions"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull),
-    ]
-    public List<FunctionReference>? AttachedFunctions { get; set; }
-
-    [
-      JsonPropertyName("metadata"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
-    ]
-    public Dictionary<string, string>? Metadata { get; set; }
-
-    [
-      JsonPropertyName("resultSchema"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull),
-      JsonConverter(typeof(JsonSchemaConverter))
-    ]
-    public JsonSchema? ResultSchema { get; set; }
-
-    [
-      JsonPropertyName("onStatusChange"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
-    ]
-    public OnStatusChange? OnStatusChange { get; set; }
-
-    [
-      JsonPropertyName("reasoningTraces"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
-    ]
-    public bool? ReasoningTraces { get; set; }
-
-    [
-      JsonPropertyName("callSummarization"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
-    ]
-    public bool? CallSummarization { get; set; }
-
-    [
-      JsonPropertyName("interactive"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)
-    ]
-    public bool? Interactive { get; set; }
-  }
-
-  public struct OnStatusChange
-  {
-    [
-      JsonPropertyName("function"),
-      JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull),
-    ]
-    public FunctionReference? Function { get; set; }
-  }
-
-  public struct FunctionReference
-  {
-    [JsonPropertyName("service")]
-    public required string Service { get; set; }
-    [JsonPropertyName("function")]
-    public required string Function { get; set; }
-  }
-
-  public struct CreateRunResult
-  {
-    [JsonPropertyName("id")]
-    public string ID { get; set; }
-  }
-
-  public struct GetRunResult
-  {
-    [JsonPropertyName("id")]
-    public string ID { get; set; }
-
-    [JsonPropertyName("status")]
-    public string Status { get; set; }
-
-    [JsonPropertyName("failureReason")]
-    public string FailureReason { get; set; }
-
-    [JsonPropertyName("summary")]
-    public string Summary { get; set; }
-
-    [JsonPropertyName("result")]
-    public object? Result { get; set; }
-
-    [JsonPropertyName("attachedFunctions")]
-    public List<string> AttachedFunctions { get; set; }
-
-    [JsonPropertyName("metadata")]
-    public Dictionary<string, string> Metadata { get; set; }
   }
 }

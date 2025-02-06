@@ -4,22 +4,22 @@ using NJsonSchema;
 
 namespace Inferable
 {
-  internal interface IFunctionRegistration
+  internal interface IToolRegistration
   {
     string Name { get; set; }
     string? Description { get; set; }
-    FunctionConfig? Config { get; set; }
+    ToolConfig? Config { get; set; }
     JsonSchema Schema { get; }
     CreateResultInput Invoke(object rawInput);
   }
 
-  public class FunctionRegistration<T> : IFunctionRegistration where T : struct
+  public class ToolRegistration<T> : IToolRegistration where T : struct
   {
     public required string Name { get; set; }
 
     public string? Description { get; set; }
 
-    public FunctionConfig? Config { get; set; }
+    public ToolConfig? Config { get; set; }
 
     public required Func<T, object?> Func { get; set; }
 

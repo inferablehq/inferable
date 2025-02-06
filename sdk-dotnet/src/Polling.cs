@@ -7,12 +7,11 @@ namespace Inferable
   /// <summary>
   /// Internal class for managing the lifecycle of a service, polling, etc
   /// </summary>
-  internal class Service
+  internal class PollingAgent
   {
     static int MAX_CONSECUTIVE_POLL_FAILURES = 50;
     static int DEFAULT_RETRY_AFTER_SECONDS = 10;
 
-    private string _name;
     private string _clusterId;
     private bool _polling = false;
 
@@ -21,24 +20,15 @@ namespace Inferable
     private ApiClient _client;
     private ILogger _logger;
 
-    private List<IFunctionRegistration> _functions = new List<IFunctionRegistration>();
+    private List<IToolRegistration> _tools = new List<IToolRegistration>();
 
-    internal Service(string name, string clusterId, ApiClient client, ILogger? logger, List<IFunctionRegistration> functions)
+    internal PollingAgent(string clusterId, ApiClient client, ILogger? logger, List<IToolRegistration> functions)
     {
-      this._name = name;
-      this._functions = functions;
+      this._tools = functions;
       this._clusterId = clusterId;
 
       this._client = client;
       this._logger = logger ?? NullLogger.Instance;
-    }
-
-    internal string Name
-    {
-      get
-      {
-        return this._name;
-      }
     }
 
     internal bool Polling
@@ -51,7 +41,7 @@ namespace Inferable
 
     async internal Task<string> Start()
     {
-      this._logger.LogDebug("Starting service '{name}'", this._name);
+      this._logger.LogDebug("Starting polling agent");
       await RegisterMachine();
 
       // Purposely not awaiting
@@ -62,7 +52,7 @@ namespace Inferable
 
     async internal Task Stop()
     {
-      this._logger.LogDebug("Stopping service '{name}'", this._name);
+      this._logger.LogDebug("Stopping polling agent");
       this._polling = false;
       await Task.FromResult(0);
     }
@@ -71,7 +61,7 @@ namespace Inferable
       this._polling = true;
       var failureCount = 0;
 
-      while (this._polling && failureCount < Service.MAX_CONSECUTIVE_POLL_FAILURES) {
+      while (this._polling && failureCount < PollingAgent.MAX_CONSECUTIVE_POLL_FAILURES) {
         try {
           await this.pollIteration();
         } catch (Exception e) {
@@ -83,7 +73,7 @@ namespace Inferable
       }
 
       this._polling = false;
-      this._logger.LogError("Quiting polling service '{name}'", this._name);
+      this._logger.LogError("Quiting polling agent");
     }
     async private Task pollIteration()
     {
@@ -91,10 +81,11 @@ namespace Inferable
         throw new Exception("Failed to poll. Could not find clusterId");
       }
 
-      List<CallMessage> messages = new List<CallMessage>();
+      List<JobMessage> messages = new List<JobMessage>();
 
       try {
-        var pollResult = await _client.ListJobs(this._clusterId, this._name);
+        var toolNames = this._tools.Select(f => f.Name).ToArray();
+        var pollResult = await _client.ListJobs(this._clusterId, toolNames);
 
         messages = pollResult.Item1;
         if (pollResult.Item2 != null) {
@@ -110,7 +101,7 @@ namespace Inferable
 
       foreach (var call in messages)
       {
-        var function = this._functions.FirstOrDefault(f => f.Name == call.Function);
+        var function = this._tools.FirstOrDefault(f => f.Name == call.Function);
         if (function == null)
         {
           this._logger.LogWarning("Received message for unknown function {TargetFn}", call.Function);
@@ -128,19 +119,16 @@ namespace Inferable
           this._logger.LogError(e, "Failed to create result for job {CallId}", call.Id);
         }
       }
-
-      _logger.LogDebug($"Polling service {this._name}");
     }
 
     async private Task RegisterMachine()
     {
       this._logger.LogDebug("Registering machine");
-      var functions = new List<Function>();
+      var tools = new List<Tool>();
 
-      foreach (var function in this._functions)
+      foreach (var function in this._tools)
       {
-
-        functions.Add(new Function
+        tools.Add(new Tool
             {
             Name = function.Name,
             Config = function.Config,
@@ -150,8 +138,7 @@ namespace Inferable
       };
 
       var registerResult = await _client.CreateMachine(new CreateMachineInput {
-          Service = this._name,
-          Functions = functions
+          Tools = tools
           });
     }
   }

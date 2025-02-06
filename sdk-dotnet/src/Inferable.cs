@@ -53,11 +53,6 @@ namespace Inferable
     public required TimeSpan Interval { get; set; }
   }
 
-  public class RunReference
-  {
-    public required string ID { get; set; }
-    public required Func<PollRunOptions?, Task<GetRunResult?>> PollAsync { get; set; }
-  }
 
   /// <summary>
   /// The Inferable client. This is the main entry point for using Inferable.
@@ -77,43 +72,9 @@ namespace Inferable
     private readonly ILogger<InferableClient> _logger;
     private string? _clusterId;
 
-    // Dictionary of service name to list of functions
-    private Dictionary<string, List<IFunctionRegistration>> _functionRegistry = new Dictionary<string, List<IFunctionRegistration>>();
+    private List<IToolRegistration> _toolRegistry = new List<IToolRegistration>();
 
-    private List<Service> _services = new List<Service>();
-
-    /// <summary>
-    /// Convenience reference to a service with the name 'default'.
-    /// <code>
-    /// // Create a new Inferable instance with an API secret
-    /// var client = new InferableClient(new InferableOptions {
-    ///     ApiSecret = "API_SECRET"
-    /// });
-    ///
-    /// client.Default.RegisterFunction(new FunctionRegistration<TestInput>
-    /// {
-    ///     Name = "SayHello",
-    ///     Description = "A simple greeting function",
-    ///     Func = new Func<TestInput, object?>((input) => {
-    ///         didCallSayHello = true;
-    ///         return $"Hello {input.testString}";
-    ///     }),
-    /// });
-    ///
-    /// // Start the service
-    /// await client.Default.StartAsync();
-    ///
-    /// // Stop the service on shutdown
-    /// await client.Default.StopAsync();
-    /// </code>
-    /// </summary>
-    public RegisteredService Default
-    {
-      get
-      {
-        return this.RegisterService("default");
-      }
-    }
+    private List<PollingAgent> _pollingAgents = new List<PollingAgent>();
 
     /// <summary>
     /// Initializes a new instance of the InferableClient class.
@@ -156,160 +117,43 @@ namespace Inferable
       this._logger = logger ?? NullLogger<InferableClient>.Instance;
     }
 
-    /// <summary>
-    /// Registers a service with Inferable.
-    /// <code>
-    /// // Create a new Inferable instance with an API secret
-    /// var client = new Inferable(new InferableOptions {
-    ///     ApiSecret = "API_SECRET"
-    /// });
-    ///
-    /// // Define and register the service
-    /// var service = client.RegisterService("MyService");
-    ///
-    /// service.RegisterFunction(new FunctionRegistration<TestInput>
-    /// {
-    ///     Name = "SayHello",
-    ///     Description = "A simple greeting function",
-    ///     Func = new Func<TestInput, object?>((input) => {
-    ///         didCallSayHello = true;
-    ///         return $"Hello {input.testString}";
-    ///     }),
-    /// });
-    ///
-    /// // Start the service
-    /// await service.StartAsync();
-    ///
-    /// // Stop the service on shutdown
-    /// await service.StopAsync();
-    /// </code>
-    /// </summary>
-    public RegisteredService RegisterService(string name)
-    { return new RegisteredService(name, this);
+    public void RegisterTool<T>(ToolRegistration<T> tool) where T : struct {
+      var existing = this._toolRegistry.FirstOrDefault(f => f.Name == tool.Name);
+      if (existing != null) {
+        throw new Exception($"Function with name '{tool.Name}' already registered");
+      }
+
+      this._toolRegistry.Add(tool);
     }
 
-    /// <summary>
-    /// Creates a run and returns a reference to it.
-    /// <code>
-    /// // Create a new Inferable instance with an API secret
-    /// var client = new InferableClient(new InferableOptions {
-    ///     ApiSecret = "API_SECRET"
-    /// });
-    ///
-    /// var run = client.CreateRun(new CreateRunInput {
-    ///     InitialPrompt = "Hello world"
-    /// });
-    ///
-    /// Console.WriteLine("Started run with ID: " + run.ID);
-    ///
-    /// var result = await run.PollAsync();
-    /// Console.WriteLine("Run result: " + result);
-    /// </code>
-    /// </summary>
-    async public Task<RunReference> CreateRunAsync(CreateRunInput input)
-    {
+    public async Task ListenAsync() {
+      if (this._pollingAgents.Count > 0) {
+        throw new Exception("Already polling");
+      }
+
+      if (this._toolRegistry.Count == 0) {
+        throw new Exception($"No functions registered");
+      }
+
+
       var clusterId = await this.GetClusterId();
-      var result = await this._client.CreateRunAsync(clusterId, input);
+      var agent = new PollingAgent(clusterId, this._client, this._logger, this._toolRegistry);
 
-      return new RunReference {
-        ID = result.ID,
-        PollAsync = async (PollRunOptions? options) => {
-          var MaxWaitTime = options?.MaxWaitTime ?? TimeSpan.FromSeconds(60);
-          var Interval = options?.Interval ?? TimeSpan.FromMilliseconds(500);
-
-          var start = DateTime.Now;
-          var end = start + MaxWaitTime;
-          while (DateTime.Now < end) {
-            var pollResult = await this._client.GetRun(clusterId, result.ID);
-
-            var transientStates = new List<string> { "paused", "pending", "running" };
-            if (transientStates.Contains(pollResult.Status)) {
-              await Task.Delay(Interval);
-              continue;
-            }
-
-            return pollResult;
-          }
-          return null;
-        }
-      };
+      await agent.Start();
+      this._pollingAgents.Add(agent);
     }
 
-    /// <summary>
-    /// An array containing the names of all services currently polling.
-    /// </summary>
-    public IEnumerable<string> ActiveServices
-    {
-      get
-      {
-        return this._services.Where(s => s.Polling).Select(s => s.Name);
-      }
-    }
 
-    /// <summary>
-    /// An array containing the names of all services that are not currently polling.
-    /// </summary>
-    /// <remarks>
-    /// Note that this will only include services that have been started (i.e., <c>StartAsync()</c> method called).
-    /// </remarks>
-    public IEnumerable<string> InactiveServices
-    {
-      get
-      {
-        return this._services.Where(s => !s.Polling).Select(s => s.Name);
-      }
-    }
-
-    /// <summary>
-    /// An array containing the names of all functions that have been registered.
-    /// </summary>
-    public IEnumerable<string> RegisteredFunctions
-    {
-      get
-      {
-        return this._functionRegistry.SelectMany(f => f.Value.Select(v => v.Name));
-
-      }
-    }
-
-    internal void RegisterFunction<T>(string serviceName, FunctionRegistration<T> function) where T : struct {
-      var existing = this.RegisteredFunctions.FirstOrDefault(f => f == function.Name);
-      if (existing != null) {
-        throw new Exception($"Function with name '{function.Name}' already registered");
+    public async Task UnListenAsync() {
+      if (this._pollingAgents.Count == 0) {
+        throw new Exception("Not polling");
       }
 
-      if (!this._functionRegistry.ContainsKey(serviceName)) {
-        this._functionRegistry.Add(serviceName, new List<IFunctionRegistration> { function });
-      } else {
-        this._functionRegistry[serviceName].Add(function);
+      foreach (var agent in this._pollingAgents) {
+        await agent.Stop();
       }
 
-    }
-
-    internal async Task StartServiceAsync(string name) {
-      var existing = this._services.FirstOrDefault(s => s.Name == name);
-      if (existing != null) {
-        throw new Exception("Service is already started");
-      }
-
-      if (!this._functionRegistry.ContainsKey(name)) {
-        throw new Exception($"No functions registered for service '{name}'");
-      }
-
-      var functions = this._functionRegistry[name];
-
-      var service = new Service(name, await this.GetClusterId(), this._client, this._logger, functions);
-
-      this._services.Add(service);
-      await service.Start();
-    }
-
-    internal async Task StopServiceAsync(string name) {
-      var existing = this._services.FirstOrDefault(s => s.Name == name);
-      if (existing == null) {
-        throw new Exception("Service is not started");
-      }
-      await existing.Stop();
+      this._pollingAgents.Clear();
     }
 
     internal async Task<string> GetClusterId() {
@@ -320,54 +164,6 @@ namespace Inferable
       }
 
       return this._clusterId;
-    }
-  }
-
-  public struct RegisteredService
-  {
-    private string _name;
-    private InferableClient _inferable;
-
-    internal RegisteredService(string name, InferableClient inferable) {
-      this._name = name;
-      this._inferable = inferable;
-    }
-
-    /// <summary>
-    /// Registers a function against the Service.
-    /// <code>
-    /// service.RegisterFunction(new FunctionRegistration<TestInput>
-    /// {
-    ///     Name = "SayHello",
-    ///     Description = "A simple greeting function",
-    ///     Func = new Func<TestInput, object?>((input) => {
-    ///         didCallSayHello = true;
-    ///         return $"Hello {input.testString}";
-    ///     }),
-    /// });
-    /// </code>
-    /// </summary>
-    public FunctionReference RegisterFunction<T>(FunctionRegistration<T> function) where T : struct {
-      this._inferable.RegisterFunction<T>(this._name, function);
-
-      return new FunctionReference {
-        Service = this._name,
-        Function = function.Name
-      };
-    }
-
-    /// <summary>
-    /// Starts the service
-    /// </summary>
-    async public Task StartAsync() {
-      await this._inferable.StartServiceAsync(this._name);
-    }
-
-    /// <summary>
-    /// Stops the service
-    /// </summary>
-    async public Task StopAsync() {
-      await this._inferable.StopServiceAsync(this._name);
     }
   }
 }

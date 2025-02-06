@@ -55,18 +55,6 @@ namespace Inferable.Tests
       var inferable = CreateInferableClient();
 
       Assert.NotNull(inferable);
-
-      Assert.NotNull(inferable.Default);
-    }
-
-    [Fact]
-    public void Inferable_Can_Register_Service()
-    {
-      var inferable = CreateInferableClient();
-
-      var service = inferable.RegisterService("test");
-
-      Assert.NotNull(service);
     }
 
     [Fact]
@@ -74,7 +62,7 @@ namespace Inferable.Tests
     {
       var inferable = CreateInferableClient();
 
-      var registration = new FunctionRegistration<TestInput>
+      var registration = new ToolRegistration<TestInput>
       {
         Name = "test",
         Func = new Func<TestInput, string>((input) =>
@@ -122,7 +110,7 @@ namespace Inferable.Tests
     {
       var inferable = CreateInferableClient();
 
-      var registration = new FunctionRegistration<TestInput>
+      var registration = new ToolRegistration<TestInput>
       {
         Name = "test",
         Func = new Func<TestInput, string>((input) =>
@@ -132,10 +120,10 @@ namespace Inferable.Tests
         })
       };
 
-      inferable.Default.RegisterFunction(registration);
+      inferable.RegisterTool(registration);
 
-      await inferable.Default.StartAsync();
-      await inferable.Default.StopAsync();
+      await inferable.ListenAsync();
+      await inferable.UnListenAsync();
     }
 
     [Fact]
@@ -143,7 +131,7 @@ namespace Inferable.Tests
     {
       var inferable = CreateInferableClient();
 
-      var registration = new FunctionRegistration<TestInput>
+      var registration = new ToolRegistration<TestInput>
       {
         Name = "successFunction",
         Func = new Func<TestInput, string>((input) =>
@@ -153,15 +141,15 @@ namespace Inferable.Tests
         })
       };
 
-      inferable.Default.RegisterFunction(registration);
+      inferable.RegisterTool(registration);
 
       try
       {
-        await inferable.Default.StartAsync();
+        await inferable.ListenAsync();
 
-        var result = ApiClient.CreateJob(TestClusterId, new CreateCallInput
+        var result = ApiClient.CreateJob(TestClusterId, new CreateJobInput
         {
-          Service = "default",
+          Service = "v2",
           Function = "successFunction",
           Input = new Dictionary<string, string>
           {
@@ -176,7 +164,7 @@ namespace Inferable.Tests
       }
       finally
       {
-        await inferable.Default.StopAsync();
+        await inferable.UnListenAsync();
       }
     }
 
@@ -185,8 +173,7 @@ namespace Inferable.Tests
     {
       var inferable = CreateInferableClient();
 
-      var registration = new FunctionRegistration<TestInput>
-      {
+      var registration = new ToolRegistration<TestInput>{
         Name = "failureFunction",
         Func = new Func<TestInput, string>((input) =>
         {
@@ -195,15 +182,15 @@ namespace Inferable.Tests
         })
       };
 
-      inferable.Default.RegisterFunction(registration);
+      inferable.RegisterTool(registration);
 
       try
       {
-        await inferable.Default.StartAsync();
+        await inferable.ListenAsync();
 
-        var result = ApiClient.CreateJob(TestClusterId, new CreateCallInput
+        var result = ApiClient.CreateJob(TestClusterId, new CreateJobInput
         {
-          Service = "default",
+          Service = "v2",
           Function = "failureFunction",
           Input = new Dictionary<string, string>
           {
@@ -218,77 +205,8 @@ namespace Inferable.Tests
       }
       finally
       {
-        await inferable.Default.StopAsync();
-      }
-    }
-
-    /// <summary>
-    /// End to end test of the Inferable SDK
-    /// - Can a Run be triggered
-    /// - Can a Function be called
-    /// - Can a StatusChange function be called
-    /// This should match the example in the readme
-    /// </summary>
-    [Fact]
-    async public void Inferable_Run_E2E()
-    {
-      var client = CreateInferableClient();
-
-      bool didCallSayHello = false;
-      bool didCallOnStatusChange = false;
-
-      var SayHelloFunction = client.Default.RegisterFunction(new FunctionRegistration<TestInput>
-      {
-          Name = "SayHello",
-          Description = "A simple greeting function",
-          Func = new Func<TestInput, object?>((input) => {
-              didCallSayHello = true;
-              return $"Hello {input.testString}";
-          }),
-      });
-
-      var OnStatusChangeFunction = client.Default.RegisterFunction(new FunctionRegistration<OnStatusChangeInput<RunOutput>>
-      {
-        Name = "onStatusChangeFn",
-        Func = new Func<OnStatusChangeInput<RunOutput>, object?>((input) =>
-        {
-          didCallOnStatusChange = true;
-          return null;
-        }),
-      });
-
-      try
-      {
-        await client.Default.StartAsync();
-
-        var run = await client.CreateRunAsync(new CreateRunInput
-        {
-          InitialPrompt = "Say hello to John",
-          AttachedFunctions = new List<FunctionReference>
-          {
-            SayHelloFunction
-          },
-          OnStatusChange = new OnStatusChange
-          {
-            Function = OnStatusChangeFunction
-          },
-          ResultSchema = JsonSchema.FromType<RunOutput>(),
-        });
-
-        var result = await run.PollAsync(null);
-
-        await Task.Delay(5000);
-
-        Assert.NotNull(result);
-        Assert.True(didCallSayHello);
-        Assert.True(didCallOnStatusChange);
-      }
-      finally
-      {
-        await client.Default.StopAsync();
+        await inferable.UnListenAsync();
       }
     }
   }
-  //TODO: Test transient /call failures
-  //TODO: TEST /machines failures
 }
