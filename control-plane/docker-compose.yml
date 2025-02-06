@@ -5,23 +5,12 @@ services:
     depends_on:
       - postgres
       - redis
-      - elasticmq
     ports:
       - "4000:4000"
     environment:
       DATABASE_URL: "postgresql://inferable:inferable@postgres:5432/inferable"
       DATABASE_SSL_DISABLED: "true"
       REDIS_URL: "redis://redis:6379"
-      # Required for elasticmq
-      AWS_REGION: "us-east-1"
-      AWS_ACCESS_KEY_ID: "PLACEHOLDER"
-      AWS_SECRET_ACCESS_KEY: "PLACEHOLDER"
-      SQS_BASE_QUEUE_URL: 'http://elasticmq:9324/000000000000'
-      SQS_RUN_PROCESS_QUEUE_URL: 'http://elasticmq:9324/000000000000/run-process'
-      SQS_RUN_GENERATE_NAME_QUEUE_URL: 'http://elasticmq:9324/000000000000/run-generate-name'
-      SQS_CUSTOMER_TELEMETRY_QUEUE_URL: 'http://elasticmq:9324/000000000000/customer-telemetry'
-      SQS_EXTERNAL_TOOL_CALL_QUEUE_URL: 'http://elasticmq:9324/000000000000/external-tool-call'
-      SQS_EMAIL_INGESTION_QUEUE_URL: 'http://elasticmq:9324/000000000000/email-ingestion'
       MANAGEMENT_API_SECRET: ${MANAGEMENT_API_SECRET}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       COHERE_API_KEY: ${COHERE_API_KEY}
@@ -41,30 +30,6 @@ services:
     image: redis
     container_name: redis
 
-  elasticmq:
-    image: softwaremill/elasticmq-native
-    container_name: elasticmq
-    configs:
-      - source: elasticmq_conf
-        target: /opt/elasticmq.conf
-    volumes:
-      - elasticmqdata:/data
-
 
 volumes:
   pgdata:
-  elasticmqdata:
-
-configs:
-  elasticmq_conf:
-    content: |
-      include classpath("application.conf")
-
-      queues {
-        run-process {}
-        run-generate-name {}
-        email-ingestion {}
-        customer-telemetry {}
-        external-tool-call {}
-        email-ingestion {}
-      }

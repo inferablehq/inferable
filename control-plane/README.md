@@ -33,7 +33,6 @@ docker compose -f docker-compose.dev.yml up
 This will start:
 - PostgreSQL database with pgvector
 - Redis for caching
-- ElasticMQ for a local SQS-compatible queue implementation
 
 2. Populate environment variables:
 

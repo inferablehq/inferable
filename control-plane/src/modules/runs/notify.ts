@@ -6,12 +6,10 @@ import { getRunTags } from "./tags";
 import { getClusterBackgroundRun } from "./";
 import { runMessages, runs } from "../data";
 import * as slack from "../integrations/slack";
-import * as email from "../email";
 import AsyncRetry from "async-retry";
 import { onStatusChangeSchema } from "../contract";
 import { z } from "zod";
 import { resumeWorkflowExecution } from "../workflows/executions";
-import { flagsmith } from "../flagsmith";
 
 export const notifyApprovalRequest = async ({
   jobId,
@@ -28,7 +26,6 @@ export const notifyApprovalRequest = async ({
 }) => {
   const tags = await getRunTags({ clusterId, runId });
   await slack.handleApprovalRequest({ jobId, clusterId, runId, service, targetFn, tags });
-  await email.handleApprovalRequest({ jobId, clusterId, runId, service, targetFn, tags });
 };
 
 export const notifyNewMessage = async ({
@@ -45,7 +42,6 @@ export const notifyNewMessage = async ({
   tags?: Record<string, string>;
 }) => {
   await slack.notifyNewMessage({ message, tags });
-  await email.notifyNewMessage({ message, tags });
 };
 
 export const notifyStatusChange = async ({

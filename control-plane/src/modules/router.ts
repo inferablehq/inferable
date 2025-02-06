@@ -15,8 +15,6 @@ import { createBlob, getBlobData, getBlobsForJobs } from "./blobs";
 import { getClusterDetails } from "./cluster";
 import { contract, interruptSchema } from "./contract";
 import * as data from "./data";
-import { integrationByConnectionId } from "./email";
-import { NEW_CONNECTION_ID } from "./integrations/constants";
 import { getIntegrations, upsertIntegrations } from "./integrations/integrations";
 import { getSession, nango, webhookSchema } from "./integrations/nango";
 import { validateConfig } from "./integrations/toolhouse";
@@ -900,26 +898,7 @@ export const router = initServer().router(contract, {
     }
 
     if (request.body.email) {
-      const existing = await getIntegrations({ clusterId });
-
-      const connectionId = request.body.email.connectionId;
-
-      if (connectionId === NEW_CONNECTION_ID) {
-        const connectionId = crypto.randomUUID();
-        const collision = await integrationByConnectionId(connectionId);
-        if (collision) {
-          // This is so unlikely that we will fail the request if we experience a collision
-          logger.error("Unexpected connectionId collision", {
-            clusterId,
-            connectionId,
-          });
-          throw new Error("Unexpected connectionId collision");
-        }
-
-        request.body.email.connectionId = connectionId;
-      } else if (connectionId !== existing?.email?.connectionId) {
-        throw new BadRequestError("Email connectionId is not user editable");
-      }
+      throw new BadRequestError("Email integration is not supported");
     }
 
     if (request.body.toolhouse) {
