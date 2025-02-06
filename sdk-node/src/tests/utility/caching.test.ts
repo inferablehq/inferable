@@ -25,7 +25,7 @@ describe("Caching", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.getProduct10sCache`,
+        function: `${service.prefix}_getProduct10sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -39,7 +39,7 @@ describe("Caching", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.getProduct10sCache`,
+        function: `${service.prefix}_getProduct10sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -71,7 +71,7 @@ describe("Caching", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.getProduct1sCache`,
+        function: `${service.prefix}_getProduct1sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -87,7 +87,7 @@ describe("Caching", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.getProduct1sCache`,
+        function: `${service.prefix}_getProduct1sCache`,
         input: { id: productId, random: "bar" },
       },
     });

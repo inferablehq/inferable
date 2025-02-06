@@ -32,7 +32,7 @@ export const productService = () => {
   const client = inferableInstance();
 
   client.tools.register({
-    name: `${prefix}.getProduct10sCache`,
+    name: `${prefix}_getProduct10sCache`,
     func: getProduct,
     schema: {
       input: z.object({
@@ -51,7 +51,7 @@ export const productService = () => {
   });
 
   client.tools.register({
-    name: `${prefix}.getProduct1sCache`,
+    name: `${prefix}_getProduct1sCache`,
     func: getProduct,
     schema: {
       input: z.object({
@@ -70,7 +70,7 @@ export const productService = () => {
   });
 
   client.tools.register({
-    name: `${prefix}.failingFunction`,
+    name: `${prefix}_failingFunction`,
     func: async () => {
       await new Promise((resolve) => setTimeout(resolve, 5000));
     },
@@ -86,7 +86,7 @@ export const productService = () => {
   });
 
   client.tools.register({
-    name: `${prefix}.succeedsOnSecondAttempt`,
+    name: `${prefix}_succeedsOnSecondAttempt`,
     func: succeedsOnSecondAttempt,
     schema: {
       input: z.object({

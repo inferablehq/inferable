@@ -21,7 +21,7 @@ export const animalService = () => {
   const client = inferableInstance()
 
   client.tools.register ({
-    name: `${prefix}.getNormalAnimal`,
+    name: `${prefix}_getNormalAnimal`,
     func: getNormalAnimal,
     schema: {
       input: z.object({}),
@@ -29,7 +29,7 @@ export const animalService = () => {
   });
 
   client.tools.register({
-    name: `${prefix}.getCustomAnimal`,
+    name: `${prefix}_getCustomAnimal`,
     func: getCustomAnimal,
     schema: {
       input: z.object({}),

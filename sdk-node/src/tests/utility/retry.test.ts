@@ -25,7 +25,7 @@ describe("retrying", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.failingFunction`,
+        function: `${service.prefix}_failingFunction`,
         input: { id: productId },
       },
     });
@@ -52,7 +52,7 @@ describe("retrying", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.succeedsOnSecondAttempt`,
+        function: `${service.prefix}_succeedsOnSecondAttempt`,
         input: { id: productId },
       },
     });

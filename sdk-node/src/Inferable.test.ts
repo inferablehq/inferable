@@ -15,7 +15,7 @@ const testService = () => {
   const prefix = `test${Math.random().toString(36).substring(2, 15)}`;
 
   client.tools.register({
-    name: `${prefix}.echo`,
+    name: `${prefix}_echo`,
     func: async (input: { text: string }) => {
       return { echo: input.text };
     },
@@ -27,7 +27,7 @@ const testService = () => {
   });
 
   client.tools.register({
-    name: `${prefix}.error`,
+    name: `${prefix}_error`,
     func: async (_input) => {
       throw new Error("This is an error");
     },
@@ -89,7 +89,7 @@ describe("Functions", () => {
           },
           body: {
             service: "v2",
-            function: `${service.prefix}.echo`,
+            function: `${service.prefix}_echo`,
             input: { text: i.toString() },
           },
         });
@@ -143,7 +143,7 @@ describe("Functions", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.echo`,
+        function: `${service.prefix}_echo`,
         input: { text: "foo" },
       },
     });

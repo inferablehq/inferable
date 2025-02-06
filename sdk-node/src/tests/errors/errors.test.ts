@@ -23,7 +23,7 @@ describe("Errors", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.getNormalAnimal`,
+        function: `${service.prefix}_getNormalAnimal`,
         input: {},
       },
     });
@@ -53,7 +53,7 @@ describe("Errors", () => {
       },
       body: {
         service: "v2",
-        function: `${service.prefix}.getCustomAnimal`,
+        function: `${service.prefix}_getCustomAnimal`,
         input: {},
       },
     });
