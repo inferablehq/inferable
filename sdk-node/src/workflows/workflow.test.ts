@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { Inferable } from "../Inferable";
-import { createServices } from "./workflow-test-services";
 import { getEphemeralSetup } from "./workflow-test-utils";
+import { helpers } from "./workflow";
 
-// Skip until we got the server deployed
 describe("workflow", () => {
   it("should run a workflow", async () => {
     const ephemeralSetup = await getEphemeralSetup();
@@ -13,77 +12,79 @@ describe("workflow", () => {
       endpoint: ephemeralSetup.endpoint,
     });
 
-    await createServices(inferable);
+    const onStart = jest.fn();
+    const onDone = jest.fn();
+    const toolCall = jest.fn();
+
+    inferable.tools.register({
+      func: (_i, _c) => {
+        toolCall();
+        return {
+          word: "needle"
+        }
+      },
+      name: "searchHaystack",
+    })
+
+    inferable.tools.listen();
 
     const workflow = inferable.workflows.create({
-      name: "records-workflow",
+      name: "haystack-search",
       inputSchema: z.object({
         executionId: z.string(),
-        customerId: z.string(),
+        someOtherInput: z.string(),
       }),
     });
 
-    const onDone = jest.fn();
-
     workflow.version(1).define(async (ctx, input) => {
-      const recordsAgent = ctx.agent({
-        name: "recordsAgent",
-        systemPrompt: "Get list of loans for a customer",
+      onStart(input);
+      const searchAgent = ctx.agent({
+        name: "search",
+        systemPrompt: helpers.structuredPrompt({
+          facts: ["You are haystack searcher"],
+          goals: ["Find the special word in the haystack"],
+        }),
         resultSchema: z.object({
-          records: z.array(z.object({ id: z.string() })),
+          word: z.string(),
         }),
       });
 
-      const records = await recordsAgent.trigger({
-        data: {
-          customerId: input.customerId,
-        }
+      const result = await searchAgent.trigger({
+        data: {}
       });
 
-      const processedRecords = await Promise.all(
-        records.result.records.map((record) => {
-          const agent2 = ctx.agent({
-            name: "assetClassAgent",
-            systemPrompt: "Get the asset class details for a loan",
-            resultSchema: z.object({
-              recordId: z.string(),
-              summary: z.string().describe("Summary of the asset classes"),
-            }),
-          });
+      if (!result || !result.result || !result.result.word) {
+        throw new Error("No result");
+      }
 
-          return agent2.trigger({
-            data: {
-              recordId: record.id,
-              customerId: input.customerId,
-            }
-          });
-        }),
-      );
-
-      const riskProfile = await ctx
-        .agent({
-          name: "riskAgent",
-          systemPrompt:
-            "Summarize the risk of the customer. Use the asset class details to inform the summary.",
-          resultSchema: z.object({
-            summary: z.string(),
-          }),
-        })
-        .trigger({
-          data: {
-            customerId: input.customerId,
-            assetClassDetails: processedRecords,
-          }
-        });
-
-      onDone(riskProfile);
+      onDone(result.result.word);
     });
 
     await workflow.listen();
 
-    await inferable.workflows.trigger("records-workflow", {
-      executionId: "123",
-      customerId: "456",
+    const executionId = `${Math.random()}`;
+    await inferable.workflows.trigger("haystack-search", {
+      executionId,
+      someOtherInput: "foo",
     });
+
+    const start = Date.now();
+    //poll until onDone is called
+    while (!onDone.mock.calls.length || Date.now() - start < 10000) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+
+    // Test workflow got input
+    expect(onStart).toHaveBeenCalledWith({
+      executionId,
+      someOtherInput: "foo",
+    });
+
+    // Test workflow found needle
+    expect(onDone).toHaveBeenCalledWith("needle");
+
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(toolCall).toHaveBeenCalledTimes(1);
   });
 });
