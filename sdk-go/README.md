@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://a.inferable.ai/logo-hex.png" width="200" style="border-radius: 10px" />
+  <img src="../assets/logo.png" alt="Inferable Logo" width="200" />
 </p>
 
 # Go SDK for Inferable
