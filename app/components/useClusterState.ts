@@ -7,28 +7,9 @@ import { useHashState } from "@/lib/use-hash-state";
 
 export type ClusterResponse = ClientInferResponseBody<typeof contract.getCluster, 200>;
 
-interface ServiceFunction {
-  name: string;
-  description?: string;
-  schema?: string;
-  config?: any;
-}
-
-interface ServiceDefinition {
-  description?: string;
-  functions?: ServiceFunction[];
-}
-
-export interface Service {
-  name: string;
-  description?: string;
-  timestamp: Date;
-  functions?: ServiceFunction[];
-}
-
 export interface ClusterState {
   machines: ClusterResponse["machines"];
-  services: Service[];
+  tools: ClusterResponse["tools"];
   cluster: ClusterResponse | null;
   liveMachineCount: number;
   isLoading: boolean;
@@ -71,7 +52,7 @@ const fetchCluster = async (
 
 export function useClusterState(clusterId: string, polling = true): ClusterState {
   const [machines, setMachines] = useHashState<ClusterState["machines"]>([]);
-  const [services, setServices] = useHashState<ClusterState["services"]>([]);
+  const [tools, setTools] = useHashState<ClusterState["tools"]>([]);
   const [cluster, setCluster] = useHashState<ClusterResponse | null>(null);
   const [liveMachineCount, setLiveMachineCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,27 +78,7 @@ export function useClusterState(clusterId: string, polling = true): ClusterState
       if (clusterResponse.status === 200) {
         setCluster(clusterResponse.body);
         setMachines(clusterResponse.body.machines ?? []);
-
-        // Transform services to match the expected format
-        const transformedServices = (clusterResponse.body.services ?? []).map(
-          (service): Service => {
-            const definition = service.definition as ServiceDefinition | null;
-            return {
-              name: service.service,
-              timestamp: service.timestamp ?? new Date(),
-              description: definition?.description,
-              functions: definition?.functions?.map(
-                (fn: ServiceFunction): ServiceFunction => ({
-                  name: fn.name,
-                  description: fn.description,
-                  schema: fn.schema,
-                  config: fn.config,
-                })
-              ),
-            };
-          }
-        );
-        setServices(transformedServices);
+        setTools(clusterResponse.body.tools ?? []);
 
         setLiveMachineCount(
           (clusterResponse.body.machines ?? []).filter(
@@ -134,7 +95,7 @@ export function useClusterState(clusterId: string, polling = true): ClusterState
     } finally {
       setIsLoading(false);
     }
-  }, [clusterId, getToken]);
+  }, [clusterId, getToken, setCluster, setMachines, setTools]);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -153,11 +114,11 @@ export function useClusterState(clusterId: string, polling = true): ClusterState
     return () => {
       isSubscribed = false;
     };
-  }, [fetchClusterState]);
+  }, [fetchClusterState, clusterId, polling]);
 
   return {
     machines,
-    services,
+    tools,
     cluster,
     liveMachineCount,
     isLoading,

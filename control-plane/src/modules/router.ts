@@ -1,48 +1,41 @@
 import { initServer } from "@ts-rest/fastify";
 import { generateOpenApi } from "@ts-rest/open-api";
+import { dereferenceSync } from "dereference-json-schema";
 import fs from "fs";
+import { JsonSchemaInput } from "inferable/bin/types";
 import path from "path";
 import { ulid } from "ulid";
 import util from "util";
-import { getBlobData } from "./blobs";
-import * as data from "./data";
-import * as management from "./management";
-import * as events from "./observability/events";
-import { posthog } from "./posthog";
-import { addMessageAndResume, getRunResult } from "./runs";
-import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
-import { unqualifiedEntityId } from "./auth/auth";
-import { upsertMachine } from "./machines";
-import { ILLEGAL_SERVICE_NAMES } from "./machines/constants";
-import { dereferenceSync } from "dereference-json-schema";
-import { safeParse } from "../utilities/safe-parse";
-import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
-import { packer } from "./packer";
-import * as jobs from "./jobs/jobs";
-import { getClusterBackgroundRun } from "./runs";
-import { contract, interruptSchema } from "./contract";
-import { logger } from "./observability/logger";
-import { createBlob } from "./blobs";
-import { getJob } from "./jobs/jobs";
-import { BadRequestError, NotFoundError, AuthenticationError } from "../utilities/errors";
-import { createRun, deleteRun, getClusterRuns, getRunDetails, updateRunFeedback } from "./runs";
-import { getClusterDetails } from "./cluster";
-import { JsonSchemaInput } from "inferable/bin/types";
-import { getRunsByTag } from "./runs/tags";
-import { timeline } from "./timeline";
-import { getBlobsForJobs } from "./blobs";
-import { getJobReferences } from "./jobs/jobs";
-import { getIntegrations, upsertIntegrations } from "./integrations/integrations";
-import { validateConfig } from "./integrations/toolhouse";
-import { getSession, nango, webhookSchema } from "./integrations/nango";
 import { env } from "../utilities/env";
+import { AuthenticationError, BadRequestError, NotFoundError } from "../utilities/errors";
+import { safeParse } from "../utilities/safe-parse";
+import { unqualifiedEntityId } from "./auth/auth";
+import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
+import { createBlob, getBlobData, getBlobsForJobs } from "./blobs";
+import { getClusterDetails } from "./cluster";
+import { contract, interruptSchema } from "./contract";
+import * as data from "./data";
 import { integrationByConnectionId } from "./email";
 import { NEW_CONNECTION_ID } from "./integrations/constants";
-import { createWorkflowExecution, getWorkflowExecutionEvents } from "./workflows/executions";
-import { RunOptions, validateSchema } from "./runs";
+import { getIntegrations, upsertIntegrations } from "./integrations/integrations";
+import { getSession, nango, webhookSchema } from "./integrations/nango";
+import { validateConfig } from "./integrations/toolhouse";
+import * as jobs from "./jobs/jobs";
+import { getJob, getJobReferences } from "./jobs/jobs";
 import { kv } from "./kv";
-import { getToolDefinition, getToolDefinitions, recordPoll } from "./tools";
-import { upsertToolDefinition } from "./tools";
+import { upsertMachine } from "./machines";
+import { ILLEGAL_SERVICE_NAMES } from "./machines/constants";
+import * as management from "./management";
+import * as events from "./observability/events";
+import { logger } from "./observability/logger";
+import { packer } from "./packer";
+import { posthog } from "./posthog";
+import { addMessageAndResume, createRun, deleteRun, getClusterBackgroundRun, getClusterRuns, getRunDetails, getRunResult, RunOptions, updateRunFeedback, validateSchema } from "./runs";
+import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
+import { getRunsByTag } from "./runs/tags";
+import { timeline } from "./timeline";
+import { listTools, recordPoll, upsertToolDefinition } from "./tools";
+import { createWorkflowExecution, getWorkflowExecutionEvents } from "./workflows/executions";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -1373,32 +1366,6 @@ export const router = initServer().router(contract, {
       body: machines,
     };
   },
-  listServices: async request => {
-    const { clusterId } = request.params;
-    const user = request.request.getAuth();
-    await user.canAccess({ cluster: { clusterId } });
-
-    const tools = await getToolDefinitions({
-      clusterId,
-    });
-
-    return {
-      status: 200,
-      body: [
-        {
-          name: "default",
-          timestamp: new Date(),
-          description: "default",
-          functions: tools.map(tool => ({
-            name: tool.name,
-            description: tool.description ?? undefined,
-            schema: tool.schema ?? undefined,
-            config: tool.config ?? undefined,
-          }))
-        }
-      ],
-    };
-  },
   getBlobData: async request => {
     const { clusterId, blobId } = request.params;
 
@@ -1491,6 +1458,21 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: events,
+    };
+  },
+  listTools: async request => {
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth();
+    await auth.canAccess({ cluster: { clusterId } });
+
+    const tools = await listTools({
+      clusterId,
+    });
+
+    return {
+      status: 200,
+      body: tools,
     };
   },
 });

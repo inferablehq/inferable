@@ -327,6 +327,7 @@ export const runs = pgTable(
   {
     id: varchar("id", { length: 1024 }).notNull(),
     on_status_change: json("on_status_change").$type<z.infer<typeof onStatusChangeSchema>>(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     result_schema: json("result_schema").$type<any>(),
     name: varchar("name", { length: 1024 }).default("").notNull(),
     system_prompt: text("system_prompt"),

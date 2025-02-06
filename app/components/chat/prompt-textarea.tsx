@@ -13,19 +13,17 @@ import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest } from "@ts-rest/core";
 import {
   Blocks,
-  Bot,
   ChevronDown,
   ChevronRight,
-  Cog,
   PlusCircleIcon,
-  Settings2Icon,
+  Settings2Icon
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { QuickStartDemo } from "../quick-start-demo";
 import { Button } from "../ui/button";
 import { useClusterState } from "../useClusterState";
 import Commands from "./sdk-commands";
-import { QuickStartDemo } from "../quick-start-demo";
 
 export type RunOptions = {
   attachedFunctions: string[];
@@ -68,20 +66,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   const [prompt, setPrompt] = useState<string>("");
   const { getToken } = useAuth();
   const router = useRouter();
-  const { services, machines, isLoading, cluster } = useClusterState(clusterId);
-  const [availableFunctions, setAvailableFunctions] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
-
-  useEffect(() => {
-    const functions = services.flatMap(service =>
-      (service.functions || []).map(fn => ({
-        value: `${service.name}_${fn.name}`,
-        label: `${service.name}.${fn.name}`,
-      }))
-    );
-    setAvailableFunctions(functions);
-  }, [services]);
+  const { tools, machines, isLoading, cluster } = useClusterState(clusterId);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -207,12 +192,12 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
   };
 
 
-  const noServicesAndMachines = !services.length && !machines.length;
+  const noServicesAndMachines = !tools.length && !machines.length;
 
   const isDemoService =
     cluster?.isDemo &&
-    services.some(service => service.name === "sqlite") &&
-    services.some(service => service.name === "terminal");
+    tools.some(tool => tool.name.includes("sqlite")) &&
+    tools.some(tool => tool.name.includes("terminal"));
 
   const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
 
@@ -399,7 +384,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                   attachedFunctions: value,
                 })
               }
-              options={availableFunctions}
+              options={tools.map(tool => ({
+                value: tool.name,
+                label: tool.name,
+              }))}
             />
           </div>
         </div>

@@ -48,3 +48,12 @@ export const createErrorToast = (response: any, fallback: string) => {
     id,
   });
 };
+
+export const pluralize = (word: string, count: number) => {
+  if (count === 0) {
+    return `${word}s`;
+  }
+
+  return count > 1 ? `${word}s` : word;
+};
+

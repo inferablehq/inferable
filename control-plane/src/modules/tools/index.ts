@@ -85,6 +85,27 @@ export const getToolDefinitions = async ({
   return results;
 };
 
+export const listTools = async ({
+  clusterId,
+}: {
+  clusterId: string;
+}) => {
+  const tools = await data.db
+    .select({
+      name: data.tools.name,
+      description: data.tools.description,
+      schema: data.tools.schema,
+      config: data.tools.config,
+      shouldExpire: data.tools.should_expire,
+      lastPingAt: data.tools.last_ping_at,
+      createdAt: data.tools.created_at,
+    })
+    .from(data.tools)
+    .where(eq(data.tools.cluster_id, clusterId));
+
+  return tools;
+};
+
 export const getToolDefinition = async ({
   name,
   clusterId

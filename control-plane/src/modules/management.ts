@@ -174,7 +174,7 @@ export const getClusterDetails = async ({
   id: string;
   name: string;
   description: string | null;
-  createdAt: Date;
+  createdAt: number;
   debug: boolean;
   isDemo: boolean;
   handleCustomAuthFunction: string | null;
@@ -182,15 +182,19 @@ export const getClusterDetails = async ({
   additionalContext: VersionedTexts | null;
   machines: Array<{
     id: string;
-    lastPingAt: Date | null;
+    lastPingAt: number | null;
     ip: string | null;
     sdkVersion: string | null;
     sdkLanguage: string | null;
   }>;
-  services: Array<{
-    service: string;
-    definition: unknown | null;
-    timestamp: Date | null;
+  tools: Array<{
+    name: string;
+    description: string | null;
+    schema: unknown | null;
+    config: unknown | null;
+    lastPingAt: number | null;
+    shouldExpire: boolean;
+    createdAt: number;
   }>;
 }> => {
   const cached = await clusterDetailsCache.get(clusterId);
@@ -217,10 +221,18 @@ export const getClusterDetails = async ({
       serviceService: data.services.service,
       serviceDefinition: data.services.definition,
       serviceTimestamp: data.services.timestamp,
+      toolName: data.tools.name,
+      toolDescription: data.tools.description,
+      toolSchema: data.tools.schema,
+      toolConfig: data.tools.config,
+      toolShouldExpire: data.tools.should_expire,
+      toolLastPingAt: data.tools.last_ping_at,
+      toolCreatedAt: data.tools.created_at,
     })
     .from(data.clusters)
     .leftJoin(data.machines, eq(data.machines.cluster_id, data.clusters.id))
     .leftJoin(data.services, eq(data.services.cluster_id, data.clusters.id))
+    .leftJoin(data.tools, eq(data.tools.cluster_id, data.clusters.id))
     .where(eq(data.clusters.id, clusterId));
 
   if (results.length === 0) {
@@ -231,35 +243,39 @@ export const getClusterDetails = async ({
     id: results[0].id,
     name: results[0].name,
     description: results[0].description,
-    createdAt: results[0].createdAt,
+    createdAt: results[0].createdAt?.getTime() ?? 0,
     debug: results[0].debug,
     isDemo: results[0].isDemo,
-    handleCustomAuthFunction: results[0].handleCustomAuthFunction,
+    handleCustomAuthFunction: results[0].handleCustomAuthFunction ?? null,
     enableCustomAuth: results[0].enableCustomAuth,
     machines: uniqBy(
       results
         .filter(r => r.machineId !== null)
         .map(r => ({
           id: r.machineId!,
-          lastPingAt: r.machineLastPingAt,
+          lastPingAt: r.machineLastPingAt?.getTime() ?? null,
           ip: r.machineIp,
           sdkVersion: r.machineSdkVersion,
           sdkLanguage: r.machineSdkLanguage,
         })),
       r => r.id
     ),
-    services: uniqBy(
+    tools: uniqBy(
       results
-        .filter(r => r.serviceService !== null)
+        .filter(r => r.toolName !== null)
         .map(r => ({
-          service: r.serviceService!,
-          definition: r.serviceDefinition,
-          timestamp: r.serviceTimestamp,
+          name: r.toolName!,
+          description: r.toolDescription,
+          schema: r.toolSchema as unknown,
+          config: r.toolConfig as unknown,
+          shouldExpire: r.toolShouldExpire ?? false,
+          createdAt: r.toolCreatedAt?.getTime() ?? 0,
+          lastPingAt: r.toolLastPingAt?.getTime() ?? null,
         })),
-      r => r.service
+      r => r.name
     ),
     additionalContext: results[0].additionalContext,
-  };
+  } as const;
 
   await clusterDetailsCache.set(clusterId, response, 5);
   return response;

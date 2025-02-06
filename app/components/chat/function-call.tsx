@@ -219,7 +219,7 @@ function FunctionCall({
               >
                 View full details →
               </Button>
-              <ToolContextButton clusterId={clusterId} service={service} functionName={targetFn} />
+              {/* <ToolContextButton clusterId={clusterId} service={service} functionName={targetFn} /> */}
             </div>
           </div>
         </div>

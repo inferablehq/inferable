@@ -12,7 +12,8 @@
     "allowJs": true
   },
   "include": [
-    "src/index.ts"
+    "src/index.ts",
+    "src/workflows/demo.ts"
   ],
   "exclude": [
     "node_modules"

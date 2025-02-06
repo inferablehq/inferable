@@ -13,36 +13,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
 import { formatDistance, formatRelative } from "date-fns";
-import { AppWindowIcon } from "lucide-react";
 import ToolContextButton from "./chat/ToolContextButton";
 import { EventsOverlayButton } from "./events-overlay";
 import { QuickStartDemo } from "./quick-start-demo";
-import { ClusterState, Service, useClusterState } from "./useClusterState";
-
-function toServiceName(name: string) {
-  return <span>{name}</span>;
-}
-
-function toFunctionName(name: string, serviceName: string) {
-  if (serviceName === "InferableApplications") {
-    return <span>Inferable App</span>;
-  }
-
-  return <span>{name}</span>;
-}
+import { ClusterState, useClusterState } from "./useClusterState";
 
 
 
-function FlatToolsList({ services, clusterId }: { services: Service[]; clusterId: string }) {
-  const allTools = services.flatMap(service =>
-    (service.functions || []).map(func => ({
-      ...func,
-      group: service.name,
-      timestamp: service.timestamp,
-    }))
-  ).sort((a, b) => a.name.localeCompare(b.name));
+
+function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clusterId: string }) {
+  const allTools = tools.sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="space-y-4">
@@ -57,21 +39,20 @@ function FlatToolsList({ services, clusterId }: { services: Service[]; clusterId
         <TableBody>
           {allTools.map(tool => {
             const isActive =
-              new Date(tool.timestamp) > new Date() ||
-              Date.now() - new Date(tool.timestamp).getTime() < 1000 * 60;
+              new Date(tool.createdAt) > new Date() ||
+              Date.now() - new Date(tool.createdAt).getTime() < 1000 * 60;
 
             return (
-              <TableRow key={`${tool.group}-${tool.name}`} className="hover:bg-secondary/40">
+              <TableRow key={`${tool.name}`} className="hover:bg-secondary/40">
                 <TableCell>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">
-                        {toFunctionName(tool.name, tool.group)}
+                        {tool.name}
                       </span>
                       <ToolContextButton
                         clusterId={clusterId}
-                        service={tool.group}
-                        functionName={tool.name}
+                        tool={tool}
                       />
                     </div>
                     <div
@@ -85,17 +66,13 @@ function FlatToolsList({ services, clusterId }: { services: Service[]; clusterId
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                      {tool.group === "InferableApplications" ? (
-                        <AppWindowIcon className="w-3 h-3 text-primary" />
-                      ) : (
-                        <Blocks className="w-3 h-3 text-primary" />
-                      )}
+                      <Blocks className="w-3 h-3 text-primary" />
                     </div>
-                    <span className="font-medium">{toServiceName(tool.group)}</span>
+                    <span className="font-medium">{tool.name}</span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {new Date(tool.timestamp) > new Date() ? (
+                  {!tool.shouldExpire ? (
                     <div className="text-sm text-muted-foreground flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-green-500" />
                       <span>Permanent Sync</span>
@@ -104,7 +81,7 @@ function FlatToolsList({ services, clusterId }: { services: Service[]; clusterId
                     <div className="flex items-center gap-2">
                       <span className={cn("w-2 h-2 rounded-full", isActive ? "bg-green-500" : "bg-gray-300")} />
                       <span className="font-mono text-sm">
-                        {formatDistance(new Date(tool.timestamp), new Date(), {
+                        {formatDistance(new Date(tool.createdAt), new Date(), {
                           addSuffix: true,
                         })}
                       </span>
@@ -120,8 +97,8 @@ function FlatToolsList({ services, clusterId }: { services: Service[]; clusterId
   );
 }
 
-export default function ServicesOverview({ clusterId, services }: { clusterId: string, services: Service[] }) {
-  const sortedServices = services.sort((a: Service, b: Service) => a.name.localeCompare(b.name));
+export default function ServicesOverview({ clusterId, tools }: { clusterId: string, tools: ClusterState["tools"] }) {
+  const sortedServices = tools.sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div>
@@ -163,7 +140,7 @@ export default function ServicesOverview({ clusterId, services }: { clusterId: s
           </SheetContent>
         </Sheet>
       ) : (
-        <FlatToolsList services={services} clusterId={clusterId} />
+        <FlatToolsList tools={tools} clusterId={clusterId} />
       )}
     </div>
   );
@@ -172,14 +149,14 @@ export default function ServicesOverview({ clusterId, services }: { clusterId: s
 export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Element {
   const {
     machines,
-    services,
+    tools,
     isLoading: isInitialLoading,
     liveMachineCount,
   } = useClusterState(clusterId);
 
-  const workflowServices = services.filter(service => service.name.includes('workflows.'));
+  const workflowTools = tools.filter(tool => tool.name.includes('workflows.'));
 
-  const toolServices = services.filter(service => !service.name.includes('workflows.'));
+  const nonWorkflowTools = tools.filter(tool => !tool.name.includes('workflows.'));
 
   return (
     <div className="flex flex-col space-y-3 w-full">
@@ -258,7 +235,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                   <span className="text-xs font-medium text-amber-700">Loading</span>
                 </div>
-              ) : toolServices.length > 0 ? (
+              ) : nonWorkflowTools.length > 0 ? (
                 <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 </div>
@@ -275,8 +252,8 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               <div className="flex flex-col items-start gap-0.5">
                 <span className="font-semibold text-gray-900">Tools</span>
                 <span className="text-xs text-gray-500 font-mono">
-                  {toolServices.reduce((acc, service) => acc + (service.functions?.length || 0), 0)}{" "}
-                  Tool{toolServices.length > 1 ? 's' : ''}
+                  {tools.length}{" "}
+                  {pluralize("Tool", tools.length)}
                 </span>
               </div>
             </div>
@@ -304,7 +281,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <ServicesOverview clusterId={clusterId} services={toolServices} />
+              <ServicesOverview clusterId={clusterId} tools={tools} />
             )}
           </div>
         </SheetContent>
@@ -322,7 +299,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                   <span className="text-xs font-medium text-amber-700">Loading</span>
                 </div>
-              ) : workflowServices.length > 0 ? (
+              ) : workflowTools.length > 0 ? (
                 <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 </div>
@@ -339,8 +316,8 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               <div className="flex flex-col items-start gap-0.5">
                 <span className="font-semibold text-gray-900">Workflows</span>
                 <span className="text-xs text-gray-500 font-mono">
-                  {workflowServices.reduce((acc, service) => acc + (service.functions?.length || 0), 0)}{" "}
-                  Workflow{workflowServices.length > 1 ? 's' : ''}
+                  {workflowTools.length}{" "}
+                  {pluralize("Workflow", workflowTools.length)}
                 </span>
               </div>
             </div>
@@ -368,7 +345,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <ServicesOverview clusterId={clusterId} services={workflowServices} />
+              <ServicesOverview clusterId={clusterId} tools={workflowTools} />
             )}
           </div>
         </SheetContent>
@@ -381,7 +358,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
             data-add-services-trigger
             className={cn(
               "group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg",
-              !services.length && !machines.length && "border-primary"
+              !tools.length && !machines.length && "border-primary"
             )}
           >
             <div className="flex items-center gap-4 w-full">
@@ -618,9 +595,6 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
 
 function MachinesOverview({ clusterId }: { clusterId: string }) {
   const { machines } = useClusterState(clusterId);
-  const liveMachineCount = machines.filter(
-    m => Date.now() - new Date(m.lastPingAt!).getTime() < 1000 * 60
-  ).length;
 
   return (
     <div className="space-y-6">

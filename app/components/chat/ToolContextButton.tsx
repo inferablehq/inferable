@@ -1,4 +1,4 @@
-import { client } from "@/client/client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Sheet,
   SheetContent,
@@ -7,59 +7,24 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useAuth } from "@clerk/nextjs";
-import { SquareFunction, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertCircle, SquareFunction } from "lucide-react";
+import { useState } from "react";
 import { ReadOnlyJSON } from "../read-only-json";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ClientInferResponseBody } from "@ts-rest/core";
-import { contract } from "@/client/contract";
+import { ClusterState, useClusterState } from "../useClusterState";
 
 interface ToolContextButtonProps {
   clusterId: string;
-  service: string;
-  functionName: string;
+  tool: ClusterState["tools"][number];
 }
 
 const ToolContextButton: React.FC<ToolContextButtonProps> = ({
   clusterId,
-  service,
-  functionName,
+  tool,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { getToken } = useAuth();
-  const [services, setServices] = useState<
-    ClientInferResponseBody<typeof contract.listServices, 200>
-  >([]);
-
-  useEffect(() => {
-    const fetchServices = async () => {
-      const token = await getToken();
-      const headers = { authorization: `Bearer ${token}` };
-      const params = { clusterId };
-
-      try {
-        const servicesResult = await client.listServices({
-          headers,
-          params,
-        });
-        if (servicesResult.status === 200) {
-          setServices(servicesResult.body);
-        }
-      } catch (error) {
-        console.error("Error fetching services:", error);
-      }
-    };
-
-    fetchServices();
-  }, [clusterId, getToken]);
-
-  const functionDetails = services
-    .find(s => s.name === service)
-    ?.functions?.find(f => f.name === functionName);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -72,14 +37,14 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
         <SheetHeader>
           <SheetTitle className="flex items-center">
             <SquareFunction className="w-4 h-4 mr-2" />
-            {service}.{functionName}
+            {tool.name}
           </SheetTitle>
           <SheetDescription>
-            Details for {service}.{functionName}
+            Details for {tool.name}
           </SheetDescription>
         </SheetHeader>
         <div className="mt-6 space-y-6">
-          {functionDetails ? (
+          {tool ? (
             <Card>
               <CardHeader>
                 <CardTitle>Details</CardTitle>
@@ -87,24 +52,34 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="functionName">Name</Label>
-                  <pre className="p-2">{functionDetails.name}</pre>
+                  <pre className="p-2">{tool.name}</pre>
                 </div>
-                {functionDetails.description && (
+                {tool.description && (
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <pre className="p-2">{functionDetails.description}</pre>
+                    <pre className="p-2">{tool.description}</pre>
                   </div>
                 )}
-                {functionDetails.schema && (
+                {tool.schema ? (
                   <div className="space-y-2">
                     <Label htmlFor="schema">Schema</Label>
-                    <ReadOnlyJSON json={functionDetails.schema} />
+                    <ReadOnlyJSON json={tool.schema} />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="schema">Schema</Label>
+                    <pre className="p-2">No schema available</pre>
                   </div>
                 )}
-                {functionDetails.config && (
+                {tool.config ? (
                   <div className="space-y-2">
                     <Label htmlFor="config">Config</Label>
-                    <ReadOnlyJSON json={functionDetails.config} />
+                    <ReadOnlyJSON json={tool.config} />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="config">Config</Label>
+                    <pre className="p-2">No config available</pre>
                   </div>
                 )}
               </CardContent>

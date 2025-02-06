@@ -684,11 +684,15 @@ export const definition = {
             sdkLanguage: z.string().nullable(),
           })
         ),
-        services: z.array(
+        tools: z.array(
           z.object({
-            service: z.string(),
-            definition: z.unknown().nullable(),
-            timestamp: z.date().nullable(),
+            name: z.string(),
+            description: z.string().nullable(),
+            schema: z.unknown().nullable(),
+            config: z.unknown().nullable(),
+            shouldExpire: z.boolean(),
+            lastPingAt: z.date().nullable(),
+            createdAt: z.date(),
           })
         ),
       }),
@@ -1109,36 +1113,6 @@ export const definition = {
       clusterId: z.string(),
     }),
   },
-
-  listServices: {
-    method: "GET",
-    path: "/clusters/:clusterId/services",
-    headers: z.object({
-      authorization: z.string(),
-    }),
-    responses: {
-      200: z.array(
-        z.object({
-          name: z.string(),
-          description: z.string().optional(),
-          functions: z
-            .array(
-              z.object({
-                name: z.string(),
-                description: z.string().optional(),
-                schema: z.string().optional(),
-                config: ToolConfigSchema.optional(),
-              })
-            )
-            .optional(),
-          timestamp: z.date(),
-        })
-      ),
-    },
-    pathParams: z.object({
-      clusterId: z.string(),
-    }),
-  },
   getRunTimeline: {
     method: "GET",
     path: "/clusters/:clusterId/runs/:runId/timeline",
@@ -1333,6 +1307,30 @@ export const definition = {
       200: z.object({
         value: z.string(),
       }),
+    },
+  },
+  listTools: {
+    method: "GET",
+    path: "/clusters/:clusterId/tools",
+    headers: z.object({
+      authorization: z.string(),
+    }),
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    responses: {
+      200: z.array(
+        z.object({
+          name: z.string(),
+          description: z.string().nullable(),
+          schema: z.string().nullable(),
+          config: ToolConfigSchema.nullable(),
+          shouldExpire: z.boolean(),
+          lastPingAt: z.date().nullable(),
+          createdAt: z.date(),
+        })
+      ),
+      401: z.undefined(),
     },
   },
 } as const;
