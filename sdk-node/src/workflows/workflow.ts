@@ -37,10 +37,7 @@ type AgentConfig<TResult> = {
 };
 
 type WorkflowContext<TInput> = {
-  effect: (
-    name: string,
-    fn: () => Promise<void>,
-  ) => Promise<void>;
+  effect: (name: string, fn: () => Promise<void>) => Promise<void>;
   result: <TResult>(
     name: string,
     fn: () => Promise<TResult>,
@@ -127,16 +124,15 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         });
 
         try {
-          const result = await this.client
-            .createWorkflowExecution({
-              params: {
-                clusterId: await this.getClusterId(),
-                workflowName: this.name,
-              },
-              body: {
-                executionId: input.executionId,
-              },
-            });
+          const result = await this.client.createWorkflowExecution({
+            params: {
+              clusterId: await this.getClusterId(),
+              workflowName: this.name,
+            },
+            body: {
+              executionId: input.executionId,
+            },
+          });
 
           this.logger?.info("Workflow execution created", {
             version,
@@ -316,11 +312,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                 id: runId,
                 systemPrompt: config.systemPrompt,
                 resultSchema,
-                attachedFunctions: config.tools?.map((tool) => ({
-                  // Ignored, to be removed
-                  service: "v2",
-                  function: tool,
-                })),
+                tools: config.tools,
                 onStatusChange: {
                   type: "workflow",
                   statuses: ["failed", "done"],
@@ -375,7 +367,6 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   }
 
   async listen() {
-
     if (this.pollingAgent) {
       throw new InferableError("Workflow already listening");
     }
@@ -405,8 +396,8 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
           input: this.inputSchema,
         },
         config: {
-          private: true
-        }
+          private: true,
+        },
       });
     });
 

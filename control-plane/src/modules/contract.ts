@@ -80,6 +80,11 @@ export const onStatusChangeSchema = z.preprocess(
       function: functionReference.describe("A function to call when the run status changes"),
     }),
     z.object({
+      type: z.literal("tool"),
+      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      tools: z.string().describe("A tool to call when the run status changes"),
+    }),
+    z.object({
       type: z.literal("webhook"),
       statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
       webhook: z
@@ -300,38 +305,22 @@ const RunSchema = z.object({
     .describe(
       "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
     ),
+  tools: z
+    .array(z.string())
+    .optional()
+    .describe("An array of tool names to make available to the run"),
   attachedFunctions: z
     .array(functionReference)
     .optional()
-    .describe(
-      "An array of functions to make available to the run. By default all functions in the cluster will be available"
-    ),
+    .describe("DEPRECATED, use tools instead"),
   onStatusChange: onStatusChangeSchema
     .optional()
     .describe("Mechanism for receiving notifications when the run status changes"),
   tags: z.record(z.string()).optional().describe("Run tags which can be used to filter runs"),
-  test: z
-    .object({
-      enabled: z.boolean().default(false),
-      mocks: z
-        .record(
-          z.object({
-            output: z.object({}).passthrough().describe("The mock output of the function"),
-          })
-        )
-        .optional()
-        .describe(
-          "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)"
-        ),
-    })
-    .optional()
-    .describe("When provided, the run will be marked as as a test / evaluation"),
   input: z
     .object({})
     .passthrough()
-    .describe(
-      "Structured input arguments to merge with the initial prompt."
-    )
+    .describe("Structured input arguments to merge with the initial prompt.")
     .optional(),
   context: anyObject.optional().describe("Additional context to propogate to all Jobs in the Run"),
   reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
@@ -393,7 +382,6 @@ export const definition = {
         id: z.string(),
         status: z.string(),
         targetFn: z.string(),
-        service: z.string(),
         executingMachineId: z.string().nullable(),
         targetArgs: z.string(),
         result: z.string().nullable(),
@@ -420,8 +408,8 @@ export const definition = {
       authorization: z.string(),
     }),
     body: z.object({
-      service: z.string(),
       function: z.string(),
+      tool: z.string(),
       input: z.object({}).passthrough(),
     }),
     responses: {
@@ -477,8 +465,6 @@ export const definition = {
     method: "GET",
     path: "/clusters/:clusterId/jobs",
     query: z.object({
-      // Deprecated, to be removed once all SDKs are updated
-      service: z.string().optional(),
       tools: z.string().optional().describe("Comma-separated list of tools to poll"),
       status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
       limit: z.coerce.number().min(1).max(20).default(10),
@@ -570,7 +556,6 @@ export const definition = {
       ...machineHeaders,
     }),
     body: z.object({
-      service: z.string().optional(),
       functions: z
         .array(
           z.object({
@@ -767,7 +752,6 @@ export const definition = {
         z.object({
           type: z.string(),
           machineId: z.string().nullable(),
-          service: z.string().nullable(),
           createdAt: z.date(),
           jobId: z.string().nullable(),
           targetFn: z.string().nullable(),
@@ -785,7 +769,6 @@ export const definition = {
       type: z.string().optional(),
       jobId: z.string().optional(),
       machineId: z.string().optional(),
-      service: z.string().optional(),
       workflowId: z.string().optional(),
       includeMeta: z.string().optional(),
     }),
@@ -800,7 +783,6 @@ export const definition = {
       200: z.object({
         type: z.string(),
         machineId: z.string().nullable(),
-        service: z.string().nullable(),
         createdAt: z.date(),
         jobId: z.string().nullable(),
         targetFn: z.string().nullable(),
@@ -835,7 +817,7 @@ export const definition = {
             date: z.string(),
             totalRuns: z.number(),
           })
-        )
+        ),
       }),
     },
     pathParams: z.object({
@@ -936,7 +918,7 @@ export const definition = {
         authContext: z.any().nullable(),
         result: anyObject.nullable(),
         tags: z.record(z.string()).nullable(),
-        attachedFunctions: z.array(z.string()).nullable(),
+        tools: z.array(z.string()).nullable(),
       }),
       401: z.undefined(),
     },
@@ -1035,7 +1017,6 @@ export const definition = {
           createdAt: z.date(),
           status: z.string(),
           targetFn: z.string(),
-          service: z.string(),
           executingMachineId: z.string().nullable(),
         })
       ),
@@ -1136,7 +1117,6 @@ export const definition = {
             id: z.string(),
             type: z.string(),
             machineId: z.string().nullable(),
-            service: z.string().nullable(),
             createdAt: z.date(),
             jobId: z.string().nullable(),
             targetFn: z.string().nullable(),
@@ -1147,7 +1127,6 @@ export const definition = {
             id: z.string(),
             status: z.string(),
             targetFn: z.string(),
-            service: z.string(),
             resultType: z.string().nullable(),
             createdAt: z.date(),
             approved: z.boolean().nullable(),
@@ -1166,7 +1145,7 @@ export const definition = {
           feedbackScore: z.number().nullable(),
           result: anyObject.nullable().optional(),
           tags: z.record(z.string()).nullable().optional(),
-          attachedFunctions: z.array(z.string()).nullable(),
+          tools: z.array(z.string()).nullable(),
           name: z.string().nullable(),
           systemPrompt: z.string().nullable(),
           interactive: z.boolean(),
@@ -1249,37 +1228,41 @@ export const definition = {
     }),
     responses: {
       200: z.object({
-        handlerJobEvents: z.array(z.object({
-          id: z.string(),
-          clusterId: z.string(),
-          type: z.string(),
-          jobId: z.string().nullable(),
-          machineId: z.string().nullable(),
-          service: z.string().nullable(),
-          createdAt: z.date(),
-          targetFn: z.string().nullable(),
-          resultType: z.string().nullable(),
-          status: z.string().nullable(),
-          workflowId: z.string().nullable(),
-        })),
-        associatedRuns: z.array(z.object({
-          id: z.string(),
-          status: z.string(),
-          createdAt: z.date(),
-        })),
-        runEvents: z.array(z.object({
-          id: z.string(),
-          clusterId: z.string(),
-          type: z.string(),
-          jobId: z.string().nullable(),
-          machineId: z.string().nullable(),
-          service: z.string().nullable(),
-          createdAt: z.date(),
-          targetFn: z.string().nullable(),
-          resultType: z.string().nullable(),
-          status: z.string().nullable(),
-          workflowId: z.string().nullable(),
-        })),
+        handlerJobEvents: z.array(
+          z.object({
+            id: z.string(),
+            clusterId: z.string(),
+            type: z.string(),
+            jobId: z.string().nullable(),
+            machineId: z.string().nullable(),
+            createdAt: z.date(),
+            targetFn: z.string().nullable(),
+            resultType: z.string().nullable(),
+            status: z.string().nullable(),
+            workflowId: z.string().nullable(),
+          })
+        ),
+        associatedRuns: z.array(
+          z.object({
+            id: z.string(),
+            status: z.string(),
+            createdAt: z.date(),
+          })
+        ),
+        runEvents: z.array(
+          z.object({
+            id: z.string(),
+            clusterId: z.string(),
+            type: z.string(),
+            jobId: z.string().nullable(),
+            machineId: z.string().nullable(),
+            createdAt: z.date(),
+            targetFn: z.string().nullable(),
+            resultType: z.string().nullable(),
+            status: z.string().nullable(),
+            workflowId: z.string().nullable(),
+          })
+        ),
       }),
     },
   },

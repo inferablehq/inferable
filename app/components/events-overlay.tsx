@@ -10,38 +10,19 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@clerk/nextjs";
 import type { ClientInferResponseBody } from "@ts-rest/core";
 import { format } from "date-fns";
 import { snakeCase, startCase } from "lodash";
-import {
-  AlertCircle,
-  AlertTriangle,
-  BarChartIcon,
-  Clock,
-  Info,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, AlertTriangle, BarChartIcon, Clock, Info, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import ErrorDisplay from "./error-display";
 
 type Event = ClientInferResponseBody<typeof contract.listEvents, 200>[number];
 
-type FilterKey =
-  | "type"
-  | "service"
-  | "function"
-  | "jobId"
-  | "workflowId"
-  | "machineId";
+type FilterKey = "type" | "function" | "jobId" | "workflowId" | "machineId";
 
 interface Filter {
   key: FilterKey;
@@ -62,15 +43,11 @@ interface EventParam {
 const formatEventParams = (event: Event): EventParam[] => {
   const params: EventParam[] = [];
 
-  if (event.service) params.push({ label: "Service", value: event.service });
   if (event.targetFn) params.push({ label: "Function", value: event.targetFn });
-  if (event.machineId)
-    params.push({ label: "Machine", value: event.machineId });
-  if (event.resultType)
-    params.push({ label: "Result", value: event.resultType });
+  if (event.machineId) params.push({ label: "Machine", value: event.machineId });
+  if (event.resultType) params.push({ label: "Result", value: event.resultType });
   if (event.status) params.push({ label: "Status", value: event.status });
-  if (event.workflowId)
-    params.push({ label: "Workflow", value: event.workflowId });
+  if (event.workflowId) params.push({ label: "Workflow", value: event.workflowId });
 
   return params;
 };
@@ -101,7 +78,6 @@ type FilterableEventKeys = {
 
 const filterKeyToEventKey: FilterableEventKeys = {
   type: "type",
-  service: "service",
   function: "targetFn",
   jobId: "jobId",
   workflowId: "workflowId",
@@ -183,7 +159,7 @@ const getEventCountsByTime = (events: Event[]) => {
   if (events.length === 0) return [];
 
   const earliestEventTime = new Date(
-    Math.min(...events.map((event) => new Date(event.createdAt).getTime()))
+    Math.min(...events.map(event => new Date(event.createdAt).getTime()))
   );
 
   const timeNow = new Date();
@@ -194,24 +170,25 @@ const getEventCountsByTime = (events: Event[]) => {
 
   const bucketStartTimes = Array.from({ length: bucketCount }, (_, i) => {
     const time = new Date(earliestEventTime);
-    time.setMilliseconds(
-      time.getMilliseconds() + i * (differenceInMs / bucketCount)
-    );
+    time.setMilliseconds(time.getMilliseconds() + i * (differenceInMs / bucketCount));
     return time;
   });
 
   // Format data for chart
   return bucketStartTimes.map((t, i) => {
-    const eventsInBucket = events.filter((event) => {
+    const eventsInBucket = events.filter(event => {
       const eventTime = new Date(event.createdAt);
       return eventTime >= t && eventTime < bucketStartTimes[i + 1];
     });
     return {
       date: t.toISOString(),
-      ...eventsInBucket.reduce((acc, event) => {
-        acc[event.type] = (acc[event.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
+      ...eventsInBucket.reduce(
+        (acc, event) => {
+          acc[event.type] = (acc[event.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
     };
   });
 };
@@ -239,11 +216,7 @@ export function EventsOverlayButton({
   );
 }
 
-function EventsOverlay({
-  clusterId,
-  query = {},
-  refreshInterval = 10000,
-}: EventsOverlayProps) {
+function EventsOverlay({ clusterId, query = {}, refreshInterval = 10000 }: EventsOverlayProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [filters, setFilters] = useState<Filter[]>(
     Object.entries(query).map(([key, value]) => ({
@@ -266,10 +239,13 @@ function EventsOverlay({
           params: {
             clusterId,
           },
-          query: filters.reduce((acc, filter) => {
-            acc[filter.key] = filter.value;
-            return acc;
-          }, {} as Partial<Record<FilterKey, string>>),
+          query: filters.reduce(
+            (acc, filter) => {
+              acc[filter.key] = filter.value;
+              return acc;
+            },
+            {} as Partial<Record<FilterKey, string>>
+          ),
         });
 
         if (response.status === 200) {
@@ -298,20 +274,15 @@ function EventsOverlay({
     const newFilters: Filter[] = [];
 
     if (event.type) newFilters.push({ key: "type", value: event.type });
-    if (event.service)
-      newFilters.push({ key: "service", value: event.service });
-    if (event.targetFn)
-      newFilters.push({ key: "function", value: event.targetFn });
-    if (event.machineId)
-      newFilters.push({ key: "machineId", value: event.machineId });
-    if (event.workflowId)
-      newFilters.push({ key: "workflowId", value: event.workflowId });
+    if (event.targetFn) newFilters.push({ key: "function", value: event.targetFn });
+    if (event.machineId) newFilters.push({ key: "machineId", value: event.machineId });
+    if (event.workflowId) newFilters.push({ key: "workflowId", value: event.workflowId });
 
-    setFilters((prev) => {
+    setFilters(prev => {
       const updated = [...prev];
-      newFilters.forEach((newFilter) => {
+      newFilters.forEach(newFilter => {
         const existingIndex = updated.findIndex(
-          (f) => f.key === newFilter.key && f.value === newFilter.value
+          f => f.key === newFilter.key && f.value === newFilter.value
         );
         if (existingIndex === -1) {
           updated.push(newFilter);
@@ -322,17 +293,14 @@ function EventsOverlay({
   };
 
   const removeFilter = (filterToRemove: Filter) => {
-    setFilters((prev) =>
-      prev.filter(
-        (f) =>
-          !(f.key === filterToRemove.key && f.value === filterToRemove.value)
-      )
+    setFilters(prev =>
+      prev.filter(f => !(f.key === filterToRemove.key && f.value === filterToRemove.value))
     );
   };
 
   const getFilteredEvents = useCallback(() => {
-    return events.filter((event) => {
-      const matchesFilters = filters.every((filter) => {
+    return events.filter(event => {
+      const matchesFilters = filters.every(filter => {
         const eventKey = filterKeyToEventKey[filter.key];
         const eventValue = event[eventKey];
         return eventValue === filter.value;
@@ -345,7 +313,7 @@ function EventsOverlay({
       const searchLower = searchTerm.toLowerCase();
 
       return (
-        Object.values(filterKeyToEventKey).some((key) => {
+        Object.values(filterKeyToEventKey).some(key => {
           const value = event[key];
           return value?.toString().toLowerCase().includes(searchLower);
         }) || typeToText[event.type]?.toLowerCase().includes(searchLower)
@@ -367,14 +335,8 @@ function EventsOverlay({
         <div className="flex flex-col gap-4 mt-4">
           <div className="flex flex-wrap gap-2">
             {filters.map((filter, index) => (
-              <Badge
-                key={index}
-                variant="secondary"
-                className="flex items-center gap-1.5 pr-1.5"
-              >
-                <span className="text-muted-foreground">
-                  {startCase(filter.key)}:
-                </span>
+              <Badge key={index} variant="secondary" className="flex items-center gap-1.5 pr-1.5">
+                <span className="text-muted-foreground">{startCase(filter.key)}:</span>
                 <span>{filter.value}</span>
                 <button
                   onClick={() => removeFilter(filter)}
@@ -386,8 +348,8 @@ function EventsOverlay({
             ))}
             {filters.length === 0 && !searchTerm && (
               <span className="text-sm text-muted-foreground">
-                Showing events for the whole cluster. Click on event parameters
-                to add filters or use the search bar.
+                Showing events for the whole cluster. Click on event parameters to add filters or
+                use the search bar.
               </span>
             )}
           </div>
@@ -399,10 +361,7 @@ function EventsOverlay({
           <CardTitle className="text-sm font-medium">Event Frequency</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer
-            config={chartConfig}
-            className="aspect-auto h-[200px] w-full"
-          >
+          <ChartContainer config={chartConfig} className="aspect-auto h-[200px] w-full">
             <BarChart
               data={getEventCountsByTime(getFilteredEvents())}
               margin={{
@@ -417,7 +376,7 @@ function EventsOverlay({
                 dataKey="date"
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => {
+                tickFormatter={value => {
                   const date = new Date(value);
                   return date.toLocaleDateString("en-US", {
                     day: "numeric",
@@ -427,17 +386,13 @@ function EventsOverlay({
                   });
                 }}
               />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12 }}
-              />
+              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
                     className="w-[250px]"
                     nameKey="count"
-                    labelFormatter={(value) => {
+                    labelFormatter={value => {
                       return new Date(value).toLocaleDateString("en-US", {
                         month: "long",
                         day: "numeric",
@@ -470,16 +425,11 @@ function EventsOverlay({
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {getFilteredEvents().map((event) => (
-              <div
-                key={event.id}
-                className="p-4 hover:bg-secondary/50 transition-colors"
-              >
+            {getFilteredEvents().map(event => (
+              <div key={event.id} className="p-4 hover:bg-secondary/50 transition-colors">
                 <div className="flex items-start gap-3">
                   <div className="flex flex-col gap-0.5 shrink-0 text-xs text-muted-foreground w-24">
-                    <span>
-                      {format(new Date(event.createdAt), "MMM dd, yyyy")}
-                    </span>
+                    <span>{format(new Date(event.createdAt), "MMM dd, yyyy")}</span>
                     <span>{format(new Date(event.createdAt), "HH:mm:ss")}</span>
                   </div>
                   <div
@@ -493,16 +443,14 @@ function EventsOverlay({
                       <div className="flex items-center gap-2">
                         <code
                           className="text-xs px-1.5 py-0.5 rounded bg-secondary cursor-pointer hover:bg-secondary/80"
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             addFilter(event);
                           }}
                         >
                           {snakeCase(event.type).toUpperCase()}
                         </code>
-                        <p className="text-sm text-muted-foreground">
-                          {typeToText[event.type]}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{typeToText[event.type]}</p>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {formatEventParams(event).map((param, index) => (
@@ -510,14 +458,12 @@ function EventsOverlay({
                             key={index}
                             variant="secondary"
                             className="flex items-center gap-1 text-xs cursor-pointer hover:bg-secondary/80"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               addFilter(event);
                             }}
                           >
-                            <span className="text-muted-foreground">
-                              {param.label}:
-                            </span>
+                            <span className="text-muted-foreground">{param.label}:</span>
                             <span>{param.value}</span>
                           </Badge>
                         ))}

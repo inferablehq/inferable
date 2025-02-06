@@ -6,19 +6,10 @@ import { formatRelative } from "date-fns";
 import { useParams } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
 import { unpack } from "../lib/utils";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { JsonForm } from "./json-form";
 
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false };
@@ -110,37 +101,23 @@ function JobReferencesContent({
               <CardTitle className="text-lg">Reference #{i + 1}</CardTitle>
               <CardDescription className="mb-4">
                 <p>
-                  Agent received this data{" "}
-                  <u>{formatRelative(e.createdAt, new Date())}</u> from{" "}
-                  <u>
-                    {e.service}.{e.targetFn}
-                  </u>{" "}
-                  executing on machine <u>{e.executingMachineId}</u>.
+                  Agent received this data <u>{formatRelative(e.createdAt, new Date())}</u> from{" "}
+                  <u>{e.targetFn}</u> executing on machine <u>{e.executingMachineId}</u>.
                 </p>
               </CardDescription>
             </CardHeader>
             <CardContent className="-mt-4">
-              <JsonForm
-                key={e.id}
-                label={``}
-                value={unpack(e.result)}
-                highlighted={highlighted}
-              />
+              <JsonForm key={e.id} label={``} value={unpack(e.result)} highlighted={highlighted} />
             </CardContent>
           </Card>
         </div>
       ))}
-      {!references?.length && (
-        <div className="text-gray-500">No references found</div>
-      )}
+      {!references?.length && <div className="text-gray-500">No references found</div>}
     </>
   );
 }
 
-export function JobReferences(props: {
-  displayable: string;
-  highlighted: string;
-}) {
+export function JobReferences(props: { displayable: string; highlighted: string }) {
   return (
     <ErrorBoundary>
       <JobReferencesContent {...props} />

@@ -22,13 +22,23 @@ import * as jobs from "./jobs/jobs";
 import { getJob, getJobReferences } from "./jobs/jobs";
 import { kv } from "./kv";
 import { upsertMachine } from "./machines";
-import { ILLEGAL_SERVICE_NAMES } from "./machines/constants";
 import * as management from "./management";
 import * as events from "./observability/events";
 import { logger } from "./observability/logger";
 import { packer } from "./packer";
 import { posthog } from "./posthog";
-import { addMessageAndResume, createRun, deleteRun, getClusterBackgroundRun, getClusterRuns, getRunDetails, getRunResult, RunOptions, updateRunFeedback, validateSchema } from "./runs";
+import {
+  addMessageAndResume,
+  createRun,
+  deleteRun,
+  getClusterBackgroundRun,
+  getClusterRuns,
+  getRunDetails,
+  getRunResult,
+  RunOptions,
+  updateRunFeedback,
+  validateSchema,
+} from "./runs";
 import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
@@ -47,18 +57,13 @@ export const router = initServer().router(contract, {
       throw new BadRequestError("Request does not contain machine ID header");
     }
 
-    const { service } = request.body;
     const tools = request.body.tools ?? request.body.functions;
 
     if (request.body.functions) {
       logger.info("Machine is polling using deprecated functions field", {
         clusterId: machine.clusterId,
         machineId,
-      })
-    }
-
-    if (service && ILLEGAL_SERVICE_NAMES.includes(service)) {
-      throw new BadRequestError(`Service name ${service} is reserved and cannot be used.`);
+      });
     }
 
     const derefedFns = tools?.map(fn => {
@@ -86,22 +91,24 @@ export const router = initServer().router(contract, {
         xForwardedFor: request.headers["x-forwarded-for"],
         ip: request.request.ip,
       }),
-      derefedFns && Promise.all(derefedFns?.map(fn =>
-        upsertToolDefinition({
-          name: fn.name,
-          clusterId: machine.clusterId,
-          description: fn.description,
-          schema: fn.schema,
-          config: fn.config,
-        })),
-      ),
+      derefedFns &&
+        Promise.all(
+          derefedFns?.map(fn =>
+            upsertToolDefinition({
+              name: fn.name,
+              clusterId: machine.clusterId,
+              description: fn.description,
+              schema: fn.schema,
+              config: fn.config,
+            })
+          )
+        ),
     ]);
 
     events.write({
       type: "machineRegistered",
       clusterId: machine.clusterId,
       machineId,
-      service,
     });
 
     return {
@@ -141,7 +148,7 @@ export const router = initServer().router(contract, {
         authContext: run.authContext ?? null,
         result: run.result ?? null,
         tags: run.tags ?? null,
-        attachedFunctions: run.attachedFunctions ?? null,
+        tools: run.attachedFunctions ?? null,
       },
     };
   },
@@ -162,6 +169,19 @@ export const router = initServer().router(contract, {
       };
     }
 
+    if (body.tools && body.tools.length == 0) {
+      return {
+        status: 400,
+        body: {
+          message: "tools cannot be an empty array",
+        },
+      };
+    }
+
+    if (body.attachedFunctions) {
+      logger.warn("Using deprecated attachedFunctions field");
+    }
+
     if (body.resultSchema) {
       const validationError = validateSchema({
         schema: body.resultSchema,
@@ -172,7 +192,8 @@ export const router = initServer().router(contract, {
       }
     }
 
-    const attachedFunctions = body.attachedFunctions?.map((f) => typeof f === "string" ? f : f.function);
+    const attachedFunctions =
+      body.tools ?? body.attachedFunctions?.map(f => (typeof f === "string" ? f : f.function));
 
     const runOptions: RunOptions = {
       id: body.id || body.runId || ulid(),
@@ -203,8 +224,6 @@ export const router = initServer().router(contract, {
       clusterId,
 
       name: body.name,
-      test: body.test?.enabled ?? false,
-      testMocks: body.test?.mocks,
       tags: body.tags,
 
       // Customer Auth context (In the future all auth types should inject context into the run)
@@ -386,7 +405,7 @@ export const router = initServer().router(contract, {
           ...run,
           tags: {
             [key]: value,
-          }
+          },
         })),
       };
     }
@@ -434,7 +453,11 @@ export const router = initServer().router(contract, {
         messages,
         activity,
         jobs,
-        run,
+        run: {
+          ...run,
+          attachedFunctions: undefined,
+          tools: run.attachedFunctions,
+        },
         blobs,
       },
     };
@@ -562,12 +585,16 @@ export const router = initServer().router(contract, {
     auth.canAccess({ cluster: { clusterId } });
     auth.canCreate({ call: true });
 
-    const { function: fn, input, service } = request.body;
+    const { function: fn, tool, input } = request.body;
     const { waitTime } = request.query;
 
+    if (fn) {
+      logger.warn("Using deprecated createJob.function field");
+    }
+
     const { id } = await jobs.createJobV2({
-      service: service,
-      targetFn: fn,
+      service: "v2",
+      targetFn: tool ?? fn,
       targetArgs: packer.pack(input),
       owner: { clusterId },
       runId: getClusterBackgroundRun(clusterId),
@@ -731,7 +758,7 @@ export const router = initServer().router(contract, {
   },
   listJobs: async request => {
     const { clusterId } = request.params;
-    const { service, limit, acknowledge, status } = request.query;
+    const { limit, acknowledge, status } = request.query;
     const tools = request.query.tools?.split(",").map(t => t.trim());
 
     if (acknowledge && status !== "pending") {
@@ -751,7 +778,6 @@ export const router = initServer().router(contract, {
     const machine = request.request.getAuth().isMachine();
     machine.canAccess({ cluster: { clusterId } });
 
-
     const [, missingTools, pollResult] = await Promise.all([
       upsertMachine({
         clusterId,
@@ -761,21 +787,23 @@ export const router = initServer().router(contract, {
         xForwardedFor: request.headers["x-forwarded-for"],
         ip: request.request.ip,
       }),
-      tools && recordPoll({
-        clusterId,
-        tools,
-      }),
-      tools&& jobs.pollJobsByTools({
-        clusterId,
-        machineId,
-        tools,
-        limit,
-      })
+      tools &&
+        recordPoll({
+          clusterId,
+          tools,
+        }),
+      tools &&
+        jobs.pollJobsByTools({
+          clusterId,
+          machineId,
+          tools,
+          limit,
+        }),
     ]);
 
     if ((missingTools?.length ?? 0) > 0) {
       logger.info("Machine polling for unregistered tools", {
-        service,
+        tools: missingTools,
       });
       return {
         status: 410,
@@ -786,19 +814,19 @@ export const router = initServer().router(contract, {
     }
     const result = pollResult;
 
-
     request.reply.header("retry-after", 1);
 
     return {
       status: 200,
-      body: result?.map(job => ({
-        id: job.id,
-        function: job.targetFn,
-        input: packer.unpack(job.targetArgs),
-        authContext: job.authContext,
-        runContext: job.runContext,
-        approved: job.approved,
-      })) ?? [],
+      body:
+        result?.map(job => ({
+          id: job.id,
+          function: job.targetFn,
+          input: packer.unpack(job.targetArgs),
+          authContext: job.authContext,
+          runContext: job.runContext,
+          approved: job.approved,
+        })) ?? [],
     };
   },
   createJobBlob: async request => {
@@ -1220,7 +1248,6 @@ export const router = initServer().router(contract, {
         type: request.query.type,
         jobId: request.query.jobId,
         machineId: request.query.machineId,
-        service: request.query.service,
         workflowId: request.query.workflowId,
       },
       includeMeta: request.query.includeMeta ? true : false,
@@ -1455,4 +1482,3 @@ export const router = initServer().router(contract, {
     };
   },
 });
-

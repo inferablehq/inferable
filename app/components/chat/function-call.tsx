@@ -40,7 +40,6 @@ function FunctionCall({
   jobId,
   isFocused,
   onFocusChange,
-  service,
   resultType,
   status,
   targetFn,
@@ -52,7 +51,6 @@ function FunctionCall({
   jobId: string;
   isFocused: boolean;
   onFocusChange: (isFocused: boolean) => void;
-  service: string;
   resultType: WorkflowJob["resultType"];
   status: WorkflowJob["status"];
   targetFn: string;
@@ -133,9 +131,7 @@ function FunctionCall({
                 >
                   <div className="flex flex-row items-center text-sm">
                     <Code2 className="w-4 h-4 mr-2" />
-                    <span className="font-mono mr-2">
-                      {service}.{targetFn}()
-                    </span>
+                    <span className="font-mono mr-2">{targetFn}()</span>
                     {statusCircle(status, resultType)}
                   </div>
                 </Button>
@@ -152,16 +148,17 @@ function FunctionCall({
                 </div>
               )}
 
-              {status === "pending" || status === "running" && !approvalRequested && (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={cancelJob}
-                  title="Cancel this function call"
-                >
-                  Cancel
-                </Button>
-              )}
+              {status === "pending" ||
+                (status === "running" && !approvalRequested && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={cancelJob}
+                    title="Cancel this function call"
+                  >
+                    Cancel
+                  </Button>
+                ))}
             </div>
 
             {(showInlineInput ||
@@ -219,7 +216,6 @@ function FunctionCall({
               >
                 View full details →
               </Button>
-              {/* <ToolContextButton clusterId={clusterId} service={service} functionName={targetFn} /> */}
             </div>
           </div>
         </div>
@@ -227,9 +223,7 @@ function FunctionCall({
         <SheetContent style={{ minWidth: 800 }} className="overflow-scroll">
           <SheetHeader>
             <SheetTitle>
-              <span className="font-mono">
-                {service}.{targetFn}()
-              </span>
+              <span className="font-mono">{targetFn}()</span>
             </SheetTitle>
           </SheetHeader>
           <div className="h-4" />

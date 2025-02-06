@@ -267,7 +267,6 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
               key={job.id}
               clusterId={clusterId}
               jobId={job.id}
-              service={job.service}
               resultType={job.resultType}
               status={job.status}
               targetFn={job.targetFn}
@@ -415,12 +414,11 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                     </div>
                   </div>
                 )}
-                {runTimeline?.run.attachedFunctions &&
-                runTimeline?.run.attachedFunctions.length > 0 ? (
+                {runTimeline?.run.tools && runTimeline?.run.tools.length > 0 ? (
                   <div className="flex flex-col space-y-1">
                     <span className="text-xs font-medium text-gray-500">Functions</span>
                     <div className="flex flex-wrap gap-1">
-                      {runTimeline?.run.attachedFunctions.map(fn => (
+                      {runTimeline?.run.tools.map(fn => (
                         <div
                           key={fn}
                           className="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono"
@@ -530,45 +528,44 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
       >
         {elements.length > 0 ? <div className="flex flex-col">{elements}</div> : messageSkeleton}
         {showComposer && (
-        <div
-          className={"flex flex-col space-y-2 ml-8 mr-4 mb-4"}
-        >
-          <p className="text-xs text-gray-500">
-            This run is marked as <span className="font-mono">interactive</span>. You can send messages to the agent.
-          </p>
-          <Textarea
-            disabled={runTimeline?.run.status === "running"}
-            rows={3}
-            placeholder={"Message Inferable"}
-            className="focus-visible:ring-offset-0"
-            value={prompt}
-            onChange={e => setPrompt(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                onSubmit(prompt);
-              }
-            }}
-          />
-          <div className="flex flex-row space-x-2">
-            <div className="flex items-center space-x-2">
-              <SendButton
-                onClick={() => onSubmit(prompt)}
-                disabled={runTimeline?.run.status === "running"}
-              >
-                {runTimeline?.run.status === "running" ? (
-                  <>
-                    <RefreshCcw className="h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Send"
-                )}
-              </SendButton>
+          <div className={"flex flex-col space-y-2 ml-8 mr-4 mb-4"}>
+            <p className="text-xs text-gray-500">
+              This run is marked as <span className="font-mono">interactive</span>. You can send
+              messages to the agent.
+            </p>
+            <Textarea
+              disabled={runTimeline?.run.status === "running"}
+              rows={3}
+              placeholder={"Message Inferable"}
+              className="focus-visible:ring-offset-0"
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  onSubmit(prompt);
+                }
+              }}
+            />
+            <div className="flex flex-row space-x-2">
+              <div className="flex items-center space-x-2">
+                <SendButton
+                  onClick={() => onSubmit(prompt)}
+                  disabled={runTimeline?.run.status === "running"}
+                >
+                  {runTimeline?.run.status === "running" ? (
+                    <>
+                      <RefreshCcw className="h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Send"
+                  )}
+                </SendButton>
               </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );
