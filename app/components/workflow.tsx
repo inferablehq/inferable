@@ -387,9 +387,9 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
                   <div className="flex flex-col space-y-1">
                     <span className="text-xs font-medium text-gray-500">System Prompt</span>
                     <div className="flex flex-wrap gap-1">
-                      <div className="py-0.5 rounded text-xs text-gray-500">
+                      <pre className="py-0.5 rounded text-xs text-gray-500">
                         {runTimeline?.run.systemPrompt}
-                      </div>
+                      </pre>
                     </div>
                   </div>
                 )}

@@ -1,8 +1,9 @@
 import { cn } from "@/lib/utils";
 import { formatRelative } from "date-fns";
-import { Mail, Slack, User } from "lucide-react";
+import { ChevronRightCircle, Mail, Slack, User } from "lucide-react";
 import { MessageContainerProps } from "./workflow-event";
 import { z } from "zod";
+import { ReadOnlyJSON } from "../read-only-json";
 
 const displayableMeta = z
   .object({
@@ -23,7 +24,7 @@ export function HumanMessage({
 
   const parsed = displayableMeta.safeParse(metadata);
 
-  const via = parsed.success ? parsed.data?.displayable?.via : "playground";
+  const isJsonMessage = typeof data.message === "object" || typeof data.message === "string" && data.message.includes("{") || data.message.includes("[");
 
   return (
     <div className="mx-4">
@@ -37,23 +38,12 @@ export function HumanMessage({
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-primary-foreground/10 flex items-center justify-center">
               <div className="text-primary-foreground font-medium">
-                {(() => {
-                  switch (via) {
-                    case "slack":
-                      return <Slack />;
-                    case "email":
-                      return <Mail />;
-                    case "playground":
-                      return <User />;
-                    default:
-                      return null;
-                  }
-                })()}
+                <ChevronRightCircle className="h-4 w-4" />
               </div>
             </div>
             <div>
               <div className="text-sm font-medium text-primary-foreground">
-                Human <span className="text-muted-foreground">via {via}</span>
+                Instructions
               </div>
               <div className="text-xs text-primary-foreground/70">
                 {createdAt ? formatRelative(createdAt, new Date()) : "unknown"}
@@ -61,10 +51,7 @@ export function HumanMessage({
             </div>
           </div>
         </div>
-
-        <div className="text-sm text-primary-foreground whitespace-pre-line leading-relaxed bg-primary-foreground/5 rounded-md p-3">
-          {data.message}
-        </div>
+        {isJsonMessage ? <ReadOnlyJSON json={data.message} dark={true} /> : <div className="text-sm text-primary-foreground whitespace-pre-line leading-relaxed bg-primary-foreground/5 rounded-md p-3">{data.message}</div>}
       </div>
     </div>
   );
