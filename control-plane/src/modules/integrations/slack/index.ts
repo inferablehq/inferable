@@ -34,7 +34,7 @@ type MessageEvent = {
     slack: {
       id: string;
       email: string;
-    }
+    };
   };
 };
 
@@ -131,28 +131,37 @@ export const notifyNewMessage = async ({
 
   const messageData = unifiedMessageSchema.parse(message).data;
 
+  let messageBody = "";
   if ("message" in messageData && messageData.message) {
-    const result = await client?.chat.postMessage({
-      thread_ts: tags[THREAD_META_KEY],
-      channel: tags[CHANNEL_META_KEY],
-      mrkdwn: true,
-      text: messageData.message,
-    });
+    messageBody = messageData.message;
+  }
 
-    if (!result.ts) {
-      throw new Error("Failed to create Slack message");
-    }
+  if ("result" in messageData && messageData.result) {
+    messageBody += `\n\n \`\`\`${JSON.stringify(messageData.result, null, 2)}\`\`\``;
+  }
 
-    await createExternalMessage({
-      channel: "slack",
-      externalId: result.ts,
-      messageId: message.id,
-      clusterId: message.clusterId,
-      runId: message.runId,
-    })
-  } else {
+  if (!messageBody) {
     logger.warn("Slack thread message does not have content");
   }
+
+  const result = await client?.chat.postMessage({
+    thread_ts: tags[THREAD_META_KEY],
+    channel: tags[CHANNEL_META_KEY],
+    mrkdwn: true,
+    text: messageBody,
+  });
+
+  if (!result.ts) {
+    throw new Error("Failed to create Slack message");
+  }
+
+  await createExternalMessage({
+    channel: "slack",
+    externalId: result.ts,
+    messageId: message.id,
+    clusterId: message.clusterId,
+    runId: message.runId,
+  });
 };
 
 export const handleApprovalRequest = async ({
@@ -501,7 +510,7 @@ const handleNewThread = async ({ event, client, clusterId, user }: MessageEvent)
       messageMetadata: {
         displayable: {
           via: "slack",
-        }
+        },
       },
       tags: {
         [THREAD_META_KEY]: thread,
@@ -546,7 +555,7 @@ const handleExistingThread = async ({ event, client, clusterId, user }: MessageE
         metadata: {
           displayable: {
             via: "slack",
-          }
+          },
         },
         type: "human",
       });
@@ -611,8 +620,8 @@ const authenticateUser = async (
     userId: `clerk:${clerkUser.id}`,
     slack: {
       id: userId,
-      email
-    }
+      email,
+    },
   };
 };
 
