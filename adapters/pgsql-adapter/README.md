@@ -67,6 +67,27 @@ npx @inferable/pgsql-adapter postgresql://user:pass@localhost:5432/postgres \
    --secret=sk_inf_xxx
 ```
 
+### Docker Usage for
+
+```bash
+docker run -e CONNECTION_STRING=postgresql://user:pass@localhost:5432/postgres \
+           -e SECRET=sk_inf_xxx \
+           inferable/pgsql-adapter
+```
+
+#### Configuration Options
+
+You can configure the adapter using the following environment variables:
+
+| Environment Variable | Description | Default | Required |
+|---------------------|-------------|---------|----------|
+| `CONNECTION_STRING` | PostgreSQL connection string | None | Yes |
+| `SECRET` | Inferable API cluster secret | None | Yes |
+| `APPROVAL_MODE` | Query approval mode: "always", "mutate", or "off" | "always" | No |
+| `PRIVACY_MODE` | Enable privacy mode (true/false) | "false" | No |
+| `SCHEMA` | Database schema to use | "public" | No |
+| `ENDPOINT` | Optional custom Inferable API endpoint | None | No |
+
 ### Library Usage
 
 ```typescript
