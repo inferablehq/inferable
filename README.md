@@ -118,6 +118,7 @@ workflow.version(1).define(async (ctx, input) => {
   });
 
   console.log(result.result.greeting);
+  // ... or chain this to anther ctx.agent()
 });
 
 workflow.listen();
