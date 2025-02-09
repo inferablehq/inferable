@@ -154,9 +154,9 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     liveMachineCount,
   } = useClusterState(clusterId);
 
-  const workflowTools = tools.filter(tool => tool.name.startsWith('workflows_'));
+  const workflowTools = tools.filter(tool => tool.name.includes('workflows.'));
 
-  const nonWorkflowTools = tools.filter(tool => !tool.name.startsWith('workflows_'));
+  const nonWorkflowTools = tools.filter(tool => !tool.name.includes('workflows.'));
 
   return (
     <div className="flex flex-col space-y-3 w-full">

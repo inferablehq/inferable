@@ -77,12 +77,12 @@ export const getWorkflowTools = async ({
     .where(
       and(
         eq(data.tools.cluster_id, clusterId),
-        like(data.tools.name, `workflows_${workflowName}_%`)
+        like(data.tools.name, `workflows.${workflowName}.%`)
       )
     )
     .then(r =>
       r.map(r => {
-        const version = r.name.replace(`workflows_${workflowName}_`, "");
+        const version = r.name.replace(`workflows.${workflowName}.`, "");
 
         const parsed = z.string().regex(/^\d+$/).safeParse(version);
 
