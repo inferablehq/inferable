@@ -291,8 +291,8 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               : undefined;
 
             const runId = config.runId
-              ? `${executionId}.${config.name}.${config.runId}`
-              : `${executionId}.${config.name}.${cyrb53(
+              ? `${executionId}_${config.name}_${config.runId}`
+              : `${executionId}_${config.name}_${cyrb53(
                   JSON.stringify([
                     config.systemPrompt,
                     executionId,
@@ -308,7 +308,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
                 clusterId: await this.getClusterId(),
               },
               body: {
-                name: `${this.name}.${config.name}`,
+                name: `${this.name}_${config.name}`,
                 id: runId,
                 systemPrompt: config.systemPrompt,
                 resultSchema,
@@ -391,7 +391,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
           const ctx = this.createContext(version, input.executionId, input);
           return handler(ctx, input);
         },
-        name: `workflows.${this.name}.${version}`,
+        name: `workflows_${this.name}_${version}`,
         schema: {
           input: this.inputSchema,
         },
