@@ -31,85 +31,101 @@ yarn add inferable
 pnpm add inferable
 ```
 
-## Quick Start
+## ⚡️ Quick Start
 
-### Initializing the Client
+### Initialize Client
 
 ```typescript
 import { Inferable } from "inferable";
 
-// Initialize the Inferable client with your API secret.
-// Get yours at https://console.inferable.ai.
-const client = new Inferable({
-  apiSecret: "YOUR_API_SECRET",
+const inferable = new Inferable({
+  // Get yours at https://app.inferable.ai
+  apiSecret: ""
+  // Optional, if self-hosting (https://docs.inferable.ai/pages/self-hosting)
+  // baseUrl: "http://localhost:4000",
 });
 ```
 
-If you don't provide an API key or base URL, it will attempt to read them from the following environment variables:
+### Register a Tool
 
-- `INFERABLE_API_SECRET`
-- `INFERABLE_API_ENDPOINT`
+Register a [tool](https://docs.inferable.ai/pages/tools) which is available for your agents to use.
 
-### Registering a Function
-
-Register a "sayHello" [function](https://docs.inferable.ai/pages/functions). This file will register the function with the [control-plane](https://docs.inferable.ai/pages/control-plane).
+> ℹ️ This example demonstrates Node.js. Tools can also be written in Go or .NET.
 
 ```typescript
-const sayHello = client.tools.register({
-  name: "sayHello",
-  func: async (input: { to: string }, _context) => {
-    return `Hello, ${to}!`;
+inferable.tools.register({
+  name: "greet",
+  func: async (input) => {
+    return `Hello, ${input.name}! My name is ${os.hostname()}.`;
   },
   schema: {
     input: z.object({
-      to: z.string(),
+      name: z.string(),
     }),
   },
 });
 
-client.tools.start();
+inferable.tools.listen();
 ```
 
-### Triggering a run
+### Create a Workflow
 
-The following code will create an [Inferable run](https://docs.inferable.ai/pages/runs) with the prompt "Say hello to John" and the `sayHello` function attached.
+Workflows are a way to orchestrate agents. They are durable, distributed, and run on the machine that they are registered on.
 
-> You can inspect the progress of the run:
->
-> - in the [playground UI](https://app.inferable.ai/) via `inf app`
-> - in the [CLI](https://www.npmjs.com/package/@inferable/cli) via `inf runs list`
+
+> ℹ️ Workflow definitions can currently only be written in Node.js.
 
 ```typescript
-const run = await client.run({
-  initialPrompt: "Say hello to John",
-  // Optional: Explicitly attach the `sayHello` function (All functions attached by default)
-  attachedFunctions: [
-    {
-      function: "sayHello",
-      service: "default",
-    },
-  ],
-  // Optional: Define a schema for the result to conform to
-  resultSchema: z.object({
-    didSayHello: z.boolean(),
+const workflow = inferable.workflows.create({
+  name: "greeting",
+  inputSchema: z.object({
+    executionId: z.string(),
+    userName: z.string(),
   }),
-  // Optional: Subscribe an Inferable function to receive notifications when the run status changes
-  //onStatusChange: { function: { function: "handler", service: "default" } },
-  // Optional: Pass additioanl context (passed to each function call)
-  //context: { foo: "bar" },
 });
 
-console.log("Run Started", {
-  result: run.id,
+workflow.version(1).define(async (ctx, input) => {
+  const greetingAgent = ctx.agent({
+    name: "greeter",
+    tools: ["greet"],
+    systemPrompt: helpers.structuredPrompt({
+      facts: ["You are a friendly greeter"],
+      goals: ["Return a greeting to the user"]
+    }),
+    resultSchema: z.object({
+      greeting: z.string(),
+    }),
+  });
+
+  const result = await greetingAgent.trigger({
+    data: {
+      name: input.userName,
+    }
+  });
+
+  console.log(result.result.greeting);
+  // ... or chain this to anther ctx.agent()
 });
 
-// Wait for the run to complete and log.
-console.log("Run result", {
-  result: await run.poll(),
+workflow.listen();
+```
+
+### Trigger the Workflow
+
+Tgger the workflow from your application code or via a HTTP request.
+
+```typescript
+await inferable.workflows.trigger('greeting', {
+  executionId: `123`,
+  userName: "Alice",
 });
 ```
 
-> Runs can also be triggered via the [API](https://docs.inferable.ai/pages/invoking-a-run-api), [CLI](https://www.npmjs.com/package/@inferable/cli) or [playground UI](https://app.inferable.ai/).
+```bash
+curl -XPOST https://api.inferable.ai/clusters/$CLUSTER_ID/workflows/greeting/executions \
+  -d '{"executionId": "123", "userName": "Alice"}' \
+  -H "Authorization: Bearer $API_SECRET"
+```
 
 ## Documentation
 
