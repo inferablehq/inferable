@@ -1618,6 +1618,13 @@
       "when": 1738880737792,
       "tag": "0231_easy_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 232,
+      "version": "7",
+      "when": 1739151138614,
+      "tag": "0232_awesome_tusk",
+      "breakpoints": true
     }
   ]
 }
