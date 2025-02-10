@@ -26,7 +26,7 @@ export const getJobStatusSync = async ({
 }) => {
   let jobResult:
     | {
-        status: "pending" | "running" | "success" | "failure" | "stalled";
+        status: "pending" | "running" | "success" | "failure" | "stalled" | "interrupted";
         result: string | null;
         resultType: ResultType | null;
       }
@@ -289,11 +289,21 @@ export const pollJobsByTools = async ({
   return jobs;
 };
 
+export async function generalInterrupt({ jobId, clusterId }: { jobId: string; clusterId: string }) {
+  await data.db
+    .update(data.jobs)
+    .set({
+      status: "interrupted",
+    })
+    .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
+}
+
 export async function requestApproval({ jobId, clusterId }: { jobId: string; clusterId: string }) {
   const [updated] = await data.db
     .update(data.jobs)
     .set({
       approval_requested: true,
+      status: "interrupted",
     })
     .returning({
       jobId: data.jobs.id,

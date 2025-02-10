@@ -682,14 +682,17 @@ export const router = initServer().router(contract, {
           jobId,
           clusterId,
         });
-
-        return {
-          status: 204,
-          body: undefined,
-        };
       } else {
-        throw new BadRequestError("Unsupported interrupt type");
+        await jobs.generalInterrupt({
+          jobId,
+          clusterId,
+        });
       }
+
+      return {
+        status: 204,
+        body: undefined,
+      };
     }
 
     if (!!result) {

@@ -6,6 +6,7 @@ import { InferableAPIError, InferableError } from "../errors";
 import { createApiClient } from "../create-client";
 import { PollingAgent } from "../polling";
 import { ToolRegistrationInput } from "../types";
+import { Interrupt } from "../util";
 
 type WorkflowInput = {
   executionId: string;
@@ -391,7 +392,13 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
             throw new Error(error);
           }
           const ctx = this.createContext(version, input.executionId, input);
-          return handler(ctx, input);
+          try {
+            return handler(ctx, input);
+          } catch (e) {
+            if (e instanceof WorkflowPausableError) {
+              return Interrupt.general();
+            }
+          }
         },
         name: `workflows_${this.name}_${version}`,
         schema: {

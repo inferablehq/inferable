@@ -9,7 +9,7 @@ import { z } from "zod";
 import { getToolDefinition } from "../tools";
 
 const customAuthContextCache = createCache<{
-  status: "pending" | "running" | "success" | "failure" | "stalled";
+  status: "pending" | "running" | "success" | "failure" | "stalled" | "interrupted";
   result: string | null;
   resultType: jobs.ResultType | null;
 }>(Symbol("customAuthContextCache"));

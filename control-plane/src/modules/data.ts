@@ -73,7 +73,7 @@ export const jobs = pgTable(
     target_args: text("target_args").notNull(),
     cache_key: varchar("cache_key", { length: 1024 }),
     status: text("status", {
-      enum: ["pending", "running", "success", "failure", "stalled"], // job failure is actually a stalled state. TODO: rename it
+      enum: ["pending", "running", "success", "failure", "stalled", "interrupted"], // job failure is actually a stalled state. TODO: rename it
     }).notNull(),
     result: text("result"),
     result_type: text("result_type", {

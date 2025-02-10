@@ -143,7 +143,7 @@ describe("selfHealCalls", () => {
       clusterId: owner.clusterId,
     });
 
-    expect(job!.status).toBe("pending");
+    expect(job!.status).toBe("interrupted");
   });
 
   it("should not retry a job that has reached max attempts", async () => {

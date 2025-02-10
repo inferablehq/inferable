@@ -278,7 +278,7 @@ export const blob = ({
 };
 
 export const INTERRUPT_KEY = "__inferable_interrupt";
-type VALID_INTERRUPT_TYPES = "approval";
+type VALID_INTERRUPT_TYPES = "approval" | "general";
 const interruptResultSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("approval"),
@@ -314,5 +314,9 @@ export class Interrupt {
 
   static approval() {
     return new Interrupt("approval");
+  }
+
+  static general() {
+    return new Interrupt("general");
   }
 }

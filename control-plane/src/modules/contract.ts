@@ -419,7 +419,7 @@ export const definition = {
         id: z.string(),
         result: z.any().nullable(),
         resultType: z.enum(["resolution", "rejection", "interrupt"]).nullable(),
-        status: z.enum(["pending", "running", "success", "failure", "stalled"]),
+        status: z.enum(["pending", "running", "success", "failure", "stalled", "interrupted"]),
       }),
     },
   },
