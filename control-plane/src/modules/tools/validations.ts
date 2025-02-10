@@ -1,4 +1,3 @@
-
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import type { JSONSchema4Type } from "json-schema";
@@ -36,19 +35,12 @@ export function validateToolName(name: string, isPrivate: boolean) {
     isPrivate,
   });
 
-  // Private functions are less restrictive as they don't pass through the model
-  if (isPrivate) {
-    // private functions can have alphanumeric, hyphen, underscore and period
-    // The inclusion of period is to support workflow handlers
-    if (!/^[a-zA-Z0-9._-]+$/.test(name)) {
-      throw new InvalidServiceRegistrationError(`Private Tools can have alphanumeric, hyphen, underscore and period, got ${name}`);
-    }
-  } else {
-    // public functions can have alphanumeric, hyphen, underscore
-    // https://docs.anthropic.com/en/docs/build-with-claude/tool-use
-    if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
-      throw new InvalidServiceRegistrationError(`Tools can have alphanumeric, hyphen and underscore got ${name}`);
-    }
+  // functions can have alphanumeric, hyphen, underscore
+  // https://docs.anthropic.com/en/docs/build-with-claude/tool-use
+  if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+    throw new InvalidServiceRegistrationError(
+      `Tools can have alphanumeric, hyphen and underscore got ${name}`
+    );
   }
 }
 
@@ -56,7 +48,7 @@ export const validatePropertyName = (name: string) => {
   const ALLOWED_PROPERTY_NAME_CHARACTERS = /^[a-zA-Z0-9_]+$/;
   if (!ALLOWED_PROPERTY_NAME_CHARACTERS.test(name)) {
     throw new InvalidServiceRegistrationError(
-      `Property name must only contain letters, numbers and underscore '_'. Got: ${name}`,
+      `Property name must only contain letters, numbers and underscore '_'. Got: ${name}`
     );
   }
 };
@@ -70,9 +62,7 @@ export const validateToolDescription = (description?: string) => {
 /*
  * Validate a function schema.
  */
-export const validateToolSchema = (
-  input: JsonSchemaInput,
-): { path: string; error: string }[] => {
+export const validateToolSchema = (input: JsonSchemaInput): { path: string; error: string }[] => {
   delete input.properties?.undefined;
 
   if (!input || !input.properties) {
@@ -80,7 +70,7 @@ export const validateToolSchema = (
   }
 
   const errors = Object.keys(input.properties)
-    .map((key) => {
+    .map(key => {
       return validateProperty(key, input.properties[key]);
     })
     .flat();
@@ -111,10 +101,7 @@ export const validateToolSchema = (
 /**
  * Recursively validate $.properties
  */
-const validateProperty = (
-  key: string,
-  value: JsonSchema,
-): ValidationError[] => {
+const validateProperty = (key: string, value: JsonSchema): ValidationError[] => {
   let errors: ValidationError[] = [];
   try {
     validatePropertyName(key);
@@ -133,10 +120,10 @@ const validateProperty = (
 
     errors = errors.concat(
       Object.keys(properties)
-        .map((key) => {
+        .map(key => {
           return validateProperty(key, properties[key]);
         })
-        .flat(),
+        .flat()
     );
   }
 
@@ -146,22 +133,18 @@ const validateProperty = (
 /*
  * Accepts an AJV compilation error and extracts the error details from the message.
  */
-export const ajvErrorToFailures = (
-  error: Error,
-): { path: string; error: string }[] => {
+export const ajvErrorToFailures = (error: Error): { path: string; error: string }[] => {
   // example: /data/properties/name some error message
   if (error.message.startsWith("schema is invalid:")) {
     return error.message
       .replace("schema is invalid:", "")
       .split(",")
-      .map((s) => s.trim())
-      .map((s) => {
+      .map(s => s.trim())
+      .map(s => {
         const firstSpace = s.indexOf(" ");
 
         if (firstSpace === -1) {
-          throw new Error(
-            "Could not extract failures from AJV error",
-          );
+          throw new Error("Could not extract failures from AJV error");
         }
 
         return {

@@ -82,7 +82,7 @@ export const onStatusChangeSchema = z.preprocess(
     z.object({
       type: z.literal("tool"),
       statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
-      tools: z.string().describe("A tool to call when the run status changes"),
+      tool: z.string().describe("A tool to call when the run status changes"),
     }),
     z.object({
       type: z.literal("webhook"),

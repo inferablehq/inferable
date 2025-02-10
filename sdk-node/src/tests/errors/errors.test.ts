@@ -22,8 +22,7 @@ describe("Errors", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_getNormalAnimal`,
+        tool: `${service.prefix}_getNormalAnimal`,
         input: {},
       },
     });
@@ -52,8 +51,7 @@ describe("Errors", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_getCustomAnimal`,
+        tool: `${service.prefix}_getCustomAnimal`,
         input: {},
       },
     });

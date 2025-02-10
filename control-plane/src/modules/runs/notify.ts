@@ -111,8 +111,25 @@ export const notifyStatusChange = async ({
       }
     );
   } else if (onStatusChangeDefinition.type === "function") {
+    logger.warn("OnStatusChange handler registerd with deprecated function type");
     const { id } = await jobs.createJobV2({
       targetFn: onStatusChangeDefinition.function.function,
+      targetArgs: packer.pack(await getRunPayload()),
+      authContext: run.authContext,
+      runContext: run.context,
+      owner: {
+        clusterId: run.clusterId,
+      },
+      runId: getClusterBackgroundRun(run.clusterId),
+    });
+
+    logger.info("Created job with run result", {
+      jobId: id,
+    });
+  } else if (onStatusChangeDefinition.type === "tool") {
+    logger.warn("OnStatusChange handler registerd with deprecated function type");
+    const { id } = await jobs.createJobV2({
+      targetFn: onStatusChangeDefinition.tool,
       targetArgs: packer.pack(await getRunPayload()),
       authContext: run.authContext,
       runContext: run.context,

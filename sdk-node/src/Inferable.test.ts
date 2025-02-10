@@ -88,8 +88,7 @@ describe("Functions", () => {
             clusterId: TEST_CLUSTER_ID,
           },
           body: {
-            service: "v2",
-            function: `${service.prefix}_echo`,
+            tool: `${service.prefix}_echo`,
             input: { text: i.toString() },
           },
         });
@@ -142,8 +141,7 @@ describe("Functions", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_echo`,
+        tool: `${service.prefix}_echo`,
         input: { text: "foo" },
       },
     });

@@ -24,8 +24,7 @@ describe("Caching", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_getProduct10sCache`,
+        tool: `${service.prefix}_getProduct10sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -38,8 +37,7 @@ describe("Caching", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_getProduct10sCache`,
+        tool: `${service.prefix}_getProduct10sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -70,8 +68,7 @@ describe("Caching", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_getProduct1sCache`,
+        tool: `${service.prefix}_getProduct1sCache`,
         input: { id: productId, random: "foo" },
       },
     });
@@ -86,8 +83,7 @@ describe("Caching", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_getProduct1sCache`,
+        tool: `${service.prefix}_getProduct1sCache`,
         input: { id: productId, random: "bar" },
       },
     });

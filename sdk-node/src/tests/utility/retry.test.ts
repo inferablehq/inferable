@@ -24,8 +24,7 @@ describe("retrying", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_failingFunction`,
+        tool: `${service.prefix}_failingFunction`,
         input: { id: productId },
       },
     });
@@ -51,8 +50,7 @@ describe("retrying", () => {
         clusterId: TEST_CLUSTER_ID,
       },
       body: {
-        service: "v2",
-        function: `${service.prefix}_succeedsOnSecondAttempt`,
+        tool: `${service.prefix}_succeedsOnSecondAttempt`,
         input: { id: productId },
       },
     });

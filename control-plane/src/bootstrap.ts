@@ -32,7 +32,7 @@ const app = fastify({
       throw new Error("No URL available in rewriteUrl");
     }
 
-    if (req.url.match(/\/clusters\/.*\/(calls|jobs).*$/)) {
+    if (req.url.match(/\/clusters\/.*\/(calls).*$/)) {
       totalRequestRewrites++;
 
       // Log every 100th rewrite
@@ -225,12 +225,9 @@ process.on("SIGTERM", async () => {
     slack.stop(),
     thirdPartyIntegrations.stop(),
     cron.stop(),
-  ])
-
-  await Promise.all([
-    pg.stop(),
-    redis.stop(),
   ]);
+
+  await Promise.all([pg.stop(), redis.stop()]);
 
   logger.info("Shutdown complete");
 
