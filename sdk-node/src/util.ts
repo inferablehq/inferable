@@ -281,7 +281,7 @@ export const INTERRUPT_KEY = "__inferable_interrupt";
 type VALID_INTERRUPT_TYPES = "approval" | "general";
 const interruptResultSchema = z.discriminatedUnion("type", [
   z.object({
-    type: z.literal("approval"),
+    type: z.enum(["approval", "general"]),
   }),
 ]);
 

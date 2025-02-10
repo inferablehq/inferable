@@ -3,8 +3,8 @@ import * as jobs from "../jobs/jobs";
 import { packer } from "../packer";
 import { getClusterBackgroundRun } from "../runs";
 import { BadRequestError, NotFoundError } from "../../utilities/errors";
-import { db, workflowExecutions } from "../data";
-import { and, eq } from "drizzle-orm";
+import * as data from "../data";
+import { and, eq, sql } from "drizzle-orm";
 import { getActivityByJobId, getActivityForTimeline } from "../observability/events";
 import { getRunsByTag } from "../runs/tags";
 import { getWorkflowTools } from "../tools";
@@ -53,8 +53,8 @@ export const createWorkflowExecution = async (
     runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
   });
 
-  await db
-    .insert(workflowExecutions)
+  await data.db
+    .insert(data.workflowExecutions)
     .values({
       id: parsed.data.executionId,
       cluster_id: clusterId,
@@ -75,13 +75,13 @@ export const resumeWorkflowExecution = async ({
   clusterId: string;
   workflowExecutionId: string;
 }) => {
-  const existing = await db
+  const existing = await data.db
     .select()
-    .from(workflowExecutions)
+    .from(data.workflowExecutions)
     .where(
       and(
-        eq(workflowExecutions.cluster_id, clusterId),
-        eq(workflowExecutions.workflow_execution_id, workflowExecutionId)
+        eq(data.workflowExecutions.cluster_id, clusterId),
+        eq(data.workflowExecutions.workflow_execution_id, workflowExecutionId)
       )
     );
 
@@ -102,16 +102,34 @@ export const resumeWorkflowExecution = async ({
     );
   }
 
-  // create a new job for the workflow execution
-  // and feed in the existing job's args
-  const job = await jobs.createJobV2({
-    owner: {
-      clusterId,
-    },
-    targetFn: existingJob.targetFn,
-    targetArgs: existingJob.targetArgs,
-    runId: existingJob.runId,
-  });
+  if (existingJob.approvalRequested && !existingJob.approved) {
+    logger.warn(
+      "Workflow execution is not approved yet. Waiting for approval before resuming",
+      {
+        clusterId,
+        workflowExecutionId,
+      }
+    )
+  }
+
+  // Move the job back to pending to allow it to be resumed
+  const [job] = await data.db
+    .update(data.jobs)
+    .set({
+      status: "pending",
+      executing_machine_id: null,
+      last_retrieved_at: null,
+      remaining_attempts: sql`remaining_attempts + 1`,
+    })
+    .where(
+      and(
+        eq(data.jobs.id, workflowExecution.job_id),
+        eq(data.jobs.cluster_id, clusterId),
+      )
+    )
+    .returning({
+      id: data.jobs.id,
+    });
 
   return { jobId: job.id };
 };
@@ -127,16 +145,16 @@ export const getWorkflowExecutionEvents = async ({
   executionId: string;
   after?: string;
 }) => {
-  const events = await db
+  const events = await data.db
     .select({
-      jobId: workflowExecutions.job_id,
+      jobId: data.workflowExecutions.job_id,
     })
-    .from(workflowExecutions)
+    .from(data.workflowExecutions)
     .where(
       and(
-        eq(workflowExecutions.workflow_execution_id, executionId),
-        eq(workflowExecutions.cluster_id, clusterId),
-        eq(workflowExecutions.workflow_name, workflowName)
+        eq(data.workflowExecutions.workflow_execution_id, executionId),
+        eq(data.workflowExecutions.cluster_id, clusterId),
+        eq(data.workflowExecutions.workflow_name, workflowName)
       )
     );
 

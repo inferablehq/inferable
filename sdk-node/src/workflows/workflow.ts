@@ -393,11 +393,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
           }
           const ctx = this.createContext(version, input.executionId, input);
           try {
-            return handler(ctx, input);
+            return await handler(ctx, input);
           } catch (e) {
             if (e instanceof WorkflowPausableError) {
               return Interrupt.general();
             }
+            throw e;
           }
         },
         name: `workflows_${this.name}_${version}`,

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Inferable } from "../Inferable";
 import { getEphemeralSetup } from "./workflow-test-utils";
 import { helpers } from "./workflow";
+import { Interrupt } from "../util";
 
 describe("workflow", () => {
   it("should run a workflow", async () => {

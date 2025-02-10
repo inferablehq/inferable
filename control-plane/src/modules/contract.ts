@@ -21,7 +21,7 @@ const anyObject = z.object({}).passthrough();
 
 export const interruptSchema = z.discriminatedUnion("type", [
   z.object({
-    type: z.literal("approval"),
+    type: z.enum(["approval", "general"]),
   }),
 ]);
 
