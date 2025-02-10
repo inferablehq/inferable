@@ -181,6 +181,7 @@ export const searchTools = async ({
       name: data.tools.name,
       description: data.tools.description,
       schema: data.tools.schema,
+      config: data.tools.config,
       similarity,
     })
     .from(data.tools)

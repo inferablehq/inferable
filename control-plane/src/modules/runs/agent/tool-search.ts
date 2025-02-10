@@ -133,7 +133,9 @@ async function findRelatedFunctionTools(
     clusterId: run.clusterId,
   });
 
-  const selectedTools = relatedTools.map(
+  const selectedTools = relatedTools
+  .filter(definition => !definition.config?.private)
+  .map(
     definition =>
       new AgentTool({
         name: definition.name,
