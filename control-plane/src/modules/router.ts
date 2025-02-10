@@ -139,6 +139,7 @@ export const router = initServer().router(contract, {
         id: run.id,
         userId: run.userId ?? null,
         status: run.status,
+        type: run.type,
         failureReason: run.failureReason ?? null,
         test: run.test ?? false,
         feedbackComment: run.feedbackComment ?? null,
@@ -199,6 +200,7 @@ export const router = initServer().router(contract, {
       initialPrompt: body.initialPrompt,
       systemPrompt: body.systemPrompt,
       attachedFunctions,
+      type: body.type,
       resultSchema: body.resultSchema
         ? (dereferenceSync(body.resultSchema) as JsonSchemaInput)
         : undefined,
@@ -224,6 +226,8 @@ export const router = initServer().router(contract, {
 
       name: body.name,
       tags: body.tags,
+
+      runType: runOptions.type,
 
       // Customer Auth context (In the future all auth types should inject context into the run)
       authContext: customAuth?.context,

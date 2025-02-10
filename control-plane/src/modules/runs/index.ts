@@ -32,6 +32,7 @@ export const createRun = async ({
   userId,
   clusterId,
   name,
+  runType: type,
   test,
   testMocks,
   systemPrompt,
@@ -54,6 +55,7 @@ export const createRun = async ({
   userId?: string;
   clusterId: string;
   name?: string;
+  runType?: "simple" | "react";
   systemPrompt?: string;
   test?: boolean;
   testMocks?: Record<
@@ -100,6 +102,7 @@ export const createRun = async ({
       id: id ?? ulid(),
       cluster_id: clusterId,
       status: "pending",
+      type,
       user_id: userId ?? "SYSTEM",
       ...(name ? { name } : {}),
       debug: sql<boolean>`(SELECT debug FROM ${clusters} WHERE id = ${clusterId})`,
@@ -121,7 +124,8 @@ export const createRun = async ({
       enable_result_grounding: enableResultGrounding,
       // Temporary hack to make the sdk be backwards compatible
       workflow_execution_id: workflowExecutionId ?? tags?.["workflow.executionId"],
-      workflow_version: workflowVersion ?? tags?.["workflow.version"] ? Number(tags?.["workflow.version"]) : null,
+      workflow_version:
+        (workflowVersion ?? tags?.["workflow.version"]) ? Number(tags?.["workflow.version"]) : null,
       workflow_name: workflowName ?? tags?.["workflow.name"],
     })
     .onConflictDoNothing()
@@ -249,6 +253,7 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
       status: runs.status,
       failureReason: runs.failure_reason,
       debug: runs.debug,
+      type: runs.type,
       test: runs.test,
       testMocks: runs.test_mocks,
       onStatusChange: runs.on_status_change,
@@ -292,6 +297,7 @@ export const getClusterRuns = async ({
       createdAt: runs.created_at,
       failureReason: runs.failure_reason,
       debug: runs.debug,
+      type: runs.type,
       test: runs.test,
       feedbackScore: runs.feedback_score,
       modelIdentifier: runs.model_identifier,
@@ -324,6 +330,7 @@ export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; r
         name: runs.name,
         userId: runs.user_id,
         clusterId: runs.cluster_id,
+        type: runs.type,
         status: runs.status,
         systemPrompt: runs.system_prompt,
         failureReason: runs.failure_reason,
@@ -662,6 +669,8 @@ export type RunOptions = {
   systemPrompt?: string;
   attachedFunctions?: string[];
   resultSchema?: unknown;
+
+  type: "simple" | "react";
 
   interactive?: boolean;
   reasoningTraces?: boolean;

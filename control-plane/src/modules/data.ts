@@ -369,6 +369,11 @@ export const runs = pgTable(
     agent_id: varchar("agent_id", { length: 128 }),
     agent_version: integer("agent_version"),
     reasoning_traces: boolean("reasoning_traces").default(true).notNull(),
+    type: text("type", {
+      enum: ["simple", "react"],
+    })
+      .default("react")
+      .notNull(),
     interactive: boolean("interactive").default(true).notNull(),
     enable_summarization: boolean("enable_summarization").default(false).notNull(),
     enable_result_grounding: boolean("enable_result_grounding").default(false).notNull(),
