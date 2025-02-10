@@ -3,12 +3,12 @@ import { QueueNames } from "./core";
 import { createMutex } from "../data";
 import { logger } from "../observability/logger";
 import { assertEphemeralClusterLimitations, getRun } from "../runs";
-import { processRun } from "../runs/agent/run";
+import { processAgentRun } from "../runs/agent/run";
 import { getRunTags } from "../runs/tags";
 import { injectTraceContext } from "../observability/tracer";
 import { z } from "zod";
 import { BaseMessage, baseMessageSchema } from "./observability";
-import { flagsmith } from "../flagsmith";
+import { processSimpleRun } from "../runs/simple/run";
 
 interface RunProcessMessage extends BaseMessage {
   lockAttempts?: number;
@@ -76,7 +76,16 @@ export async function handleRunProcess(message: unknown) {
       return;
     }
 
-    await processRun(run, tags, undefined);
+    switch (run.type) {
+      case "multi-step": {
+        await processAgentRun(run, tags, undefined);
+        break;
+      }
+      case "single-step": {
+        await processSimpleRun(run);
+        break;
+      }
+    }
   } finally {
     await unlock();
   }

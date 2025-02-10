@@ -1,5 +1,5 @@
 {
-  "id": "77724fca-6bf4-46e3-8030-e111062d17e4",
+  "id": "4b4e343b-a77d-4d26-80d7-ab22379ff6db",
   "prevId": "1390efe3-1a1b-44e3-90b9-c4ee8ee529c8",
   "version": "7",
   "dialect": "postgresql",
@@ -1539,7 +1539,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "'react'"
+          "default": "'multi-step'"
         },
         "interactive": {
           "name": "interactive",

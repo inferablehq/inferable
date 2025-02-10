@@ -55,7 +55,7 @@ export const createRun = async ({
   userId?: string;
   clusterId: string;
   name?: string;
-  runType?: "simple" | "react";
+  runType?: "single-step" | "multi-step";
   systemPrompt?: string;
   test?: boolean;
   testMocks?: Record<
@@ -670,7 +670,7 @@ export type RunOptions = {
   attachedFunctions?: string[];
   resultSchema?: unknown;
 
-  type: "simple" | "react";
+  type: "single-step" | "multi-step";
 
   interactive?: boolean;
   reasoningTraces?: boolean;

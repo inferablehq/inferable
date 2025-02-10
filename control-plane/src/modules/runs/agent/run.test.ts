@@ -1,4 +1,4 @@
-import { formatJobsContext, processRun } from "./run";
+import { formatJobsContext, processAgentRun } from "./run";
 import { createOwner } from "../../test/util";
 import { ulid } from "ulid";
 import { db, jobs, runs } from "../../data";
@@ -26,6 +26,7 @@ describe("processRun", () => {
       id: Math.random().toString(36).substring(2),
       clusterId: owner.clusterId,
       status: "running" as const,
+      type: "multi-step" as const,
       attachedFunctions: ["someFunction"],
       modelIdentifier: null,
       onStatusChange: {
@@ -94,7 +95,7 @@ describe("processRun", () => {
       }),
     ];
 
-    await processRun(run, undefined, mockModelResponses);
+    await processAgentRun(run, undefined, mockModelResponses);
 
     // Find the Job in the DB
     const onStatusChangeJob = await db

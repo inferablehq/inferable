@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "type" text DEFAULT 'react' NOT NULL;

@@ -329,7 +329,7 @@ const RunSchema = z.object({
     .default(false)
     .optional()
     .describe("Enable summarization of oversized call results"),
-  type: z.enum(["simple", "react"]).optional().default("react"),
+  type: z.enum(["single-step", "multi-step"]).optional().default("multi-step"),
   interactive: z
     .boolean()
     .default(true)
@@ -889,7 +889,7 @@ export const definition = {
           name: z.string(),
           userId: z.string().nullable(),
           createdAt: z.date(),
-          type: z.enum(["simple", "react"]),
+          type: z.enum(["single-step", "multi-step"]),
           status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
           test: z.boolean(),
           feedbackScore: z.number().nullable(),
@@ -911,7 +911,7 @@ export const definition = {
       200: z.object({
         id: z.string(),
         userId: z.string().nullable(),
-        type: z.enum(["simple", "react"]).nullable(),
+        type: z.enum(["single-step", "multi-step"]).nullable(),
         status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
         failureReason: z.string().nullable(),
         test: z.boolean(),

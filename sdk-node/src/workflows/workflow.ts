@@ -31,6 +31,7 @@ type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
 type AgentConfig<TResult> = {
   name: string;
   systemPrompt?: string;
+  type?: "single-step" | "multi-step";
   tools?: string[];
   resultSchema?: z.ZodType<TResult>;
   runId?: string;
@@ -310,6 +311,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               body: {
                 name: `${this.name}_${config.name}`,
                 id: runId,
+                type: config.type || "multi-step",
                 systemPrompt: config.systemPrompt,
                 resultSchema,
                 tools: config.tools,
@@ -330,7 +332,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               },
             });
 
-            this.logger?.info("Agent run completed", {
+            this.logger?.info("Agent run created", {
               version,
               name: this.name,
               executionId,

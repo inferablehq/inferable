@@ -182,6 +182,18 @@ export const router = initServer().router(contract, {
       logger.warn("Using deprecated attachedFunctions field");
     }
 
+    if (body.type === "single-step") {
+      if (body.attachedFunctions || body.tools) {
+        throw new BadRequestError("Single Step runs cannot have attached tools");
+      }
+      if (body.reasoningTraces) {
+        throw new BadRequestError("Single step runs cannot have reasoning traces");
+      }
+      if (body.enableResultGrounding) {
+        throw new BadRequestError("Single step runs cannot have result grounding");
+      }
+    }
+
     if (body.resultSchema) {
       const validationError = validateSchema({
         schema: body.resultSchema,

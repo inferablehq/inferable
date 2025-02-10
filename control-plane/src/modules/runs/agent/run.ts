@@ -21,7 +21,7 @@ import { availableTools, getToolDefinition } from "../../tools";
 /**
  * Run a Run from the most recent saved state
  **/
-export const processRun = async (
+export const processAgentRun = async (
   run: {
     id: string;
     clusterId: string;
@@ -32,6 +32,7 @@ export const processRun = async (
     status: string;
     systemPrompt: string | null;
     testMocks: Record<string, { output: Record<string, unknown> }> | null;
+    type: "single-step" | "multi-step";
     test: boolean;
     reasoningTraces: boolean;
     enableResultGrounding: boolean;
@@ -40,10 +41,12 @@ export const processRun = async (
     context: unknown | null;
   },
   tags?: Record<string, string>,
-  mockModelResponses?: string[],
+  mockModelResponses?: string[]
   // Deprecated, to be removed once all SDKs are updated
 ) => {
-  logger.info("Processing Run");
+  logger.info("Processing Run", {
+    type: run.type,
+  });
 
   // Parallelize fetching additional context and service definitions
   const [
@@ -120,9 +123,9 @@ export const processRun = async (
         run: run,
         schema: tool.schema ?? undefined,
         description: tool.description ?? undefined,
-      })
+      });
     },
-    findRelevantTools: (state) => findRelevantTools(state),
+    findRelevantTools: state => findRelevantTools(state),
     postStepSave: async state => {
       logger.debug("Saving run state", {
         runId: run.id,

@@ -13,18 +13,19 @@ describe("workflow", () => {
     });
 
     const onStart = jest.fn();
-    const onDone = jest.fn();
+    const onAgentResult = jest.fn();
+    const onSimpleResult = jest.fn();
     const toolCall = jest.fn();
 
     inferable.tools.register({
       func: (_i, _c) => {
         toolCall();
         return {
-          word: "needle"
-        }
+          word: "needle",
+        };
       },
       name: "searchHaystack",
-    })
+    });
 
     inferable.tools.listen();
 
@@ -51,14 +52,32 @@ describe("workflow", () => {
       });
 
       const result = await searchAgent.trigger({
-        data: {}
+        data: {},
       });
 
       if (!result || !result.result || !result.result.word) {
         throw new Error("No result");
       }
 
-      onDone(result.result.word);
+      onAgentResult(result.result.word);
+
+      const simpleCall = ctx.agent({
+        name: "test",
+        type: "single-step",
+        systemPrompt: "Return the word, needle.",
+        resultSchema: z.object({
+          word: z.string(),
+        }),
+      });
+
+      const simpleResult = await simpleCall.trigger({
+        data: {},
+      });
+
+      if (!simpleResult || !simpleResult.result || !simpleResult.result.word) {
+        throw new Error("No simpleResult");
+      }
+      onSimpleResult(simpleResult.result.word);
     });
 
     await workflow.listen();
@@ -71,10 +90,9 @@ describe("workflow", () => {
 
     const start = Date.now();
     //poll until onDone is called
-    while (!onDone.mock.calls.length || Date.now() - start < 10000) {
+    while (!onSimpleResult.mock.calls.length || Date.now() - start < 10000) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-
 
     // Test workflow got input
     expect(onStart).toHaveBeenCalledWith({
@@ -83,9 +101,12 @@ describe("workflow", () => {
     });
 
     // Test workflow found needle
-    expect(onDone).toHaveBeenCalledWith("needle");
+    expect(onAgentResult).toHaveBeenCalledWith("needle");
+    expect(onAgentResult).toHaveBeenCalledTimes(2);
 
-    expect(onDone).toHaveBeenCalledTimes(1);
     expect(toolCall).toHaveBeenCalledTimes(1);
+
+    expect(onSimpleResult).toHaveBeenCalledWith("needle");
+    expect(onSimpleResult).toHaveBeenCalledTimes(1);
   });
 });
