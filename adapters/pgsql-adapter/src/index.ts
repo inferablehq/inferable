@@ -2,8 +2,9 @@
 
 import { Inferable } from "inferable";
 import { InferablePGSQLAdapter } from "./postgres/postgres";
-import yargs from "yargs";
+import yargs, { describe } from "yargs";
 import { hideBin } from "yargs/helpers";
+import pg from "pg";
 
 // Export the adapter for library usage
 export { InferablePGSQLAdapter };
@@ -44,6 +45,11 @@ if (require.main === module) {
         type: "string",
         describe: "Inferable API endpoint",
       })
+      .options("test", {
+        describe: "Check that the connection string is valid and exit",
+        type: "boolean",
+        default: false,
+      })
       .help()
       .alias("help", "h").argv;
 
@@ -51,6 +57,7 @@ if (require.main === module) {
       const {
         "approval-mode": approvalMode,
         "privacy-mode": privacyMode,
+        test,
         schema,
         endpoint,
         secret,
@@ -75,6 +82,12 @@ if (require.main === module) {
       });
 
       await adapter.initialize();
+
+      if (test) {
+        console.log("Connection test successful");
+        process.exit(0);
+      }
+
       adapter.register(client);
 
       client.tools.listen();

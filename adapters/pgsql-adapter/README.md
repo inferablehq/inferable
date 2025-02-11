@@ -38,10 +38,19 @@ Options:
       --schema        Database schema to use        [string] [default: "public"]
       --secret        Inferable API cluster secret                      [string]
       --endpoint      Inferable API endpoint                            [string]
+      --test          Test the Database connection and exit             [boolean]
   -h, --help          Show help                                        [boolean]
+
+Commands:
 ```
 
 **Examples**
+
+- Test database connection:
+
+```bash
+npx @inferable/pgsql-adapter postgresql://user:pass@localhost:5432/postgres test
+```
 
 - Prompt human approval on all workflows:
 
@@ -67,12 +76,26 @@ npx @inferable/pgsql-adapter postgresql://user:pass@localhost:5432/postgres \
    --secret=sk_inf_xxx
 ```
 
-### Docker Usage for
+### Docker Usage
 
 ```bash
 docker run -e CONNECTION_STRING=postgresql://user:pass@localhost:5432/postgres \
            -e SECRET=sk_inf_xxx \
            inferable/pgsql-adapter
+```
+
+#### Health Checks
+
+For container orchestration platforms like ECS, Kubernetes, or Docker Swarm, the adapter provides a built-in health-check command which will validate the database connection healthjk:
+
+```bash
+# Example ECS task definition health check
+"healthCheck": {
+  "command": [
+    "CMD-SHELL",
+    "health-check || exit 1"
+  ],
+}
 ```
 
 #### Configuration Options

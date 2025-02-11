@@ -21,7 +21,7 @@ if [ -z "$SECRET" ]; then
 fi
 
 # Construct CLI command with environment variables
-COMMAND="npx --yes @inferable/pgsql-adapter@latest $CONNECTION_STRING \
+COMMAND="pgsql-adapter $CONNECTION_STRING \
     --approval-mode=$APPROVAL_MODE \
     --schema=$SCHEMA \
     --secret=$SECRET"

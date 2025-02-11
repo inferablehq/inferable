@@ -1,10 +1,10 @@
 {
   "name": "@inferable/pgsql-adapter",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "main": "bin/index.js",
   "types": "bin/index.d.ts",
   "bin": {
-    "@inferable/pgsql-adapter": "bin/index.js"
+    "pgsql-adapter": "bin/index.js"
   },
   "scripts": {
     "start": "tsx src/index.ts",
