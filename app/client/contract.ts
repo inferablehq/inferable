@@ -1220,6 +1220,9 @@ export const definition = {
       clusterId: z.string(),
       workflowName: z.string(),
     }),
+    query: z.object({
+      version: z.number().optional(),
+    }),
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.array(

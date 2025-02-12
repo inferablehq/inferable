@@ -7,6 +7,7 @@ import {
   Settings,
   NetworkIcon,
   BarChart2,
+  WorkflowIcon,
 } from "lucide-react";
 import Link from "next/link";
 import ErrorDisplay from "./error-display";
@@ -49,6 +50,9 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
       </div>
       <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
         <PlayCircle className="h-4 w-4" /> Runs
+      </Link>
+      <Link href={`/clusters/${clusterId}/workflows`} className={linkStyles}>
+        <WorkflowIcon className="h-4 w-4" /> Workflows
       </Link>
       <Link href={`/clusters/${clusterId}/integrations`} className={linkStyles}>
         <NetworkIcon className="h-4 w-4" /> Integrations
