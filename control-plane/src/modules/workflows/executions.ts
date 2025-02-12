@@ -8,6 +8,38 @@ import { and, eq, sql } from "drizzle-orm";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
 
+export const listWorkflowExecutions = async ({
+  workflowName,
+  clusterId
+}: {
+  workflowName: string;
+  clusterId: string
+  }) => {
+
+  const executions = await data.db
+    .select({
+      id: data.workflowExecutions.id,
+      workflowName: data.workflowExecutions.workflow_name,
+      workflowVersion: data.workflowExecutions.workflow_version,
+      jobId: data.workflowExecutions.job_id,
+      createdAt: data.workflowExecutions.created_at,
+      updatedAt: data.workflowExecutions.updated_at,
+      stutus: data.jobs.status,
+      approval_requested: data.jobs.approval_requested,
+      approved: data.jobs.approved,
+    })
+    .from(data.workflowExecutions)
+    .innerJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))
+    .where(
+      and(
+        eq(data.workflowExecutions.workflow_name, workflowName),
+        eq(data.workflowExecutions.cluster_id, clusterId)
+      )
+    )
+
+  return executions
+}
+
 export const createWorkflowExecution = async (
   clusterId: string,
   workflowName: string,
@@ -21,7 +53,7 @@ export const createWorkflowExecution = async (
     .safeParse(input);
 
   if (!parsed.success) {
-    throw new Error("Invalid input");
+    throw new Error("Workflow excution input does not contain 'executionId'");
   }
 
   const tools = await getWorkflowTools({ clusterId, workflowName });
@@ -46,7 +78,7 @@ export const createWorkflowExecution = async (
 
   const job = await jobs.createJobV2({
     owner: { clusterId },
-    targetFn: latest.name,
+    targetFn: latest.toolName,
     targetArgs: packer.pack(parsed.data),
     runId: getClusterBackgroundRun(clusterId), // we don't really care about the run semantics here, only that it's a job that gets picked up by the worker at least once
   });

@@ -64,10 +64,10 @@ export const parseJobArgs = async ({
 
 export const getWorkflowTools = async ({
   clusterId,
-  workflowName,
+  workflowName
 }: {
   clusterId: string;
-  workflowName: string;
+  workflowName?: string
 }) => {
   return data.db
     .select({
@@ -77,24 +77,22 @@ export const getWorkflowTools = async ({
     .where(
       and(
         eq(data.tools.cluster_id, clusterId),
-        or(
-          like(data.tools.name, `workflows_${workflowName}_%`),
-          like(data.tools.name, `workflows.${workflowName}.%`) // for backwards compatibility
-        )
+        like(data.tools.name, workflowName ? `workflows_${workflowName}_%` : `workflows_%`),
       )
     )
     .then(r =>
       r.map(r => {
-        const version = r.name.replace(`workflows_${workflowName}_`, "");
+        const [_prefix, name, version] = r.name.split("_");
 
         const parsed = z.string().regex(/^\d+$/).safeParse(version);
 
         if (!parsed.success) {
-          throw new Error(`Invalid version ${version} for service ${r.name}`);
+          throw new Error(`Invalid version ${version} for workflow ${r.name}`);
         }
 
         return {
-          name: r.name,
+          name,
+          toolName: r.name,
           version: parseInt(parsed.data),
         };
       })

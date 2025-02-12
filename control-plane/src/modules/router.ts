@@ -41,8 +41,8 @@ import {
 import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
-import { listTools, recordPoll, upsertToolDefinition } from "./tools";
-import { createWorkflowExecution } from "./workflows/executions";
+import { getWorkflowTools, listTools, recordPoll, upsertToolDefinition } from "./tools";
+import { createWorkflowExecution, listWorkflowExecutions } from "./workflows/executions";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -1400,6 +1400,20 @@ export const router = initServer().router(contract, {
     };
   },
 
+  listWorkflows: async request => {
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth();
+    auth.canAccess({ cluster: { clusterId } });
+
+    const tools = await getWorkflowTools({ clusterId });
+
+    return {
+      status: 200,
+      body: tools,
+    }
+  },
+
   createWorkflowExecution: async request => {
     const { clusterId, workflowName } = request.params;
 
@@ -1414,6 +1428,21 @@ export const router = initServer().router(contract, {
       body: result,
     };
   },
+
+  listWorkflowExecutions: async request => {
+    const { clusterId, workflowName } = request.params;
+
+    const auth = request.request.getAuth();
+    auth.canAccess({ cluster: { clusterId } });
+
+    const result = await listWorkflowExecutions({ clusterId, workflowName });
+
+    return {
+      status: 200,
+      body: result,
+    }
+  },
+
   getClusterKV: async request => {
     const { clusterId, key } = request.params;
 

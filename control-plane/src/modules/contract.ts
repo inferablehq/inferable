@@ -1174,6 +1174,27 @@ export const definition = {
       200: z.undefined(),
     },
   },
+
+  // List Workflows
+  listWorkflows: {
+    method: "GET",
+    path: "/clusters/:clusterId/workflows",
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    headers: z.object({ authorization: z.string() }),
+    responses: {
+      200: z.array(
+        z.object({
+          name: z.string(),
+          version: z.number(),
+        })
+      ),
+      401: z.undefined(),
+    },
+  },
+
+  // Workflow Endpoints
   createWorkflowExecution: {
     method: "POST",
     path: "/clusters/:clusterId/workflows/:workflowName/executions",
@@ -1191,6 +1212,30 @@ export const definition = {
       201: z.object({ jobId: z.string() }),
     },
   },
+
+  listWorkflowExecutions: {
+    method: "GET",
+    path: "/clusters/:clusterId/workflows/:workflowName",
+    pathParams: z.object({
+      clusterId: z.string(),
+      workflowName: z.string(),
+    }),
+    headers: z.object({ authorization: z.string() }),
+    responses: {
+      200: z.array(
+        z.object({
+          id: z.string(),
+          workflowName: z.string(),
+          workflowVersion: z.number(),
+          createdAt: z.date(),
+          updatedAt: z.date(),
+        })
+      ),
+      401: z.undefined(),
+    },
+  },
+
+  // KV Endpoints
   setClusterKV: {
     method: "PUT",
     path: "/clusters/:clusterId/keys/:key",
@@ -1209,6 +1254,7 @@ export const definition = {
       }),
     },
   },
+
   getClusterKV: {
     method: "GET",
     path: "/clusters/:clusterId/keys/:key/value",
@@ -1223,6 +1269,8 @@ export const definition = {
       }),
     },
   },
+
+  // Tool Endpoints
   listTools: {
     method: "GET",
     path: "/clusters/:clusterId/tools",
