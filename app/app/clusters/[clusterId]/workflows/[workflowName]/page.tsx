@@ -11,23 +11,23 @@ import { useCallback, useEffect, useState } from "react";
 import { ServerConnectionStatus } from "@/components/server-connection-pane";
 import { useRouter } from "next/navigation";
 
-export default function WorkflowDetailsPage({ 
-  params 
-}: { 
-  params: { 
-    clusterId: string, 
-    workflowName: string 
-  } 
+export default function WorkflowDetailsPage({
+  params
+}: {
+  params: {
+    clusterId: string,
+    workflowName: string
+  }
 }) {
   const router = useRouter();
   const { getToken } = useAuth();
   const user = useUser();
-  const [executions, setExecutions] = useState<{ 
-    id: string; 
-    workflowName: string; 
-    workflowVersion: number; 
-    createdAt: Date; 
-    updatedAt: Date; 
+  const [executions, setExecutions] = useState<{
+    id: string;
+    workflowName: string;
+    workflowVersion: number;
+    createdAt: Date;
+    updatedAt: Date;
   }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -73,30 +73,23 @@ export default function WorkflowDetailsPage({
 
   if (isLoading) {
     return (
-      <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-15rem)] border-b border-border/50">
-        <div className="p-4">
-          <h1 className="text-2xl font-semibold mb-4">
-            Workflow: {params.workflowName}
-          </h1>
-          <div className="space-y-3">
-            {[...Array(5)].map((_, index) => (
-              <Skeleton key={index} className="h-10 w-full" />
-            ))}
-          </div>
+      <div className="p-6">
+        <h1 className="text-2xl mb-2">{params.workflowName} Executions</h1>
+        <div className="space-y-3">
+          {[...Array(5)].map((_, index) => (
+            <Skeleton key={index} className="h-10 w-full" />
+          ))}
         </div>
-      </ScrollArea>
+      </div>
     );
   }
 
   return (
-    <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-15rem)] border-b border-border/50">
-      <div className="p-4">
-        <h1 className="text-2xl font-semibold mb-4">
-          Workflow: {params.workflowName}
-        </h1>
-        {executions.length === 0 ? (
-          <p className="text-muted-foreground text-center">No workflow executions found</p>
-        ) : (
+    <div className="p-6">
+      <h1 className="text-2xl mb-2"><pre>{params.workflowName}</pre></h1>
+      {executions.length === 0 ? (
+        <p className="text-muted-foreground text-center">No workflow executions found</p>
+      ) : (
           <Table>
             <TableHeader>
               <TableRow header>
@@ -108,8 +101,8 @@ export default function WorkflowDetailsPage({
             </TableHeader>
             <TableBody>
               {executions.map((execution, index) => (
-                <TableRow 
-                  key={index} 
+                <TableRow
+                  key={index}
                   onClick={() => handleExecutionClick(execution.id)}
                   className="cursor-pointer"
                 >
@@ -122,7 +115,6 @@ export default function WorkflowDetailsPage({
             </TableBody>
           </Table>
         )}
-      </div>
-    </ScrollArea>
+    </div>
   );
 }

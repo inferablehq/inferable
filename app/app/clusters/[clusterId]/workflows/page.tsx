@@ -60,26 +60,23 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
 
   if (isLoading) {
     return (
-      <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-15rem)] border-b border-border/50">
-        <div className="p-4">
-          <h2 className="text-xl font-semibold mb-4">Workflows</h2>
-          <div className="space-y-3">
-            {[...Array(5)].map((_, index) => (
-              <Skeleton key={index} className="h-10 w-full" />
-            ))}
-          </div>
+      <div className="p-6">
+        <h1 className="text-2xl mb-2">Workflows</h1>
+        <div className="space-y-3">
+          {[...Array(5)].map((_, index) => (
+            <Skeleton key={index} className="h-10 w-full" />
+          ))}
         </div>
-      </ScrollArea>
+      </div>
     );
   }
 
   return (
-    <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-15rem)] border-b border-border/50">
-      <div className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Workflows</h2>
-        {workflows.length === 0 ? (
-          <p className="text-muted-foreground text-center">No workflows found</p>
-        ) : (
+    <div className="p-6">
+      <h1 className="text-2xl mb-2">Workflows</h1>
+      {workflows.length === 0 ? (
+        <p className="text-muted-foreground text-center">No workflows found</p>
+      ) : (
           <Table>
             <TableHeader>
               <TableRow header>
@@ -89,8 +86,8 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
             </TableHeader>
             <TableBody>
               {workflows.map((workflow, index) => (
-                <TableRow 
-                  key={index} 
+                <TableRow
+                  key={index}
                   onClick={() => handleWorkflowClick(workflow.name)}
                   className="cursor-pointer"
                 >
@@ -101,7 +98,6 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
             </TableBody>
           </Table>
         )}
-      </div>
-    </ScrollArea>
+    </div>
   );
 }

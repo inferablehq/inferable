@@ -10,10 +10,17 @@ import { Workflow } from "@/lib/types";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
-import { TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
+import { TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon, WorkflowIcon, ExternalLinkIcon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback } from "react";
 import toast from "react-hot-toast";
+import { Button } from "./ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from "./ui/accordion";
 
 const statusToCircle: {
   [key: string]: React.ReactNode;
@@ -33,41 +40,34 @@ type WorkflowGroup = {
 };
 
 function groupWorkflowsByExecution(workflows: Workflow[]): WorkflowGroup[] {
-  const groups: { [key: string]: {
-    workflows: Workflow[];
-    workflowName: string | null;
-    workflowVersion: number | null;
-  } } = {};
+  const groups: { [key: string]: WorkflowGroup } = {};
 
   workflows.forEach(workflow => {
     const executionId = workflow.workflowExecutionId;
+
     if (executionId) {
       if (!groups[executionId]) {
         groups[executionId] = {
-          workflows: [],
-          workflowName: workflow.workflowName ?? null,
-          workflowVersion: workflow.workflowVersion ?? null
+          executionId,
+          workflowName: workflow.workflowName,
+          workflowVersion: workflow.workflowVersion,
+          workflows: []
         };
       }
       groups[executionId].workflows.push(workflow);
     } else {
-      // Create a separate group for each standalone run
-      groups[`standalone-${workflow.id}`] = {
-        workflows: [workflow],
+      // Create a separate group for standalone runs
+      const standaloneKey = `standalone-${workflow.id}`;
+      groups[standaloneKey] = {
+        executionId: null,
         workflowName: null,
-        workflowVersion: null
+        workflowVersion: null,
+        workflows: [workflow]
       };
     }
   });
 
-  const result: WorkflowGroup[] = Object.entries(groups).map(([key, { workflows, workflowName, workflowVersion }]) => ({
-    executionId: key.startsWith('standalone-') ? null : key,
-    workflowName,
-    workflowVersion,
-    workflows: workflows.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1)),
-  }));
-
-  return result.sort((a, b) => {
+  return Object.values(groups).sort((a, b) => {
     const latestA = a.workflows[0]?.createdAt ?? '';
     const latestB = b.workflows[0]?.createdAt ?? '';
     return latestA > latestB ? -1 : 1;
@@ -89,6 +89,7 @@ export function RunTab({
 }) {
   const { runId } = useParams() ?? {};
   const { getToken, userId } = useAuth();
+  const router = useRouter();
 
   const deleteWorkflow = useCallback(
     async (w: string, c: string) => {
@@ -125,68 +126,79 @@ export function RunTab({
 
   return (
     <div className="flex flex-col space-y-2 w-full">
-      {workflowGroups.map(group => (
-        <div
-          key={group.executionId ?? 'ungrouped'}
-          className="border rounded-lg overflow-hidden w-full"
-        >
-          <div className="bg-slate-100 border-b w-full">
-            <div className="px-4 py-2 border-b border-slate-200">
-              <div className="uppercase tracking-wider text-slate-500 font-medium text-xs">
-                {group.executionId ? 'Workflow' : 'Run'}
-              </div>
-            </div>
-            <div className="px-4 py-2 space-y-1 text-xs font-mono">
-              {group.executionId ? (
-                <>
-                  {group.workflowName && (
-                    <div className="flex items-baseline">
-                      <span className="text-blue-600 w-24 shrink-0">name:</span>
-                      <span className="text-slate-900">
-                        {group.workflowName.length > 40 ? group.workflowName.slice(0, 40) + '...' : group.workflowName}
+      {workflowGroups.map((group, index) => (
+        group.executionId ? (
+          <Accordion key={group.executionId} type="multiple" defaultValue={[]}>
+            <AccordionItem
+              value={group.executionId}
+              className="border rounded-lg overflow-hidden w-full"
+            >
+              <AccordionTrigger
+                className="px-4 py-2 bg-slate-100 border-b border-slate-200 hover:bg-slate-50 no-underline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <div className="flex items-center space-x-2 w-full">
+                  <div className="uppercase tracking-wider text-slate-500 font-medium text-xs">
+                    Workflow ({group.workflows.length} runs)
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="p-0">
+                <div className="flex flex-col items-stretch divide-y p-3 w-full">
+                  <div className="flex justify-between items-center pb-3 border-b">
+                    <div className="flex items-center space-x-2">
+                      <WorkflowIcon className="h-4 w-4 text-slate-500" />
+                      <span className="text-sm font-medium">
+                        {group.workflowName}
+                        {group.workflowVersion && ` v${group.workflowVersion}`}
                       </span>
                     </div>
-                  )}
-                  {group.workflowVersion && (
-                    <div className="flex items-baseline">
-                      <span className="text-blue-600 w-24 shrink-0">version:</span>
-                      <span className="text-slate-600">v{group.workflowVersion}</span>
-                    </div>
-                  )}
-                  <div className="flex items-baseline">
-                    <span className="text-blue-600 w-24 shrink-0">execution_id:</span>
-                    <span className="text-slate-600">
-                      {group.executionId.length > 40 ? group.executionId.slice(0, 40) + '...' : group.executionId}
-                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/clusters/${clusterId}/workflows/${group.workflowName}/${group.executionId}`);
+                      }}
+                    >
+                      Workflow
+                      <ExternalLinkIcon className="ml-2 h-4 w-4" />
+                    </Button>
                   </div>
-                </>
-              ) : (
-                <div className="flex items-baseline">
-                  <span className="text-blue-600 w-24 shrink-0">run_id:</span>
-                  <span className="text-slate-600">
-                    {group.workflows[0].id.length > 40 ? group.workflows[0].id.slice(0, 40) + '...' : group.workflows[0].id}
-                  </span>
+                  {group.workflows.map((workflow) => (
+                    <RunPill
+                      key={workflow.id}
+                      workflow={workflow}
+                      runId={runId as string | undefined}
+                      clusterId={clusterId}
+                      onGoToWorkflow={onGoToWorkflow}
+                      workflows={workflows}
+                      userId={userId ?? null}
+                      onDeleteWorkflow={deleteWorkflow}
+                      test={workflow.test}
+                    />
+                  ))}
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-stretch divide-y p-3 w-full">
-            {group.workflows.map((workflow) => (
-              <RunPill
-                key={workflow.id}
-                workflow={workflow}
-                runId={runId as string | undefined}
-                clusterId={clusterId}
-                onGoToWorkflow={onGoToWorkflow}
-                workflows={workflows}
-                userId={userId ?? null}
-                onDeleteWorkflow={deleteWorkflow}
-                test={workflow.test}
-              />
-            ))}
-          </div>
-        </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        ) : (
+          group.workflows.map((workflow) => (
+            <RunPill
+              key={workflow.id}
+              workflow={workflow}
+              runId={runId as string | undefined}
+              clusterId={clusterId}
+              onGoToWorkflow={onGoToWorkflow}
+              workflows={workflows}
+              userId={userId ?? null}
+              onDeleteWorkflow={deleteWorkflow}
+              test={workflow.test}
+            />
+          ))
+        )
       ))}
     </div>
   );

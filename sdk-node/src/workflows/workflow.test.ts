@@ -1,17 +1,10 @@
 import { z } from "zod";
-import { Inferable } from "../Inferable";
-import { getEphemeralSetup } from "./workflow-test-utils";
 import { helpers } from "./workflow";
-import { Interrupt } from "../util";
+import { inferableInstance } from "../tests/utils";
 
 describe("workflow", () => {
   it("should run a workflow", async () => {
-    const ephemeralSetup = await getEphemeralSetup();
-
-    const inferable = new Inferable({
-      apiSecret: ephemeralSetup.apiKey,
-      endpoint: ephemeralSetup.endpoint,
-    });
+    const inferable = inferableInstance();
 
     const onStart = jest.fn();
     const onAgentResult = jest.fn();
