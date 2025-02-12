@@ -118,42 +118,6 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         });
         this.versionHandlers.set(version, handler);
       },
-      run: async (input: TInput) => {
-        this.logger?.info("Running workflow", {
-          version,
-          name: this.name,
-          executionId: input.executionId,
-        });
-
-        try {
-          const result = await this.client.createWorkflowExecution({
-            params: {
-              clusterId: await this.getClusterId(),
-              workflowName: this.name,
-            },
-            body: {
-              executionId: input.executionId,
-            },
-          });
-
-          this.logger?.info("Workflow execution created", {
-            version,
-            name: this.name,
-            executionId: input.executionId,
-            status: result.status,
-          });
-
-          return result;
-        } catch (error) {
-          this.logger?.error("Failed to create workflow execution", {
-            version,
-            name: this.name,
-            executionId: input.executionId,
-            error,
-          });
-          throw error;
-        }
-      },
     };
   }
 
