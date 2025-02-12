@@ -607,13 +607,16 @@ export const workflowExecutions = pgTable(
   "workflow_executions",
   {
     id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    workflow_execution_id: varchar("workflow_execution_id", { length: 1024 }).notNull(),
+    job_id: varchar("job_id", { length: 1024 })
+    .references(() => jobs.id)
+    .notNull(),
+    cluster_id: varchar("cluster_id")
+      .references(() => clusters.id)
+    .notNull(),
     workflow_name: varchar("workflow_name", { length: 1024 }).notNull(),
-    version: integer("version").notNull(),
+    workflow_version: integer("version").notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-    job_id: varchar("job_id", { length: 1024 }).notNull(),
   },
   table => ({
     pk: primaryKey({

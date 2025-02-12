@@ -5,8 +5,6 @@ import { getClusterBackgroundRun } from "../runs";
 import { BadRequestError, NotFoundError } from "../../utilities/errors";
 import * as data from "../data";
 import { and, eq, sql } from "drizzle-orm";
-import { getActivityByJobId, getActivityForTimeline } from "../observability/events";
-import { getRunsByTag } from "../runs/tags";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
 
@@ -58,10 +56,9 @@ export const createWorkflowExecution = async (
     .values({
       id: parsed.data.executionId,
       cluster_id: clusterId,
-      workflow_execution_id: parsed.data.executionId,
       job_id: job.id,
       workflow_name: workflowName,
-      version: version,
+      workflow_version: version,
     })
     .onConflictDoNothing();
 
@@ -70,10 +67,10 @@ export const createWorkflowExecution = async (
 
 export const resumeWorkflowExecution = async ({
   clusterId,
-  workflowExecutionId,
+  id,
 }: {
   clusterId: string;
-  workflowExecutionId: string;
+  id: string;
 }) => {
   const existing = await data.db
     .select()
@@ -81,12 +78,12 @@ export const resumeWorkflowExecution = async ({
     .where(
       and(
         eq(data.workflowExecutions.cluster_id, clusterId),
-        eq(data.workflowExecutions.workflow_execution_id, workflowExecutionId)
+        eq(data.workflowExecutions.id, id)
       )
     );
 
   if (existing.length === 0) {
-    throw new NotFoundError(`Workflow execution ${workflowExecutionId} not found`);
+    throw new NotFoundError(`Workflow execution ${id} not found`);
   }
 
   const workflowExecution = existing[0];
@@ -98,7 +95,7 @@ export const resumeWorkflowExecution = async ({
 
   if (!existingJob) {
     throw new NotFoundError(
-      `Job ${workflowExecution.job_id} not found while resuming workflow execution ${workflowExecutionId}`
+      `Job ${workflowExecution.job_id} not found while resuming workflow execution ${id}`
     );
   }
 
@@ -107,7 +104,7 @@ export const resumeWorkflowExecution = async ({
       "Workflow execution is not approved yet. Waiting for approval before resuming",
       {
         clusterId,
-        workflowExecutionId,
+        workflowExecutionId: id,
       }
     )
   }

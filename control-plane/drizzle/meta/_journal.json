@@ -1625,6 +1625,13 @@
       "when": 1739162407596,
       "tag": "0232_narrow_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 233,
+      "version": "7",
+      "when": 1739332661534,
+      "tag": "0233_old_forge",
+      "breakpoints": true
     }
   ]
 }

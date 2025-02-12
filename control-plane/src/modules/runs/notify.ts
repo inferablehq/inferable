@@ -145,7 +145,7 @@ export const notifyStatusChange = async ({
   } else if (onStatusChangeDefinition.type === "workflow") {
     const { jobId } = await resumeWorkflowExecution({
       clusterId: run.clusterId,
-      workflowExecutionId: onStatusChangeDefinition.workflow.executionId,
+      id: onStatusChangeDefinition.workflow.executionId,
     });
 
     logger.info("Resumed workflow execution", {
