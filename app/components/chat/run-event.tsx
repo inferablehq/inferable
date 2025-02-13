@@ -4,12 +4,12 @@ import React from "react";
 import { AiMessage } from "./ai-message";
 import { HumanMessage } from "./human-message";
 import { TemplateMessage } from "./template-mesage";
-import { WorkflowJob } from "@/lib/types";
+import { RunJob } from "@/lib/types";
 import { InvocationResult } from "./InvocationResult";
 
 export type MessageContainerProps<T extends MessageTypes> = UnifiedMessageOfType<T> & {
   messages: ClientInferResponseBody<typeof contract.listMessages, 200>;
-  jobs: WorkflowJob[];
+  jobs: RunJob[];
   clusterId: string;
   runId: string;
   showMeta: boolean;

@@ -1,5 +1,5 @@
 import { Header } from "@/components/header";
-import { OrgList } from "@/components/OrgList";
+import { OrgList } from "@/components/org-list";
 import { auth } from "@clerk/nextjs";
 
 export default async function Layout({ children }: Readonly<{ children: React.ReactNode }>) {

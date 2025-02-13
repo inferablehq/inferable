@@ -3,9 +3,9 @@ import { formatRelative } from "date-fns";
 import { startCase } from "lodash";
 import { AlertTriangle, Brain, ChevronDown } from "lucide-react";
 import { z } from "zod";
-import { JSONDisplay } from "../JSONDisplay";
+import { JSONDisplay } from "../json-display";
 import { Markdown } from "./markdown";
-import { MessageContainerProps } from "./workflow-event";
+import { MessageContainerProps } from "./run-event";
 
 const basicResultSchema = z.record(z.string());
 

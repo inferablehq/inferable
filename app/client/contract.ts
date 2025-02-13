@@ -1220,9 +1220,6 @@ export const definition = {
       clusterId: z.string(),
       workflowName: z.string(),
     }),
-    query: z.object({
-      version: z.number().optional(),
-    }),
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.array(
@@ -1237,6 +1234,55 @@ export const definition = {
       401: z.undefined(),
     },
   },
+
+  getWorkflowExecutionTimeline: {
+    method: "GET",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions/:executionId/timeline",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      workflowName: z.string(),
+      executionId: z.string(),
+    }),
+    responses: {
+      404: z.undefined(),
+      200: z.object({
+        runs: z.array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            userId: z.string().nullable(),
+            failureReason: z.string().nullable(),
+            createdAt: z.date(),
+            type: z.enum(["single-step", "multi-step"]),
+            status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+            modelIdentifier: z.string().nullable(),
+          })
+        ),
+        execution: z.object({
+            id: z.string(),
+            workflowName: z.string(),
+            workflowVersion: z.number(),
+            createdAt: z.date(),
+            updatedAt: z.date(),
+        }),
+        job: z.object({
+          id: z.string(),
+          status: z.string(),
+          targetFn: z.string(),
+          executingMachineId: z.string().nullable(),
+          targetArgs: z.string(),
+          result: z.string().nullable(),
+          resultType: z.string().nullable(),
+          createdAt: z.date(),
+          blobs: z.array(blobSchema),
+          approved: z.boolean().nullable(),
+          approvalRequested: z.boolean().nullable(),
+        })
+      }),
+    },
+  },
+
 
   // KV Endpoints
   setClusterKV: {

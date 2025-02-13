@@ -5,7 +5,7 @@ import { get } from "lodash";
 import { Blocks, Info } from "lucide-react";
 import { useRef } from "react";
 import { ReadOnlyJSON } from "../read-only-json";
-import type { MessageContainerProps } from "./workflow-event";
+import type { MessageContainerProps } from "./run-event";
 import { formatRelative } from "date-fns";
 
 export function InvocationResult(props: MessageContainerProps<"invocation-result">) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { ClusterDetails } from "@/components/cluster-details";
-import { RunList } from "@/components/WorkflowList";
+import { RunList } from "@/components/run-list";
 import { useEffect, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 
@@ -33,9 +33,7 @@ export function ClusterRunsLayout({ clusterId, children }: ClusterRunsLayoutProp
       <div className="flex-shrink-0 transition-all duration-300">
         <RunList clusterId={clusterId} />
       </div>
-      <div className="relative transition-all duration-300 flex-grow">
-        {children}
-      </div>
+      <div className="relative transition-all duration-300 flex-grow">{children}</div>
       <div className="flex-shrink-0 transition-all duration-300">
         <ClusterDetails clusterId={clusterId} />
       </div>

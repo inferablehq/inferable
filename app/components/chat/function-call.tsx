@@ -8,18 +8,18 @@ import {
   SmallLiveBlueCircle,
 } from "@/components/circles";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { WorkflowJob } from "@/lib/types";
+import { RunJob } from "@/lib/types";
 import { unpack } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { Code2, Terminal } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { JSONDisplay } from "../JSONDisplay";
+import { JSONDisplay } from "../json-display";
 import { Button } from "../ui/button";
-import ToolContextButton from "./ToolContextButton";
+import ToolContextButton from "./tool-context-button";
 import { formatRelative } from "date-fns";
 
-const statusCircle = (status: WorkflowJob["status"], resultType: WorkflowJob["resultType"]) => {
+const statusCircle = (status: RunJob["status"], resultType: RunJob["resultType"]) => {
   if (status === "pending") return <SmallLiveAmberCircle />;
   if (status === "success") {
     if (resultType === "rejection") return <SmallDeadRedCircle />;
@@ -51,8 +51,8 @@ function FunctionCall({
   jobId: string;
   isFocused: boolean;
   onFocusChange: (isFocused: boolean) => void;
-  resultType: WorkflowJob["resultType"];
-  status: WorkflowJob["status"];
+  resultType: RunJob["resultType"];
+  status: RunJob["status"];
   targetFn: string;
   approved: boolean | null;
   approvalRequested: boolean | null;
@@ -254,7 +254,7 @@ function FunctionCall({
                       <div className="text-muted-foreground">Status</div>
                       <div className="font-medium flex items-center gap-2">
                         <span className="font-mono">{job?.status || "Unknown"}</span>
-                        {statusCircle(job?.status as WorkflowJob["status"], resultType)}
+                        {statusCircle(job?.status as RunJob["status"], resultType)}
                       </div>
 
                       <div className="text-muted-foreground">Machine ID</div>

@@ -13,17 +13,14 @@ import { ReadOnlyJSON } from "../read-only-json";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
-import { ClusterState, useClusterState } from "../useClusterState";
+import { ClusterState, useClusterState } from "../use-cluster-state";
 
 interface ToolContextButtonProps {
   clusterId: string;
   tool: ClusterState["tools"][number];
 }
 
-const ToolContextButton: React.FC<ToolContextButtonProps> = ({
-  clusterId,
-  tool,
-}) => {
+const ToolContextButton: React.FC<ToolContextButtonProps> = ({ clusterId, tool }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -39,9 +36,7 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({
             <SquareFunction className="w-4 h-4 mr-2" />
             {tool.name}
           </SheetTitle>
-          <SheetDescription>
-            Details for {tool.name}
-          </SheetDescription>
+          <SheetDescription>Details for {tool.name}</SheetDescription>
         </SheetHeader>
         <div className="mt-6 space-y-6">
           {tool ? (

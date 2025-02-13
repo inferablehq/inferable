@@ -42,7 +42,7 @@ import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
 import { getWorkflowTools, listTools, recordPoll, upsertToolDefinition } from "./tools";
-import { createWorkflowExecution, listWorkflowExecutions } from "./workflows/executions";
+import { createWorkflowExecution, listWorkflowExecutions, getWorkflowExecutionTimeline } from "./workflows/executions";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -1436,6 +1436,17 @@ export const router = initServer().router(contract, {
     auth.canAccess({ cluster: { clusterId } });
 
     const result = await listWorkflowExecutions({ clusterId, workflowName });
+
+    return {
+      status: 200,
+      body: result,
+    }
+  },
+
+  getWorkflowExecutionTimeline: async request => {
+    const { clusterId, workflowName, executionId } = request.params;
+
+    const result = await getWorkflowExecutionTimeline({ clusterId, workflowName, executionId });
 
     return {
       status: 200,

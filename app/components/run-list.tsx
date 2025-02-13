@@ -12,7 +12,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 import { Badge } from "./ui/badge";
-import { RunTab } from "./workflow-tab";
+import { RunTab } from "./run-tab";
 import { ServerConnectionStatus } from "./server-connection-pane";
 
 type WorkflowListProps = {
@@ -50,9 +50,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
   const searchParams = useSearchParams();
   const runFiltersQuery = searchParams?.get("filters");
 
-  const [runFilters, setRunFilters] = useState<
-    z.infer<typeof runFiltersSchema>
-  >({});
+  const [runFilters, setRunFilters] = useState<z.infer<typeof runFiltersSchema>>({});
   const path = usePathname();
 
   useEffect(() => {
@@ -60,9 +58,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
       return;
     }
 
-    const parsedFilters = runFiltersSchema.safeParse(
-      JSON.parse(runFiltersQuery)
-    );
+    const parsedFilters = runFiltersSchema.safeParse(JSON.parse(runFiltersQuery));
     if (parsedFilters.success) {
       setRunFilters(parsedFilters.data);
     } else {
@@ -98,15 +94,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
         success: false,
       });
     }
-  }, [
-    clusterId,
-    getToken,
-    runToggle,
-    userId,
-    user.isLoaded,
-    limit,
-    runFilters,
-  ]);
+  }, [clusterId, getToken, runToggle, userId, user.isLoaded, limit, runFilters]);
 
   useEffect(() => {
     fetchWorkflows();
@@ -116,78 +104,72 @@ export function RunList({ clusterId }: WorkflowListProps) {
 
   const loadMore = () => {
     if (limit < 50) {
-      setLimit((prevLimit) => Math.min(prevLimit + 10, 50));
+      setLimit(prevLimit => Math.min(prevLimit + 10, 50));
     } else {
       setHasMore(false);
     }
   };
 
   return (
-      <>
-        <div className="flex gap-2 mb-4">
-          <Button
-            onClick={() => router.push(`/clusters/${clusterId}/runs`)}
-            className="w-full"
-            variant="outline"
-            size="sm"
-          >
-            Start a Conversation
-          </Button>
-          <Button
-            onClick={() => window.open('https://docs.inferable.ai/pages/workflows', '_blank')}
-            className="w-full"
-            variant="outline"
-            size="sm"
-          >
-            Run a Workflow
-            <ExternalLinkIcon className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-        <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-15rem)] border-b border-border/50">
-          {(!!runFilters.test) && (
-            <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
-              {runFilters.test && (
-                <Badge
-                  className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
-                  onClick={() => {
-                    setRunFilters({});
-                    if (path) {
-                      router.push(path);
-                    }
-                  }}
-                >
-                  Filtering By Test Runs
-                  <XIcon className="h-4 w-4" />
-                </Badge>
-              )}
-            </div>
-          )}
-          <div className="rounder-none">
-            <RunTab
-              workflows={workflows}
-              onGoToWorkflow={goToWorkflow}
-              onRefetchWorkflows={fetchWorkflows}
-              onGoToCluster={goToCluster}
-              clusterId={clusterId}
-            />
-            {hasMore && (
-              <Button
-                onClick={loadMore}
-                className="w-full mt-4"
-                variant="outline"
-                size="sm"
+    <>
+      <div className="flex gap-2 mb-4">
+        <Button
+          onClick={() => router.push(`/clusters/${clusterId}/runs`)}
+          className="w-full"
+          variant="outline"
+          size="sm"
+        >
+          Start a Conversation
+        </Button>
+        <Button
+          onClick={() => window.open("https://docs.inferable.ai/pages/workflows", "_blank")}
+          className="w-full"
+          variant="outline"
+          size="sm"
+        >
+          Run a Workflow
+          <ExternalLinkIcon className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+      <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-15rem)] border-b border-border/50">
+        {!!runFilters.test && (
+          <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
+            {runFilters.test && (
+              <Badge
+                className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
+                onClick={() => {
+                  setRunFilters({});
+                  if (path) {
+                    router.push(path);
+                  }
+                }}
               >
-                Load More
-              </Button>
-            )}
-            {!hasMore && limit >= 50 && (
-              <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
-                Maximum number of runs loaded. Delete some runs to load older
-                ones.
-              </p>
+                Filtering By Test Runs
+                <XIcon className="h-4 w-4" />
+              </Badge>
             )}
           </div>
-        </ScrollArea>
-      </>
+        )}
+        <div className="rounder-none">
+          <RunTab
+            workflows={workflows}
+            onGoToWorkflow={goToWorkflow}
+            onRefetchWorkflows={fetchWorkflows}
+            onGoToCluster={goToCluster}
+            clusterId={clusterId}
+          />
+          {hasMore && (
+            <Button onClick={loadMore} className="w-full mt-4" variant="outline" size="sm">
+              Load More
+            </Button>
+          )}
+          {!hasMore && limit >= 50 && (
+            <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
+              Maximum number of runs loaded. Delete some runs to load older ones.
+            </p>
+          )}
+        </div>
+      </ScrollArea>
+    </>
   );
 }

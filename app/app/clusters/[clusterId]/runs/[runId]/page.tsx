@@ -1,4 +1,4 @@
-import { Run } from "@/components/workflow";
+import { Run } from "@/components/run";
 
 function Page({
   params: { clusterId, runId },

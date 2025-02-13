@@ -5,15 +5,19 @@ import Link from "next/link";
 import { ReadOnlyJSON } from "../read-only-json";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
-import { MessageContainerProps } from "./workflow-event";
+import { MessageContainerProps } from "./run-event";
 import { z } from "zod";
 
-const displayableMeta = z.object({
-  displayable: z.object({
-    templateId: z.string().optional(),
-    templateName: z.string().optional(),
-  }).optional(),
-}).passthrough();
+const displayableMeta = z
+  .object({
+    displayable: z
+      .object({
+        templateId: z.string().optional(),
+        templateName: z.string().optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
 
 export function TemplateMessage({
   createdAt,

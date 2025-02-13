@@ -8,6 +8,69 @@ import { and, eq, sql } from "drizzle-orm";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
 
+export const getWorkflowExecutionTimeline = async ({
+  executionId,
+  workflowName,
+  clusterId,
+}: {
+    executionId: string;
+    workflowName: string;
+    clusterId: string;
+  }) => {
+
+  const tools = await getWorkflowTools({ clusterId, workflowName });
+
+  if (tools.length === 0) {
+    throw new BadRequestError(
+      `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
+    );
+  }
+
+  const [execution] = await data.db
+    .select({
+      id: data.workflowExecutions.id,
+      workflowName: data.workflowExecutions.workflow_name,
+      workflowVersion: data.workflowExecutions.workflow_version,
+      createdAt: data.workflowExecutions.created_at,
+      updatedAt: data.workflowExecutions.updated_at,
+      jobId: data.workflowExecutions.job_id,
+    })
+    .from(data.workflowExecutions)
+    .where(
+      and(
+        eq(data.workflowExecutions.workflow_name, workflowName),
+        eq(data.workflowExecutions.cluster_id, clusterId),
+        eq(data.workflowExecutions.id, executionId)
+      )
+    );
+
+  if (!execution) {
+    throw new NotFoundError(`Workflow execution ${executionId} not found`);
+  }
+
+  const job = await jobs.getJob({
+    clusterId,
+    jobId: execution.jobId,
+  });
+
+  if (!job) {
+    throw new NotFoundError(`Job ${execution.jobId} not found`);
+  }
+
+  const runs = await getWorkflowRuns({
+    workflowName,
+    clusterId,
+    executionId
+  })
+
+  return {
+    execution,
+    runs,
+    job,
+  }
+}
+
+
 export const listWorkflowExecutions = async ({
   workflowName,
   clusterId
@@ -161,4 +224,29 @@ export const resumeWorkflowExecution = async ({
     });
 
   return { jobId: job.id };
+};
+
+export const getWorkflowRuns = async ({ clusterId, executionId, workflowName }: { clusterId: string; executionId: string; workflowName: string }) => {
+  const runs = await data.db
+    .select({
+      id: data.runs.id,
+      name: data.runs.name,
+      createdAt: data.runs.created_at,
+      userId: data.runs.user_id,
+      clusterId: data.runs.cluster_id,
+      status: data.runs.status,
+      failureReason: data.runs.failure_reason,
+      type: data.runs.type,
+      modelIdentifier: data.runs.model_identifier,
+    })
+    .from(data.runs)
+    .where(
+      and(
+        eq(data.runs.cluster_id, clusterId),
+        eq(data.runs.workflow_execution_id, executionId),
+        eq(data.runs.workflow_name, workflowName)
+      )
+    );
+
+  return runs;
 };

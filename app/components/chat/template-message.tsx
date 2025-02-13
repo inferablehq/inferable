@@ -3,7 +3,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { formatRelative } from "date-fns";
 import { startCase } from "lodash";
 import { ChevronDown } from "lucide-react";
-import { MessageContainerProps } from "./workflow-event";
+import { MessageContainerProps } from "./run-event";
 import { z } from "zod";
 
 export function TemplateMessage({

@@ -3,7 +3,7 @@
 import { client, clientWithAbortController } from "@/client/client";
 import { contract } from "@/client/contract";
 import FunctionCall from "@/components/chat/function-call";
-import RunEvent from "@/components/chat/workflow-event";
+import RunEvent from "@/components/chat/run-event";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { RefreshCcw, TestTube2Icon, WorkflowIcon } from "lucide-react";
 import { useQueryState } from "nuqs";
@@ -50,7 +50,15 @@ function smoothScrollToBottom(element: HTMLElement) {
   });
 }
 
-export function Run({ clusterId, runId }: { clusterId: string; runId: string }) {
+export function Run({
+  clusterId,
+  runId,
+  interactiveOveride = true,
+}: {
+  clusterId: string;
+  runId: string;
+  interactiveOveride?: boolean;
+}) {
   const { getToken } = useAuth();
 
   const [prompt, setPrompt] = useState("");
@@ -518,7 +526,7 @@ export function Run({ clusterId, runId }: { clusterId: string; runId: string }) 
     }, 100); // add a small delay because inline elements are not rendered immediately
   }, [elements.length]);
 
-  const showComposer = runTimeline?.run.interactive === true;
+  const showComposer = interactiveOveride && runTimeline?.run.interactive === true;
 
   return (
     <div className="overflow-hidden rounded-sm">

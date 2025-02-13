@@ -15,13 +15,10 @@ import {
 } from "@/components/ui/table";
 import { cn, pluralize } from "@/lib/utils";
 import { formatDistance, formatRelative } from "date-fns";
-import ToolContextButton from "./chat/ToolContextButton";
+import ToolContextButton from "./chat/tool-context-button";
 import { EventsOverlayButton } from "./events-overlay";
 import { QuickStartDemo } from "./quick-start-demo";
-import { ClusterState, useClusterState } from "./useClusterState";
-
-
-
+import { ClusterState, useClusterState } from "./use-cluster-state";
 
 function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clusterId: string }) {
   const allTools = tools.sort((a, b) => a.name.localeCompare(b.name));
@@ -47,13 +44,8 @@ function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clu
                 <TableCell>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {tool.name}
-                      </span>
-                      <ToolContextButton
-                        clusterId={clusterId}
-                        tool={tool}
-                      />
+                      <span className="font-medium">{tool.name}</span>
+                      <ToolContextButton clusterId={clusterId} tool={tool} />
                     </div>
                     <div
                       className="truncate text-xs text-muted-foreground max-w-[40vw] font-mono"
@@ -79,7 +71,12 @@ function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clu
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <span className={cn("w-2 h-2 rounded-full", isActive ? "bg-green-500" : "bg-gray-300")} />
+                      <span
+                        className={cn(
+                          "w-2 h-2 rounded-full",
+                          isActive ? "bg-green-500" : "bg-gray-300"
+                        )}
+                      />
                       <span className="font-mono text-sm">
                         {formatDistance(new Date(tool.createdAt), new Date(), {
                           addSuffix: true,
@@ -97,7 +94,13 @@ function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clu
   );
 }
 
-export default function ServicesOverview({ clusterId, tools }: { clusterId: string, tools: ClusterState["tools"] }) {
+export default function ServicesOverview({
+  clusterId,
+  tools,
+}: {
+  clusterId: string;
+  tools: ClusterState["tools"];
+}) {
   const sortedServices = tools.sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -154,14 +157,12 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     liveMachineCount,
   } = useClusterState(clusterId);
 
-  const workflowTools = tools.filter(tool => tool.name.startsWith('workflows_'));
+  const workflowTools = tools.filter(tool => tool.name.startsWith("workflows_"));
 
-  const nonWorkflowTools = tools.filter(tool => !tool.name.startsWith('workflows_'));
+  const nonWorkflowTools = tools.filter(tool => !tool.name.startsWith("workflows_"));
 
   return (
     <div className="flex flex-col space-y-3 w-full">
-
-
       <Sheet>
         <SheetTrigger asChild>
           <Button
@@ -252,8 +253,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               <div className="flex flex-col items-start gap-0.5">
                 <span className="font-semibold text-gray-900">Tools</span>
                 <span className="text-xs text-gray-500 font-mono">
-                  {tools.length}{" "}
-                  {pluralize("Tool", tools.length)}
+                  {tools.length} {pluralize("Tool", tools.length)}
                 </span>
               </div>
             </div>
@@ -316,8 +316,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               <div className="flex flex-col items-start gap-0.5">
                 <span className="font-semibold text-gray-900">Workflows</span>
                 <span className="text-xs text-gray-500 font-mono">
-                  {workflowTools.length}{" "}
-                  {pluralize("Workflow", workflowTools.length)}
+                  {workflowTools.length} {pluralize("Workflow", workflowTools.length)}
                 </span>
               </div>
             </div>

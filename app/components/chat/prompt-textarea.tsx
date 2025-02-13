@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QuickStartDemo } from "../quick-start-demo";
 import { Button } from "../ui/button";
-import { useClusterState } from "../useClusterState";
+import { useClusterState } from "../use-cluster-state";
 import Commands from "./sdk-commands";
 
 export type RunOptions = {

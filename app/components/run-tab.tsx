@@ -6,21 +6,22 @@ import {
   SmallLiveBlueCircle,
   SmallLiveGreenCircle,
 } from "@/components/circles";
-import { Workflow } from "@/lib/types";
+import { Run } from "@/lib/types";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
-import { TestTubeIcon, ThumbsDownIcon, ThumbsUpIcon, WorkflowIcon, ExternalLinkIcon } from "lucide-react";
+import {
+  TestTubeIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  WorkflowIcon,
+  ExternalLinkIcon,
+} from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Button } from "./ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from "./ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
 const statusToCircle: {
   [key: string]: React.ReactNode;
@@ -36,10 +37,10 @@ type WorkflowGroup = {
   executionId: string | null;
   workflowName: string | null;
   workflowVersion: number | null;
-  workflows: Workflow[];
+  workflows: Run[];
 };
 
-function groupWorkflowsByExecution(workflows: Workflow[]): WorkflowGroup[] {
+function groupWorkflowsByExecution(workflows: Run[]): WorkflowGroup[] {
   const groups: { [key: string]: WorkflowGroup } = {};
 
   workflows.forEach(workflow => {
@@ -51,7 +52,7 @@ function groupWorkflowsByExecution(workflows: Workflow[]): WorkflowGroup[] {
           executionId,
           workflowName: workflow.workflowName,
           workflowVersion: workflow.workflowVersion,
-          workflows: []
+          workflows: [],
         };
       }
       groups[executionId].workflows.push(workflow);
@@ -62,14 +63,14 @@ function groupWorkflowsByExecution(workflows: Workflow[]): WorkflowGroup[] {
         executionId: null,
         workflowName: null,
         workflowVersion: null,
-        workflows: [workflow]
+        workflows: [workflow],
       };
     }
   });
 
   return Object.values(groups).sort((a, b) => {
-    const latestA = a.workflows[0]?.createdAt ?? '';
-    const latestB = b.workflows[0]?.createdAt ?? '';
+    const latestA = a.workflows[0]?.createdAt ?? "";
+    const latestB = b.workflows[0]?.createdAt ?? "";
     return latestA > latestB ? -1 : 1;
   });
 }
@@ -82,7 +83,7 @@ export function RunTab({
   onGoToCluster,
 }: {
   clusterId: string;
-  workflows: Workflow[];
+  workflows: Run[];
   onGoToWorkflow: (clusterId: string, runId: string) => void;
   onRefetchWorkflows: () => Promise<void>;
   onGoToCluster: (clusterId: string) => void;
@@ -126,7 +127,7 @@ export function RunTab({
 
   return (
     <div className="flex flex-col space-y-2 w-full">
-      {workflowGroups.map((group, index) => (
+      {workflowGroups.map((group, index) =>
         group.executionId ? (
           <Accordion key={group.executionId} type="multiple" defaultValue={[]}>
             <AccordionItem
@@ -135,7 +136,7 @@ export function RunTab({
             >
               <AccordionTrigger
                 className="px-4 py-2 bg-slate-100 border-b border-slate-200 hover:bg-slate-50 no-underline"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                 }}
               >
@@ -158,16 +159,18 @@ export function RunTab({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
-                        router.push(`/clusters/${clusterId}/workflows/${group.workflowName}/${group.executionId}`);
+                        router.push(
+                          `/clusters/${clusterId}/workflows/${group.workflowName}/${group.executionId}`
+                        );
                       }}
                     >
                       Workflow
                       <ExternalLinkIcon className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
-                  {group.workflows.map((workflow) => (
+                  {group.workflows.map(workflow => (
                     <RunPill
                       key={workflow.id}
                       workflow={workflow}
@@ -185,7 +188,7 @@ export function RunTab({
             </AccordionItem>
           </Accordion>
         ) : (
-          group.workflows.map((workflow) => (
+          group.workflows.map(workflow => (
             <RunPill
               key={workflow.id}
               workflow={workflow}
@@ -199,7 +202,7 @@ export function RunTab({
             />
           ))
         )
-      ))}
+      )}
     </div>
   );
 }
@@ -212,11 +215,11 @@ function RunPill({
   clusterId,
   userId,
 }: {
-  workflow: Workflow;
+  workflow: Run;
   runId?: string;
   clusterId: string;
   onGoToWorkflow: (clusterId: string, runId: string) => void;
-  workflows: Workflow[];
+  workflows: Run[];
   userId: string | null;
   onDeleteWorkflow: (runId: string, clusterId: string) => void;
   test: boolean;
@@ -228,9 +231,10 @@ function RunPill({
       className={`
         grid grid-cols-[20px_1fr] items-start hover:bg-gray-50/50 py-3 first:pt-0 last:pb-0
         relative pl-4 cursor-pointer rounded-md w-full
-        ${runId === workflow.id
-          ? "text-slate-900 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-blue-500"
-          : "text-slate-600"
+        ${
+          runId === workflow.id
+            ? "text-slate-900 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-blue-500"
+            : "text-slate-600"
         }
       `}
       onClick={e => {
@@ -309,10 +313,7 @@ function Tag({
   onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
-    <div
-      className="inline-block mr-1 mt-0.5"
-      onClick={onClick}
-    >
+    <div className="inline-block mr-1 mt-0.5" onClick={onClick}>
       <div
         className={`
           inline-flex items-center h-5 px-1.5
@@ -320,15 +321,11 @@ function Tag({
           ${onClick ? "cursor-pointer hover:bg-gray-100 hover:border-gray-300" : ""}
         `}
       >
-        <span className="text-gray-500 flex items-center">
-          {label}
-        </span>
+        <span className="text-gray-500 flex items-center">{label}</span>
         {value && (
           <>
             <span className="mx-1 text-gray-400">=</span>
-            <span className="text-gray-700 font-medium truncate max-w-[150px]">
-              {value}
-            </span>
+            <span className="text-gray-700 font-medium truncate max-w-[150px]">{value}</span>
           </>
         )}
       </div>
