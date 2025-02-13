@@ -34,9 +34,25 @@ export const getWorkflowExecutionTimeline = async ({
       workflowVersion: data.workflowExecutions.workflow_version,
       createdAt: data.workflowExecutions.created_at,
       updatedAt: data.workflowExecutions.updated_at,
-      jobId: data.workflowExecutions.job_id,
+      job: {
+        id: data.jobs.id,
+        clusterId: data.jobs.cluster_id,
+        status: data.jobs.status,
+        targetFn: data.jobs.target_fn,
+        executingMachineId: data.jobs.executing_machine_id,
+        targetArgs: data.jobs.target_args,
+        result: data.jobs.result,
+        resultType: data.jobs.result_type,
+        createdAt: data.jobs.created_at,
+        runId: data.jobs.run_id,
+        runContext: data.jobs.run_context,
+        authContext: data.jobs.auth_context,
+        approvalRequested: data.jobs.approval_requested,
+        approved: data.jobs.approved,
+      }
     })
     .from(data.workflowExecutions)
+    .innerJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))
     .where(
       and(
         eq(data.workflowExecutions.workflow_name, workflowName),
@@ -49,15 +65,6 @@ export const getWorkflowExecutionTimeline = async ({
     throw new NotFoundError(`Workflow execution ${executionId} not found`);
   }
 
-  const job = await jobs.getJob({
-    clusterId,
-    jobId: execution.jobId,
-  });
-
-  if (!job) {
-    throw new NotFoundError(`Job ${execution.jobId} not found`);
-  }
-
   const runs = await getWorkflowRuns({
     workflowName,
     clusterId,
@@ -65,14 +72,13 @@ export const getWorkflowExecutionTimeline = async ({
   })
 
   const events = await getEventsForJobId({
-    jobId: execution.jobId,
+    jobId: execution.job.id,
     clusterId
   })
 
   return {
     execution,
     runs,
-    job,
     events,
   }
 }
@@ -94,9 +100,23 @@ export const listWorkflowExecutions = async ({
       jobId: data.workflowExecutions.job_id,
       createdAt: data.workflowExecutions.created_at,
       updatedAt: data.workflowExecutions.updated_at,
-      stutus: data.jobs.status,
-      approval_requested: data.jobs.approval_requested,
-      approved: data.jobs.approved,
+      job: {
+        id: data.jobs.id,
+        clusterId: data.jobs.cluster_id,
+        status: data.jobs.status,
+        targetFn: data.jobs.target_fn,
+        executingMachineId: data.jobs.executing_machine_id,
+        targetArgs: data.jobs.target_args,
+        result: data.jobs.result,
+        resultType: data.jobs.result_type,
+        createdAt: data.jobs.created_at,
+        runId: data.jobs.run_id,
+        runContext: data.jobs.run_context,
+        authContext: data.jobs.auth_context,
+        approvalRequested: data.jobs.approval_requested,
+        approved: data.jobs.approved,
+
+      }
     })
     .from(data.workflowExecutions)
     .innerJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))

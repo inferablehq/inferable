@@ -1,8 +1,6 @@
 "use client";
 
 import { client } from "@/client/client";
-import { contract } from "@/client/contract";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -17,6 +15,25 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
 import { ServerConnectionStatus } from "@/components/server-connection-pane";
 import { useRouter } from "next/navigation";
+import { formatRelative } from "date-fns";
+import { ClientInferResponseBody } from "@ts-rest/core";
+import { contract } from "@/client/contract";
+
+const buildStatusCell = (execution: ClientInferResponseBody<typeof contract.listWorkflowExecutions, 200>[number]) => {
+  if (execution.job.approvalRequested && !execution.job.approved) {
+    if (execution.job.approved === null) {
+      return <span>Awaiting approval</span>;
+    } else {
+      return <span>Approval Rejected</span>;
+    }
+  }
+
+  if (execution.job.resultType === "rejection") {
+    return <span>Failure</span>;
+  }
+
+  return <span>{execution.job.status}</span>;
+}
 
 export default function WorkflowDetailsPage({
   params,
@@ -29,15 +46,7 @@ export default function WorkflowDetailsPage({
   const router = useRouter();
   const { getToken } = useAuth();
   const user = useUser();
-  const [executions, setExecutions] = useState<
-    {
-      id: string;
-      workflowName: string;
-      workflowVersion: number;
-      createdAt: Date;
-      updatedAt: Date;
-    }[]
-  >([]);
+  const [executions, setExecutions] = useState<ClientInferResponseBody<typeof contract.listWorkflowExecutions, 200>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchWorkflowExecutions = useCallback(async () => {
@@ -105,9 +114,9 @@ export default function WorkflowDetailsPage({
           <TableHeader>
             <TableRow header>
               <TableHead>Execution ID</TableHead>
-              <TableHead>Version</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Updated At</TableHead>
+              <TableHead>Workflow Version</TableHead>
+              <TableHead>Triggered At</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -121,8 +130,8 @@ export default function WorkflowDetailsPage({
                 >
                   <TableCell>{execution.id}</TableCell>
                   <TableCell>{execution.workflowVersion}</TableCell>
-                  <TableCell>{execution.createdAt.toLocaleString()}</TableCell>
-                  <TableCell>{execution.updatedAt.toLocaleString()}</TableCell>
+                  <TableCell>{formatRelative(execution.createdAt, new Date())}</TableCell>
+                  <TableCell>{buildStatusCell(execution)}</TableCell>
                 </TableRow>
               ))}
           </TableBody>

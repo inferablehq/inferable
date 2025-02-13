@@ -1188,6 +1188,7 @@ export const definition = {
         z.object({
           name: z.string(),
           version: z.number(),
+          description: z.string().nullable(),
         })
       ),
       401: z.undefined(),
@@ -1228,7 +1229,18 @@ export const definition = {
           workflowName: z.string(),
           workflowVersion: z.number(),
           createdAt: z.date(),
-          updatedAt: z.date(),
+          job: z.object({
+            id: z.string(),
+            status: z.string(),
+            targetFn: z.string(),
+            executingMachineId: z.string().nullable(),
+            targetArgs: z.string(),
+            result: z.string().nullable(),
+            resultType: z.string().nullable(),
+            createdAt: z.date(),
+            approved: z.boolean().nullable(),
+            approvalRequested: z.boolean().nullable(),
+          })
         })
       ),
       401: z.undefined(),
@@ -1274,25 +1286,23 @@ export const definition = {
           })
         ),
         execution: z.object({
-            id: z.string(),
-            workflowName: z.string(),
-            workflowVersion: z.number(),
-            createdAt: z.date(),
-            updatedAt: z.date(),
-        }),
-        job: z.object({
           id: z.string(),
-          status: z.string(),
-          targetFn: z.string(),
-          executingMachineId: z.string().nullable(),
-          targetArgs: z.string(),
-          result: z.string().nullable(),
-          resultType: z.string().nullable(),
+          workflowName: z.string(),
+          workflowVersion: z.number(),
           createdAt: z.date(),
-          blobs: z.array(blobSchema),
-          approved: z.boolean().nullable(),
-          approvalRequested: z.boolean().nullable(),
-        })
+          job: z.object({
+            id: z.string(),
+            status: z.string(),
+            targetFn: z.string(),
+            executingMachineId: z.string().nullable(),
+            targetArgs: z.string(),
+            result: z.string().nullable(),
+            resultType: z.string().nullable(),
+            createdAt: z.date(),
+            approved: z.boolean().nullable(),
+            approvalRequested: z.boolean().nullable(),
+          })
+        }),
       }),
     },
   },

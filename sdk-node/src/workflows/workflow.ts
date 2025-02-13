@@ -20,6 +20,7 @@ type Logger = {
 type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
   inferable: Inferable;
   name: name;
+  description?: string;
   inputSchema: z.ZodType<TInput>;
   logger?: Logger;
   client: ReturnType<typeof createApiClient>;
@@ -81,6 +82,7 @@ export const helpers = {
 
 export class Workflow<TInput extends WorkflowInput, name extends string> {
   private name: string;
+  private description?: string;
   private inputSchema: z.ZodType<TInput>;
   private versionHandlers: Map<
     number,
@@ -97,6 +99,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
 
   constructor(config: WorkflowConfig<TInput, name>) {
     this.name = config.name;
+    this.description = config.description;
     this.inputSchema = config.inputSchema;
     this.logger = config.logger;
     this.client = config.client;
@@ -368,6 +371,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
           }
         },
         name: `workflows_${this.name}_${version}`,
+        description: this.description,
         schema: {
           input: this.inputSchema,
         },

@@ -243,14 +243,17 @@ export class Inferable {
     helpers,
     create: <TInput extends z.ZodTypeAny>({
       name,
+      description,
       inputSchema,
     }: {
       name: string;
+      description?: string;
       inputSchema: TInput;
     }) => {
       return new Workflow({
         name,
         inferable: this,
+        description,
         getClusterId: async () => await this.getClusterId(),
         client: this.client,
         inputSchema,

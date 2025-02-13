@@ -1,9 +1,6 @@
 "use client";
 
 import { client } from "@/client/client";
-import { contract } from "@/client/contract";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
@@ -18,12 +15,17 @@ import {
 import { ServerConnectionStatus } from "@/components/server-connection-pane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, Icon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ClientInferResponseBody } from "@ts-rest/core";
+import { contract } from "@/client/contract";
 
 export default function WorkflowsPage({ params }: { params: { clusterId: string } }) {
   const router = useRouter();
   const { getToken } = useAuth();
   const user = useUser();
-  const [workflows, setWorkflows] = useState<{ name: string; version: number }[]>([]);
+  const [workflows, setWorkflows] = useState<ClientInferResponseBody<typeof contract.listWorkflows, 200>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchWorkflows = useCallback(async () => {
@@ -84,27 +86,28 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
       {workflows.length === 0 ? (
         <p className="text-muted-foreground text-center">No workflows found</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow header>
-              <TableHead>Name</TableHead>
-              <TableHead>Version</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {workflows.map((workflow, index) => (
-              <TableRow
-                key={index}
-                onClick={() => handleWorkflowClick(workflow.name)}
-                className="cursor-pointer"
-              >
-                <TableCell>{workflow.name}</TableCell>
-                <TableCell>{workflow.version}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
+            {workflows
+              .map((workflow) => {
+                return (
+                  <Card className="flex flex-col" key={workflow.name}>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <CardTitle>{workflow.name}</CardTitle>
+                      </div>
+                      {workflow.description && (<CardDescription>{workflow.description}</CardDescription>)}
+                    </CardHeader>
+                  <CardContent>
+                    <Button className="w-full" variant="outline" onClick={() => handleWorkflowClick(workflow.name)}>
+                      View Executions
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+        )}
     </div>
   );
 }
