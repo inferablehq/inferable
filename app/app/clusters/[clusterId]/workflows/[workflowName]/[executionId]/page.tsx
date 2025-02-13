@@ -3,7 +3,7 @@
 import { WorkflowTimeline, Node } from "@/components/workflow-timeline";
 import { Run } from "@/components/run";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Bot, Terminal, Clock, Zap, Ban, Pause, Check, ServerIcon } from "lucide-react";
+import { Bot, Terminal, Clock, Zap, Ban, Pause, Check, ServerIcon, Workflow } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { client } from "@/client/client";
@@ -12,6 +12,7 @@ import { ClientInferResponseBody } from "@ts-rest/core";
 import { contract } from "@/client/contract";
 import { formatRelative } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { ReadOnlyJSON } from "@/components/read-only-json";
 
 const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline, 200>["events"][number]): Node | null => {
   const base = {
@@ -94,6 +95,7 @@ const runToNode = (run: ClientInferResponseBody<typeof contract.getWorkflowExecu
     id: run.id,
     title: run.type === "single-step" ? "Single Step Agent" : "Multi Step Agent",
     label: run.name,
+    tooltip: "An Agent Run was triggered",
     time: new Date(run.createdAt),
     color: run.status === "failed" ? "bg-red-200" : "bg-gray-200",
     icon: React.createElement(Bot),
@@ -114,11 +116,48 @@ export default function WorkflowExecutionDetailsPage({
   const user = useUser();
 
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>("pending");
+  const [input, setInput] = useState<unknown | null>(null);
+  const [result, setResult] = useState<unknown | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
 
   const [timeline, setTimeline] =
     useState<ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline>>();
+
+
+  useEffect(() => {
+    if (timeline) {
+      if (timeline.execution.job.resultType === "rejection") {
+        setStatus("failure");
+      } else {
+        setStatus(timeline.execution.job.status)
+      }
+    }
+  }, [timeline]);
+
+  useEffect(() => {
+    if (timeline?.execution.job.result) {
+      try {
+        const result = JSON.parse(timeline.execution.job.result);
+        if (Object.keys(result).length > 0) {
+          setResult(result);
+        }
+      } catch  {
+        setResult(timeline.execution.job.result);
+      }
+    }
+    if (timeline?.execution.job.targetArgs) {
+      try {
+        const input = JSON.parse(timeline.execution.job.targetArgs);
+        if (Object.keys(input).length > 0) {
+          setInput(input);
+        }
+      } catch  {
+        setInput(timeline.execution.job.targetArgs);
+      }
+    }
+  }, [timeline]);
 
   const fetchWorkflowExecution = useCallback(async () => {
     if (!params.clusterId || !user.isLoaded) {
@@ -212,20 +251,14 @@ export default function WorkflowExecutionDetailsPage({
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">{params.workflowName}</h1>
-        </div>
-      </div>
-
       <div className="grid md:grid-cols-4 sm:grid-cols-1 gap-4 mb-6">
         <div className="flex items-center gap-3 rounded-lg border p-4">
           <div className="p-2 rounded-lg bg-gray-100">
-            <Terminal className="w-5 h-5 text-gray-600" />
+            <Workflow className="w-5 h-5 text-gray-600" />
           </div>
           <div>
-            <div className="text-sm text-gray-500">Version</div>
-            <div className="font-medium">{timeline.execution.workflowVersion}</div>
+            <div className="text-sm text-gray-500">Workflow</div>
+            <div className="font-medium">{timeline.execution.workflowName} (v{timeline.execution.workflowVersion})</div>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg border p-4">
@@ -254,7 +287,7 @@ export default function WorkflowExecutionDetailsPage({
           </div>
           <div>
             <div className="text-sm text-gray-500">Status</div>
-            <div className="font-medium">{timeline.execution.job.status}</div>
+            <div className="font-medium">{status}</div>
           </div>
         </div>
       </div>
@@ -284,6 +317,32 @@ export default function WorkflowExecutionDetailsPage({
           </div>
         </div>
       )}
+
+      <div className="flex flex-row gap-4 mb-4">
+        {!!input && (
+          <div className="p-6 mb-6 rounded-lg border space-y-2 flex-grow">
+            <h3 className="text-2xl font-semibold">Input</h3>
+
+            {typeof input === "object" ? (
+              <ReadOnlyJSON json={input} />
+            ) : (
+                <span>{JSON.stringify(input)}</span>
+              )}
+          </div>
+        )}
+
+        {!!result && (
+          <div className="p-6 mb-6 rounded-lg border space-y-2 flex-grow">
+            <h3 className="text-2xl font-semibold">Result</h3>
+
+            {typeof result === "object" ? (
+              <ReadOnlyJSON json={result} />
+            ) : (
+                <span>{JSON.stringify(result)}</span>
+              )}
+          </div>
+        )}
+      </div>
 
       <Dialog open={!!selectedRunId} onOpenChange={() => setSelectedRunId(null)}>
         <DialogContent className="max-w-[90vw] w-[1200px] p-1">
