@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import * as data from "./data";
 import { logger } from "./observability/logger";
-import { withThrottle } from "./util";
+import { events } from "./observability/events";
 
 export async function upsertMachine({
   clusterId,
@@ -38,6 +38,12 @@ export async function upsertMachine({
 
     return;
   }
+
+  events.write({
+    type: "machinePinged",
+    clusterId,
+    machineId,
+  });
 
   return await data.db
     .insert(data.machines)

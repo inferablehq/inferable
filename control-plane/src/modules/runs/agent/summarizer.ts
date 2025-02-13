@@ -85,20 +85,6 @@ ${JSON.stringify(input.result)}
 
     const summary = content.text;
 
-    events.write({
-      type: "resultSummarized",
-      clusterId: input.clusterId,
-      workflowId: input.runId,
-      targetFn: input.targetFn,
-      meta: {
-        summary,
-        originalResultSize: await estimateTokenCount(
-          JSON.stringify(input.result),
-        ),
-        summarySize: await estimateTokenCount(summary),
-      },
-    });
-
     return {
       summary,
       originalResultSize: await estimateTokenCount(

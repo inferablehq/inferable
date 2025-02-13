@@ -284,8 +284,8 @@ export const findRelevantTools = async (state: RunGraphState) => {
     tools.push(...Object.values(availableStdlib()));
 
     events.write({
-      type: "functionRegistrySearchCompleted",
-      workflowId: run.id,
+      type: "toolSearchCompleted",
+      runId: run.id,
       clusterId: run.clusterId,
       meta: {
         query: searchQueryContent.success ? searchQueryContent.data.text : "(message history)",

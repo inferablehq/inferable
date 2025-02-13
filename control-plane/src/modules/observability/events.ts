@@ -1,50 +1,55 @@
-import { and, desc, eq, gt, gte, SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, or, SQL, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { NotFoundError } from "../../utilities/errors";
 import { db, events as eventsTable } from "../data";
 import { logger } from "./logger";
 
+// Name format <noun>_<verb>(Past tense)_<qualifier>
 export type EventTypes =
+  // Jobs
   | "jobCreated"
   | "jobAcknowledged"
-  | "jobStatusRequest"
-  | "functionResulted"
-  | "functionResultedButNotPersisted"
+  | "jobResulted"
+  | "jobResultedButNotPersisted"
   | "jobStalled"
   | "jobStalledTooManyTimes"
   | "jobRecovered"
-  | "machineRegistered"
-  | "machinePing"
-  | "machineStalled"
-  | "machineResourceProbe"
-  | "modelInvocation"
-  | "humanMessage"
-  | "systemMessage"
-  | "agentMessage"
-  | "callingFunction"
-  | "functionErrored"
-  | "runFeedbackSubmitted"
-  | "resultSummarized"
-  | "functionRegistrySearchCompleted"
-  | "messageRetried"
+
+  // Approvals
   | "approvalRequested"
   | "approvalGranted"
-  | "approvalDenied";
+  | "approvalDenied"
+
+  // Tool Calls (i.e Within an Agent Runs)
+  | "toolInvocationCreated"
+  | "toolInvocationFailed"
+  | "toolInvocationResulted"
+
+  // Machines
+  | "machineRegistered"
+  | "machinePinged"
+
+  // Misc
+  | "modelInvoked"
+  | "feedbackSubmitted"
+  | "toolSearchCompleted";
 
 type Event = {
-  clusterId: string;
   type: EventTypes;
+  clusterId: string;
   jobId?: string;
+  toolName?: string;
   machineId?: string;
+  runId?: string;
+  modelId?: string;
+
+  // TODO: Remove
   targetFn?: string;
   resultType?: string;
   status?: string;
-  workflowId?: string;
   userId?: string;
-  toolName?: string;
   tokenUsageInput?: number;
   tokenUsageOutput?: number;
-  modelId?: string;
   meta?: Record<string, unknown>;
 };
 
@@ -92,14 +97,13 @@ class EventWriterBuffer {
         insertable.map(e => ({
           id: e.id,
           cluster_id: e.clusterId,
-          run_id: e.workflowId,
+          run_id: e.runId,
           type: e.type,
           job_id: e.jobId,
           machine_id: e.machineId,
           target_fn: e.targetFn,
           result_type: e.resultType,
           status: e.status,
-          workflow_id: e.workflowId,
           user_id: e.userId,
           tool_name: e.toolName,
           meta: e.meta,
@@ -168,7 +172,7 @@ export const getEventsForRunTimeline = async (params: {
       targetFn: eventsTable.target_fn,
       resultType: eventsTable.result_type,
       status: eventsTable.status,
-      workflowId: eventsTable.run_id,
+      run_id: eventsTable.run_id,
     })
     .from(eventsTable)
     .where(
@@ -196,7 +200,7 @@ export const getMetaForEvent = async (params: { clusterId: string; eventId: stri
       targetFn: eventsTable.target_fn,
       resultType: eventsTable.result_type,
       status: eventsTable.status,
-      workflowId: eventsTable.run_id,
+      run_id: eventsTable.run_id,
       meta: eventsTable.meta,
     })
     .from(eventsTable)
@@ -216,7 +220,7 @@ export const getEventsByClusterId = async (params: {
     type?: string;
     jobId?: string;
     machineId?: string;
-    workflowId?: string;
+    runId?: string;
   };
   includeMeta?: boolean;
 }) => {
@@ -231,7 +235,7 @@ export const getEventsByClusterId = async (params: {
       targetFn: eventsTable.target_fn,
       resultType: eventsTable.result_type,
       status: eventsTable.status,
-      workflowId: eventsTable.run_id,
+      runId: eventsTable.run_id,
       ...(params.includeMeta ? { meta: eventsTable.meta } : {}),
     })
     .from(eventsTable)
@@ -242,7 +246,7 @@ export const getEventsByClusterId = async (params: {
           params.filters?.type && eq(eventsTable.type, params.filters.type),
           params.filters?.jobId && eq(eventsTable.job_id, params.filters.jobId),
           params.filters?.machineId && eq(eventsTable.machine_id, params.filters.machineId),
-          params.filters?.workflowId && eq(eventsTable.run_id, params.filters.workflowId),
+          params.filters?.runId && eq(eventsTable.run_id, params.filters.runId),
         ].filter(Boolean) as SQL[])
       )
     )
@@ -264,7 +268,7 @@ export const getEventsForJobId = async (params: { jobId: string; clusterId: stri
       targetFn: eventsTable.target_fn,
       resultType: eventsTable.result_type,
       status: eventsTable.status,
-      workflowId: eventsTable.run_id,
+      runId: eventsTable.run_id,
     })
     .from(eventsTable)
     .where(and(eq(eventsTable.job_id, params.jobId), eq(eventsTable.cluster_id, params.clusterId)))
@@ -290,7 +294,11 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
     .where(
       and(
         eq(eventsTable.cluster_id, params.clusterId),
-        eq(eventsTable.type, "modelInvocation"),
+        or(
+          eq(eventsTable.type, "modelInvoked"),
+          // Backward compatibility
+          eq(eventsTable.type, "modelInvocation"),
+        ),
         gte(eventsTable.created_at, sixtyDaysAgo)
       )
     )
@@ -306,7 +314,11 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
     .where(
       and(
         eq(eventsTable.cluster_id, params.clusterId),
-        eq(eventsTable.type, "modelInvocation"),
+        or(
+          eq(eventsTable.type, "modelInvoked"),
+          // Backward compatibility
+          eq(eventsTable.type, "modelInvocation"),
+        ),
         gte(eventsTable.created_at, sixtyDaysAgo)
       )
     )

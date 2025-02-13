@@ -384,9 +384,9 @@ const trackModelUsage = async ({
   });
 
   events.write({
-    type: "modelInvocation",
+    type: "modelInvoked",
     clusterId: clusterId,
-    workflowId: runId,
+    runId: runId,
     tokenUsageInput: inputTokens,
     tokenUsageOutput: outputTokens,
     modelId,

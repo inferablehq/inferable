@@ -39,7 +39,7 @@ export async function selfHealJobs() {
       clusterId: row.clusterId,
       jobId: row.id,
       type: "jobStalled",
-      workflowId: row.runId ?? undefined,
+      runId: row.runId ?? undefined,
       meta: {
         attemptsRemaining: row.remainingAttempts ?? undefined,
         reason: "timeout",

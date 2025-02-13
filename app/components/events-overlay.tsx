@@ -22,7 +22,7 @@ import ErrorDisplay from "./error-display";
 
 type Event = ClientInferResponseBody<typeof contract.listEvents, 200>[number];
 
-type FilterKey = "type" | "function" | "jobId" | "workflowId" | "machineId";
+type FilterKey = "type" | "function" | "jobId" | "runId" | "machineId";
 
 interface Filter {
   key: FilterKey;
@@ -47,29 +47,36 @@ const formatEventParams = (event: Event): EventParam[] => {
   if (event.machineId) params.push({ label: "Machine", value: event.machineId });
   if (event.resultType) params.push({ label: "Result", value: event.resultType });
   if (event.status) params.push({ label: "Status", value: event.status });
-  if (event.workflowId) params.push({ label: "Workflow", value: event.workflowId });
+  if (event.runId) params.push({ label: "Run", value: event.runId });
 
   return params;
 };
 
 const typeToText: { [key: string]: string } = {
-  machinePing: `Machine pinged the control plane.`,
+  machinePinged: `Machine pinged the control plane.`,
   machineStalled: `Machine marked as stalled.`,
+
   jobCreated: "Job was created.",
   jobStatusRequest: `Caller asked for the status of the job.`,
   jobReceived: `Function was received by the machine for execution.`,
-  functionResulted: `Function execution concluded.`,
+  jobresulted: `Function execution concluded.`,
   jobStalled: `Function execution did not complete within the expected time frame. The function is marked as stalled.`,
   jobRecovered: `Function execution was recovered after being marked as stalled.`,
   jobStalledTooManyTimes: `Function execution did not complete within the expected time frame too many times. The execution has resulted in a failure.`,
-  agentMessage: `Agent message produced.`,
-  agentEnd: `Agent workflow concluded.`,
   jobAcknowledged: `Job was acknowledged by the machine.`,
-  callingFunction: `Agent is invoking a tool.`,
-  humanMessage: `Human sent a message.`,
+
   machineRegistered: `Machine registered with the control plane.`,
-  functionErrored: `Invoked tool produced an error.`,
+  modelInvoked: `A call was made to the model.`,
+
+  toolInvocationFailed: `Invoked tool produced an error.`,
+  toolInvocationCreated: `Agent is invoking a tool.`,
+
+  // Depreacted
+  machinePing: `Machine pinged the control plane.`,
   modelInvocation: `A call was made to the model.`,
+  functionErrored: `Invoked tool produced an error.`,
+  callingFunction: `Agent is invoking a tool.`,
+  functionResulted: `Function execution concluded.`,
 };
 
 type FilterableEventKeys = {
@@ -80,7 +87,7 @@ const filterKeyToEventKey: FilterableEventKeys = {
   type: "type",
   function: "targetFn",
   jobId: "jobId",
-  workflowId: "workflowId",
+  runId: "runId",
   machineId: "machineId",
 };
 
@@ -276,7 +283,7 @@ function EventsOverlay({ clusterId, query = {}, refreshInterval = 10000 }: Event
     if (event.type) newFilters.push({ key: "type", value: event.type });
     if (event.targetFn) newFilters.push({ key: "function", value: event.targetFn });
     if (event.machineId) newFilters.push({ key: "machineId", value: event.machineId });
-    if (event.workflowId) newFilters.push({ key: "workflowId", value: event.workflowId });
+    if (event.runId) newFilters.push({ key: "runId", value: event.runId });
 
     setFilters(prev => {
       const updated = [...prev];

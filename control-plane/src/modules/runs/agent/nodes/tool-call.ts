@@ -172,9 +172,9 @@ const _handleToolCall = async (
   }
 
   events.write({
-    type: "callingFunction",
+    type: "toolInvocationCreated",
     clusterId: run.clusterId,
-    workflowId: run.id,
+    runId: run.id,
     toolName,
     meta: {
       toolInput: JSON.stringify(toolInput),
@@ -203,9 +203,9 @@ const _handleToolCall = async (
 
     if (response.resultType === "rejection") {
       events.write({
-        type: "functionErrored",
+        type: "toolInvocationFailed",
         clusterId: run.clusterId,
-        workflowId: run.id,
+        runId: run.id,
         meta: {
           log: `Failed to invoke ${toolName}`,
           error: response,
@@ -245,6 +245,17 @@ const _handleToolCall = async (
     }
 
     if (response.resultType === "resolution") {
+
+      events.write({
+        type: "toolInvocationResulted",
+        clusterId: run.clusterId,
+        runId: run.id,
+        meta: {
+          log: `Failed to invoke ${toolName}`,
+          error: response,
+        },
+      });
+
       trackCustomerTelemetry({
         type: "toolCall",
         toolName,
@@ -285,9 +296,9 @@ const _handleToolCall = async (
   } catch (error) {
     if (error instanceof AgentToolInputError) {
       events.write({
-        type: "functionErrored",
+        type: "toolInvocationFailed",
         clusterId: run.clusterId,
-        workflowId: run.id,
+        runId: run.id,
         meta: {
           log: `Failed to parse tool input for ${toolName}`,
         },
@@ -332,9 +343,9 @@ const _handleToolCall = async (
 
     if (error instanceof InvalidJobArgumentsError) {
       events.write({
-        type: "functionErrored",
+        type: "toolInvocationFailed",
         clusterId: run.clusterId,
-        workflowId: run.id,
+        runId: run.id,
         meta: {
           log: `Invalid job arguments for ${toolName}`,
         },

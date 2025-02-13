@@ -96,13 +96,13 @@ export async function persistJobResult({
       jobId,
     });
     events.write({
-      type: "functionResultedButNotPersisted",
+      type: "jobResultedButNotPersisted",
       clusterId: owner.clusterId,
       jobId,
       machineId,
       targetFn: updateResult[0]?.targetFn,
       resultType,
-      workflowId: updateResult[0]?.runId ?? undefined,
+      runId: updateResult[0]?.runId ?? undefined,
       meta: {
         functionExecutionTime,
       },
@@ -116,13 +116,13 @@ export async function persistJobResult({
     }
 
     events.write({
-      type: "functionResulted",
+      type: "jobResulted",
       clusterId: owner.clusterId,
       jobId,
       machineId,
       targetFn: updateResult[0]?.targetFn,
       resultType,
-      workflowId: updateResult[0]?.runId ?? undefined,
+      runId: updateResult[0]?.runId ?? undefined,
       meta: {
         functionExecutionTime,
       },

@@ -134,7 +134,7 @@ describe("event-aggregation", () => {
 
       expect(activity[0].type).toEqual("jobCreated");
       expect(activity[1].type).toEqual("jobAcknowledged");
-      expect(activity[activity.length - 1].type).toEqual("functionResulted");
+      expect(activity[activity.length - 1].type).toEqual("jobResulted");
     }
   });
 });

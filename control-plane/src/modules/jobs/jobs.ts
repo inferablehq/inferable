@@ -55,15 +55,7 @@ export const getJobStatusSync = async ({
     }
   } while (!jobResult && Date.now() - start < ttl);
 
-  if (jobResult) {
-    events.write({
-      clusterId: owner.clusterId,
-      jobId,
-      type: "jobStatusRequest",
-      resultType: jobResult.resultType ?? undefined,
-      status: jobResult.status,
-    });
-  } else {
+  if (!jobResult) {
     throw new JobPollTimeoutError(`Call did not resolve within ${ttl}ms`);
   }
 
@@ -318,7 +310,7 @@ export async function requestApproval({ jobId, clusterId }: { jobId: string; clu
       type: "approvalRequested",
       jobId,
       clusterId,
-      workflowId: updated.runId,
+      runId: updated.runId,
       targetFn: updated.targetFn,
     });
   }
@@ -379,7 +371,7 @@ export async function submitApproval({
         type: "approvalGranted",
         jobId,
         clusterId,
-        workflowId: updated.runId,
+        runId: updated.runId,
         targetFn: updated.targetFn,
       });
     }
@@ -414,7 +406,7 @@ export async function submitApproval({
         type: "approvalDenied",
         jobId,
         clusterId,
-        workflowId: updated.runId,
+        runId: updated.runId,
         targetFn: updated.targetFn,
       });
     }

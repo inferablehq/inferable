@@ -349,9 +349,9 @@ export const router = initServer().router(contract, {
     });
 
     events.write({
-      type: "runFeedbackSubmitted",
+      type: "feedbackSubmitted",
       clusterId,
-      workflowId: runId,
+      runId: runId,
       userId: auth.entityId,
       meta: {
         feedbackScore: score ?? undefined,
@@ -1250,7 +1250,7 @@ export const router = initServer().router(contract, {
         type: request.query.type,
         jobId: request.query.jobId,
         machineId: request.query.machineId,
-        workflowId: request.query.workflowId,
+        runId: request.query.runId,
       },
       includeMeta: request.query.includeMeta ? true : false,
     });

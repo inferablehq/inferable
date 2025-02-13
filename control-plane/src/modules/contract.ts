@@ -758,7 +758,7 @@ export const definition = {
           targetFn: z.string().nullable(),
           resultType: z.string().nullable(),
           status: z.string().nullable(),
-          workflowId: z.string().nullable(),
+          runId: z.string().nullable(),
           meta: z.any().nullable(),
           id: z.string(),
         })
@@ -770,7 +770,7 @@ export const definition = {
       type: z.string().optional(),
       jobId: z.string().optional(),
       machineId: z.string().optional(),
-      workflowId: z.string().optional(),
+      runId: z.string().optional(),
       includeMeta: z.string().optional(),
     }),
   },
@@ -1269,7 +1269,7 @@ export const definition = {
             targetFn: z.string().nullable(),
             resultType: z.string().nullable(),
             status: z.string().nullable(),
-            workflowId: z.string().nullable(),
+            runId: z.string().nullable(),
             meta: z.any().nullable(),
             id: z.string(),
           })
