@@ -12,7 +12,6 @@ import { ClientInferResponseBody } from "@ts-rest/core";
 import { contract } from "@/client/contract";
 import { formatRelative } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { result } from "lodash";
 
 const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline, 200>["events"][number]): Node | null => {
   const base = {
@@ -115,7 +114,9 @@ export default function WorkflowExecutionDetailsPage({
   const user = useUser();
 
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
+
   const [timeline, setTimeline] =
     useState<ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline>>();
 
@@ -123,7 +124,7 @@ export default function WorkflowExecutionDetailsPage({
     if (!params.clusterId || !user.isLoaded) {
       return;
     }
-    setIsLoading(true);
+
     try {
       const result = await client.getWorkflowExecutionTimeline({
         headers: {
@@ -149,8 +150,19 @@ export default function WorkflowExecutionDetailsPage({
   }, [params.clusterId, params.workflowName, params.executionId, user.isLoaded, getToken]);
 
   useEffect(() => {
+    // Initial fetch
     fetchWorkflowExecution();
-  }, [fetchWorkflowExecution]);
+
+    // Set up polling every 10 seconds
+    const pollingInterval = setInterval(() => {
+      fetchWorkflowExecution();
+    }, 10000); // 10 seconds
+
+    // Cleanup interval on component unmount
+    return () => {
+      clearInterval(pollingInterval);
+    };
+  }, [fetchWorkflowExecution, timeline?.execution.job.status]);
 
   const submitApproval = useCallback(
     async ({ approved }: { approved: boolean }) => {

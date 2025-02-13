@@ -1189,6 +1189,7 @@ export const definition = {
           name: z.string(),
           version: z.number(),
           description: z.string().nullable(),
+          schema: z.string().nullable(),
         })
       ),
       401: z.undefined(),
