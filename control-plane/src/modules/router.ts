@@ -1244,7 +1244,7 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
 
-    const result = await events.getActivityByClusterId({
+    const result = await events.getEventsByClusterId({
       clusterId,
       filters: {
         type: request.query.type,
@@ -1277,7 +1277,7 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
 
-    const result = await events.getMetaForActivity({
+    const result = await events.getMetaForEvent({
       clusterId,
       eventId,
     });

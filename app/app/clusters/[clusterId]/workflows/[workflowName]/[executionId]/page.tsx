@@ -1,9 +1,9 @@
 "use client";
 
-import { WorkflowTimeline, DeploymentNode } from "@/components/workflow-timeline";
+import { WorkflowTimeline, Node } from "@/components/workflow-timeline";
 import { Run } from "@/components/run";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Bot, Terminal, Clock, Cross } from "lucide-react";
+import { Bot, Terminal, Clock, Zap, Ban, Pause, Check } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { client } from "@/client/client";
@@ -12,6 +12,77 @@ import { ClientInferResponseBody } from "@ts-rest/core";
 import { contract } from "@/client/contract";
 import { formatRelative } from "date-fns";
 import { Button } from "@/components/ui/button";
+
+const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline, 200>["events"][number]): Node | null => {
+  const base = {
+    id: event.id,
+    time: new Date(event.createdAt),
+    interactive: false,
+  }
+
+  switch (event.type) {
+    case "jobResulted": {
+      return {
+        ...base,
+        title: "Workflow Completed",
+        color: "bg-green-200",
+        icon: React.createElement(Check),
+      }
+    }
+    case "functionResulted": {
+      return {
+        ...base,
+        title: "Workflow Completed",
+        color: "bg-green-200",
+        icon: React.createElement(Check),
+      }
+    }
+    case "jobCreated": {
+      return {
+        ...base,
+        title: "Workflow Started",
+        icon: React.createElement(Zap),
+      }
+    }
+    case "approvalRequested": {
+      return {
+        ...base,
+        title: "Approval Requested",
+        icon: React.createElement(Pause),
+      }
+    }
+    case "approvalGranted": {
+      return {
+        ...base,
+        title: "Approval Granted",
+        icon: React.createElement(Check),
+      }
+    }
+    case "approvalDenied": {
+      return {
+        ...base,
+        title: "Approval Denied",
+        color: "bg-red-200",
+        icon: React.createElement(Ban),
+      }
+    }
+    default: {
+      return null
+    }
+  }
+};
+
+const runToNode = (run: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline, 200>["runs"][number]): Node => {
+  return {
+    id: run.id,
+    title: run.type === "single-step" ? "Single Step Agent" : "Multi Step Agent",
+    label: run.name,
+    time: new Date(run.createdAt),
+    color: run.status === "failed" ? "bg-red-200" : "bg-gray-200",
+    icon: React.createElement(Bot),
+    interactive: true,
+  }
+}
 
 export default function WorkflowExecutionDetailsPage({
   params,
@@ -93,20 +164,15 @@ export default function WorkflowExecutionDetailsPage({
         }, 1000);
       }
     },
-    [getToken, params.clusterId, timeline?.job.id]
+    [fetchWorkflowExecution, getToken, params.clusterId, timeline?.job.id]
   );
 
-  const deploymentNodes =
-    timeline?.runs.map(run => ({
-      id: run.id,
-      title: run.type === "single-step" ? "Single Step Agent" : "Multi Step Agent",
-      label: run.name,
-      color: run.status === "failed" ? "bg-red-200" : "bg-gray-200",
-      icon: React.createElement(Bot),
-      interactive: true,
-    })) ?? [];
+  const nodes = [
+    ...(timeline?.runs.map(runToNode) || []),
+    ...(timeline?.events.map(eventToNode) || []),
+  ].filter(Boolean) as Node[];
 
-  const handleNodeClick = (node: DeploymentNode) => {
+  const handleNodeClick = (node: Node) => {
     setSelectedRunId(selectedRunId ? null : node.id);
   };
 
@@ -200,7 +266,7 @@ export default function WorkflowExecutionDetailsPage({
       </Dialog>
 
       <WorkflowTimeline
-        nodes={deploymentNodes}
+        nodes={nodes}
         onNodeClick={handleNodeClick}
         className="w-full h-[70vh] p-10 rounded-lg border shadow-sm"
       />

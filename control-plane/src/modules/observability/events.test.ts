@@ -124,7 +124,7 @@ describe("event-aggregation", () => {
 
     for (const jobId of jobIds) {
       const activity = await events
-        .getActivityByClusterId({
+        .getEventsByClusterId({
           clusterId,
           filters: {
             jobId,

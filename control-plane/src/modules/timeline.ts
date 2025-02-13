@@ -1,5 +1,5 @@
 import { getJobsForRun } from "./jobs/jobs";
-import { getActivityForTimeline } from "./observability/events";
+import { getEventsForRunTimeline } from "./observability/events";
 import { getRunMessagesForDisplay } from "./runs/messages";
 import { getRun, getRunDetails } from "./runs";
 
@@ -26,7 +26,7 @@ export const timeline = {
           runId,
           after: messagesAfter,
         }),
-        getActivityForTimeline({
+        getEventsForRunTimeline({
           clusterId,
           runId,
           after: activityAfter,
@@ -44,7 +44,7 @@ export const timeline = {
         runId,
         after: messagesAfter,
       }),
-      getActivityForTimeline({
+      getEventsForRunTimeline({
         clusterId,
         runId,
         after: activityAfter,

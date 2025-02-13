@@ -4,21 +4,22 @@ import React, { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
+import { formatRelative } from "date-fns";
 
-export interface DeploymentNode {
+export interface Node {
   id: string;
   title: string;
-  label: string;
+  time: Date;
+  label?: string;
   color?: string;
   icon?: React.ReactNode;
-  duration?: number;
   interactive?: boolean;
 }
 
-export interface CICDDeploymentProps {
-  nodes: DeploymentNode[];
+export interface WorkflowTimelineProps {
+  nodes: Node[];
   className?: string;
-  onNodeClick?: (node: DeploymentNode) => void;
+  onNodeClick?: (node: Node) => void;
   horizontalSpacing?: number;
   verticalSpacing?: number;
   initialZoom?: number;
@@ -36,7 +37,7 @@ export function WorkflowTimeline({
   horizontalSpacing = DEFAULT_HORIZONTAL_SPACING,
   verticalSpacing = DEFAULT_VERTICAL_SPACING,
   initialZoom = 1,
-}: CICDDeploymentProps) {
+}: WorkflowTimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(initialZoom);
 
@@ -100,7 +101,9 @@ export function WorkflowTimeline({
             })}
           </svg>
           {/* Nodes rendered after lines */}
-          {nodes.map((node, index) => (
+          {nodes
+            .sort((a, b) => a.time.getTime() - b.time.getTime())
+            .map((node, index) => (
             <div
               key={node.id}
               className="absolute flex items-center"
@@ -113,7 +116,7 @@ export function WorkflowTimeline({
                 onClick={() => node.interactive && onNodeClick?.(node)}
                 className={cn(
                   "w-16 h-16 rounded-lg flex items-center justify-center shadow-md transition-transform duration-200",
-                  node.color || "bg-gray-500",
+                  node.color || "bg-gray-200",
                   node.interactive && "hover:scale-110 cursor-pointer",
                   node.interactive && "active:scale-105"
                 )}
@@ -124,7 +127,8 @@ export function WorkflowTimeline({
               </div>
               <div className="flex flex-col ml-3">
                 <span className="text-xs font-semibold text-foreground">{node.title}</span>
-                <span className="text-xs text-muted-foreground">{node.label}</span>
+                {node.label && (<span className="text-xs text-muted-foreground">{node.label}</span>)}
+                <span className="text-xs text-muted-foreground">{formatRelative(node.time, new Date())}</span>
               </div>
             </div>
           ))}

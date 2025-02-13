@@ -1247,6 +1247,20 @@ export const definition = {
     responses: {
       404: z.undefined(),
       200: z.object({
+        events: z.array(
+          z.object({
+            type: z.string(),
+            machineId: z.string().nullable(),
+            createdAt: z.date(),
+            jobId: z.string().nullable(),
+            targetFn: z.string().nullable(),
+            resultType: z.string().nullable(),
+            status: z.string().nullable(),
+            workflowId: z.string().nullable(),
+            meta: z.any().nullable(),
+            id: z.string(),
+          })
+        ),
         runs: z.array(
           z.object({
             id: z.string(),

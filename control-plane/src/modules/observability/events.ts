@@ -152,7 +152,7 @@ export const write = (event: Event, syntheticDelay = 0) => {
   });
 };
 
-export const getActivityForTimeline = async (params: {
+export const getEventsForRunTimeline = async (params: {
   clusterId: string;
   runId: string;
   after?: string;
@@ -184,7 +184,7 @@ export const getActivityForTimeline = async (params: {
   return results;
 };
 
-export const getMetaForActivity = async (params: { clusterId: string; eventId: string }) => {
+export const getMetaForEvent = async (params: { clusterId: string; eventId: string }) => {
   const s = await db
     .select({
       id: eventsTable.id,
@@ -210,7 +210,7 @@ export const getMetaForActivity = async (params: { clusterId: string; eventId: s
   return s[0];
 };
 
-export const getActivityByClusterId = async (params: {
+export const getEventsByClusterId = async (params: {
   clusterId: string;
   filters?: {
     type?: string;
@@ -252,7 +252,7 @@ export const getActivityByClusterId = async (params: {
   return results;
 };
 
-export const getActivityByJobId = async (params: { jobId: string; clusterId: string }) => {
+export const getEventsForJobId = async (params: { jobId: string; clusterId: string }) => {
   const results = await db
     .select({
       id: eventsTable.id,

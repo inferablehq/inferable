@@ -7,6 +7,7 @@ import * as data from "../data";
 import { and, eq, sql } from "drizzle-orm";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
+import { getEventsForJobId } from "../observability/events";
 
 export const getWorkflowExecutionTimeline = async ({
   executionId,
@@ -63,10 +64,16 @@ export const getWorkflowExecutionTimeline = async ({
     executionId
   })
 
+  const events = await getEventsForJobId({
+    jobId: execution.jobId,
+    clusterId
+  })
+
   return {
     execution,
     runs,
     job,
+    events,
   }
 }
 
