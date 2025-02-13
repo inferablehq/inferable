@@ -7,7 +7,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ServerConnectionStatus } from "@/components/server-connection-pane";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -77,27 +84,27 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
       {workflows.length === 0 ? (
         <p className="text-muted-foreground text-center">No workflows found</p>
       ) : (
-          <Table>
-            <TableHeader>
-              <TableRow header>
-                <TableHead>Name</TableHead>
-                <TableHead>Version</TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow header>
+              <TableHead>Name</TableHead>
+              <TableHead>Version</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {workflows.map((workflow, index) => (
+              <TableRow
+                key={index}
+                onClick={() => handleWorkflowClick(workflow.name)}
+                className="cursor-pointer"
+              >
+                <TableCell>{workflow.name}</TableCell>
+                <TableCell>{workflow.version}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {workflows.map((workflow, index) => (
-                <TableRow
-                  key={index}
-                  onClick={() => handleWorkflowClick(workflow.name)}
-                  className="cursor-pointer"
-                >
-                  <TableCell>{workflow.name}</TableCell>
-                  <TableCell>{workflow.version}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

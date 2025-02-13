@@ -3,7 +3,7 @@
 import { WorkflowTimeline, DeploymentNode } from "@/components/workflow-timeline";
 import { Run } from "@/components/run";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Bot, Terminal, Clock } from "lucide-react";
+import { Bot, Terminal, Clock, Cross } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { client } from "@/client/client";
@@ -11,6 +11,7 @@ import { createErrorToast } from "@/lib/utils";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { contract } from "@/client/contract";
 import { formatRelative } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 export default function WorkflowExecutionDetailsPage({
   params,
@@ -61,6 +62,39 @@ export default function WorkflowExecutionDetailsPage({
   useEffect(() => {
     fetchWorkflowExecution();
   }, [fetchWorkflowExecution]);
+
+  const submitApproval = useCallback(
+    async ({ approved }: { approved: boolean }) => {
+      const clusterId = params.clusterId;
+      const jobId = timeline?.job.id;
+
+      if (!clusterId || !jobId) {
+        return;
+      }
+
+      const result = await client.createJobApproval({
+        body: {
+          approved,
+        },
+        headers: {
+          authorization: `Bearer ${await getToken()}`,
+        },
+        params: {
+          clusterId,
+          jobId,
+        },
+      });
+
+      if (result.status !== 204) {
+        createErrorToast(result, "Failed to approve call");
+      } else {
+        setTimeout(() => {
+          fetchWorkflowExecution();
+        }, 1000);
+      }
+    },
+    [getToken, params.clusterId, timeline?.job.id]
+  );
 
   const deploymentNodes =
     timeline?.runs.map(run => ({
@@ -128,6 +162,32 @@ export default function WorkflowExecutionDetailsPage({
           </div>
         </div>
       </div>
+
+      {timeline.job.approvalRequested && timeline.job.approved === null && (
+        <div className="p-6 mb-6 rounded-lg border flex items-center justify-between">
+          The Workflow is currently paused awaiting approval.
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => {
+                submitApproval({ approved: true });
+              }}
+            >
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                submitApproval({ approved: false });
+              }}
+            >
+              Deny
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={!!selectedRunId} onOpenChange={() => setSelectedRunId(null)}>
         <DialogContent className="max-w-[90vw] w-[1200px] p-1">

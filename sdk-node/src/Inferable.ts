@@ -7,7 +7,7 @@ import * as links from "./links";
 import { machineId } from "./machine-id";
 import { PollingAgent, registerMachine } from "./polling";
 import {
-  ContextInput,
+  JobContext,
   ToolConfig,
   ToolInput,
   ToolRegistrationInput,
@@ -189,7 +189,7 @@ export class Inferable {
   }: {
     name: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    func: (input: ToolInput<T>, context: ContextInput) => any;
+    func: (input: ToolInput<T>, context: JobContext) => any;
     inputSchema: T;
     config?: ToolConfig;
     description?: string;

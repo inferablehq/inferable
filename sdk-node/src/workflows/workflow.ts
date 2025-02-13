@@ -5,7 +5,7 @@ import { cyrb53 } from "../util/cybr53";
 import { InferableAPIError, InferableError } from "../errors";
 import { createApiClient } from "../create-client";
 import { PollingAgent } from "../polling";
-import { ToolRegistrationInput } from "../types";
+import { JobContext, ToolRegistrationInput } from "../types";
 import { Interrupt } from "../util";
 
 type WorkflowInput = {
@@ -52,7 +52,7 @@ type WorkflowContext<TInput> = {
     }) => Promise<{ result: TAgentResult }>;
   };
   input: TInput;
-};
+} & Pick<JobContext, 'approved'>;
 
 class WorkflowPausableError extends Error {
   constructor(message: string) {
@@ -121,10 +121,11 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     };
   }
 
-  private createContext(
+  private createWorkflowContext(
     version: number,
     executionId: string,
     input: TInput,
+    jobCtx: JobContext
   ): WorkflowContext<TInput> {
     this.logger?.info("Creating workflow context", {
       version,
@@ -133,11 +134,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     });
 
     return {
+      ...jobCtx,
       effect: async (
         name: string,
         fn: (ctx: WorkflowContext<TInput>) => Promise<void>,
       ) => {
-        const ctx = this.createContext(version, executionId, input);
+        const ctx = this.createWorkflowContext(version, executionId, input, jobCtx);
 
         const rand = crypto.randomUUID();
 
@@ -190,13 +192,13 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         name: string,
         fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,
       ): Promise<TResult> => {
-        const ctx = this.createContext(version, executionId, input);
+        const ctx = this.createWorkflowContext(version, executionId, input, jobCtx);
 
         const serialize = (value: unknown) => JSON.stringify({ value });
         const deserialize = (value: string) => {
           try {
             return JSON.parse(value).value;
-          } catch (e) {
+          } catch {
             return null;
           }
         };
@@ -348,14 +350,14 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
 
     this.versionHandlers.forEach((handler, version) => {
       tools.push({
-        func: async (input: TInput) => {
+        func: async (input: TInput, jobCtx) => {
           if (!input.executionId) {
             const error =
               "executionId field must be provided in the workflow input, and must be a string";
             this.logger?.error(error);
             throw new Error(error);
           }
-          const ctx = this.createContext(version, input.executionId, input);
+          const ctx = this.createWorkflowContext(version, input.executionId, input, jobCtx);
           try {
             return await handler(ctx, input);
           } catch (e) {

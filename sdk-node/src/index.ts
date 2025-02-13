@@ -25,7 +25,7 @@ export const masked = () => {
 export {
   onStatusChangeInput,
   handleCustomAuthInput,
-  ContextInput,
+  JobContext,
 } from "./types";
 
 export {

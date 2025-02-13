@@ -3,7 +3,14 @@
 import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
@@ -12,23 +19,25 @@ import { ServerConnectionStatus } from "@/components/server-connection-pane";
 import { useRouter } from "next/navigation";
 
 export default function WorkflowDetailsPage({
-  params
+  params,
 }: {
   params: {
-    clusterId: string,
-    workflowName: string
-  }
+    clusterId: string;
+    workflowName: string;
+  };
 }) {
   const router = useRouter();
   const { getToken } = useAuth();
   const user = useUser();
-  const [executions, setExecutions] = useState<{
-    id: string;
-    workflowName: string;
-    workflowVersion: number;
-    createdAt: Date;
-    updatedAt: Date;
-  }[]>([]);
+  const [executions, setExecutions] = useState<
+    {
+      id: string;
+      workflowName: string;
+      workflowVersion: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchWorkflowExecutions = useCallback(async () => {
@@ -86,21 +95,25 @@ export default function WorkflowDetailsPage({
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl mb-2"><pre>{params.workflowName}</pre></h1>
+      <h1 className="text-2xl mb-2">
+        <pre>{params.workflowName}</pre>
+      </h1>
       {executions.length === 0 ? (
         <p className="text-muted-foreground text-center">No workflow executions found</p>
       ) : (
-          <Table>
-            <TableHeader>
-              <TableRow header>
-                <TableHead>Execution ID</TableHead>
-                <TableHead>Version</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead>Updated At</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {executions.map((execution, index) => (
+        <Table>
+          <TableHeader>
+            <TableRow header>
+              <TableHead>Execution ID</TableHead>
+              <TableHead>Version</TableHead>
+              <TableHead>Created At</TableHead>
+              <TableHead>Updated At</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {executions
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .map((execution, index) => (
                 <TableRow
                   key={index}
                   onClick={() => handleExecutionClick(execution.id)}
@@ -112,9 +125,9 @@ export default function WorkflowDetailsPage({
                   <TableCell>{execution.updatedAt.toLocaleString()}</TableCell>
                 </TableRow>
               ))}
-            </TableBody>
-          </Table>
-        )}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { ToolConfigSchema } from "./contract";
 /**
  * Context object which is passed to function calls
  */
-export type ContextInput = {
+export type JobContext = {
   authContext?: unknown;
   runContext?: unknown;
   approved: boolean;
@@ -83,7 +83,7 @@ export type ToolRegistrationInput<
 > = {
   name: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  func: (input: ToolInput<T>, context: ContextInput) => any;
+  func: (input: ToolInput<T>, context: JobContext) => any;
   schema?: ToolSchema<T>;
   config?: ToolConfig;
   description?: string;
