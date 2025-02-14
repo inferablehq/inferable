@@ -160,7 +160,8 @@ const genericMessageDataSchema = z
 const resultDataSchema = z
   .object({
     id: z.string(),
-    toolName: z.string().optional(),
+    toolName: z.string(),
+    resultType: z.enum(["resolution", "rejection"]),
     result: z.object({}).passthrough(),
   })
   .strict();

@@ -164,6 +164,8 @@ describe("assertRunReady", () => {
     {
       data: {
         id: "some-id",
+        toolName: "console_echo",
+        resultType: "resolution",
         result: {
           data: "some tool message",
         },

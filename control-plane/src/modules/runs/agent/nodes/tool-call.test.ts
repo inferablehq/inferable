@@ -229,9 +229,10 @@ describe("handleToolCalls", () => {
         {
           id: ulid(),
           type: "invocation-result" as const,
-          message: "",
           data: {
             id: "456",
+            toolName: "console_echo",
+            resultType: "resolution" as const,
             result: { output: "world" },
           },
           runId: run.id,

@@ -102,6 +102,8 @@ describe("postStartEdge", () => {
           type: "invocation-result" as const,
           data: {
             id: "456",
+            toolName: "console_echo",
+            resultType: "resolution",
             result: { output: "world" },
           },
           runId: baseState.run.id,
@@ -149,6 +151,8 @@ describe("postStartEdge", () => {
           type: "invocation-result" as const,
           data: {
             id: "456",
+            toolName: "console_echo",
+            resultType: "resolution",
             result: { output: "world" },
           },
           runId: baseState.run.id,
@@ -159,6 +163,8 @@ describe("postStartEdge", () => {
           type: "invocation-result" as const,
           data: {
             id: "123",
+            toolName: "console_echo",
+            resultType: "resolution",
             result: { output: "hello" },
           },
           runId: baseState.run.id,
@@ -200,6 +206,8 @@ describe("postStartEdge", () => {
           type: "invocation-result" as const,
           data: {
             id: "123",
+            toolName: "console_echo",
+            resultType: "resolution",
             result: { output: "hello" },
           },
           runId: baseState.run.id,

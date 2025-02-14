@@ -156,6 +156,7 @@ const _handleToolCall = async (
           id: ulid(),
           type: "invocation-result" as const,
           data: {
+            resultType: "rejection",
             result: {
               message: `Failed to find tool: ${toolName}. This might mean that the service that provides this tool is down. Human must be prompted to ask the devs whether to tool "toolName" is connected.`,
               error,
@@ -230,6 +231,7 @@ const _handleToolCall = async (
             id: ulid(),
             type: "invocation-result",
             data: {
+              resultType: "rejection",
               result: {
                 [toolCallId]: response,
               },
@@ -274,6 +276,7 @@ const _handleToolCall = async (
             id: ulid(),
             type: "invocation-result",
             data: {
+              resultType: "resolution",
               result: {
                 [toolCallId]: response,
               },
@@ -326,6 +329,7 @@ const _handleToolCall = async (
             id: ulid(),
             type: "invocation-result",
             data: {
+              resultType: "rejection",
               result: {
                 message: `Provided input did not match schema for ${toolName}, check your input`,
                 parseResult: error.validatorResult.errors,
@@ -375,6 +379,7 @@ const _handleToolCall = async (
           id: ulid(),
           type: "invocation-result",
           data: {
+            resultType: "rejection",
             result: {
               message: `Failed to invoke ${toolName}`,
               error,

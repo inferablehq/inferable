@@ -160,7 +160,8 @@ const genericMessageDataSchema = z
 const resultDataSchema = z
   .object({
     id: z.string(),
-    toolName: z.string().optional(),
+    toolName: z.string(),
+    resultType: z.enum(["resolution", "rejection"]),
     result: z.object({}).passthrough(),
   })
   .strict();
@@ -758,7 +759,7 @@ export const definition = {
           targetFn: z.string().nullable(),
           resultType: z.string().nullable(),
           status: z.string().nullable(),
-          workflowId: z.string().nullable(),
+          runId: z.string().nullable(),
           meta: z.any().nullable(),
           id: z.string(),
         })
@@ -770,7 +771,7 @@ export const definition = {
       type: z.string().optional(),
       jobId: z.string().optional(),
       machineId: z.string().optional(),
-      workflowId: z.string().optional(),
+      runId: z.string().optional(),
       includeMeta: z.string().optional(),
     }),
   },
@@ -1188,6 +1189,8 @@ export const definition = {
         z.object({
           name: z.string(),
           version: z.number(),
+          description: z.string().nullable(),
+          schema: z.string().nullable(),
         })
       ),
       401: z.undefined(),
@@ -1228,12 +1231,84 @@ export const definition = {
           workflowName: z.string(),
           workflowVersion: z.number(),
           createdAt: z.date(),
-          updatedAt: z.date(),
+          job: z.object({
+            id: z.string(),
+            status: z.string(),
+            targetFn: z.string(),
+            executingMachineId: z.string().nullable(),
+            targetArgs: z.string(),
+            result: z.string().nullable(),
+            resultType: z.string().nullable(),
+            createdAt: z.date(),
+            approved: z.boolean().nullable(),
+            approvalRequested: z.boolean().nullable(),
+          })
         })
       ),
       401: z.undefined(),
     },
   },
+
+  getWorkflowExecutionTimeline: {
+    method: "GET",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions/:executionId/timeline",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      workflowName: z.string(),
+      executionId: z.string(),
+    }),
+    responses: {
+      404: z.undefined(),
+      200: z.object({
+        events: z.array(
+          z.object({
+            type: z.string(),
+            machineId: z.string().nullable(),
+            createdAt: z.date(),
+            jobId: z.string().nullable(),
+            targetFn: z.string().nullable(),
+            resultType: z.string().nullable(),
+            status: z.string().nullable(),
+            runId: z.string().nullable(),
+            meta: z.any().nullable(),
+            id: z.string(),
+          })
+        ),
+        runs: z.array(
+          z.object({
+            id: z.string(),
+            name: z.string(),
+            userId: z.string().nullable(),
+            failureReason: z.string().nullable(),
+            createdAt: z.date(),
+            type: z.enum(["single-step", "multi-step"]),
+            status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+            modelIdentifier: z.string().nullable(),
+          })
+        ),
+        execution: z.object({
+          id: z.string(),
+          workflowName: z.string(),
+          workflowVersion: z.number(),
+          createdAt: z.date(),
+          job: z.object({
+            id: z.string(),
+            status: z.string(),
+            targetFn: z.string(),
+            executingMachineId: z.string().nullable(),
+            targetArgs: z.string(),
+            result: z.string().nullable(),
+            resultType: z.string().nullable(),
+            createdAt: z.date(),
+            approved: z.boolean().nullable(),
+            approvalRequested: z.boolean().nullable(),
+          })
+        }),
+      }),
+    },
+  },
+
 
   // KV Endpoints
   setClusterKV: {
