@@ -4,35 +4,30 @@ import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { createErrorToast } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
-import { PlayIcon, PlusIcon, UserIcon, XIcon, ExternalLinkIcon } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { z } from "zod";
-import { Badge } from "./ui/badge";
 import { RunTab } from "./run-tab";
 import { ServerConnectionStatus } from "./server-connection-pane";
+import { ExternalLinkIcon } from "lucide-react";
 
 type WorkflowListProps = {
   clusterId: string;
 };
 
-const runFiltersSchema = z.object({
-  test: z.boolean().optional(),
-});
-
 export function RunList({ clusterId }: WorkflowListProps) {
   const router = useRouter();
-  const { getToken, userId } = useAuth();
+  const { getToken } = useAuth();
   const user = useUser();
-  const [runToggle, setRunToggle] = useState("all");
   const [limit, setLimit] = useState(20);
   const [hasMore, setHasMore] = useState(true);
-  const [workflows, setWorkflows] = useState<
+  const [showWorkflowRuns, setShowWorkflowRuns] = useState(false);
+  const [runs, setRuns] = useState<
     ClientInferResponseBody<typeof contract.listRuns, 200>
   >([]);
+
   const goToCluster = useCallback(
     (c: string) => {
       router.push(`/clusters/${c}/runs`);
@@ -40,33 +35,14 @@ export function RunList({ clusterId }: WorkflowListProps) {
     [router]
   );
 
-  const goToWorkflow = useCallback(
+  const goToRun = useCallback(
     (c: string, w: string) => {
       router.push(`/clusters/${c}/runs/${w}`);
     },
     [router]
   );
 
-  const searchParams = useSearchParams();
-  const runFiltersQuery = searchParams?.get("filters");
-
-  const [runFilters, setRunFilters] = useState<z.infer<typeof runFiltersSchema>>({});
-  const path = usePathname();
-
-  useEffect(() => {
-    if (!runFiltersQuery) {
-      return;
-    }
-
-    const parsedFilters = runFiltersSchema.safeParse(JSON.parse(runFiltersQuery));
-    if (parsedFilters.success) {
-      setRunFilters(parsedFilters.data);
-    } else {
-      createErrorToast(parsedFilters.error, "Invalid filters specified");
-    }
-  }, [runFiltersQuery]);
-
-  const fetchWorkflows = useCallback(async () => {
+  const fetchRuns = useCallback(async () => {
     if (!clusterId || !user.isLoaded) {
       return;
     }
@@ -76,8 +52,6 @@ export function RunList({ clusterId }: WorkflowListProps) {
         authorization: `Bearer ${await getToken()}`,
       },
       query: {
-        test: runFilters.test ? "true" : undefined,
-        userId: (runToggle === "mine" ? `clerk:${userId}` : undefined) ?? undefined,
         limit: Math.min(limit, 500), // Ensure limit doesn't exceed 500
       },
       params: {
@@ -86,21 +60,23 @@ export function RunList({ clusterId }: WorkflowListProps) {
     });
 
     if (result.status === 200) {
-      setWorkflows(result.body);
-      setHasMore(result.body.length === limit && limit < 50);
+      const filteredRuns = !showWorkflowRuns ? result.body.filter(run => run.workflowName == null) : result.body;
+
+      setRuns(filteredRuns);
+      setHasMore(filteredRuns.length === limit && limit < 50);
     } else {
       ServerConnectionStatus.addEvent({
         type: "listRuns",
         success: false,
       });
     }
-  }, [clusterId, getToken, runToggle, userId, user.isLoaded, limit, runFilters]);
+  }, [clusterId, getToken, user.isLoaded, limit, showWorkflowRuns]);
 
   useEffect(() => {
-    fetchWorkflows();
-    const interval = setInterval(fetchWorkflows, 5000);
+    fetchRuns();
+    const interval = setInterval(fetchRuns, 5000);
     return () => clearInterval(interval);
-  }, [fetchWorkflows]);
+  }, [fetchRuns]);
 
   const loadMore = () => {
     if (limit < 50) {
@@ -131,30 +107,19 @@ export function RunList({ clusterId }: WorkflowListProps) {
           <ExternalLinkIcon className="ml-2 h-4 w-4" />
         </Button>
       </div>
+      <div className="items-right flex gap-2 justify-end mb-4">
+        <span className="text-sm">Include Workflow Runs</span>
+        <Switch
+          checked={showWorkflowRuns}
+          onCheckedChange={setShowWorkflowRuns}
+        />
+      </div>
       <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-15rem)] border-b border-border/50">
-        {!!runFilters.test && (
-          <div className="flex flex-row space-x-2 mb-4 pb-3 border-b border-border/50 items-center justify-between">
-            {runFilters.test && (
-              <Badge
-                className="px-2.5 py-1 cursor-pointer flex items-center gap-1.5 bg-primary/10 text-primary hover:bg-primary/20"
-                onClick={() => {
-                  setRunFilters({});
-                  if (path) {
-                    router.push(path);
-                  }
-                }}
-              >
-                Filtering By Test Runs
-                <XIcon className="h-4 w-4" />
-              </Badge>
-            )}
-          </div>
-        )}
         <div className="rounder-none">
           <RunTab
-            workflows={workflows}
-            onGoToWorkflow={goToWorkflow}
-            onRefetchWorkflows={fetchWorkflows}
+            workflows={runs}
+            onGoToWorkflow={goToRun}
+            onRefetchWorkflows={fetchRuns}
             onGoToCluster={goToCluster}
             clusterId={clusterId}
           />
