@@ -14,6 +14,10 @@ const telemetry = new BullMQOtel("bullmq");
 
 const defaultQueueOptions: Partial<QueueOptions> = {
   telemetry,
+  defaultJobOptions: {
+    removeOnComplete: true,
+    removeOnFail: 100, // keep 100 jobs
+  }
 };
 
 export class QueueWrapper<T extends BaseMessage> {
