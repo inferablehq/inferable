@@ -15,8 +15,12 @@ const telemetry = new BullMQOtel("bullmq");
 const defaultQueueOptions: Partial<QueueOptions> = {
   telemetry,
   defaultJobOptions: {
-    removeOnComplete: true,
-    removeOnFail: 100, // keep 100 jobs
+    removeOnComplete: {
+      age: 300,
+    },
+    removeOnFail: {
+      age: 24 * 3600,
+    }
   }
 };
 
