@@ -10,8 +10,8 @@ import { ClientInferResponseBody } from "@ts-rest/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { RunTab } from "./run-tab";
-import { ServerConnectionStatus } from "./server-connection-pane";
 import { ExternalLinkIcon } from "lucide-react";
+import { createErrorToast } from "@/lib/utils";
 
 type WorkflowListProps = {
   clusterId: string;
@@ -65,10 +65,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
       setRuns(filteredRuns);
       setHasMore(filteredRuns.length === limit && limit < 50);
     } else {
-      ServerConnectionStatus.addEvent({
-        type: "listRuns",
-        success: false,
-      });
+      createErrorToast(result.body, "Failed to load runs");
     }
   }, [clusterId, getToken, user.isLoaded, limit, showWorkflowRuns]);
 
@@ -87,54 +84,26 @@ export function RunList({ clusterId }: WorkflowListProps) {
   };
 
   return (
-    <>
-      <div className="flex gap-2 mb-4">
-        <Button
-          onClick={() => router.push(`/clusters/${clusterId}/runs`)}
-          className="w-full"
-          variant="outline"
-          size="sm"
-        >
-          Start a Conversation
-        </Button>
-        <Button
-          onClick={() => window.open("https://docs.inferable.ai/pages/workflows", "_blank")}
-          className="w-full"
-          variant="outline"
-          size="sm"
-        >
-          Run a Workflow
-          <ExternalLinkIcon className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
-      <div className="items-right flex gap-2 justify-end mb-4">
-        <span className="text-sm">Include Workflow Runs</span>
-        <Switch
-          checked={showWorkflowRuns}
-          onCheckedChange={setShowWorkflowRuns}
+    <ScrollArea className="bg-white transition-all duration-200 overflow-y-auto h-[calc(100vh-12rem)] border-b border-border/50 min-w-[500px]">
+      <div className="rounder-none">
+        <RunTab
+          workflows={runs}
+          onGoToWorkflow={goToRun}
+          onRefetchWorkflows={fetchRuns}
+          onGoToCluster={goToCluster}
+          clusterId={clusterId}
         />
+        {hasMore && (
+          <Button onClick={loadMore} className="w-full mt-4" variant="outline" size="sm">
+            Load More
+          </Button>
+        )}
+        {!hasMore && limit >= 50 && (
+          <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
+            Maximum number of runs loaded. Delete some runs to load older ones.
+          </p>
+        )}
       </div>
-      <ScrollArea className="rounded-lg bg-white shadow-sm transition-all duration-200 overflow-y-auto h-[calc(100vh-15rem)] border-b border-border/50">
-        <div className="rounder-none">
-          <RunTab
-            workflows={runs}
-            onGoToWorkflow={goToRun}
-            onRefetchWorkflows={fetchRuns}
-            onGoToCluster={goToCluster}
-            clusterId={clusterId}
-          />
-          {hasMore && (
-            <Button onClick={loadMore} className="w-full mt-4" variant="outline" size="sm">
-              Load More
-            </Button>
-          )}
-          {!hasMore && limit >= 50 && (
-            <p className="text-sm text-muted-foreground mt-4 text-center mb-2">
-              Maximum number of runs loaded. Delete some runs to load older ones.
-            </p>
-          )}
-        </div>
-      </ScrollArea>
-    </>
+    </ScrollArea>
   );
 }

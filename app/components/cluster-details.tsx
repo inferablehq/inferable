@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Blocks, Cpu, Plus, PlusCircleIcon } from "lucide-react";
 import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
+import Link from "next/link";
 
 import {
   Table,
@@ -94,6 +95,80 @@ function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clu
   );
 }
 
+function FlatWorkflowsList({ tools, clusterId }: { tools: ClusterState["tools"]; clusterId: string }) {
+  const allWorkflows = tools.sort((a, b) => a.name.localeCompare(b.name));
+
+  return (
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="w-1/3">Workflow</TableHead>
+            <TableHead className="w-1/3">Status</TableHead>
+            <TableHead className="w-1/3">Last Update</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {allWorkflows.map(workflow => {
+            const isActive =
+              new Date(workflow.createdAt) > new Date() ||
+              Date.now() - new Date(workflow.createdAt).getTime() < 1000 * 60;
+
+            return (
+              <TableRow key={`${workflow.name}`} className="hover:bg-secondary/40">
+                <TableCell>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{workflow.name.replace('workflows_', '')}</span>
+                      <ToolContextButton clusterId={clusterId} tool={workflow} />
+                    </div>
+                    <div
+                      className="truncate text-xs text-muted-foreground max-w-[40vw] font-mono"
+                      title={workflow.description || "No description"}
+                    >
+                      {workflow.description || "No description"}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Blocks className="w-3 h-3 text-primary" />
+                    </div>
+                    <span className="font-medium">Active</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {!workflow.shouldExpire ? (
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500" />
+                      <span>Permanent Sync</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "w-2 h-2 rounded-full",
+                          isActive ? "bg-green-500" : "bg-gray-300"
+                        )}
+                      />
+                      <span className="font-mono text-sm">
+                        {formatDistance(new Date(workflow.createdAt), new Date(), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export default function ServicesOverview({
   clusterId,
   tools,
@@ -144,6 +219,43 @@ export default function ServicesOverview({
         </Sheet>
       ) : (
         <FlatToolsList tools={tools} clusterId={clusterId} />
+      )}
+    </div>
+  );
+}
+
+export function WorkflowsOverview({
+  clusterId,
+  tools,
+}: {
+  clusterId: string;
+  tools: ClusterState["tools"];
+}) {
+  const sortedWorkflows = tools.sort((a, b) => a.name.localeCompare(b.name));
+
+  return (
+    <div>
+      {sortedWorkflows.length === 0 ? (
+        <Link
+          href="https://docs.inferable.ai/pages/from-scratch"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button
+            variant="outline"
+            className="w-full h-[120px] flex flex-col items-center justify-center gap-2 border border-dashed border-gray-200 rounded-xl transition-all duration-200 hover:border-gray-300 hover:bg-gray-50/50"
+          >
+            <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+              <PlusCircleIcon className="w-5 h-5 text-gray-600" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-medium text-gray-900">No Workflows Connected</h3>
+              <p className="text-sm text-gray-500">Click here to add your first workflow</p>
+            </div>
+          </Button>
+        </Link>
+      ) : (
+        <FlatWorkflowsList tools={tools} clusterId={clusterId} />
       )}
     </div>
   );
@@ -344,7 +456,7 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <ServicesOverview clusterId={clusterId} tools={workflowTools} />
+              <WorkflowsOverview clusterId={clusterId} tools={workflowTools} />
             )}
           </div>
         </SheetContent>

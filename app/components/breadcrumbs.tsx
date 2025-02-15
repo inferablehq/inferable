@@ -41,18 +41,18 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
     <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
       <div className="flex items-center gap-2 mr-2">
         <Link
-          href={`/clusters/${clusterId}/runs`}
+          href={`/clusters/${clusterId}/workflows`}
           className="text-lg text-gray-400 tracking-tight hover:text-gray-600"
         >
           {clusterDetails.body?.name}
         </Link>
         {clusterDetails.body?.isDemo && <Badge variant="secondary">Demo</Badge>}
       </div>
-      <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
-        <PlayCircle className="h-4 w-4" /> Runs
-      </Link>
       <Link href={`/clusters/${clusterId}/workflows`} className={linkStyles}>
         <WorkflowIcon className="h-4 w-4" /> Workflows
+      </Link>
+      <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
+        <PlayCircle className="h-4 w-4" /> Playground
       </Link>
       <Link href={`/clusters/${clusterId}/integrations`} className={linkStyles}>
         <NetworkIcon className="h-4 w-4" /> Integrations

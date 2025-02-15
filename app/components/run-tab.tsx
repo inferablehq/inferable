@@ -14,14 +14,17 @@ import {
   TestTubeIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  WorkflowIcon,
-  ExternalLinkIcon,
+  Bot,
+  Clock,
+  Terminal,
+  Trash2Icon,
+  PlusIcon,
 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Button } from "./ui/button";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { cn } from "@/lib/utils";
 
 const statusToCircle: {
   [key: string]: React.ReactNode;
@@ -32,48 +35,6 @@ const statusToCircle: {
   done: <SmallDeadGreenCircle />,
   failed: <SmallDeadRedCircle />,
 };
-
-type WorkflowGroup = {
-  executionId: string | null;
-  workflowName: string | null;
-  workflowVersion: number | null;
-  workflows: Run[];
-};
-
-function groupWorkflowsByExecution(workflows: Run[]): WorkflowGroup[] {
-  const groups: { [key: string]: WorkflowGroup } = {};
-
-  workflows.forEach(workflow => {
-    const executionId = workflow.workflowExecutionId;
-
-    if (executionId) {
-      if (!groups[executionId]) {
-        groups[executionId] = {
-          executionId,
-          workflowName: workflow.workflowName,
-          workflowVersion: workflow.workflowVersion,
-          workflows: [],
-        };
-      }
-      groups[executionId].workflows.push(workflow);
-    } else {
-      // Create a separate group for standalone runs
-      const standaloneKey = `standalone-${workflow.id}`;
-      groups[standaloneKey] = {
-        executionId: null,
-        workflowName: null,
-        workflowVersion: null,
-        workflows: [workflow],
-      };
-    }
-  });
-
-  return Object.values(groups).sort((a, b) => {
-    const latestA = a.workflows[0]?.createdAt ?? "";
-    const latestB = b.workflows[0]?.createdAt ?? "";
-    return latestA > latestB ? -1 : 1;
-  });
-}
 
 export function RunTab({
   clusterId,
@@ -123,211 +84,108 @@ export function RunTab({
     [onRefetchWorkflows, onGoToCluster, runId, getToken]
   );
 
-  const workflowGroups = groupWorkflowsByExecution(workflows);
-
-  return (
-    <div className="flex flex-col space-y-2 w-full">
-      {workflowGroups.map((group, index) =>
-        group.executionId ? (
-          <Accordion key={group.executionId} type="multiple" defaultValue={[]}>
-            <AccordionItem
-              value={group.executionId}
-              className="border rounded-lg overflow-hidden w-full"
-            >
-              <AccordionTrigger
-                className="px-4 py-2 bg-slate-100 border-b border-slate-200 hover:bg-slate-50 no-underline"
-                onClick={e => {
-                  e.stopPropagation();
-                }}
-              >
-                <div className="flex items-center space-x-2 w-full">
-                  <div className="uppercase tracking-wider text-slate-500 font-medium text-xs">
-                    Workflow ({group.workflows.length} runs)
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="p-0">
-                <div className="flex flex-col items-stretch divide-y p-3 w-full">
-                  <div className="flex justify-between items-center pb-3 border-b">
-                    <div className="flex items-center space-x-2">
-                      <WorkflowIcon className="h-4 w-4 text-slate-500" />
-                      <span className="text-sm font-medium">
-                        {group.workflowName}
-                        {group.workflowVersion && ` v${group.workflowVersion}`}
-                      </span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={e => {
-                        e.stopPropagation();
-                        router.push(
-                          `/clusters/${clusterId}/workflows/${group.workflowName}/${group.executionId}`
-                        );
-                      }}
-                    >
-                      Workflow
-                      <ExternalLinkIcon className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                  {group.workflows.map(workflow => (
-                    <RunPill
-                      key={workflow.id}
-                      workflow={workflow}
-                      runId={runId as string | undefined}
-                      clusterId={clusterId}
-                      onGoToWorkflow={onGoToWorkflow}
-                      workflows={workflows}
-                      userId={userId ?? null}
-                      onDeleteWorkflow={deleteWorkflow}
-                      test={workflow.test}
-                    />
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        ) : (
-          group.workflows.map(workflow => (
-            <RunPill
-              key={workflow.id}
-              workflow={workflow}
-              runId={runId as string | undefined}
-              clusterId={clusterId}
-              onGoToWorkflow={onGoToWorkflow}
-              workflows={workflows}
-              userId={userId ?? null}
-              onDeleteWorkflow={deleteWorkflow}
-              test={workflow.test}
-            />
-          ))
-        )
-      )}
-    </div>
+  // Sort workflows by creation date, newest first
+  const sortedWorkflows = [...workflows].sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
-}
 
-function RunPill({
-  workflow,
-  runId,
-  onGoToWorkflow,
-  onDeleteWorkflow,
-  clusterId,
-  userId,
-}: {
-  workflow: Run;
-  runId?: string;
-  clusterId: string;
-  onGoToWorkflow: (clusterId: string, runId: string) => void;
-  workflows: Run[];
-  userId: string | null;
-  onDeleteWorkflow: (runId: string, clusterId: string) => void;
-  test: boolean;
-}) {
-  const router = useRouter();
+  const pathname = usePathname();
+
   return (
-    <div
-      key={workflow.id}
-      className={`
-        grid grid-cols-[20px_1fr] items-start hover:bg-gray-50/50 py-3 first:pt-0 last:pb-0
-        relative pl-4 cursor-pointer rounded-md w-full
-        ${
-          runId === workflow.id
-            ? "text-slate-900 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-blue-500"
-            : "text-slate-600"
-        }
-      `}
-      onClick={e => {
-        e.stopPropagation();
-        onGoToWorkflow(clusterId, workflow.id);
-      }}
-    >
-      <div className="p-1">
-        <div className="text-sm">
-          {workflow.status ? statusToCircle[workflow.status] : workflow.status}
-        </div>
-      </div>
-      <div className="min-w-0 pr-4">
-        <span className="flex space-x-2 items-center">
-          <p className="text-xs text-muted-foreground font-mono tracking-tighter truncate">
-            Created {userId === workflow.userId && "by you "}
-            {formatRelative(new Date(workflow.createdAt).getTime(), new Date().getTime())}
-          </p>
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-medium leading-none py-0.5 w-[300px] truncate">
-            {workflow.name}
-          </p>
-          <div className="flex flex-wrap mt-1 gap-1">
-            {workflow.test && (
-              <Tag
-                label={<TestTubeIcon className="h-3 w-3" />}
-                value=""
-                onClick={e => {
-                  e.stopPropagation();
-                  router.push(
-                    `/clusters/${clusterId}/runs?filters=${encodeURIComponent(
-                      JSON.stringify({
-                        test: true,
-                      })
-                    )}`
-                  );
-                }}
-              />
-            )}
-            {workflow.feedbackScore !== null && (
-              <Tag
-                label={
-                  workflow.feedbackScore > 0 ? (
-                    <ThumbsUpIcon className="h-3 w-3" />
-                  ) : (
-                    <ThumbsDownIcon className="h-3 w-3" />
-                  )
-                }
-                value={""}
-              />
-            )}
+    <div className="flex-1 overflow-hidden rounded-sm border bg-card">
+      <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Clock className="w-4 h-4 text-primary" />
           </div>
-          <button
-            onClick={e => {
-              e.stopPropagation();
-              onDeleteWorkflow(workflow.id, clusterId);
-            }}
-            className="mt-1 text-xs text-slate-400 hover:text-red-500 hover:underline"
-          >
-            delete
-          </button>
+          <div>
+            <div className="text-sm font-medium">Runs</div>
+            <div className="text-xs text-muted-foreground font-mono">
+              {workflows.length} runs
+            </div>
+          </div>
         </div>
+        <Button
+          size="sm"
+          onClick={() => router.push(`/clusters/${clusterId}/runs`)}
+          disabled={pathname?.endsWith("/runs")}
+          className="gap-2"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Start a conversation
+        </Button>
       </div>
-    </div>
-  );
-}
-
-function Tag({
-  label,
-  value,
-  onClick,
-}: {
-  label: React.ReactNode;
-  value: string;
-  onClick?: (e: React.MouseEvent) => void;
-}) {
-  return (
-    <div className="inline-block mr-1 mt-0.5" onClick={onClick}>
-      <div
-        className={`
-          inline-flex items-center h-5 px-1.5
-          bg-gray-50 border rounded-md text-xs
-          ${onClick ? "cursor-pointer hover:bg-gray-100 hover:border-gray-300" : ""}
-        `}
-      >
-        <span className="text-gray-500 flex items-center">{label}</span>
-        {value && (
-          <>
-            <span className="mx-1 text-gray-400">=</span>
-            <span className="text-gray-700 font-medium truncate max-w-[150px]">{value}</span>
-          </>
-        )}
+      <div className="overflow-y-auto">
+        <div className="divide-y divide-border">
+          {sortedWorkflows.map((workflow) => (
+            <div
+              key={workflow.id}
+              className={cn(
+                "px-4 py-3 flex items-start gap-4 hover:bg-muted/50 transition-colors cursor-pointer",
+                runId === workflow.id && "bg-muted/50"
+              )}
+              onClick={() => onGoToWorkflow(clusterId, workflow.id)}
+            >
+              <div className="shrink-0 font-mono text-xs text-muted-foreground">
+                {new Date(workflow.createdAt).toLocaleTimeString('en-US', {
+                  hour12: false,
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "p-1 rounded",
+                    workflow.status === "failed" ? "bg-red-100" :
+                    workflow.status === "done" ? "bg-green-100" : "bg-blue-100"
+                  )}>
+                    <Bot className={cn(
+                      "w-3.5 h-3.5",
+                      workflow.status === "failed" ? "text-red-700" :
+                      workflow.status === "done" ? "text-green-700" : "text-blue-700"
+                    )} />
+                  </div>
+                  <span className="text-sm font-medium">{workflow.name}</span>
+                  {workflow.test && (
+                    <div className="px-1.5 py-0.5 bg-muted rounded text-xs flex items-center gap-1">
+                      <TestTubeIcon className="w-3 h-3" />
+                      <span>Test</span>
+                    </div>
+                  )}
+                  {workflow.feedbackScore !== null && (
+                    <div className="px-1.5 py-0.5 bg-muted rounded text-xs flex items-center gap-1">
+                      {workflow.feedbackScore > 0 ? (
+                        <ThumbsUpIcon className="w-3 h-3" />
+                      ) : (
+                        <ThumbsDownIcon className="w-3 h-3" />
+                      )}
+                      <span>Feedback</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    Created {userId === workflow.userId && "by you "}
+                    {formatRelative(new Date(workflow.createdAt), new Date())}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteWorkflow(workflow.id, clusterId);
+                    }}
+                  >
+                    <Trash2Icon className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

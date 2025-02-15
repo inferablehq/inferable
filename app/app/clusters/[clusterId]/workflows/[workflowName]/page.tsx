@@ -13,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
-import { ServerConnectionStatus } from "@/components/server-connection-pane";
 import { useRouter } from "next/navigation";
 import { formatRelative } from "date-fns";
 import { ClientInferResponseBody } from "@ts-rest/core";
@@ -69,10 +68,7 @@ export default function WorkflowDetailsPage({
       if (result.status === 200) {
         setExecutions(result.body);
       } else {
-        ServerConnectionStatus.addEvent({
-          type: "listWorkflowExecutions",
-          success: false,
-        });
+        createErrorToast(result.body, "Failed to load workflow executions");
       }
     } catch (error) {
       createErrorToast(error, "Failed to load workflow executions");

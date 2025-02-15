@@ -14,19 +14,10 @@ export const getWorkflowExecutionTimeline = async ({
   workflowName,
   clusterId,
 }: {
-    executionId: string;
-    workflowName: string;
-    clusterId: string;
-  }) => {
-
-  const tools = await getWorkflowTools({ clusterId, workflowName });
-
-  if (tools.length === 0) {
-    throw new BadRequestError(
-      `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
-    );
-  }
-
+  executionId: string;
+  workflowName: string;
+  clusterId: string;
+}) => {
   const [execution] = await data.db
     .select({
       id: data.workflowExecutions.id,

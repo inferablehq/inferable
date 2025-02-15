@@ -111,7 +111,7 @@ export function DebugEvent({
             </SheetTrigger>
             <SheetContent
               side="right"
-              style={{ minWidth: "80%" }}
+              style={{ minWidth: "60%" }}
               className="overflow-y-auto h-screen bg-white"
             >
               <SheetHeader>
