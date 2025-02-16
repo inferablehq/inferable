@@ -22,67 +22,14 @@ export class PollTimeoutError extends InferableError {
 
 export class InferableAPIError extends Error {
   constructor(message: string, response: unknown) {
-    const genericResponse = z
-      .object({
-        status: z.number(),
-        body: z
-          .object({
-            error: z
-              .object({
-                message: z.string(),
-              })
-              .passthrough(),
-          })
-          .passthrough(),
-      })
-      .safeParse(response);
-
-    const zodErrorResponse = z
-      .object({
-        status: z.number(),
-        body: z.object({
-          bodyErrors: z.object({
-            issues: z.array(
-              z.object({
-                validation: z.string().optional(),
-                code: z.string(),
-                message: z.string(),
-                path: z.array(z.string()),
-              }),
-            ),
-            name: z.literal("ZodError"),
-          }),
-        }),
-      })
-      .safeParse(response);
-
     let msg = message;
 
-    if (genericResponse.success) {
-      msg = genericResponse.data.body.error.message;
-    } else if (zodErrorResponse.success) {
-      msg = Object.entries(zodErrorResponse.data)
-        .filter(([_, value]) => value !== null)
-        .map(([_, value]) => {
-          if (
-            typeof value === "object" &&
-            value !== null &&
-            "bodyErrors" in value
-          ) {
-            return value.bodyErrors.issues
-              ?.map(
-                (issue: { path: string[]; message: string }) =>
-                  `Path=${issue.path.join(".")}, Message=${issue.message}`,
-              )
-              .flat()
-              .filter(Boolean)
-              .join(", ");
-          }
-          return "";
-        })
-        .flat()
-        .filter(Boolean)
-        .join(", ");
+    if (response instanceof Error) {
+      msg += `\n${response.message}`;
+    } else if (typeof response === "string") {
+      msg += `\n${response}`;
+    } else if (typeof response === "object") {
+      msg += `\n${JSON.stringify(response)}`;
     }
 
     super(msg);
