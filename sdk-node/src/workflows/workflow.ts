@@ -113,7 +113,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   version(version: number) {
     return {
       define: (
-        handler: (ctx: WorkflowContext<TInput>, input: TInput) => Promise<void>,
+        handler: (ctx: WorkflowContext<TInput>, input: TInput) => Promise<unknown>,
       ) => {
         this.logger?.info("Defining workflow handler", {
           version,

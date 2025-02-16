@@ -3,7 +3,7 @@ import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { z } from "zod";
 import { JsonSchemaInput, JsonSchema } from "./types";
-import { blobSchema } from "./contract";
+import { blobSchema, interruptSchema } from "./contract";
 
 type ValidationError = {
   path: string;
@@ -279,17 +279,12 @@ export const blob = ({
 
 export const INTERRUPT_KEY = "__inferable_interrupt";
 type VALID_INTERRUPT_TYPES = "approval" | "general";
-const interruptResultSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.enum(["approval", "general"]),
-  }),
-]);
 
 export const extractInterrupt = (
   input: unknown,
-): z.infer<typeof interruptResultSchema> | undefined => {
+): z.infer<typeof interruptSchema> | undefined => {
   if (input && typeof input === "object" && INTERRUPT_KEY in input) {
-    const parsedInterrupt = interruptResultSchema.safeParse(
+    const parsedInterrupt = interruptSchema.safeParse(
       input[INTERRUPT_KEY],
     );
 
@@ -302,21 +297,20 @@ export const extractInterrupt = (
 };
 
 export class Interrupt {
-  [INTERRUPT_KEY]: {
-    type: VALID_INTERRUPT_TYPES;
-  };
+  [INTERRUPT_KEY]: z.infer<typeof interruptSchema>;
 
-  constructor(type: VALID_INTERRUPT_TYPES) {
+  constructor(type: VALID_INTERRUPT_TYPES, notification?: z.infer<typeof interruptSchema>["notification"]) {
     this[INTERRUPT_KEY] = {
       type,
+      notification,
     };
   }
 
-  static approval() {
-    return new Interrupt("approval");
+  static approval(notification?: z.infer<typeof interruptSchema>["notification"]) {
+    return new Interrupt("approval", notification);
   }
 
-  static general() {
-    return new Interrupt("general");
+  static general(notification?: z.infer<typeof interruptSchema>["notification"]) {
+    return new Interrupt("general", notification);
   }
 }

@@ -10,23 +10,76 @@ import AsyncRetry from "async-retry";
 import { onStatusChangeSchema } from "../contract";
 import { z } from "zod";
 import { resumeWorkflowExecution } from "../workflows/executions";
+import { notificationSchema } from "../contract";
+import { events } from "../observability/events";
 
 export const notifyApprovalRequest = async ({
   jobId,
   clusterId,
-  runId,
   targetFn,
+  runId,
+  notification,
 }: {
   jobId: string;
   clusterId: string;
-  runId: string;
   targetFn: string;
+  runId?: string;
+  notification?: z.infer<typeof notificationSchema>;
 }) => {
-  const tags = await getRunTags({ clusterId, runId });
-  await slack.handleApprovalRequest({ jobId, clusterId, runId, targetFn, tags });
+  // If the approval's Job is within a Run, check if the Run is associated with a Slack thread.
+  if (runId) {
+    const tags = await getRunTags({ clusterId, runId });
+    if (tags?.[slack.THREAD_META_KEY] && tags?.[slack.CHANNEL_META_KEY]) {
+
+      const notification = {
+        destination: {
+          type: "slack" as const,
+          channelId: tags[slack.CHANNEL_META_KEY],
+          threadId: tags[slack.THREAD_META_KEY],
+        }
+      }
+
+      await slack.notifyApprovalRequest({
+        jobId,
+        clusterId,
+        targetFn,
+        notification,
+      });
+
+      events.write({
+        type: "notificationSent",
+        jobId,
+        clusterId,
+        runId,
+        meta: {
+          notification
+        }
+      })
+    }
+  }
+
+  // An approval may have an explcit `notification` object.
+  if (notification && notification.destination?.type === "slack") {
+    await slack.notifyApprovalRequest({
+      jobId,
+      clusterId,
+      targetFn,
+      notification,
+    });
+
+    events.write({
+      type: "notificationSent",
+      jobId,
+      clusterId,
+      runId,
+      meta: {
+        notification
+      }
+    })
+  }
 };
 
-export const notifyNewMessage = async ({
+export const notifyNewRunMessage = async ({
   message,
   tags,
 }: {
@@ -39,7 +92,13 @@ export const notifyNewMessage = async ({
   };
   tags?: Record<string, string>;
 }) => {
-  await slack.notifyNewMessage({ message, tags });
+  // Check if the Run is associated with a Slack thread
+  if (tags?.[slack.THREAD_META_KEY] && tags?.[slack.CHANNEL_META_KEY]) {
+    await slack.notifyNewRunMessage({ message, destination: {
+      channelId: tags[slack.CHANNEL_META_KEY],
+      threadId: tags[slack.THREAD_META_KEY],
+    }});
+  }
 };
 
 export const notifyStatusChange = async ({

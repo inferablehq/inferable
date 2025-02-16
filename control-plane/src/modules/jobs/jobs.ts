@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { env } from "../../utilities/env";
 import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
 import { getBlobsForJobs } from "../blobs";
@@ -9,6 +9,9 @@ import { packer } from "../packer";
 import { resumeRun } from "../runs";
 import { notifyApprovalRequest } from "../runs/notify";
 import { selfHealJobs } from "./self-heal-jobs";
+import { notificationSchema } from "../contract";
+import { z } from "zod";
+import { logger } from "../observability/logger";
 
 export { createJobV2 } from "./create-job";
 export { acknowledgeJob, persistJobResult } from "./job-results";
@@ -150,20 +153,6 @@ export const getJobsForRun = async ({
     );
 };
 
-// Walks a json object and returns all the values
-function walkJson(obj: unknown): string[] {
-  if (typeof obj === "object" && obj !== null) {
-    if (Array.isArray(obj)) {
-      return obj.flatMap(walkJson);
-    } else {
-      return Object.values(obj).flatMap(walkJson);
-    }
-  } else if (typeof obj === "string") {
-    return [obj];
-  }
-  return [];
-}
-
 const waitForPendingJobsByTools = async ({
   clusterId,
   timeout,
@@ -290,7 +279,13 @@ export async function generalInterrupt({ jobId, clusterId }: { jobId: string; cl
     .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
 }
 
-export async function requestApproval({ jobId, clusterId }: { jobId: string; clusterId: string }) {
+export async function requestApproval(
+  { jobId, clusterId, notification }:
+  {
+    jobId: string;
+    clusterId: string,
+    notification?: z.infer<typeof notificationSchema>;}
+) {
   const [updated] = await data.db
     .update(data.jobs)
     .set({
@@ -312,11 +307,38 @@ export async function requestApproval({ jobId, clusterId }: { jobId: string; clu
       clusterId,
       runId: updated.runId,
       targetFn: updated.targetFn,
+      meta: {
+        notification
+      }
     });
   }
 
-  if (updated.runId) {
-    await notifyApprovalRequest(updated);
+  if (!updated.runId || !notification) {
+    return;
+  }
+
+  try {
+    await notifyApprovalRequest({
+      clusterId: updated.clusterId,
+      jobId: updated.jobId,
+      targetFn: updated.targetFn,
+      runId: updated.runId,
+      notification
+    });
+  } catch (e) {
+    logger.warn("Failed to notify approval request", {
+      error: e,
+    });
+
+    events.write({
+      type: "notificationFailed",
+      jobId,
+      clusterId,
+      runId: updated.runId,
+      meta: {
+        error: e,
+      }
+    });
   }
 }
 

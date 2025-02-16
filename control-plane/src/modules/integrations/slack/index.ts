@@ -14,11 +14,11 @@ import { InstallableIntegration } from "../types";
 import { z } from "zod";
 import { getUserForCluster } from "../../clerk";
 import { submitApproval } from "../../jobs/jobs";
-import { integrationSchema, unifiedMessageSchema } from "../../contract";
+import { integrationSchema, notificationSchema, unifiedMessageSchema } from "../../contract";
 import { createExternalMessage } from "../../runs/external-messages";
 
-const THREAD_META_KEY = "slackThreadTs";
-const CHANNEL_META_KEY = "slackChannel";
+export const THREAD_META_KEY = "slackThreadTs";
+export const CHANNEL_META_KEY = "slackChannel";
 
 const CALL_APPROVE_ACTION_ID = "call_approve";
 const CALL_DENY_ACTION_ID = "call_deny";
@@ -94,9 +94,9 @@ export const slack: InstallableIntegration = {
   },
 };
 
-export const notifyNewMessage = async ({
+export const notifyNewRunMessage = async ({
   message,
-  tags,
+  destination,
 }: {
   message: {
     id: string;
@@ -105,13 +105,12 @@ export const notifyNewMessage = async ({
     type: InferSelectModel<typeof runMessages>["type"];
     data: InferSelectModel<typeof runMessages>["data"];
   };
-  tags?: Record<string, string>;
+  destination: {
+    channelId: string;
+    threadId?: string
+  };
 }) => {
   if (message.type !== "agent") {
-    return;
-  }
-
-  if (!tags?.[THREAD_META_KEY] || !tags?.[CHANNEL_META_KEY]) {
     return;
   }
 
@@ -145,8 +144,8 @@ export const notifyNewMessage = async ({
   }
 
   const result = await client?.chat.postMessage({
-    thread_ts: tags[THREAD_META_KEY],
-    channel: tags[CHANNEL_META_KEY],
+    thread_ts: destination.threadId,
+    channel: destination.channelId,
     mrkdwn: true,
     text: messageBody,
   });
@@ -164,20 +163,19 @@ export const notifyNewMessage = async ({
   });
 };
 
-export const handleApprovalRequest = async ({
+export const notifyApprovalRequest = async ({
   jobId,
-  runId,
   clusterId,
   targetFn,
-  tags,
+  notification,
 }: {
   jobId: string;
-  runId: string;
   clusterId: string;
   targetFn: string;
-  tags?: Record<string, string>;
+  notification?: z.infer<typeof notificationSchema>;
 }) => {
-  if (!tags?.[THREAD_META_KEY] || !tags?.[CHANNEL_META_KEY]) {
+
+  if (notification?.destination?.type !== "slack") {
     return;
   }
 
@@ -195,11 +193,56 @@ export const handleApprovalRequest = async ({
 
   const client = new webApi.WebClient(token);
 
-  const text = `I need your approval to call \`${targetFn}\` on run <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${runId}|${runId}>`;
+  let channelId = notification?.destination?.channelId;
+  let userId = notification?.destination?.userId;
+
+  const email = notification?.destination?.email;
+  const threadId = notification?.destination?.threadId;
+
+  if (!channelId && !threadId && email) {
+    logger.info("Finding Slack userId from email")
+
+    // Find user's email
+    const user = await client.users.lookupByEmail({
+      email: email
+    });
+
+    // Check if the user was found successfully
+    if (!user.ok || !user.user?.id) {
+      throw new Error(
+        `Failed to find Slack user with email: ${user.error}`,
+      );
+    }
+
+    userId = user.user?.id;
+  }
+
+  if (!channelId && !threadId && userId) {
+    logger.info("Finding Slack channel with userId")
+
+    const conversations = await client.conversations.open({
+      users: userId
+    });
+
+    // Check if the conversation was opened successfully
+    if (!conversations.ok || !conversations.channel?.id) {
+      throw new Error(
+        `Failed to open Slack conversation with user: ${conversations.error}`,
+      );
+    }
+
+    channelId = conversations.channel?.id;
+  }
+
+  if (!channelId) {
+    throw new Error("Could not determine Slack channel for notification");
+  }
+
+  const text = notification?.message ?? `I need your approval to call \`${targetFn}\`.`;
 
   await client?.chat.postMessage({
-    thread_ts: tags[THREAD_META_KEY],
-    channel: tags[CHANNEL_META_KEY],
+    thread_ts: threadId,
+    channel: channelId,
     mrkdwn: true,
     text,
     blocks: [

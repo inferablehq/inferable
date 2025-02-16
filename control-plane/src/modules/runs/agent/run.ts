@@ -10,7 +10,7 @@ import { embedSearchQuery } from "../../embeddings/embeddings";
 import { ChatIdentifiers } from "../../models/routing";
 import { logger } from "../../observability/logger";
 import { getRunMessages, insertRunMessage } from "../messages";
-import { notifyNewMessage, notifyStatusChange } from "../notify";
+import { notifyNewRunMessage, notifyStatusChange } from "../notify";
 import { generateTitle } from "../summarization";
 import { createRunGraph } from "./agent";
 import { findRelevantTools } from "./tool-search";
@@ -140,7 +140,7 @@ export const processAgentRun = async (
 
       // Insert messages in a loop to ensure they are created with differing timestamps
       for (const message of state.messages.filter(m => !m.persisted)) {
-        await Promise.allSettled([insertRunMessage(message), notifyNewMessage({ message, tags })]);
+        await Promise.allSettled([insertRunMessage(message), notifyNewRunMessage({ message, tags })]);
         message.persisted = true;
       }
     },

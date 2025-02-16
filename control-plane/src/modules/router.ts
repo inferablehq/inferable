@@ -677,13 +677,16 @@ export const router = initServer().router(contract, {
       if (parsed.data.type === "approval") {
         logger.info("Requesting approval", {
           jobId,
+          notification: parsed.data.notification,
         });
 
         await jobs.requestApproval({
           jobId,
           clusterId,
+          notification: parsed.data.notification,
         });
       } else {
+        // TODO: Should general interrupts allow notification?
         await jobs.generalInterrupt({
           jobId,
           clusterId,

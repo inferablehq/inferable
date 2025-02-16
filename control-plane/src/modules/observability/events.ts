@@ -29,6 +29,10 @@ export type EventTypes =
   | "machineRegistered"
   | "machinePinged"
 
+  // Notifications
+  | "notificationSent"
+  | "notificationFailed"
+
   // Misc
   | "modelInvoked"
   | "feedbackSubmitted"

@@ -62,7 +62,7 @@ const config: IntegrationConfig = {
   },
   slack: {
     name: "Slack",
-    description: "Trigger Runs from your Slack workspace",
+    description: "Receive notifications and converse with your Agents via Slack.",
     icon: Slack,
     stage: "stable",
     category: "Triggers",

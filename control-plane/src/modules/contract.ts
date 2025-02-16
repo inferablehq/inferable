@@ -19,9 +19,23 @@ const functionReference = z.object({
 
 const anyObject = z.object({}).passthrough();
 
+export const notificationSchema = z.object({
+  destination: z.discriminatedUnion("type", [
+    z.object({
+      type: z.literal("slack"),
+      channelId: z.string().optional(),
+      threadId: z.string().optional(),
+      userId: z.string().optional(),
+      email: z.string().optional(),
+    }),
+  ]).optional(),
+  message: z.string().optional(),
+});
+
 export const interruptSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.enum(["approval", "general"]),
+    notification: notificationSchema.optional(),
   }),
 ]);
 
