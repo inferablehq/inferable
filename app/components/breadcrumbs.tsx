@@ -1,5 +1,8 @@
+"use client";
+
 import { client } from "@/client/client";
-import { auth } from "@clerk/nextjs";
+import { contract } from "@/client/contract";
+import { useAuth } from "@clerk/nextjs";
 import {
   ExternalLink,
   Network,
@@ -10,32 +13,40 @@ import {
   WorkflowIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import ErrorDisplay from "./error-display";
 import { LiveCheck } from "./live-check";
 import { Badge } from "./ui/badge";
+import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { ClientInferResponseBody } from "@ts-rest/core";
 
 interface ClusterBreadcrumbsProps {
   clusterId: string;
+  clusterName?: string;
+  isDemo?: boolean;
 }
 
 const linkStyles =
   "flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-slate-50 rounded-sm transition-all gap-2 border border-transparent hover:border-gray-100";
 
-export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps) {
-  const { getToken } = auth();
+const activeLinkStyles =
+  "bg-slate-100 text-gray-900 border-gray-200";
 
-  const clusterDetails = await client.getCluster({
-    headers: { authorization: `Bearer ${await getToken()}` },
-    params: { clusterId },
-  });
+function BreadcrumbLinks({ clusterId, clusterName, isDemo }: ClusterBreadcrumbsProps) {
+  const pathname = usePathname();
 
-  if (clusterDetails.status !== 200) {
-    return (
-      <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
-        <ErrorDisplay error={clusterDetails.body} status={clusterDetails.status} />
-      </div>
-    );
-  }
+  const isCurrentPath = (path: string) => {
+    // Special case for clusters page to avoid matching all paths
+    if (path === '/clusters') {
+      return pathname === '/clusters';
+    }
+    return pathname.startsWith(path);
+  };
+
+  const getLinkStyles = (path: string) => {
+    return cn(linkStyles, isCurrentPath(path) && activeLinkStyles);
+  };
 
   return (
     <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
@@ -44,23 +55,38 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
           href={`/clusters/${clusterId}/workflows`}
           className="text-lg text-gray-400 tracking-tight hover:text-gray-600"
         >
-          {clusterDetails.body?.name}
+          {clusterName}
         </Link>
-        {clusterDetails.body?.isDemo && <Badge variant="secondary">Demo</Badge>}
+        {isDemo && <Badge variant="secondary">Demo</Badge>}
       </div>
-      <Link href={`/clusters/${clusterId}/workflows`} className={linkStyles}>
+      <Link
+        href={`/clusters/${clusterId}/workflows`}
+        className={getLinkStyles(`/clusters/${clusterId}/workflows`)}
+      >
         <WorkflowIcon className="h-4 w-4" /> Workflows
       </Link>
-      <Link href={`/clusters/${clusterId}/runs`} className={linkStyles}>
+      <Link
+        href={`/clusters/${clusterId}/runs`}
+        className={getLinkStyles(`/clusters/${clusterId}/runs`)}
+      >
         <PlayCircle className="h-4 w-4" /> Playground
       </Link>
-      <Link href={`/clusters/${clusterId}/integrations`} className={linkStyles}>
+      <Link
+        href={`/clusters/${clusterId}/integrations`}
+        className={getLinkStyles(`/clusters/${clusterId}/integrations`)}
+      >
         <NetworkIcon className="h-4 w-4" /> Integrations
       </Link>
-      <Link href={`/clusters/${clusterId}/usage`} className={linkStyles}>
+      <Link
+        href={`/clusters/${clusterId}/usage`}
+        className={getLinkStyles(`/clusters/${clusterId}/usage`)}
+      >
         <BarChart2 className="h-4 w-4" /> Usage
       </Link>
-      <Link href={`/clusters/${clusterId}/settings`} className={linkStyles}>
+      <Link
+        href={`/clusters/${clusterId}/settings`}
+        className={getLinkStyles(`/clusters/${clusterId}/settings`)}
+      >
         <Settings className="h-4 w-4" /> Settings
       </Link>
       <Link href={`https://docs.inferable.ai`} target="_blank" className={linkStyles}>
@@ -73,10 +99,69 @@ export async function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps)
   );
 }
 
-export async function GlobalBreadcrumbs() {
+export function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps) {
+  const { getToken } = useAuth();
+  const [clusterDetails, setClusterDetails] = useState<ClientInferResponseBody<typeof contract.getCluster, 200> | null>(null);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchClusterDetails = async () => {
+      try {
+        const response = await client.getCluster({
+          headers: {
+            authorization: `Bearer ${await getToken()}`,
+          },
+          params: { clusterId },
+        });
+
+        if (response.status === 200) {
+          setClusterDetails(response.body);
+        } else {
+          setError(response);
+        }
+      } catch (err) {
+        setError(err);
+      }
+    };
+
+    fetchClusterDetails();
+  }, [clusterId, getToken]);
+
+  if (error) {
+    return (
+      <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
+        <ErrorDisplay error={error.body} status={error.status} />
+      </div>
+    );
+  }
+
+  return (
+    <BreadcrumbLinks
+      clusterId={clusterId}
+      clusterName={clusterDetails?.name}
+      isDemo={clusterDetails?.isDemo}
+    />
+  );
+}
+
+export function GlobalBreadcrumbs() {
+  const pathname = usePathname();
+
+  const isCurrentPath = (path: string) => {
+    // Special case for clusters page to avoid matching all paths
+    if (path === '/clusters') {
+      return pathname === '/clusters';
+    }
+    return pathname?.startsWith(path) ?? false;
+  };
+
+  const getLinkStyles = (path: string) => {
+    return cn(linkStyles, isCurrentPath(path) && activeLinkStyles);
+  };
+
   return (
     <div className="px-6 py-2 flex gap-2 border-b bg-white">
-      <Link href={`/clusters`} className={linkStyles}>
+      <Link href={`/clusters`} className={getLinkStyles('/clusters')}>
         <Network className="h-4 w-4" /> Clusters
       </Link>
       <Link href={`https://docs.inferable.ai`} target="_blank" className={linkStyles}>

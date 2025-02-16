@@ -1,10 +1,8 @@
 import { client } from "@/client/client";
 import { GlobalBreadcrumbs } from "@/components/breadcrumbs";
-import { CreateClusterButton } from "@/components/create-cluster-button";
-import ErrorDisplay from "@/components/error-display";
 import { ClustersTable } from "@/components/clusters-table";
+import ErrorDisplay from "@/components/error-display";
 import { auth } from "@clerk/nextjs";
-import { Lightbulb } from "lucide-react";
 
 export const metadata = {
   title: "Clusters",

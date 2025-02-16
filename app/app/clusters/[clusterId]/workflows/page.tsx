@@ -233,6 +233,16 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
               <h1 className="text-2xl font-semibold mb-2">Workflows</h1>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Workflows provide a powerful &ldquo;Workflow as Code&rdquo; approach to orchestrating complex, multi-step AI agent interactions.
+                <span className="block mt-2">
+                  Learn more in our{" "}
+                  <Link href="https://docs.inferable.ai/pages/workflows" target="_blank" className="text-primary hover:underline">
+                    Workflows documentation
+                  </Link>
+                  {" "}or get started with our{" "}
+                  <Link href="https://docs.inferable.ai/pages/quick-start" target="_blank" className="text-primary hover:underline">
+                    Quick Start guide
+                  </Link>.
+                </span>
               </p>
             </div>
 
