@@ -99,9 +99,9 @@ export function RunTab({
             <Clock className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <div className="text-sm font-medium">Runs</div>
+            <div className="text-sm font-medium">Conversations</div>
             <div className="text-xs text-muted-foreground font-mono">
-              {workflows.length} runs
+              {workflows.length} conversations
             </div>
           </div>
         </div>
@@ -112,7 +112,7 @@ export function RunTab({
           className="gap-2"
         >
           <PlusIcon className="h-4 w-4" />
-          Start a conversation
+          New Conversation
         </Button>
       </div>
       <div className="overflow-y-auto">

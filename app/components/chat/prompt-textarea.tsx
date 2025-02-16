@@ -185,14 +185,6 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     tools.some(tool => tool.name.includes("sqlite")) &&
     tools.some(tool => tool.name.includes("terminal"));
 
-  const [isConfigCollapsed, setIsConfigCollapsed] = useState(false);
-
-  useEffect(() => {
-    if (isDemoService) {
-      setIsConfigCollapsed(true);
-    }
-  }, [isDemoService]);
-
   const handleDemoPromptClick = (prompt: DemoPrompt) => {
     setPrompt(prompt.text);
     if (textareaRef.current) {
@@ -310,7 +302,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             </div>
           </div>
           <p className="text-sm text-gray-600 leading-relaxed">
-            Chat with your tools in natural language and enjoy a conversational experience to accomplish your tasks.
+            Chat with your tools in natural language. Use the playground to test out agent behavior.
           </p>
         </div>
         <div className="space-y-2">
@@ -325,22 +317,13 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             onKeyDown={handleKeyDown}
             className="resize-none overflow-hidden react-joyride-prompt-textarea text-base"
           />
-          {!noServicesAndMachines && (
-            <button
-              onClick={() => setIsConfigCollapsed(!isConfigCollapsed)}
-              className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1.5"
-            >
-              <Settings2Icon className="h-3.5 w-3.5" />
-              {isConfigCollapsed ? "Show configuration" : "Hide configuration"}
-            </button>
-          )}
         </div>
       </div>
 
       <div
         className={cn(
           "space-y-3 border rounded-lg bg-gray-50/50 shadow-sm",
-          (noServicesAndMachines || isConfigCollapsed) && "hidden"
+          noServicesAndMachines && "hidden"
         )}
       >
         <div className="p-4">
@@ -349,7 +332,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             <span className="font-semibold uppercase tracking-wide text-gray-700">Configuration</span>
           </div>
           <p className="text-sm text-gray-600">
-            Configure how Inferable will process your request and interact with available tools.
+            Optional configurations to customize how Inferable will process your request and interact with available tools.
           </p>
         </div>
 

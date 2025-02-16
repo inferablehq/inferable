@@ -4,14 +4,12 @@ import { client } from "@/client/client";
 import { contract } from "@/client/contract";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Switch } from "@/components/ui/switch";
+import { createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { RunTab } from "./run-tab";
-import { ExternalLinkIcon } from "lucide-react";
-import { createErrorToast } from "@/lib/utils";
 
 type WorkflowListProps = {
   clusterId: string;
