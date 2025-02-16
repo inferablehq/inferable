@@ -207,9 +207,15 @@ export const notifyStatusChange = async ({
       id: onStatusChangeDefinition.workflow.executionId,
     });
 
-    logger.info("Resumed workflow execution", {
-      jobId,
-    });
+    if (jobId) {
+      logger.info("Resumed workflow execution", {
+        jobId,
+      });
+    } else {
+      logger.warn("Failed to resume workflow execution", {
+        workflowExecutionId: onStatusChangeDefinition.workflow.executionId,
+      });
+    }
   } else {
     throw new Error(`Unknown onStatusChange type: ${JSON.stringify(onStatusChangeDefinition)}`);
   }

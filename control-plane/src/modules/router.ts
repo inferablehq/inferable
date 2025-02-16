@@ -43,6 +43,7 @@ import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
 import { getWorkflowTools, listTools, recordPoll, upsertToolDefinition } from "./tools";
 import { createWorkflowExecution, listWorkflowExecutions, getWorkflowExecutionTimeline } from "./workflows/executions";
+import { persistJobInterrupt } from "./jobs/job-results";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -684,12 +685,14 @@ export const router = initServer().router(contract, {
           jobId,
           clusterId,
           notification: parsed.data.notification,
+          machineId,
         });
       } else {
         // TODO: Should general interrupts allow notification?
-        await jobs.generalInterrupt({
+        await persistJobInterrupt({
           jobId,
           clusterId,
+          machineId,
         });
       }
 

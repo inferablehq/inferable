@@ -185,9 +185,16 @@ export const resumeWorkflowExecution = async ({
   clusterId: string;
   id: string;
 }) => {
-  const existing = await data.db
+  const [existing] = await data.db
     .select()
     .from(data.workflowExecutions)
+    .innerJoin(
+      data.jobs,
+      and (
+        eq(data.workflowExecutions.job_id, data.jobs.id),
+        eq(data.workflowExecutions.cluster_id, data.jobs.cluster_id)
+      )
+    )
     .where(
       and(
         eq(data.workflowExecutions.cluster_id, clusterId),
@@ -195,24 +202,21 @@ export const resumeWorkflowExecution = async ({
       )
     );
 
-  if (existing.length === 0) {
+  const execution = existing?.workflow_executions;
+  const job = existing?.jobs;
+
+  if (!execution) {
     throw new NotFoundError(`Workflow execution ${id} not found`);
   }
 
-  const workflowExecution = existing[0];
 
-  const existingJob = await jobs.getJob({
-    clusterId,
-    jobId: workflowExecution.job_id,
-  });
-
-  if (!existingJob) {
+  if (!job) {
     throw new NotFoundError(
-      `Job ${workflowExecution.job_id} not found while resuming workflow execution ${id}`
+      `Job not found while resuming workflow execution ${id}`
     );
   }
 
-  if (existingJob.approvalRequested && !existingJob.approved) {
+  if (job.approval_requested && !job.approved) {
     logger.warn(
       "Workflow execution is not approved yet. Waiting for approval before resuming",
       {
@@ -223,7 +227,7 @@ export const resumeWorkflowExecution = async ({
   }
 
   // Move the job back to pending to allow it to be resumed
-  const [job] = await data.db
+  const [updated] = await data.db
     .update(data.jobs)
     .set({
       status: "pending",
@@ -233,15 +237,16 @@ export const resumeWorkflowExecution = async ({
     })
     .where(
       and(
-        eq(data.jobs.id, workflowExecution.job_id),
+        eq(data.jobs.id, job.id),
         eq(data.jobs.cluster_id, clusterId),
+        eq(data.jobs.status, "interrupted")
       )
     )
     .returning({
       id: data.jobs.id,
     });
 
-  return { jobId: job.id };
+  return { jobId: updated?.id };
 };
 
 export const getWorkflowRuns = async ({ clusterId, executionId, workflowName }: { clusterId: string; executionId: string; workflowName: string }) => {

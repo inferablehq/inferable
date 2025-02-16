@@ -60,6 +60,47 @@ export async function acknowledgeJob({
   return job;
 }
 
+export async function persistJobInterrupt({
+  jobId,
+  clusterId,
+  machineId,
+  approvalRequested
+}: {
+    jobId: string;
+    clusterId: string,
+    machineId: string
+    approvalRequested?: boolean
+  }) {
+  const [updated] =  await data.db
+    .update(data.jobs)
+    .set({
+      status: "interrupted",
+      approval_requested: approvalRequested
+    })
+    .where(
+      and(
+        eq(data.jobs.id, jobId),
+        eq(data.jobs.cluster_id, clusterId),
+        eq(data.jobs.executing_machine_id, machineId),
+        eq(data.jobs.status, "running"),
+      ))
+    .returning({
+      jobId: data.jobs.id,
+      clusterId: data.jobs.cluster_id,
+      runId: data.jobs.run_id,
+      targetFn: data.jobs.target_fn,
+    });
+
+  if (!updated) {
+    logger.warn("Job interrupt was not persisted", {
+      jobId,
+    });
+  }
+
+  return updated;
+}
+
+
 export async function persistJobResult({
   result,
   resultType,

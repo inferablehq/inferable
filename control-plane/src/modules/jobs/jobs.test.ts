@@ -123,9 +123,16 @@ describe("selfHealCalls", () => {
     expect(createJobResult.id).toBeDefined();
     expect(createJobResult.created).toBe(true);
 
+    await acknowledgeJob({
+      jobId: createJobResult.id,
+      clusterId: owner.clusterId,
+      machineId: "testMachineId",
+    });
+
     await requestApproval({
       jobId: createJobResult.id,
       clusterId: owner.clusterId,
+      machineId: "testMachineId",
     });
 
     // wait for the job to timeout
@@ -386,9 +393,16 @@ describe("submitApproval", () => {
     expect(result.id).toBeDefined();
     expect(result.created).toBe(true);
 
+    await acknowledgeJob({
+      jobId: result.id,
+      clusterId: owner.clusterId,
+      machineId: "testMachineId",
+    })
+
     await requestApproval({
       clusterId: owner.clusterId,
       jobId: result.id,
+      machineId: "testMachineId",
     });
 
     const retreivedJob1 = await getJob({
@@ -441,9 +455,16 @@ describe("submitApproval", () => {
     expect(result.id).toBeDefined();
     expect(result.created).toBe(true);
 
+    await acknowledgeJob({
+      jobId: result.id,
+      clusterId: owner.clusterId,
+      machineId: "testMachineId",
+    })
+
     await requestApproval({
       clusterId: owner.clusterId,
       jobId: result.id,
+      machineId: "testMachineId",
     });
 
     const retreivedJob1 = await getJob({
