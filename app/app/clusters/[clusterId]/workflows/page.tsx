@@ -78,7 +78,7 @@ function groupWorkflowsByExecution(workflows: Run[]): WorkflowGroup[] {
   });
 }
 
-function RunPill({
+function WorkflowItem({
   workflow,
   userId,
   group,
@@ -328,7 +328,7 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredWorkflowGroups.map((group) => (
-                  <RunPill
+                  <WorkflowItem
                     key={group.executionId}
                     workflow={group.workflows[0]}
                     group={group}

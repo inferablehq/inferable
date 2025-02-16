@@ -1,9 +1,7 @@
 "use client";
 
-import { WorkflowTimeline } from "@/components/workflow-timeline";
 import { Run } from "@/components/run";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Bot, Terminal, Clock, Zap, Ban, Pause, Check, ServerIcon, Workflow, AlertCircle, PlayCircle, ChevronRight } from "lucide-react";
+import { Bot, Terminal, Clock, Zap, Ban, Pause, Check, ServerIcon, Workflow, AlertCircle, PlayCircle, ChevronRight, Speaker, MessageCircle, MessageCircleWarning } from "lucide-react";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { client } from "@/client/client";
@@ -103,6 +101,22 @@ const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowE
         tooltip: "The Workflow was denied and will not continue",
         color: "text-red-700",
         icon: <Ban className="w-3.5 h-3.5" />,
+        iconBackground: "bg-red-100 text-red-700",
+      }
+    }
+    case "notificationSent": {
+      return {
+        ...base,
+        title: "A notification was sent",
+        icon: <MessageCircle className="w-3.5 h-3.5" />,
+        iconBackground: "bg-blue-100 text-blue-700",
+      }
+    }
+    case "notificationFailed": {
+      return {
+        ...base,
+        title: "A notification failed to send",
+        icon: <MessageCircleWarning className="w-3.5 h-3.5" />,
         iconBackground: "bg-red-100 text-red-700",
       }
     }
