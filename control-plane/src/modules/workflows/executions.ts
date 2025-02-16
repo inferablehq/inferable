@@ -4,7 +4,7 @@ import { packer } from "../packer";
 import { getClusterBackgroundRun } from "../runs";
 import { BadRequestError, NotFoundError } from "../../utilities/errors";
 import * as data from "../data";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
 import { getEventsForJobId } from "../observability/events";
@@ -40,7 +40,7 @@ export const getWorkflowExecutionTimeline = async ({
         authContext: data.jobs.auth_context,
         approvalRequested: data.jobs.approval_requested,
         approved: data.jobs.approved,
-      }
+      },
     })
     .from(data.workflowExecutions)
     .innerJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))
@@ -59,29 +59,39 @@ export const getWorkflowExecutionTimeline = async ({
   const runs = await getWorkflowRuns({
     workflowName,
     clusterId,
-    executionId
-  })
+    executionId,
+  });
 
   const events = await getEventsForJobId({
     jobId: execution.job.id,
-    clusterId
-  })
+    clusterId,
+  });
 
   return {
     execution,
     runs,
     events,
-  }
-}
-
+  };
+};
 
 export const listWorkflowExecutions = async ({
-  workflowName,
-  clusterId
+  clusterId,
+  filters,
+  limit = 50,
 }: {
-  workflowName: string;
-  clusterId: string
-  }) => {
+  clusterId: string;
+  filters?: {
+    workflowName?: string;
+    workflowVersion?: string;
+    workflowExecutionId?: string;
+    workflowExecutionStatus?: string;
+  };
+  limit?: number;
+}) => {
+  const status = z
+    .enum(["pending", "running", "success", "failure", "stalled", "interrupted"])
+    .optional()
+    .parse(filters?.workflowExecutionStatus);
 
   const executions = await data.db
     .select({
@@ -91,35 +101,88 @@ export const listWorkflowExecutions = async ({
       jobId: data.workflowExecutions.job_id,
       createdAt: data.workflowExecutions.created_at,
       updatedAt: data.workflowExecutions.updated_at,
-      job: {
-        id: data.jobs.id,
-        clusterId: data.jobs.cluster_id,
-        status: data.jobs.status,
-        targetFn: data.jobs.target_fn,
-        executingMachineId: data.jobs.executing_machine_id,
-        targetArgs: data.jobs.target_args,
-        result: data.jobs.result,
-        resultType: data.jobs.result_type,
-        createdAt: data.jobs.created_at,
-        runId: data.jobs.run_id,
-        runContext: data.jobs.run_context,
-        authContext: data.jobs.auth_context,
-        approvalRequested: data.jobs.approval_requested,
-        approved: data.jobs.approved,
-
-      }
+      jobsId: data.jobs.id,
+      jobsStatus: data.jobs.status,
+      jobsTargetFn: data.jobs.target_fn,
+      jobsExecutingMachineId: data.jobs.executing_machine_id,
+      jobsTargetArgs: data.jobs.target_args,
+      jobsResult: data.jobs.result,
+      jobsResultType: data.jobs.result_type,
+      jobsCreatedAt: data.jobs.created_at,
+      jobsApprovalRequested: data.jobs.approval_requested,
+      jobsApproved: data.jobs.approved,
+      runsId: data.runs.id,
+      runsName: data.runs.name,
+      runsCreatedAt: data.runs.created_at,
+      runsStatus: data.runs.status,
+      runsFailureReason: data.runs.failure_reason,
+      runsType: data.runs.type,
+      runsModelIdentifier: data.runs.model_identifier,
     })
     .from(data.workflowExecutions)
-    .innerJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))
+    .leftJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))
+    .leftJoin(data.runs, eq(data.workflowExecutions.id, data.runs.workflow_execution_id))
     .where(
       and(
-        eq(data.workflowExecutions.workflow_name, workflowName),
+        filters?.workflowName
+          ? eq(data.workflowExecutions.workflow_name, filters.workflowName)
+          : undefined,
+        filters?.workflowVersion
+          ? eq(data.workflowExecutions.workflow_version, Number(filters.workflowVersion))
+          : undefined,
+        filters?.workflowExecutionId
+          ? eq(data.workflowExecutions.id, filters.workflowExecutionId)
+          : undefined,
+        status ? eq(data.jobs.status, status) : undefined,
         eq(data.workflowExecutions.cluster_id, clusterId)
       )
     )
+    .limit(limit)
+    .orderBy(desc(data.workflowExecutions.created_at));
 
-  return executions
-}
+  const uniqueExecutionIds = executions
+    .map(execution => execution.id)
+    .reduce((acc, id) => {
+      if (acc.includes(id)) {
+        return acc;
+      }
+
+      return [...acc, id];
+    }, [] as string[]);
+
+  return uniqueExecutionIds.map(executionId => {
+    const related = executions.filter(execution => execution.id === executionId);
+
+    const job = related.find(r => r.jobId);
+
+    const runs = related.filter(r => r.runsId);
+
+    return {
+      execution: related[0],
+      job: {
+        id: job?.jobId ?? "",
+        status: job?.jobsStatus ?? null,
+        targetFn: job?.jobsTargetFn ?? null,
+        executingMachineId: job?.jobsExecutingMachineId,
+        targetArgs: job?.jobsTargetArgs ?? null,
+        result: job?.jobsResult ?? null,
+        resultType: job?.jobsResultType ?? null,
+        createdAt: job?.jobsCreatedAt ?? new Date(),
+        approved: job?.jobsApproved,
+        approvalRequested: job?.jobsApprovalRequested,
+      },
+      runs: runs.map(r => ({
+        id: r.runsId!,
+        name: r.runsName!,
+        createdAt: r.runsCreatedAt!,
+        status: r.runsStatus,
+        failureReason: r.runsFailureReason,
+        type: r.runsType || "multi-step",
+        modelIdentifier: r.runsModelIdentifier,
+      })),
+    };
+  });
+};
 
 export const createWorkflowExecution = async (
   clusterId: string,
@@ -196,10 +259,7 @@ export const resumeWorkflowExecution = async ({
       )
     )
     .where(
-      and(
-        eq(data.workflowExecutions.cluster_id, clusterId),
-        eq(data.workflowExecutions.id, id)
-      )
+      and(eq(data.workflowExecutions.cluster_id, clusterId), eq(data.workflowExecutions.id, id))
     );
 
   const execution = existing?.workflow_executions;
@@ -249,7 +309,15 @@ export const resumeWorkflowExecution = async ({
   return { jobId: updated?.id };
 };
 
-export const getWorkflowRuns = async ({ clusterId, executionId, workflowName }: { clusterId: string; executionId: string; workflowName: string }) => {
+export const getWorkflowRuns = async ({
+  clusterId,
+  executionId,
+  workflowName,
+}: {
+  clusterId: string;
+  executionId: string;
+  workflowName: string;
+}) => {
   const runs = await data.db
     .select({
       id: data.runs.id,

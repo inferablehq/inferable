@@ -42,8 +42,8 @@ import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
 import { getWorkflowTools, listTools, recordPoll, upsertToolDefinition } from "./tools";
-import { createWorkflowExecution, listWorkflowExecutions, getWorkflowExecutionTimeline } from "./workflows/executions";
 import { persistJobInterrupt } from "./jobs/job-results";
+import { createWorkflowExecution, listWorkflowExecutions, getWorkflowExecutionTimeline } from "./workflows/executions";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -1418,7 +1418,7 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: tools,
-    }
+    };
   },
 
   createWorkflowExecution: async request => {
@@ -1437,17 +1437,27 @@ export const router = initServer().router(contract, {
   },
 
   listWorkflowExecutions: async request => {
-    const { clusterId, workflowName } = request.params;
+    const { clusterId } = request.params;
+    const { workflowName, workflowExecutionStatus, workflowExecutionId, workflowVersion } =
+      request.query;
 
     const auth = request.request.getAuth();
     auth.canAccess({ cluster: { clusterId } });
 
-    const result = await listWorkflowExecutions({ clusterId, workflowName });
+    const result = await listWorkflowExecutions({
+      clusterId,
+      filters: {
+        workflowName,
+        workflowExecutionStatus,
+        workflowExecutionId,
+        workflowVersion,
+      },
+    });
 
     return {
       status: 200,
       body: result,
-    }
+    };
   },
 
   getWorkflowExecutionTimeline: async request => {
@@ -1458,7 +1468,7 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: result,
-    }
+    };
   },
 
   getClusterKV: async request => {
