@@ -41,7 +41,7 @@ function BreadcrumbLinks({ clusterId, clusterName, isDemo }: ClusterBreadcrumbsP
     if (path === '/clusters') {
       return pathname === '/clusters';
     }
-    return pathname.startsWith(path);
+    return pathname?.startsWith(path) ?? false;
   };
 
   const getLinkStyles = (path: string) => {
