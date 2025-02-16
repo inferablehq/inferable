@@ -21,7 +21,6 @@ export function RunList({ clusterId }: WorkflowListProps) {
   const user = useUser();
   const [limit, setLimit] = useState(20);
   const [hasMore, setHasMore] = useState(true);
-  const [showWorkflowRuns, setShowWorkflowRuns] = useState(false);
   const [runs, setRuns] = useState<
     ClientInferResponseBody<typeof contract.listRuns, 200>
   >([]);
@@ -51,6 +50,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
       },
       query: {
         limit: Math.min(limit, 500), // Ensure limit doesn't exceed 500
+        type: "conversation",
       },
       params: {
         clusterId: clusterId,
@@ -58,14 +58,12 @@ export function RunList({ clusterId }: WorkflowListProps) {
     });
 
     if (result.status === 200) {
-      const filteredRuns = !showWorkflowRuns ? result.body.filter(run => run.workflowName == null) : result.body;
-
-      setRuns(filteredRuns);
-      setHasMore(filteredRuns.length === limit && limit < 50);
+      setRuns(result.body);
+      setHasMore(result.body.length === limit && limit < 50);
     } else {
       createErrorToast(result.body, "Failed to load runs");
     }
-  }, [clusterId, getToken, user.isLoaded, limit, showWorkflowRuns]);
+  }, [clusterId, getToken, user.isLoaded, limit]);
 
   useEffect(() => {
     fetchRuns();

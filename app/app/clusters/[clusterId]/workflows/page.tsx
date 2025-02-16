@@ -78,36 +78,6 @@ function groupWorkflowsByExecution(workflows: Run[]): WorkflowGroup[] {
   });
 }
 
-function Tag({
-  label,
-  value,
-  onClick,
-}: {
-  label: React.ReactNode;
-  value: string;
-  onClick?: (e: React.MouseEvent) => void;
-}) {
-  return (
-    <div className="inline-block mr-1 mt-0.5" onClick={onClick}>
-      <div
-        className={`
-          inline-flex items-center h-5 px-1.5
-          bg-gray-50 border rounded-md text-xs
-          ${onClick ? "cursor-pointer hover:bg-gray-100 hover:border-gray-300" : ""}
-        `}
-      >
-        <span className="text-gray-500 flex items-center">{label}</span>
-        {value && (
-          <>
-            <span className="mx-1 text-gray-400">=</span>
-            <span className="text-gray-700 font-medium truncate max-w-[150px]">{value}</span>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function RunPill({
   workflow,
   userId,
@@ -198,6 +168,9 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
         params: {
           clusterId: params.clusterId,
         },
+        query: {
+          type: "workflow",
+        },
       });
 
       if (result.status === 200) {
@@ -215,10 +188,6 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
   useEffect(() => {
     fetchRuns();
   }, [fetchRuns]);
-
-  const handleWorkflowClick = (workflowName: string, executionId: string) => {
-    router.push(`/clusters/${params.clusterId}/workflows/${workflowName}/${executionId}`);
-  };
 
   if (isLoading) {
     return (

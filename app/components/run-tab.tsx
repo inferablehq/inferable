@@ -7,24 +7,21 @@ import {
   SmallLiveGreenCircle,
 } from "@/components/circles";
 import { Run } from "@/lib/types";
-import { createErrorToast } from "@/lib/utils";
+import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { formatRelative } from "date-fns";
 import {
+  Clock,
+  PlusIcon,
   TestTubeIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  Bot,
-  Clock,
-  Terminal,
-  Trash2Icon,
-  PlusIcon,
+  Trash2Icon
 } from "lucide-react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 import { Button } from "./ui/button";
-import { cn } from "@/lib/utils";
 
 const statusToCircle: {
   [key: string]: React.ReactNode;
@@ -136,17 +133,7 @@ export function RunTab({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "p-1 rounded",
-                    workflow.status === "failed" ? "bg-red-100" :
-                    workflow.status === "done" ? "bg-green-100" : "bg-blue-100"
-                  )}>
-                    <Bot className={cn(
-                      "w-3.5 h-3.5",
-                      workflow.status === "failed" ? "text-red-700" :
-                      workflow.status === "done" ? "text-green-700" : "text-blue-700"
-                    )} />
-                  </div>
+                  {statusToCircle[workflow.status || "pending"]}
                   <span className="text-sm font-medium">{workflow.name}</span>
                   {workflow.test && (
                     <div className="px-1.5 py-0.5 bg-muted rounded text-xs flex items-center gap-1">

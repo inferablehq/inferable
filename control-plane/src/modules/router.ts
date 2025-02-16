@@ -382,7 +382,7 @@ export const router = initServer().router(contract, {
   },
   listRuns: async request => {
     const { clusterId } = request.params;
-    const { test, limit, tags } = request.query;
+    const { test, limit, tags, type } = request.query;
     let { userId } = request.query;
 
     const auth = request.request.getAuth();
@@ -427,9 +427,10 @@ export const router = initServer().router(contract, {
 
     const result = await getClusterRuns({
       clusterId,
-      userId,
       test: test ?? false,
       limit,
+      type,
+      userId,
     });
 
     return {

@@ -882,6 +882,7 @@ export const definition = {
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
       tags: z.string().optional().describe("Filter runs by a tag value (value:key)"),
+      type: z.enum(["conversation", "workflow", "all"]).default("all"),
     }),
     responses: {
       200: z.array(

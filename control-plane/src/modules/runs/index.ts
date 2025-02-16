@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, not, or, sql } from "drizzle-orm";
 import { omitBy } from "lodash";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
@@ -277,14 +277,16 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
 
 export const getClusterRuns = async ({
   clusterId,
-  userId,
   test,
   limit = 50,
+  type = "all",
+  userId,
 }: {
   clusterId: string;
   test: boolean;
-  userId?: string;
   limit?: number;
+  type?: "workflow" | "conversation" | "all";
+  userId?: string;
 }) => {
   const result = await db
     .select({
@@ -313,6 +315,8 @@ export const getClusterRuns = async ({
       and(
         eq(runs.cluster_id, clusterId),
         eq(runs.test, test),
+        ...(type === "conversation" ? [isNull(runs.workflow_execution_id)] : []),
+        ...(type === "workflow" ? [not(isNull(runs.workflow_execution_id))] : []),
         ...(userId ? [eq(runs.user_id, userId)] : [])
       )
     )
