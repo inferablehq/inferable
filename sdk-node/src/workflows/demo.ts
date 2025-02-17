@@ -37,7 +37,7 @@ import { helpers } from "./workflow";
     }),
   });
 
-  workflow.version(1).define(async (ctx, input) => {
+  workflow.version(1).define(async (input, ctx) => {
     const recordsAgent = ctx.agent({
       name: "recordsAgent",
       systemPrompt: helpers.structuredPrompt({

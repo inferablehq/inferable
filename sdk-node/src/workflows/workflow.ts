@@ -7,6 +7,7 @@ import { createApiClient } from "../create-client";
 import { PollingAgent } from "../polling";
 import { JobContext, ToolRegistrationInput } from "../types";
 import { Interrupt } from "../util";
+import { ToolConfigSchema } from "../contract";
 
 type WorkflowInput = {
   executionId: string;
@@ -24,6 +25,7 @@ type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
   inputSchema: z.ZodType<TInput>;
   logger?: Logger;
   client: ReturnType<typeof createApiClient>;
+  config?: z.infer<typeof ToolConfigSchema>;
   getClusterId: () => Promise<string>;
   endpoint: string;
   machineId: string;
@@ -86,12 +88,13 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   private inputSchema: z.ZodType<TInput>;
   private versionHandlers: Map<
     number,
-    (ctx: WorkflowContext<TInput>, input: TInput) => Promise<unknown>
+    (input: TInput, ctx: WorkflowContext<TInput>) => Promise<unknown>
   > = new Map();
   private pollingAgent: PollingAgent | undefined;
   private getClusterId: () => Promise<string>;
   private client: ReturnType<typeof createApiClient>;
   private logger?: Logger;
+  private config?: z.infer<typeof ToolConfigSchema>;
 
   private endpoint: string;
   private machineId: string;
@@ -108,12 +111,13 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     this.endpoint = config.endpoint;
     this.machineId = config.machineId;
     this.apiSecret = config.apiSecret;
+    this.config = config.config;
   }
 
   version(version: number) {
     return {
       define: (
-        handler: (ctx: WorkflowContext<TInput>, input: TInput) => Promise<unknown>,
+        handler: (input: TInput, ctx: WorkflowContext<TInput>) => Promise<unknown>,
       ) => {
         this.logger?.info("Defining workflow handler", {
           version,
@@ -362,7 +366,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
           }
           const ctx = this.createWorkflowContext(version, input.executionId, input, jobCtx);
           try {
-            return await handler(ctx, input);
+            return await handler(input, ctx);
           } catch (e) {
             if (e instanceof WorkflowPausableError) {
               return Interrupt.general();
@@ -376,6 +380,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
           input: this.inputSchema,
         },
         config: {
+          ...this.config,
           private: true,
         },
       });
