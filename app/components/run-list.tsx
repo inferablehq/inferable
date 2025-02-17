@@ -21,9 +21,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
   const user = useUser();
   const [limit, setLimit] = useState(20);
   const [hasMore, setHasMore] = useState(true);
-  const [runs, setRuns] = useState<
-    ClientInferResponseBody<typeof contract.listRuns, 200>
-  >([]);
+  const [runs, setRuns] = useState<ClientInferResponseBody<typeof contract.listRuns, 200>>([]);
 
   const goToCluster = useCallback(
     (c: string) => {
@@ -83,9 +81,9 @@ export function RunList({ clusterId }: WorkflowListProps) {
     <ScrollArea className="bg-white transition-all duration-200 overflow-y-auto h-[calc(100vh-12rem)] border-b border-border/50 min-w-[500px]">
       <div className="rounder-none">
         <RunTab
-          workflows={runs}
-          onGoToWorkflow={goToRun}
-          onRefetchWorkflows={fetchRuns}
+          runs={runs}
+          onGoToRun={goToRun}
+          onRefetchRuns={fetchRuns}
           onGoToCluster={goToCluster}
           clusterId={clusterId}
         />

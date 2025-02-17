@@ -16,7 +16,7 @@ import {
   TestTubeIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-  Trash2Icon
+  Trash2Icon,
 } from "lucide-react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
@@ -35,22 +35,22 @@ const statusToCircle: {
 
 export function RunTab({
   clusterId,
-  workflows,
-  onGoToWorkflow,
-  onRefetchWorkflows,
+  runs,
+  onGoToRun,
+  onRefetchRuns,
   onGoToCluster,
 }: {
   clusterId: string;
-  workflows: Run[];
-  onGoToWorkflow: (clusterId: string, runId: string) => void;
-  onRefetchWorkflows: () => Promise<void>;
+  runs: Run[];
+  onGoToRun: (clusterId: string, runId: string) => void;
+  onRefetchRuns: () => Promise<void>;
   onGoToCluster: (clusterId: string) => void;
 }) {
   const { runId } = useParams() ?? {};
   const { getToken, userId } = useAuth();
   const router = useRouter();
 
-  const deleteWorkflow = useCallback(
+  const deleteRun = useCallback(
     async (w: string, c: string) => {
       if (window.confirm("Are you sure you want to delete this run?")) {
         const id = toast.loading("Deleting run");
@@ -66,9 +66,9 @@ export function RunTab({
         });
 
         if (result.status === 204) {
-          await onRefetchWorkflows();
+          await onRefetchRuns();
           toast.dismiss(id);
-          toast.success("Workflow deleted");
+          toast.success("Run deleted");
 
           if (runId === w) {
             onGoToCluster(c);
@@ -78,12 +78,12 @@ export function RunTab({
         }
       }
     },
-    [onRefetchWorkflows, onGoToCluster, runId, getToken]
+    [onRefetchRuns, onGoToCluster, runId, getToken]
   );
 
-  // Sort workflows by creation date, newest first
-  const sortedWorkflows = [...workflows].sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  // Sort runs by creation date, newest first
+  const sortedRuns = [...runs].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   const pathname = usePathname();
@@ -98,7 +98,7 @@ export function RunTab({
           <div>
             <div className="text-sm font-medium">Conversations</div>
             <div className="text-xs text-muted-foreground font-mono">
-              {workflows.length} conversations
+              {runs.length} conversations
             </div>
           </div>
         </div>
@@ -114,36 +114,36 @@ export function RunTab({
       </div>
       <div className="overflow-y-auto">
         <div className="divide-y divide-border">
-          {sortedWorkflows.map((workflow) => (
+          {sortedRuns.map(run => (
             <div
-              key={workflow.id}
+              key={run.id}
               className={cn(
                 "px-4 py-3 flex items-start gap-4 hover:bg-muted/50 transition-colors cursor-pointer",
-                runId === workflow.id && "bg-muted/50"
+                runId === run.id && "bg-muted/50"
               )}
-              onClick={() => onGoToWorkflow(clusterId, workflow.id)}
+              onClick={() => onGoToRun(clusterId, run.id)}
             >
               <div className="shrink-0 font-mono text-xs text-muted-foreground">
-                {new Date(workflow.createdAt).toLocaleTimeString('en-US', {
+                {new Date(run.createdAt).toLocaleTimeString("en-US", {
                   hour12: false,
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
                 })}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 max-w-sm">
                 <div className="flex items-center gap-2">
-                  {statusToCircle[workflow.status || "pending"]}
-                  <span className="text-sm font-medium">{workflow.name}</span>
-                  {workflow.test && (
+                  {statusToCircle[run.status || "pending"]}
+                  <span className="text-sm font-medium *:">{run.name}</span>
+                  {run.test && (
                     <div className="px-1.5 py-0.5 bg-muted rounded text-xs flex items-center gap-1">
                       <TestTubeIcon className="w-3 h-3" />
                       <span>Test</span>
                     </div>
                   )}
-                  {workflow.feedbackScore !== null && (
+                  {run.feedbackScore !== null && (
                     <div className="px-1.5 py-0.5 bg-muted rounded text-xs flex items-center gap-1">
-                      {workflow.feedbackScore > 0 ? (
+                      {run.feedbackScore > 0 ? (
                         <ThumbsUpIcon className="w-3 h-3" />
                       ) : (
                         <ThumbsDownIcon className="w-3 h-3" />
@@ -154,16 +154,16 @@ export function RunTab({
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-muted-foreground">
-                    Created {userId === workflow.userId && "by you "}
-                    {formatRelative(new Date(workflow.createdAt), new Date())}
+                    Created {userId === run.userId && "by you "}
+                    {formatRelative(new Date(run.createdAt), new Date())}
                   </span>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
-                      deleteWorkflow(workflow.id, clusterId);
+                      deleteRun(run.id, clusterId);
                     }}
                   >
                     <Trash2Icon className="h-3 w-3 text-muted-foreground hover:text-red-500" />
