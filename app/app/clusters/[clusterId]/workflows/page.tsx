@@ -28,6 +28,7 @@ import { formatDistance } from "date-fns";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { WorkflowTriggerModal } from "@/components/workflow-trigger-modal";
 
 type ExecutionStatus = "pending" | "running" | "success" | "failure" | "stalled" | "interrupted";
 
@@ -122,7 +123,6 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
       );
     };
 
-    // Count the statuses of agent runs
     const runStatusCounts = runs.reduce(
       (acc, run) => {
         if (run.status) {
@@ -284,6 +284,13 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
             </div>
           </CardContent>
         </Card>
+
+        <div className="mt-4">
+          <WorkflowTriggerModal
+            clusterId={params.clusterId}
+            onTrigger={fetchExecutions}
+          />
+        </div>
       </div>
 
       <div className="flex-1 min-w-0">

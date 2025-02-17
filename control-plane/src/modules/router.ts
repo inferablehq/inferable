@@ -1424,7 +1424,7 @@ export const router = initServer().router(contract, {
   createWorkflowExecution: async request => {
     const { clusterId, workflowName } = request.params;
 
-    const machine = request.request.getAuth().isMachine();
+    const machine = request.request.getAuth();
     machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
