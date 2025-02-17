@@ -14,6 +14,7 @@ import {
   JsonSchemaInput,
 } from "./types";
 import { helpers, Workflow } from "./workflows/workflow";
+import { ToolConfigSchema } from "./contract";
 
 // Custom json formatter
 debug.formatters.J = (json) => {
@@ -245,15 +246,18 @@ export class Inferable {
       name,
       description,
       inputSchema,
+      config,
     }: {
       name: string;
       description?: string;
       inputSchema: TInput;
+      config?: z.infer<typeof ToolConfigSchema>;
     }) => {
       return new Workflow({
         name,
         inferable: this,
         description,
+        config,
         getClusterId: async () => await this.getClusterId(),
         client: this.client,
         inputSchema,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Run } from "@/components/run";
-import { Bot, Terminal, Clock, Zap, Ban, Pause, Check, ServerIcon, Workflow, AlertCircle, PlayCircle, ChevronRight, Speaker, MessageCircle, MessageCircleWarning } from "lucide-react";
+import { Bot, Terminal, Clock, Zap, Ban, Pause, Check, ServerIcon, Workflow, AlertCircle, PlayCircle, ChevronRight, Speaker, MessageCircle, MessageCircleWarning, TimerOff, Timer, RotateCcw } from "lucide-react";
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { client } from "@/client/client";
@@ -35,6 +35,36 @@ const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowE
   }
 
   switch (event.type) {
+    case "jobRecovered": {
+      return {
+        ...base,
+        title: "Workflow Recovered",
+        tooltip: "The Workflow will be retried after stalling.",
+        ...(event.machineId && { label: event.machineId }),
+        icon: <RotateCcw className="w-3.5 h-3.5" />,
+        iconBackground: "bg-blue-100 text-blue-700",
+      }
+    }
+    case "jobStalled": {
+      return {
+        ...base,
+        title: "Workflow Stalled",
+        tooltip: "The Workflow handler did not resolve within the expected time. Timeout can be adjusted with `config.timeoutSeconds`.",
+        ...(event.machineId && { label: event.machineId }),
+        icon: <Timer className="w-3.5 h-3.5" />,
+        iconBackground: "bg-red-100 text-red-700",
+      }
+    }
+    case "jobStalledTooManyTimes": {
+      return {
+        ...base,
+        title: "Workflow Stalled Too Many Times",
+        tooltip: "The Workflow stalled too many times and was failed. Reties can be adjusted with `config.retryCountOnStall`.",
+        ...(event.machineId && { label: event.machineId }),
+        icon: <AlertCircle className="w-3.5 h-3.5" />,
+        iconBackground: "bg-red-100 text-red-700",
+      }
+    }
     case "jobAcknowledged": {
       return {
         ...base,
