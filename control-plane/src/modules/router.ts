@@ -161,6 +161,12 @@ export const router = initServer().router(contract, {
     await auth.canAccess({ cluster: { clusterId } });
     auth.canCreate({ run: true });
 
+    const id = body.id || body.runId || ulid();
+
+    if (body.runId) {
+      logger.warn("Using deprecated runId field");
+    }
+
     if (body.attachedFunctions && body.attachedFunctions.length == 0) {
       return {
         status: 400,
@@ -209,7 +215,7 @@ export const router = initServer().router(contract, {
       body.tools ?? body.attachedFunctions?.map(f => (typeof f === "string" ? f : f.function));
 
     const runOptions: RunOptions = {
-      id: body.id || body.runId || ulid(),
+      id,
       initialPrompt: body.initialPrompt,
       systemPrompt: body.systemPrompt,
       attachedFunctions,
