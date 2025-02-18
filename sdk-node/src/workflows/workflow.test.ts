@@ -31,7 +31,7 @@ describe("workflow", () => {
       }),
     });
 
-    workflow.version(1).define(async (input, ctx) => {
+    workflow.version(1).define(async (ctx, input) => {
       onStart(input);
       const searchAgent = ctx.agent({
         name: "search",

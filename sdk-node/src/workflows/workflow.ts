@@ -55,7 +55,7 @@ type WorkflowContext<TInput> = {
     }) => Promise<{ result: TAgentResult }>;
   };
   input: TInput;
-} & Pick<JobContext, 'approved'>;
+} & Pick<JobContext, "approved">;
 
 class WorkflowPausableError extends Error {
   constructor(message: string) {
@@ -88,7 +88,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   private inputSchema: z.ZodType<TInput>;
   private versionHandlers: Map<
     number,
-    (input: TInput, ctx: WorkflowContext<TInput>) => Promise<unknown>
+    (ctx: WorkflowContext<TInput>, input: TInput) => Promise<unknown>
   > = new Map();
   private pollingAgent: PollingAgent | undefined;
   private getClusterId: () => Promise<string>;
@@ -117,7 +117,10 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   version(version: number) {
     return {
       define: (
-        handler: (input: TInput, ctx: WorkflowContext<TInput>) => Promise<unknown>,
+        handler: (
+          ctx: WorkflowContext<TInput>,
+          input: TInput,
+        ) => Promise<unknown>,
       ) => {
         this.logger?.info("Defining workflow handler", {
           version,
@@ -132,7 +135,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     version: number,
     executionId: string,
     input: TInput,
-    jobCtx: JobContext
+    jobCtx: JobContext,
   ): WorkflowContext<TInput> {
     this.logger?.info("Creating workflow context", {
       version,
@@ -146,7 +149,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         name: string,
         fn: (ctx: WorkflowContext<TInput>) => Promise<void>,
       ) => {
-        const ctx = this.createWorkflowContext(version, executionId, input, jobCtx);
+        const ctx = this.createWorkflowContext(
+          version,
+          executionId,
+          input,
+          jobCtx,
+        );
 
         const rand = crypto.randomUUID();
 
@@ -199,7 +207,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         name: string,
         fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,
       ): Promise<TResult> => {
-        const ctx = this.createWorkflowContext(version, executionId, input, jobCtx);
+        const ctx = this.createWorkflowContext(
+          version,
+          executionId,
+          input,
+          jobCtx,
+        );
 
         const serialize = (value: unknown) => JSON.stringify({ value });
         const deserialize = (value: string) => {
@@ -364,9 +377,14 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
             this.logger?.error(error);
             throw new Error(error);
           }
-          const ctx = this.createWorkflowContext(version, input.executionId, input, jobCtx);
+          const ctx = this.createWorkflowContext(
+            version,
+            input.executionId,
+            input,
+            jobCtx,
+          );
           try {
-            return await handler(input, ctx);
+            return await handler(ctx, input);
           } catch (e) {
             if (e instanceof WorkflowPausableError) {
               return Interrupt.general();
