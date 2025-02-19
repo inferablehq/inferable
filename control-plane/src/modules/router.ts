@@ -202,11 +202,24 @@ export const router = initServer().router(contract, {
     }
 
     if (body.resultSchema) {
+      if ('type' in body.resultSchema && body.resultSchema.type !== 'object') {
+        return {
+          status: 400,
+          body: {
+            message: "resultSchema must be an object",
+          },
+        };
+      }
+
       const validationError = validateSchema({
         schema: body.resultSchema,
         name: "resultSchema",
       });
       if (validationError) {
+        logger.info("Invalid resultSchema", {
+          resultSchema: body.resultSchema,
+          validationError,
+        })
         return validationError;
       }
     }
