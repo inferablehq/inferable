@@ -220,6 +220,22 @@ export const createWorkflowExecution = async (
 
   logger.info(`Using workflow tool ${latest.name} for ${workflowName}`);
 
+  // Check for existing workflowExecution.
+  // Ideally this should all be a transaction (Job + Workflow Execution creation)
+  const [existingExecution] = await data.db
+    .select()
+    .from(data.workflowExecutions)
+    .where(
+      and(
+        eq(data.workflowExecutions.id, parsed.data.executionId),
+        eq(data.workflowExecutions.cluster_id, clusterId)
+      )
+    )
+
+  if (existingExecution) {
+    return { jobId: existingExecution.job_id };
+  }
+
   const job = await jobs.createJobV2({
     owner: { clusterId },
     targetFn: latest.toolName,
