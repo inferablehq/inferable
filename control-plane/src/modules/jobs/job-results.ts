@@ -75,7 +75,8 @@ export async function persistJobInterrupt({
     .update(data.jobs)
     .set({
       status: "interrupted",
-      approval_requested: approvalRequested
+      approval_requested: approvalRequested,
+      updated_at: sql`now()`
     })
     .where(
       and(

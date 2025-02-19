@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, gt, isNotNull, lt, or, sql } from "drizzle-orm";
 import * as data from "../data";
 import * as events from "../observability/events";
 import { logger } from "../observability/logger";
@@ -47,6 +47,39 @@ export async function selfHealJobs() {
     });
   });
 
+  // We have an infrequent issue with jobs not being resumed correctly from the "interupted" state.
+  const nonResumedInterruptions = await data.db
+    .update(data.jobs)
+    .set({
+      status: "stalled",
+      // Don't subtrack this type of retry from the remaining attempts count
+      remaining_attempts: sql`remaining_attempts + 1`
+    })
+    .where(
+      and(
+        eq(data.jobs.status, "interrupted"),
+        gt(data.jobs.updated_at, sql`now() - interval '1 hour'`),
+        lt(
+          data.jobs.updated_at,
+          // Find any jobs that have been interrupted for more than 5 minutes
+          sql`now() - interval '5 minutes'`
+        ),
+        eq(data.jobs.approval_requested, false),
+      )
+    )
+    .returning({
+      id: data.jobs.id,
+      targetFn: data.jobs.target_fn,
+      clusterId: data.jobs.cluster_id,
+    });
+
+  if (nonResumedInterruptions.length > 0) {
+    logger.warn("Found interrupted jobs that have not been resumed", {
+      count: nonResumedInterruptions.length,
+      jobs: nonResumedInterruptions.map(row => row.id).join(", ")
+    });
+  };
+
   const stalledJobs = await data.db
     .update(data.jobs)
     .set({
@@ -93,5 +126,6 @@ export async function selfHealJobs() {
   return {
     stalledFailedByTimeout: stalledByTimeout.map(row => row.id),
     stalledRecovered: stalledJobs.filter(row => row.status === "pending").map(row => row.id),
+    nonResumedInterruptions: nonResumedInterruptions.map(row => row.id),
   };
 }

@@ -7,6 +7,8 @@ import { selfHealJobs } from "./self-heal-jobs";
 import * as redis from "../redis";
 import { getClusterBackgroundRun } from "../runs";
 import { upsertToolDefinition } from "../tools";
+import { sql, and, eq } from "drizzle-orm";
+import * as data from "../data"
 
 const mockTargetFn = "testTargetFn";
 const mockTargetArgs = packer.pack({ test: "test" });
@@ -99,6 +101,139 @@ describe("selfHealCalls", () => {
     });
 
     expect(job!.status).toBe("pending");
+  });
+
+  it("should recover a hanging interrupt job", async () => {
+    const owner = await createOwner();
+
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      config: {
+        retryCountOnStall: 1,
+        timeoutSeconds: 1,
+      },
+      clusterId: owner.clusterId,
+    });
+
+    const createJobResult = await createJobV2({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      runId: getClusterBackgroundRun(owner.clusterId),
+    });
+
+    expect(createJobResult.id).toBeDefined();
+    expect(createJobResult.created).toBe(true);
+
+    // acknowledge the job, so that it moves to running state
+    const acknowledged = await acknowledgeJob({
+      jobId: createJobResult.id,
+      clusterId: owner.clusterId,
+      machineId: "testMachineId",
+    });
+
+    expect(acknowledged).toBeDefined();
+
+    // Mark the job as interrupted 10 minutes ago
+    await data.db
+      .update(data.jobs)
+      .set({
+        status: "interrupted",
+        updated_at: sql`now() - interval '10 minutes'`
+      })
+      .where(
+        and(
+          eq(data.jobs.id, createJobResult.id),
+          eq(data.jobs.cluster_id, owner.clusterId),
+        )
+      )
+      .returning({
+        targetFn: data.jobs.target_fn,
+        targetArgs: data.jobs.target_args,
+      });
+
+    // run the self heal job
+    const healedJobs = await selfHealJobs();
+
+    expect(healedJobs.stalledFailedByTimeout).not.toContain(createJobResult.id);
+
+    expect(healedJobs.nonResumedInterruptions).toContain(createJobResult.id);
+    expect(healedJobs.stalledRecovered).toContain(createJobResult.id);
+
+    // query the next job, it should be good to go
+    const job = await getJob({
+      jobId: createJobResult.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(job!.status).toBe("pending");
+  });
+
+  it("should not recover a hanging interrupt job from 2 days ago", async () => {
+    const owner = await createOwner();
+
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      config: {
+        retryCountOnStall: 1,
+        timeoutSeconds: 1,
+      },
+      clusterId: owner.clusterId,
+    });
+
+    const createJobResult = await createJobV2({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      runId: getClusterBackgroundRun(owner.clusterId),
+    });
+
+    expect(createJobResult.id).toBeDefined();
+    expect(createJobResult.created).toBe(true);
+
+    // acknowledge the job, so that it moves to running state
+    const acknowledged = await acknowledgeJob({
+      jobId: createJobResult.id,
+      clusterId: owner.clusterId,
+      machineId: "testMachineId",
+    });
+
+    expect(acknowledged).toBeDefined();
+
+    // Mark the job as interrupted 10 minutes ago
+    await data.db
+      .update(data.jobs)
+      .set({
+        status: "interrupted",
+        updated_at: sql`now() - interval '2 days'`
+      })
+      .where(
+        and(
+          eq(data.jobs.id, createJobResult.id),
+          eq(data.jobs.cluster_id, owner.clusterId),
+        )
+      )
+      .returning({
+        targetFn: data.jobs.target_fn,
+        targetArgs: data.jobs.target_args,
+      });
+
+    // run the self heal job
+    const healedJobs = await selfHealJobs();
+
+    expect(healedJobs.stalledFailedByTimeout).not.toContain(createJobResult.id);
+
+    expect(healedJobs.nonResumedInterruptions).not.toContain(createJobResult.id);
+    expect(healedJobs.stalledRecovered).not.toContain(createJobResult.id);
+
+    const job = await getJob({
+      jobId: createJobResult.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(job!.status).toBe("interrupted");
   });
 
   it("should not stall a job waiting for approval", async () => {
