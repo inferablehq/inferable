@@ -83,8 +83,13 @@ export const getWorkflowTools = async ({
       )
     )
     .then(r =>
-      r.map(r => {
-        const [_prefix, name, version] = r.name.split("_");
+      r
+      .filter(r => r.name.split("_").length >= 3)
+      .map(r => {
+        const components = r.name.split("_").slice(1);
+
+        const version = components.pop();
+        const name = components.join("_");
 
         const parsed = z.string().regex(/^\d+$/).safeParse(version);
 
