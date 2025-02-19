@@ -28,12 +28,7 @@ export default function () {
     name: "Load Test",
     initialPrompt: 'Get the special word from the `searchHaystack` function',
     reasoningTraces: false,
-    attachedFunctions: [
-      {
-        function: "searchHaystack",
-        service: "default",
-      },
-    ],
+    tools: ["searchHaystack"],
     resultSchema: {
       type: 'object',
       properties: {

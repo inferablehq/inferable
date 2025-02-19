@@ -16,5 +16,8 @@ npm run machine:start
 
 2. In a new terminal, run the k6 tests:
 ```bash
-npm run test:start
+// Test a run with tool call
+npm run test:start:run
+// Test a workflow (Which it self triggers a run with tool call)
+npm run test:start:workflow
 ```

@@ -5,12 +5,14 @@
   "main": "script.js",
   "license": "MIT",
   "scripts": {
-    "test:start": "k6 run script.js",
+    "test:start:run": "k6 run run.js",
+    "test:start:workflow": "k6 run workflow.js",
     "machine:start": "tsx machine.ts"
   },
   "homepage": "https://github.com/inferablehq/inferable#readme",
   "dependencies": {
-    "inferable": "^0.30.94"
+    "inferable": "^0.30.107",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
