@@ -133,6 +133,9 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
       {} as Record<RunStatus, number>
     );
 
+
+    const status = job.resultType === "rejection" ? "failure" : job.status;
+
     return (
       <tr
         onClick={handleClick}
@@ -164,8 +167,8 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="inline-flex items-center space-x-1.5 px-2 py-1 rounded-md bg-muted/50">
-            {job.status && statusToCircle[job.status as ExecutionStatus]}
-            <span className="text-xs font-medium">{job.status}</span>
+            {status && statusToCircle[status as ExecutionStatus]}
+            <span className="text-xs font-medium">{status}</span>
           </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
