@@ -154,7 +154,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         const result = await this.client.setClusterKV({
           params: {
             clusterId: await this.getClusterId(),
-            key: `${executionId}.${name}`,
+            key: `${executionId}_effect_${name}`,
           },
           body: {
             value: rand,
@@ -213,7 +213,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         const existingValue = await this.client.getClusterKV({
           params: {
             clusterId: await this.getClusterId(),
-            key: `${executionId}.${name}`,
+            key: `${executionId}_result_${name}`,
           },
         });
 
@@ -231,7 +231,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         const setResult = await this.client.setClusterKV({
           params: {
             clusterId: await this.getClusterId(),
-            key: `${executionId}.${name}`,
+            key: `${executionId}_result_${name}`,
           },
           body: {
             value: serialize(result),
