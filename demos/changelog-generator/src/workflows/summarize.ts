@@ -8,6 +8,7 @@ import fs from "fs/promises";
 import path from "path";
 import { execSync } from "child_process";
 import { sendToZapier } from "./utils/zapier";
+import { formatChangelogContent } from "./utils/changelog";
 import assert from "assert";
 
 export const workflow = inferable.workflows.create({
@@ -18,7 +19,7 @@ export const workflow = inferable.workflows.create({
   }),
 });
 
-workflow.version(1).define(async (ctx, input) => {
+workflow.version(1).define(async ctx => {
   const commitHashes = await ctx.result("getCommits", async () => {
     const lastCommitHash = (
       await fs.readFile(path.join(__dirname, "last-commit-hash.txt"), "utf-8")
@@ -54,7 +55,7 @@ workflow.version(1).define(async (ctx, input) => {
           description: z.string(),
           date: z.string().describe("The date of the commit in ISO format"),
         }),
-        tools: ["getCommitInfo", "getCommitDiff"],
+        tools: ["getCommitInfo", "getCommitDiff"], // these tools are defined in src/tools
       });
 
       return agent.trigger({
@@ -97,44 +98,10 @@ workflow.version(1).define(async (ctx, input) => {
   });
 
   const changelogContent = await ctx.result("generateResult", async () => {
-    // Get the latest date from changes
-    const latestDate = summaryResult.result.changes
-      .map(change => new Date(change.date))
-      .reduce((latest, current) => (current > latest ? current : latest))
-      .toISOString()
-      .split("T")[0];
-
-    // Format the changelog content
-    const content = `# Release ${latestDate}
-
-${summaryResult.result.overallSummary}
-
-## Changes
-
-${Object.entries(
-  summaryResult.result.changes.reduce(
-    (acc, change) => {
-      const type =
-        change.type === "sdk-release"
-          ? "SDK Release"
-          : change.type === "bugfix"
-            ? "Bug Fix"
-            : change.type === "feature"
-              ? "Feature"
-              : "Other";
-
-      if (!acc[type]) {
-        acc[type] = [];
-      }
-      acc[type].push(change.description);
-      return acc;
-    },
-    {} as Record<string, string[]>
-  )
-)
-  .map(([type, descriptions]) => `### ${type}\n${descriptions.map(desc => `- ${desc}`).join("\n")}`)
-  .join("\n\n")}
-`;
+    const content = formatChangelogContent({
+      overallSummary: summaryResult.result.overallSummary,
+      changes: summaryResult.result.changes,
+    });
 
     // Write to changelog.md in root directory
     const changelogPath = path.join(process.cwd(), "..", "..", "CHANGELOG.md");
