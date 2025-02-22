@@ -1,3 +1,24 @@
+# Release 2025-02-22
+
+This release includes significant improvements to workflow functionality, error handling, and UI enhancements. Notable additions include a new changelog generator demo and various fixes for workflow tool management and status display.
+
+## Changes
+
+### Feature
+
+- Added a changelog generator demo with implementation files including Git tools, workflows, and utilities
+
+### Bug Fix
+
+- Enhanced workflow status visualization by displaying job rejections as failures in the UI
+- Added support for snake_cased workflow names in the system
+- Improved workflow tool listing functionality and exact name matching
+- Enhanced error messaging for invalid resultSchema configurations
+
+### SDK Release
+
+- Node SDK version updated to 0.30.108
+
 # Release 2025-02-17
 
 Major improvements to workflow management functionality including manual triggers, timeout handling, and configuration options. Multiple SDK updates and UI enhancements for better user experience.
