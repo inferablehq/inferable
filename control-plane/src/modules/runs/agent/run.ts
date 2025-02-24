@@ -15,7 +15,6 @@ import { generateTitle } from "../summarization";
 import { createRunGraph } from "./agent";
 import { findRelevantTools } from "./tool-search";
 import { buildTool } from "./tools/functions";
-import { availableStdlib } from "./tools/stdlib";
 import { availableTools, getToolDefinition } from "../../tools";
 
 /**
@@ -100,12 +99,6 @@ export const processAgentRun = async (
     getTool: async toolCall => {
       if (!toolCall.id) {
         throw new Error("Can not return tool without call ID");
-      }
-
-      const internalTool = availableStdlib()[toolCall.toolName];
-
-      if (internalTool) {
-        return internalTool;
       }
 
       const tool = await getToolDefinition({

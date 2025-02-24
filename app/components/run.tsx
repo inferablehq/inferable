@@ -424,7 +424,7 @@ export function Run({
                 )}
                 {runTimeline?.run.tools && runTimeline?.run.tools.length > 0 ? (
                   <div className="flex flex-col space-y-1">
-                    <span className="text-xs font-medium text-gray-500">Functions</span>
+                    <span className="text-xs font-medium text-gray-500">Tools</span>
                     <div className="flex flex-wrap gap-1">
                       {runTimeline?.run.tools.map(fn => (
                         <div
@@ -439,16 +439,10 @@ export function Run({
                   </div>
                 ) : (
                   <div className="flex flex-col space-y-1">
-                    <span className="text-xs font-medium text-gray-500">Functions</span>
+                    <span className="text-xs font-medium text-gray-500">Tools</span>
                     <div className="flex flex-wrap gap-1">
                       <div className="py-0.5 rounded text-xs text-gray-500">
-                        Full access including{" "}
-                        <a
-                          className="text-blue-500 hover:underline"
-                          href="https://docs.inferable.ai/pages/standard-lib"
-                        >
-                          Standard Library
-                        </a>
+                        Full access to all tools
                       </div>
                     </div>
                   </div>
