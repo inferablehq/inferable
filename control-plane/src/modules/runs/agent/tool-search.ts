@@ -7,7 +7,6 @@ import { logger } from "../../observability/logger";
 import { toAnthropicMessage } from "../messages";
 import { RunGraphState } from "./state";
 import { AgentTool } from "./tool";
-import { availableStdlib } from "./tools/stdlib";
 import { z } from "zod";
 import { getToolDefinition, searchTools } from "../../tools";
 import { NotFoundError } from "../../../utilities/errors";
@@ -158,32 +157,9 @@ export const findRelevantTools = async (state: RunGraphState) => {
   const tools: AgentTool[] = [];
   const attachedFunctions = run.attachedFunctions ?? [];
 
-  const stdlib = availableStdlib();
-
   // If functions are explicitly attached, skip relevant tools search
   if (attachedFunctions.length > 0) {
     for (const tool of attachedFunctions) {
-      if (tool.toLowerCase().startsWith("inferable_")) {
-        const internalToolName = tool.split("_")[1];
-
-        if (internalToolName === stdlib.calculator.metadata.name) {
-          tools.push(stdlib.calculator);
-          continue;
-        } else if (internalToolName === stdlib.currentDateTime.metadata.name) {
-          tools.push(stdlib.currentDateTime);
-          continue;
-        } else if (internalToolName === stdlib.getUrl.metadata.name) {
-          tools.push(stdlib.getUrl);
-          continue;
-        } else {
-          logger.warn("Tool not found in stdlib", {
-            tool,
-          });
-
-          throw new Error(`Tool ${tool} not found in cluster ${run.clusterId}`);
-        }
-      }
-
       const definition = await getToolDefinition({
         name: tool,
         clusterId: run.clusterId,
@@ -280,8 +256,6 @@ export const findRelevantTools = async (state: RunGraphState) => {
     );
 
     tools.push(...selectedTools);
-
-    tools.push(...Object.values(availableStdlib()));
 
     events.write({
       type: "toolSearchCompleted",
