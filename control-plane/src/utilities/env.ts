@@ -21,6 +21,8 @@ const envSchema = z
       }),
     ENVIRONMENT: z.enum(["dev", "prod"]).default("dev"),
 
+    ENABLE_QUEUE_INGESTION: truthy.default(true),
+
     VERSION: z.string().default("unknown"),
     SHORT_VERSION: z.string().default("unknown"),
 
