@@ -1,4 +1,4 @@
-# Contextual Ticket Tagging Workflow
+# Contextual Ticket Tagging Workflow (Single Step)
 
 <div align="center">
 <img src="./../../assets/logo.png" alt="Inferable Logo" width="200" />

@@ -1,0 +1,15 @@
+{
+  "name": "quote-system",
+  "version": "1.0.0",
+  "description": "Quote generation system using Inferable",
+  "main": "dist/index.js",
+  "dependencies": {
+    "inferable": "latest",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
