@@ -43,6 +43,7 @@ hdx?.init({
     },
   },
   advancedNetworkCapture: false,
+  disableLogs: true,
   disableStartupLogs: true,
   stopOnTerminationSignals: false,
 });
