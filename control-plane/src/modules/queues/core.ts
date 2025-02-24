@@ -3,6 +3,7 @@ import { BullMQOtel } from "bullmq-otel";
 import { env } from "../../utilities/env";
 import IORedis from "ioredis";
 import { BaseMessage, withObservability } from "./observability";
+import { logger } from "../observability/logger";
 
 export type QueueHandler<T> = (data: T) => Promise<void>;
 
@@ -66,6 +67,10 @@ export class QueueWrapper<T extends BaseMessage> {
   }
 
   async start() {
+    if (!env.ENABLE_QUEUE_INGESTION) {
+      logger.info("Skipping queue start. ENABLE_QUEUE_INGESTION is disabled.");
+      return
+    }
     this.worker = new Worker(
       this.name,
       withObservability<T>(this.name, this.handler),
