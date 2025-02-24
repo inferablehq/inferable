@@ -1,7 +1,6 @@
 import { createLogger, format, transports } from "winston";
 import { AsyncLocalStorage } from "async_hooks";
 import { env } from "../../utilities/env";
-import { hdx } from "./hyperdx";
 import { rollbar, RollbarTransport } from "./rollbar";
 
 export const logContext = new AsyncLocalStorage();
@@ -24,9 +23,6 @@ const winston = createLogger({
         format.colorize({ all: process.env.NODE_ENV === "development" }),
         format.errors({ stack: true }),
       ),
-    }),
-    hdx?.getWinstonTransport("info", {
-      detectResources: true,
     }),
     env.NODE_ENV === "production"
       ? new RollbarTransport({ level: "warn" }, rollbar)
