@@ -36,7 +36,10 @@ export type EventTypes =
   // Misc
   | "modelInvoked"
   | "feedbackSubmitted"
-  | "toolSearchCompleted";
+  | "toolSearchCompleted"
+
+  // Workflows
+  | "workflowLogCreated";
 
 type Event = {
   type: EventTypes;
@@ -273,6 +276,7 @@ export const getEventsForJobId = async (params: { jobId: string; clusterId: stri
       resultType: eventsTable.result_type,
       status: eventsTable.status,
       runId: eventsTable.run_id,
+      meta: eventsTable.meta,
     })
     .from(eventsTable)
     .where(and(eq(eventsTable.job_id, params.jobId), eq(eventsTable.cluster_id, params.clusterId)))
@@ -301,7 +305,7 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
         or(
           eq(eventsTable.type, "modelInvoked"),
           // Backward compatibility
-          eq(eventsTable.type, "modelInvocation"),
+          eq(eventsTable.type, "modelInvocation")
         ),
         gte(eventsTable.created_at, sixtyDaysAgo)
       )
@@ -321,7 +325,7 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
         or(
           eq(eventsTable.type, "modelInvoked"),
           // Backward compatibility
-          eq(eventsTable.type, "modelInvocation"),
+          eq(eventsTable.type, "modelInvocation")
         ),
         gte(eventsTable.created_at, sixtyDaysAgo)
       )

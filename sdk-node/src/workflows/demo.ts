@@ -37,22 +37,72 @@ import { helpers } from "./workflow";
     }),
   });
 
+  const fakeLoans = [
+    {
+      id: "loan-123",
+      customerId: "customerId-123",
+      amount: 1000,
+      status: "active",
+      assetClasses: ["123", "456"],
+    },
+    {
+      id: "loan-124",
+      customerId: "customerId-123",
+      amount: 2000,
+      status: "active",
+      assetClasses: ["456", "789"],
+    },
+  ];
+
+  function getAssetClassDetails(assetClassId: string) {
+    console.log("getAssetClassDetails:request", { assetClassId });
+    if (assetClassId === "123") {
+      return {
+        name: "property",
+        risk: "low",
+      };
+    }
+
+    if (assetClassId === "456") {
+      return {
+        name: "government-bonds",
+        risk: "very low",
+      };
+    }
+
+    if (assetClassId === "789") {
+      return {
+        name: "meme-coins",
+        risk: "high",
+      };
+    }
+  }
+
   workflow.version(1).define(async (ctx, input) => {
+    console.log("Starting workflow");
     const recordsAgent = ctx.agent({
       name: "recordsAgent",
+      type: "single-step",
       systemPrompt: helpers.structuredPrompt({
         facts: [
           "You are a loan records processor",
           `Customer ID to process: ${input.customerId}`,
+          `Here are all the loans for the customer: ${JSON.stringify(fakeLoans)}`,
         ],
         goals: [
-          "Retrieve all loans associated with the customer",
+          "Retrieve all loans associated with the customer ${input.customerId}",
           "Return a complete list of loan records with their IDs",
         ],
       }),
       resultSchema: z.object({
-        records: z.array(z.object({ id: z.string() })),
+        records: z.array(
+          z.object({ id: z.string(), assetClassIds: z.array(z.string()) }),
+        ),
       }),
+    });
+
+    await ctx.log("info", {
+      message: "Triggering recordsAgent",
     });
 
     const records = await recordsAgent.trigger({
@@ -61,12 +111,24 @@ import { helpers } from "./workflow";
       },
     });
 
+    await ctx.log("info", {
+      message: "recordsAgent triggered",
+    });
+
     const processedRecords = await Promise.all(
-      records.result.records.map((record) => {
+      records.result.records.map(async (record) => {
+        const assetClassDetails =
+          record.assetClassIds.map(getAssetClassDetails);
+
         const agent2 = ctx.agent({
           name: "analyzeLoan",
           systemPrompt: helpers.structuredPrompt({
-            facts: ["You are a loan risk analyst"],
+            facts: [
+              "You are a loan risk analyst",
+              `Here are the asset classes for the loan: ${JSON.stringify(
+                record.assetClassIds,
+              )}`,
+            ],
             goals: [
               "Analyze the loan's asset classes",
               "Determine the risk profile for each asset class",
@@ -89,17 +151,31 @@ import { helpers } from "./workflow";
           );
         });
 
-        return agent2.trigger({
+        const result = await agent2.trigger({
           data: {
-            loanId: record.id,
-            customerId: input.customerId,
+            assetClassDetails,
           },
         });
+
+        await ctx.log("info", {
+          message: `Processing record ${record.id}`,
+          data: {
+            recordId: record.id,
+            result: result.result,
+          },
+        });
+
+        return result;
       }),
     );
 
+    await ctx.log("warn", {
+      message: "I've processed all the records",
+    });
+
     const riskProfile = await ctx
       .agent({
+        type: "single-step",
         name: "riskAgent",
         systemPrompt: helpers.structuredPrompt({
           facts: [
@@ -119,23 +195,39 @@ import { helpers } from "./workflow";
       .trigger({
         data: {
           customerId: input.customerId,
-          assetClassDetails: processedRecords,
+          assetClassDetails: processedRecords.map(
+            (record) => record.result.summary,
+          ),
         },
       });
 
+    console.log("riskProfile");
+
     const randomResult = await ctx.result("randomResult", async () => {
+      await ctx.log("info", {
+        message: "Fetching random result",
+      });
+
       return fetch("https://api.inferable.ai/live").then(
         (res) => res.json() as Promise<{ status: string }>,
       );
     });
 
-    ctx.effect("logFinalResult", async () => {
-      console.log("--------------------------------");
-      console.log(riskProfile);
-      console.log("--------------------------------");
-      console.log(randomResult);
-      console.log("--------------------------------");
+    await ctx.log("error", {
+      message: "randomResult",
+      data: {
+        just: {
+          testing: {
+            errors: ["this is an error"],
+          },
+        },
+      },
     });
+
+    return {
+      riskProfile,
+      randomResult,
+    };
   });
 
   await workflow.listen();
