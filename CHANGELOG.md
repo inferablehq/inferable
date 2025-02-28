@@ -1,3 +1,20 @@
+# Release 2025-02-26
+
+This release includes several new demo implementations, infrastructure improvements, and SDK updates. Notable additions include new demos for quote systems and contextual ticket tagging, along with significant changes to queue workload handling and system logging configurations.
+
+## Changes
+
+### Feature
+- Added new quote system demo with complete setup and documentation
+- Implemented separate queue workloads with core functionality improvements
+- Added contextual ticket tagging demo with single-step and multi-step implementations
+
+### Bug Fix
+- Disabled HyperDX log collection in observability system
+
+### SDK Release
+- Updated Node.js SDK to version 0.30.109
+
 # Release 2025-02-22
 
 This release includes significant improvements to workflow functionality, error handling, and UI enhancements. Notable additions include a new changelog generator demo and various fixes for workflow tool management and status display.
