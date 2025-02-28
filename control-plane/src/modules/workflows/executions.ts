@@ -220,23 +220,14 @@ export const createWorkflowExecution = async (
 
   logger.info(`Using workflow tool ${latest.name} for ${workflowName}`);
 
-  // Check for existing workflowExecution.
-  // Ideally this should all be a transaction (Job + Workflow Execution creation)
-  const [existingExecution] = await data.db
-    .select()
-    .from(data.workflowExecutions)
-    .where(
-      and(
-        eq(data.workflowExecutions.id, parsed.data.executionId),
-        eq(data.workflowExecutions.cluster_id, clusterId)
-      )
-    )
+  const jobId = parsed.data.executionId;
 
-  if (existingExecution) {
-    return { jobId: existingExecution.job_id };
-  }
-
-  const job = await jobs.createJobV2({
+  await jobs.createJobV2({
+    /**
+     * The job created for the workflow execution has the same jobId as the executionId.
+     * This prevents us from doing a lookup by jobId to find the executionId.
+     */
+    jobId,
     owner: { clusterId },
     targetFn: latest.toolName,
     targetArgs: packer.pack(parsed.data),
@@ -248,13 +239,13 @@ export const createWorkflowExecution = async (
     .values({
       id: parsed.data.executionId,
       cluster_id: clusterId,
-      job_id: job.id,
+      job_id: jobId,
       workflow_name: workflowName,
       workflow_version: version,
     })
     .onConflictDoNothing();
 
-  return { jobId: job.id };
+  return { jobId };
 };
 
 export const resumeWorkflowExecution = async ({
@@ -269,7 +260,7 @@ export const resumeWorkflowExecution = async ({
     .from(data.workflowExecutions)
     .innerJoin(
       data.jobs,
-      and (
+      and(
         eq(data.workflowExecutions.job_id, data.jobs.id),
         eq(data.workflowExecutions.cluster_id, data.jobs.cluster_id)
       )
@@ -285,21 +276,15 @@ export const resumeWorkflowExecution = async ({
     throw new NotFoundError(`Workflow execution ${id} not found`);
   }
 
-
   if (!job) {
-    throw new NotFoundError(
-      `Job not found while resuming workflow execution ${id}`
-    );
+    throw new NotFoundError(`Job not found while resuming workflow execution ${id}`);
   }
 
   if (job.approval_requested && !job.approved) {
-    logger.warn(
-      "Workflow execution is not approved yet. Waiting for approval before resuming",
-      {
-        clusterId,
-        workflowExecutionId: id,
-      }
-    )
+    logger.warn("Workflow execution is not approved yet. Waiting for approval before resuming", {
+      clusterId,
+      workflowExecutionId: id,
+    });
   }
 
   // Move the job back to pending to allow it to be resumed

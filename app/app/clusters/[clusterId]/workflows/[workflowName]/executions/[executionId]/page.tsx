@@ -1,18 +1,35 @@
 "use client";
 
-import { Run } from "@/components/run";
-import { Bot, Terminal, Clock, Zap, Ban, Pause, Check, ServerIcon, Workflow, AlertCircle, PlayCircle, ChevronRight, Speaker, MessageCircle, MessageCircleWarning, TimerOff, Timer, RotateCcw } from "lucide-react";
-import React, { useCallback, useEffect, useState, useMemo } from "react";
-import { useAuth, useUser } from "@clerk/nextjs";
 import { client } from "@/client/client";
-import { createErrorToast } from "@/lib/utils";
-import { ClientInferResponseBody } from "@ts-rest/core";
 import { contract } from "@/client/contract";
-import { formatDistance, formatRelative } from "date-fns";
-import { Button } from "@/components/ui/button";
 import { ReadOnlyJSON } from "@/components/read-only-json";
-import { cn } from "@/lib/utils";
+import { Run } from "@/components/run";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { cn, createErrorToast } from "@/lib/utils";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { ClientInferResponseBody } from "@ts-rest/core";
+import { formatDistance, formatRelative } from "date-fns";
+import {
+  AlertCircle,
+  Ban,
+  Bot,
+  Check,
+  ChevronRight,
+  CircleChevronRight,
+  Clock,
+  MessageCircle,
+  MessageCircleWarning,
+  Pause,
+  PlayCircle,
+  RotateCcw,
+  ServerIcon,
+  Terminal,
+  Timer,
+  Workflow,
+  Zap,
+} from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
 
 type Node = {
   id: string;
@@ -27,12 +44,17 @@ type Node = {
   result?: any;
 };
 
-const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline, 200>["events"][number]): Node | null => {
+const eventToNode = (
+  event: ClientInferResponseBody<
+    typeof contract.getWorkflowExecutionTimeline,
+    200
+  >["events"][number]
+): Node | null => {
   const base = {
     id: event.id,
     time: new Date(event.createdAt),
     interactive: false,
-  }
+  };
 
   switch (event.type) {
     case "jobRecovered": {
@@ -42,28 +64,30 @@ const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowE
         tooltip: "The Workflow will be retried after stalling.",
         ...(event.machineId && { label: event.machineId }),
         icon: <RotateCcw className="w-3.5 h-3.5" />,
-        iconBackground: "bg-blue-100 text-blue-700",
-      }
+        iconBackground: "bg-indigo-100 text-indigo-700",
+      };
     }
     case "jobStalled": {
       return {
         ...base,
         title: "Workflow Stalled",
-        tooltip: "The Workflow handler did not resolve within the expected time. Timeout can be adjusted with `config.timeoutSeconds`.",
+        tooltip:
+          "The Workflow handler did not resolve within the expected time. Timeout can be adjusted with `config.timeoutSeconds`.",
         ...(event.machineId && { label: event.machineId }),
         icon: <Timer className="w-3.5 h-3.5" />,
-        iconBackground: "bg-red-100 text-red-700",
-      }
+        iconBackground: "bg-orange-100 text-orange-700",
+      };
     }
     case "jobStalledTooManyTimes": {
       return {
         ...base,
         title: "Workflow Stalled Too Many Times",
-        tooltip: "The Workflow stalled too many times and was failed. Reties can be adjusted with `config.retryCountOnStall`.",
+        tooltip:
+          "The Workflow stalled too many times and was failed. Reties can be adjusted with `config.retryCountOnStall`.",
         ...(event.machineId && { label: event.machineId }),
         icon: <AlertCircle className="w-3.5 h-3.5" />,
         iconBackground: "bg-red-100 text-red-700",
-      }
+      };
     }
     case "jobAcknowledged": {
       return {
@@ -72,8 +96,8 @@ const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowE
         tooltip: "The Workflow was picked up by a Machine for processing",
         ...(event.machineId && { label: event.machineId }),
         icon: <ServerIcon className="w-3.5 h-3.5" />,
-        iconBackground: "bg-blue-100 text-blue-700",
-      }
+        iconBackground: "bg-sky-100 text-sky-700",
+      };
     }
     case "jobResulted":
     case "functionResulted": {
@@ -82,10 +106,10 @@ const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowE
           ...base,
           title: "Workflow Completed",
           tooltip: "Workflow execution finished successfully",
-          color: "text-green-700",
+          color: "text-emerald-700",
           icon: <Check className="w-3.5 h-3.5" />,
-          iconBackground: "bg-green-100 text-green-700",
-        }
+          iconBackground: "bg-emerald-100 text-emerald-700",
+        };
       }
 
       return {
@@ -95,15 +119,15 @@ const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowE
         color: "text-red-700",
         icon: <AlertCircle className="w-3.5 h-3.5" />,
         iconBackground: "bg-red-100 text-red-700",
-      }
+      };
     }
     case "jobCreated": {
       return {
         ...base,
         title: "Workflow Triggered",
         icon: <PlayCircle className="w-3.5 h-3.5" />,
-        iconBackground: "bg-purple-100 text-purple-700",
-      }
+        iconBackground: "bg-violet-100 text-violet-700",
+      };
     }
     case "approvalRequested": {
       return {
@@ -111,18 +135,18 @@ const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowE
         tooltip: "The Workflow is waiting for approval",
         title: "Approval Requested",
         icon: <Pause className="w-3.5 h-3.5" />,
-        iconBackground: "bg-yellow-100 text-yellow-700",
-      }
+        iconBackground: "bg-amber-100 text-amber-700",
+      };
     }
     case "approvalGranted": {
       return {
         ...base,
         title: "Approval Granted",
         tooltip: "The Workflow was approved and will continue",
-        color: "text-green-700",
+        color: "text-emerald-700",
         icon: <Check className="w-3.5 h-3.5" />,
-        iconBackground: "bg-green-100 text-green-700",
-      }
+        iconBackground: "bg-emerald-100 text-emerald-700",
+      };
     }
     case "approvalDenied": {
       return {
@@ -132,43 +156,84 @@ const eventToNode = (event: ClientInferResponseBody<typeof contract.getWorkflowE
         color: "text-red-700",
         icon: <Ban className="w-3.5 h-3.5" />,
         iconBackground: "bg-red-100 text-red-700",
-      }
+      };
     }
     case "notificationSent": {
       return {
         ...base,
         title: "A notification was sent",
         icon: <MessageCircle className="w-3.5 h-3.5" />,
-        iconBackground: "bg-blue-100 text-blue-700",
-      }
+        iconBackground: "bg-teal-100 text-teal-700",
+      };
     }
     case "notificationFailed": {
       return {
         ...base,
         title: "A notification failed to send",
         icon: <MessageCircleWarning className="w-3.5 h-3.5" />,
-        iconBackground: "bg-red-100 text-red-700",
+        iconBackground: "bg-rose-100 text-rose-700",
+      };
+    }
+    case "workflowLogCreated": {
+      const { status, data } = event.meta;
+      const { message, ...rest } = data;
+
+      const hasData = Object.keys(rest).length > 0;
+
+      const icon = <CircleChevronRight className="w-3.5 h-3.5" />;
+
+      switch (status) {
+        case "info":
+          return {
+            ...base,
+            icon,
+            iconBackground: "bg-sky-100 text-sky-700",
+            ...(message && { tooltip: message }),
+            result: hasData ? rest : undefined,
+          };
+        case "warn":
+          return {
+            ...base,
+            icon,
+            iconBackground: "bg-amber-100 text-amber-700",
+            ...(message && { tooltip: message }),
+            result: hasData ? rest : undefined,
+          };
+        case "error":
+          return {
+            ...base,
+            icon,
+            iconBackground: "bg-rose-100 text-rose-700",
+            ...(message && { tooltip: message }),
+            result: hasData ? rest : undefined,
+          };
+        default: {
+          return null;
+        }
       }
     }
     default: {
-      return null
+      return null;
     }
   }
 };
 
-const runToNode = (run: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline, 200>["runs"][number]): Node => {
+const runToNode = (
+  run: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline, 200>["runs"][number]
+): Node => {
   return {
     id: run.id,
     title: run.type === "single-step" ? "Single Step Agent" : "Multi Step Agent",
     label: run.name,
     tooltip: "An agent run was triggered",
     time: new Date(run.createdAt),
-    color: run.status === "failed" ? "text-red-700" : undefined,
+    color: run.status === "failed" ? "text-rose-700" : undefined,
     icon: <Bot className="w-3.5 h-3.5" />,
-    iconBackground: run.status === "failed" ? "bg-red-100 text-red-700" : "bg-zinc-100 text-zinc-700",
+    iconBackground:
+      run.status === "failed" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-700",
     interactive: true,
-  }
-}
+  };
+};
 
 function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onClick?: () => void }) {
   return (
@@ -179,7 +244,7 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
         "last:before:hidden",
         node.interactive && [
           "cursor-pointer hover:bg-muted/50 transition-colors",
-          "after:absolute after:inset-0 after:pointer-events-none after:border after:border-transparent after:hover:border-border/60 after:rounded-sm after:transition-colors"
+          "after:absolute after:inset-0 after:pointer-events-none after:border after:border-transparent after:hover:border-border/60 after:rounded-sm after:transition-colors",
         ]
       )}
       onClick={onClick}
@@ -206,11 +271,7 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
               </span>
             )}
           </div>
-          {node.tooltip && (
-            <div className="text-sm text-muted-foreground mt-1">
-              {node.tooltip}
-            </div>
-          )}
+          {node.tooltip && <div className="text-sm text-muted-foreground">{node.tooltip}</div>}
           {node.result && (
             <div className="mt-3 bg-muted rounded-lg p-4">
               {typeof node.result === "object" ? (
@@ -226,8 +287,14 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
   );
 }
 
-function useTimelineParser(timeline: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline> | undefined) {
-  const status = !timeline ? "pending" : timeline.execution.job.resultType === "rejection" ? "failure" : timeline.execution.job.status;
+function useTimelineParser(
+  timeline: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline> | undefined
+) {
+  const status = !timeline
+    ? "pending"
+    : timeline.execution.job.resultType === "rejection"
+      ? "failure"
+      : timeline.execution.job.status;
 
   const parsedData = React.useMemo(() => {
     if (!timeline) return { result: null, input: null };
@@ -244,13 +311,13 @@ function useTimelineParser(timeline: ClientInferResponseBody<typeof contract.get
 
     return {
       result: parseJSON(timeline.execution.job.result),
-      input: parseJSON(timeline.execution.job.targetArgs)
+      input: parseJSON(timeline.execution.job.targetArgs),
     };
   }, [timeline]);
 
   return {
     status,
-    ...parsedData
+    ...parsedData,
   };
 }
 
@@ -353,24 +420,28 @@ export default function WorkflowExecutionDetailsPage({
   const nodes = [
     ...(timeline?.runs.map(runToNode) || []),
     ...(timeline?.events.map(eventToNode) || []),
-    ...(result ? [{
-      id: 'result',
-      title: "Execution Result",
-      tooltip: "Final result of the workflow execution",
-      icon: <Terminal className="w-3.5 h-3.5" />,
-      iconBackground: status === "failure" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700",
-      interactive: false,
-      result
-    }] : []),
-  ]
-    .filter(Boolean) as Node[];
+    ...(result
+      ? [
+          {
+            id: "result",
+            title: "Execution Result",
+            tooltip: "Final result of the workflow execution",
+            icon: <Terminal className="w-3.5 h-3.5" />,
+            iconBackground:
+              status === "failure" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700",
+            interactive: false,
+            result,
+          },
+        ]
+      : []),
+  ].filter(Boolean) as Node[];
 
   // Sort nodes by date in ascending order (oldest first) - but keep result at the end
   const sortedNodes = nodes
-    .filter(node => node.id !== 'result')
+    .filter(node => node.id !== "result")
     .sort((a, b) => a.time!.getTime() - b.time!.getTime());
 
-  const resultNode = nodes.find(node => node.id === 'result');
+  const resultNode = nodes.find(node => node.id === "result");
   if (resultNode) {
     sortedNodes.push(resultNode);
   }
@@ -395,7 +466,11 @@ export default function WorkflowExecutionDetailsPage({
             <div>
               <div className="text-sm font-medium">Workflow Details</div>
               <div className="text-xs text-muted-foreground font-mono">
-                {new Date(timeline.execution.createdAt).toISOString()} ({formatDistance(new Date(timeline.execution.createdAt), new Date(), { addSuffix: true })})
+                {new Date(timeline.execution.createdAt).toISOString()} (
+                {formatDistance(new Date(timeline.execution.createdAt), new Date(), {
+                  addSuffix: true,
+                })}
+                )
               </div>
             </div>
           </div>
@@ -428,16 +503,26 @@ export default function WorkflowExecutionDetailsPage({
             </div>
 
             <div className="flex items-start gap-3">
-              <div className={cn(
-                "p-1.5 rounded shrink-0",
-                status === "failure" ? "bg-red-100" :
-                status === "success" ? "bg-green-100" : "bg-muted"
-              )}>
-                <div className={cn(
-                  "w-3.5 h-3.5 rounded-full",
-                  status === "failure" ? "bg-red-500" :
-                  status === "success" ? "bg-green-500" : "bg-muted-foreground"
-                )} />
+              <div
+                className={cn(
+                  "p-1.5 rounded shrink-0",
+                  status === "failure"
+                    ? "bg-rose-100"
+                    : status === "success"
+                      ? "bg-emerald-100"
+                      : "bg-slate-100"
+                )}
+              >
+                <div
+                  className={cn(
+                    "w-3.5 h-3.5 rounded-full",
+                    status === "failure"
+                      ? "bg-rose-500"
+                      : status === "success"
+                        ? "bg-emerald-500"
+                        : "bg-slate-400"
+                  )}
+                />
               </div>
               <div className="min-w-0 space-y-1">
                 <div className="text-xs text-muted-foreground">Status</div>
@@ -467,7 +552,7 @@ export default function WorkflowExecutionDetailsPage({
 
         {timeline.execution.job.approvalRequested && timeline.execution.job.approved === null && (
           <div className="rounded-lg border bg-card p-4 space-y-3">
-            <div className="flex items-center gap-2 text-yellow-600">
+            <div className="flex items-center gap-2 text-amber-600">
               <Pause className="w-4 h-4" />
               <h3 className="text-sm font-medium">Approval Required</h3>
             </div>
@@ -515,7 +600,7 @@ export default function WorkflowExecutionDetailsPage({
         </div>
         <div className="overflow-y-auto">
           <div className="divide-y divide-border/40">
-            {sortedNodes.map((node) => (
+            {sortedNodes.map(node => (
               <WorkflowEvent
                 key={node.id}
                 node={node}

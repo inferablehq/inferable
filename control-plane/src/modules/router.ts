@@ -43,7 +43,12 @@ import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
 import { getWorkflowTools, listTools, recordPoll, upsertToolDefinition } from "./tools";
 import { persistJobInterrupt } from "./jobs/job-results";
-import { createWorkflowExecution, listWorkflowExecutions, getWorkflowExecutionTimeline } from "./workflows/executions";
+import {
+  createWorkflowExecution,
+  listWorkflowExecutions,
+  getWorkflowExecutionTimeline,
+} from "./workflows/executions";
+import { createWorkflowLog } from "./workflows/logs";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -202,7 +207,7 @@ export const router = initServer().router(contract, {
     }
 
     if (body.resultSchema) {
-      if ('type' in body.resultSchema && body.resultSchema.type !== 'object') {
+      if ("type" in body.resultSchema && body.resultSchema.type !== "object") {
         return {
           status: 400,
           body: {
@@ -219,7 +224,7 @@ export const router = initServer().router(contract, {
         logger.info("Invalid resultSchema", {
           resultSchema: body.resultSchema,
           validationError,
-        })
+        });
         return validationError;
       }
     }
@@ -1448,6 +1453,26 @@ export const router = initServer().router(contract, {
     machine.canCreate({ run: true });
 
     const result = await createWorkflowExecution(clusterId, workflowName, request.body);
+
+    return {
+      status: 201,
+      body: result,
+    };
+  },
+
+  createWorkflowLog: async request => {
+    const { clusterId, executionId } = request.params;
+    const { status, data } = request.body;
+
+    const machine = request.request.getAuth();
+    machine.canAccess({ cluster: { clusterId } });
+
+    const result = await createWorkflowLog({
+      clusterId,
+      workflowExecutionId: executionId,
+      status,
+      data,
+    });
 
     return {
       status: 201,
