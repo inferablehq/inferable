@@ -69,10 +69,14 @@ export const productService = () => {
     },
   });
 
+  let failingFunctionCount = 0;
+
   client.tools.register({
     name: `${prefix}_failingFunction`,
     func: async () => {
       await new Promise((resolve) => setTimeout(resolve, 5000));
+      failingFunctionCount++;
+      return failingFunctionCount;
     },
     schema: {
       input: z.object({
@@ -101,6 +105,6 @@ export const productService = () => {
 
   return {
     prefix,
-    client
+    client,
   };
 };
