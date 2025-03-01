@@ -87,9 +87,6 @@ export class PollingAgent {
         setTimeout(resolve, this.retryAfter * 1000),
       );
     }
-
-    //@eslint-disable-next-line no-console
-    console.error("Quitting polling agent");
   }
 
   private async pollIteration() {

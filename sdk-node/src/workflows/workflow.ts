@@ -43,8 +43,7 @@ type AgentConfig<TResult> = {
 };
 
 type WorkflowContext<TInput> = {
-  effect: (name: string, fn: () => Promise<void>) => Promise<void>;
-  llm: L1M
+  llm: L1M;
   result: <TResult>(
     name: string,
     fn: () => Promise<TResult>,
@@ -155,70 +154,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         model: "claude-3-5-sonnet",
         key: this.apiSecret,
         url: ``,
-      }
+      },
     });
 
     return {
       ...jobCtx,
       llm: l1m,
-      effect: async (
-        name: string,
-        fn: (ctx: WorkflowContext<TInput>) => Promise<void>,
-      ) => {
-        const ctx = this.createWorkflowContext(
-          version,
-          executionId,
-          input,
-          jobCtx,
-        );
-
-        const rand = crypto.randomUUID();
-
-        // TODO: async/retry
-        const result = await this.client.setClusterKV({
-          params: {
-            clusterId: await this.getClusterId(),
-            key: `${executionId}_effect_${name}`,
-          },
-          body: {
-            value: rand,
-            onConflict: "doNothing",
-          },
-        });
-
-        if (result.status !== 200) {
-          this.logger?.error("Failed to set effect", {
-            name,
-            executionId,
-            status: result.status,
-          });
-          throw new Error("Failed to set effect");
-        }
-
-        const canRun = result.body.value === rand;
-
-        if (canRun) {
-          this.logger?.info(`Effect ${name} starting execution`, {
-            executionId,
-          });
-          try {
-            await fn(ctx);
-            this.logger?.info(`Effect ${name} completed successfully`, {
-              executionId,
-            });
-          } catch (e) {
-            this.logger?.error(`Effect ${name} failed`, {
-              executionId,
-              error: e,
-            });
-            throw e;
-          }
-        } else {
-          this.logger?.info(`Effect ${name} has already been run`, {
-            executionId,
-          });
-        }
-      },
       result: async <TResult>(
         name: string,
         fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,

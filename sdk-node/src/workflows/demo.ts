@@ -145,12 +145,6 @@ import { helpers } from "./workflow";
           }),
         });
 
-        ctx.effect(`logFirstAnalyzeLoan`, async () => {
-          console.log(
-            `This side effect will only be run once. It's running for ${record.id}`,
-          );
-        });
-
         const result = await agent2.trigger({
           data: {
             assetClassDetails,
