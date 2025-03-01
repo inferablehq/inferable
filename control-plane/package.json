@@ -30,6 +30,7 @@
     "@langchain/cohere": "^0.3.1",
     "@langchain/langgraph": "^0.1.9",
     "@nangohq/node": "^0.48.1",
+    "@opentelemetry/instrumentation-redis": "^0.46.1",
     "@slack/bolt": "^4.1.1",
     "@toolhouseai/sdk": "^1.0.4",
     "@ts-rest/core": "^3.27.0",

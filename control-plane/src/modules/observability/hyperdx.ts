@@ -18,28 +18,14 @@ hdx?.init({
   instrumentations: {
     "@opentelemetry/instrumentation-http": {
       enabled: true,
-      ignoreIncomingRequestHook: (req) => {
-        if (req.method === "GET" && req.headers["x-machine-id"]) {
-          // Trace 1% of machine poll `/calls` requests
-          return Math.random() > 0.01;
-        }
-
-        if (req.method === "GET" && req.url?.includes("/timeline")) {
-          // Trace 1% of `/timeline` polls
-          return Math.random() > 0.01;
-        }
-
-        if (req.url?.endsWith("/live")) {
-          return true;
-        }
-
-        return false;
-      },
     },
     "@opentelemetry/instrumentation-pg": {
       enabled: true,
       // This is to prevent tracking new spans for every `/calls` request
       requireParentSpan: true,
+    },
+    "@opentelemetry/instrumentation-redis": {
+      enabled: true,
     },
   },
   advancedNetworkCapture: false,
