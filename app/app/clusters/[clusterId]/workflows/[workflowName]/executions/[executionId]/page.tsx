@@ -235,6 +235,32 @@ const runToNode = (
   };
 };
 
+const resultToNode = (
+  result: ClientInferResponseBody<
+    typeof contract.getWorkflowExecutionTimeline,
+    200
+  >["results"][number]
+): Node => {
+  let parsedValue;
+  try {
+    parsedValue = typeof result.value === "string" ? JSON.parse(result.value) : result.value;
+  } catch (e) {
+    parsedValue = result.value;
+  }
+
+  return {
+    id: result.key,
+    title: `Interim Result`,
+    label: `${result.key}`,
+    time: new Date(result.createdAt),
+    color: "text-emerald-700",
+    icon: <Terminal className="w-3.5 h-3.5" />,
+    iconBackground: "bg-emerald-100 text-emerald-700",
+    interactive: false,
+    result: parsedValue,
+  };
+};
+
 function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onClick?: () => void }) {
   // Special rendering for log messages
   if (node.isLog) {
@@ -481,6 +507,7 @@ export default function WorkflowExecutionDetailsPage({
           },
         ]
       : []),
+    ...(timeline?.results.map(resultToNode) || []),
   ].filter(Boolean) as Node[];
 
   // Sort nodes by date in ascending order (oldest first) - but keep result at the end

@@ -1369,6 +1369,13 @@ export const definition = {
             approvalRequested: z.boolean().nullable(),
           }),
         }),
+        results: z.array(
+          z.object({
+            key: z.string(),
+            value: z.string(),
+            createdAt: z.number(),
+          })
+        ),
       }),
     },
   },
