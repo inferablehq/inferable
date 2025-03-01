@@ -42,6 +42,8 @@ type Node = {
   iconBackground?: string;
   interactive?: boolean;
   result?: any;
+  isLog?: boolean;
+  logLevel?: "info" | "warn" | "error";
 };
 
 const eventToNode = (
@@ -180,31 +182,29 @@ const eventToNode = (
 
       const hasData = Object.keys(rest).length > 0;
 
-      const icon = <CircleChevronRight className="w-3.5 h-3.5" />;
-
       switch (status) {
         case "info":
           return {
             ...base,
-            icon,
-            iconBackground: "bg-sky-100 text-sky-700",
-            ...(message && { tooltip: message }),
+            title: message || "Log message",
+            isLog: true,
+            logLevel: "info",
             result: hasData ? rest : undefined,
           };
         case "warn":
           return {
             ...base,
-            icon,
-            iconBackground: "bg-amber-100 text-amber-700",
-            ...(message && { tooltip: message }),
+            title: message || "Warning",
+            isLog: true,
+            logLevel: "warn",
             result: hasData ? rest : undefined,
           };
         case "error":
           return {
             ...base,
-            icon,
-            iconBackground: "bg-rose-100 text-rose-700",
-            ...(message && { tooltip: message }),
+            title: message || "Error",
+            isLog: true,
+            logLevel: "error",
             result: hasData ? rest : undefined,
           };
         default: {
@@ -236,6 +236,53 @@ const runToNode = (
 };
 
 function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onClick?: () => void }) {
+  // Special rendering for log messages
+  if (node.isLog) {
+    let logColor = "text-sky-600"; // Default to info
+
+    if (node.logLevel === "warn") {
+      logColor = "text-amber-600";
+    } else if (node.logLevel === "error") {
+      logColor = "text-rose-600";
+    }
+
+    return (
+      <div
+        className={cn(
+          "px-6 py-3 relative group",
+          "before:absolute before:left-[2.25rem] before:top-0 before:bottom-0 before:w-px before:bg-border",
+          "last:before:hidden"
+        )}
+      >
+        {node.time && (
+          <div className="shrink-0 text-xs text-muted-foreground/60 absolute right-6 top-3">
+            {formatRelative(node.time, new Date())}
+          </div>
+        )}
+
+        <div className="ml-8 max-w-[calc(100%-8rem)]">
+          <div className="font-mono text-sm px-4 py-2">
+            <div className="flex items-baseline gap-2">
+              <span className={cn("uppercase text-xs font-bold", logColor)}>{node.logLevel}</span>
+              <span>{node.title}</span>
+            </div>
+
+            {node.result && (
+              <div className="mt-2 bg-muted/50 rounded p-2 text-xs">
+                {typeof node.result === "object" ? (
+                  <ReadOnlyJSON json={node.result} />
+                ) : (
+                  <span>{JSON.stringify(node.result)}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular event rendering (existing code)
   return (
     <div
       className={cn(
