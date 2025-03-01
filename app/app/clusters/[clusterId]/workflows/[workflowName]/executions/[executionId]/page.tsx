@@ -20,6 +20,7 @@ import {
   ChevronRight,
   CircleChevronRight,
   Clock,
+  Copy,
   MessageCircle,
   MessageCircleWarning,
   Pause,
@@ -32,6 +33,7 @@ import {
   Zap,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 type Node = {
   id: string;
@@ -570,6 +572,19 @@ export default function WorkflowExecutionDetailsPage({
     setSelectedRunId(selectedRunId ? null : node.id);
   };
 
+  const copyTimelineToClipboard = () => {
+    if (!timeline) return;
+
+    try {
+      const timelineData = JSON.stringify(timeline, null, 2);
+      navigator.clipboard.writeText(timelineData);
+      toast.success("Timeline data copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy timeline data:", error);
+      toast.error("Failed to copy timeline data");
+    }
+  };
+
   if (isLoading || !timeline) {
     return <div className="p-6">Loading...</div>;
   }
@@ -707,16 +722,28 @@ export default function WorkflowExecutionDetailsPage({
 
       {/* Right column - Timeline */}
       <div className="flex-1 overflow-hidden rounded-sm border bg-card">
-        <div className="flex items-center gap-3 p-4 border-b">
-          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <Clock className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <div className="text-sm font-medium">Timeline</div>
-            <div className="text-xs text-muted-foreground font-mono">
-              {sortedNodes.length} events
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Clock className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <div className="text-sm font-medium">Timeline</div>
+              <div className="text-xs text-muted-foreground font-mono">
+                {sortedNodes.length} events
+              </div>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={copyTimelineToClipboard}
+            title="Copy raw timeline data"
+          >
+            <Copy className="h-4 w-4" />
+            <span className="text-xs">Copy Data</span>
+          </Button>
         </div>
         <div className="overflow-y-auto">
           <div className="divide-y divide-border/40">
