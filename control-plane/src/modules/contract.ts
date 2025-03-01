@@ -1376,6 +1376,13 @@ export const definition = {
             createdAt: z.number(),
           })
         ),
+        structured: z.array(
+          z.object({
+            key: z.string(),
+            value: z.string(),
+            createdAt: z.number(),
+          })
+        ),
       }),
     },
   },

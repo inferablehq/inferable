@@ -19,7 +19,7 @@ export const getWorkflowExecutionTimeline = async ({
   workflowName: string;
   clusterId: string;
 }) => {
-  const [[execution], runs, events, results] = await Promise.all([
+  const [[execution], runs, events, results, structured] = await Promise.all([
     data.db
       .select({
         id: data.workflowExecutions.id,
@@ -56,6 +56,7 @@ export const getWorkflowExecutionTimeline = async ({
     getWorkflowRuns({ clusterId, executionId, workflowName }),
     getEventsForJobId({ jobId: executionId, clusterId }),
     kv.getAllByPrefix(clusterId, `${executionId}_result_`),
+    kv.getAllByPrefix(clusterId, `${executionId}_structured_`),
   ]);
 
   return {
@@ -63,6 +64,7 @@ export const getWorkflowExecutionTimeline = async ({
     runs,
     events,
     results,
+    structured,
   };
 };
 

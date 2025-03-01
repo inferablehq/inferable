@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { initServer } from "@ts-rest/fastify";
 import { generateOpenApi } from "@ts-rest/open-api";
 import { dereferenceSync } from "dereference-json-schema";
@@ -1577,7 +1578,36 @@ export const router = initServer().router(contract, {
     const providerModel = request.headers["x-provider-model"];
     const providerUrl = request.headers["x-provider-url"];
 
-    const workflowId = request.headers["x-workflow-execution-id"];
+    const executionId = request.headers["x-workflow-execution-id"];
+
+    if (!executionId) {
+      return {
+        status: 400,
+        body: {
+          message: "Missing x-workflow-execution-id header",
+        },
+      };
+    }
+
+    const hash = crypto.createHash("sha256");
+    hash.update(input)
+    hash.update(JSON.stringify(schema))
+    hash.update(providerModel)
+    hash.update(providerKey)
+    hash.update(executionId)
+    instruction && hash.update(instruction)
+
+    const messageKey = `${executionId}_structured_${hash.digest("hex")}`
+
+    const existingMessage = await kv.get(clusterId, messageKey);
+    if (existingMessage) {
+      return {
+        status: 200,
+        body: {
+          data: JSON.parse(existingMessage),
+        },
+      };
+    }
 
     const schemaError = validateJsonSchema(schema);
     if (schemaError) {
@@ -1687,6 +1717,8 @@ export const router = initServer().router(contract, {
         },
       };
     }
+
+    kv.setIfNotExists(clusterId, messageKey, JSON.stringify(result.structured));
 
     return {
       status: 200,
