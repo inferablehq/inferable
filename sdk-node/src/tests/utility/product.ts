@@ -101,6 +101,6 @@ export const productService = () => {
 
   return {
     prefix,
-    client
+    client,
   };
 };
