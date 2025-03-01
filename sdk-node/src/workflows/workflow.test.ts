@@ -59,23 +59,17 @@ describe("workflow", () => {
 
       onAgentResult(result.result.word);
 
-      const simpleCall = ctx.agent({
-        name: "test",
-        type: "single-step",
-        systemPrompt: "Return the word, needle.",
-        resultSchema: z.object({
+      const simpleResult = await ctx.llm.structured({
+        input: "Return the word, needle.",
+        schema: z.object({
           word: z.string(),
-        }),
+        })
       });
 
-      const simpleResult = await simpleCall.trigger({
-        data: {},
-      });
-
-      if (!simpleResult || !simpleResult.result || !simpleResult.result.word) {
+      if (!simpleResult || !simpleResult.word) {
         throw new Error("No simpleResult");
       }
-      onSimpleResult(simpleResult.result.word);
+      onSimpleResult(simpleResult.word);
     });
 
     await workflow.listen();
@@ -100,7 +94,7 @@ describe("workflow", () => {
 
     // Test workflow found needle
     expect(onAgentResult).toHaveBeenCalledWith("needle");
-    expect(onAgentResult).toHaveBeenCalledTimes(2);
+    expect(onAgentResult).toHaveBeenCalledTimes(1);
 
     expect(toolCall).toHaveBeenCalledTimes(1);
 
