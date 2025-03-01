@@ -270,11 +270,6 @@ export class PollingAgent {
       });
     }
 
-    const start = Date.now();
-    const shouldEndBefore = registration.config?.timeoutSeconds
-      ? start + registration.config.timeoutSeconds * 1000 + 10 // +10ms grace period
-      : Infinity;
-
     const result = await executeFn(registration.func, [
       args,
       {
@@ -284,14 +279,7 @@ export class PollingAgent {
       },
     ]);
 
-    if (Date.now() > shouldEndBefore) {
-      log("Function timed out", {
-        function: call.function,
-        timeout: registration.config?.timeoutSeconds,
-      });
-    } else {
-      await onComplete(result);
-    }
+    await onComplete(result);
   }
 }
 
