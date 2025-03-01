@@ -151,10 +151,14 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
 
     const l1m = new L1M({
       baseUrl: `${this.endpoint}/clusters/${clusterId}/l1m`,
+      additionalHeaders: {
+        "x-workflow-execution-id": executionId,
+        "Authorization": `Bearer ${this.apiSecret}`,
+      },
       provider: {
         model: "claude-3-5-sonnet",
-        key: this.apiSecret,
-        url: ``,
+        key: '',
+        url: '',
       },
     });
 
