@@ -5,6 +5,7 @@ import { contract } from "@/client/contract";
 import { ReadOnlyJSON } from "@/components/read-only-json";
 import { Run } from "@/components/run";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
@@ -15,6 +16,7 @@ import {
   Ban,
   Bot,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleChevronRight,
   Clock,
@@ -251,7 +253,33 @@ const resultToNode = (
   return {
     id: result.key,
     title: `Interim Result`,
-    label: `${result.key}`,
+    label: `${result.key.split("_").pop()}`,
+    time: new Date(result.createdAt),
+    color: "text-emerald-700",
+    icon: <Terminal className="w-3.5 h-3.5" />,
+    iconBackground: "bg-emerald-100 text-emerald-700",
+    interactive: false,
+    result: parsedValue,
+  };
+};
+
+const structuredToNode = (
+  result: ClientInferResponseBody<
+    typeof contract.getWorkflowExecutionTimeline,
+    200
+  >["results"][number]
+): Node => {
+  let parsedValue;
+  try {
+    parsedValue = typeof result.value === "string" ? JSON.parse(result.value) : result.value;
+  } catch (e) {
+    parsedValue = result.value;
+  }
+
+  return {
+    id: result.key,
+    title: `Structured Model Call`,
+    label: `${result.key.split("_").pop()}`,
     time: new Date(result.createdAt),
     color: "text-emerald-700",
     icon: <Terminal className="w-3.5 h-3.5" />,
@@ -345,13 +373,30 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
             )}
           </div>
           {node.tooltip && <div className="text-sm text-muted-foreground">{node.tooltip}</div>}
-          {node.result && (
-            <div className="mt-3 bg-muted rounded-lg p-4">
+          {node.result && JSON.stringify(node.result).length > 5000 && (
+            <Collapsible className="mt-3">
+              <CollapsibleTrigger className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors mb-1">
+                <ChevronDown className="h-3 w-3 mr-1 transition-transform duration-200 [&[data-state=closed]]:rotate-[-90deg]" />
+                Show details
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="bg-muted rounded-lg p-4">
+                  {typeof node.result === "object" ? (
+                    <ReadOnlyJSON json={node.result} />
+                  ) : (
+                    <span className="text-sm font-mono">{JSON.stringify(node.result)}</span>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+          {node.result && JSON.stringify(node.result).length <= 5000 && (
+            <div className="bg-muted rounded-lg p-4">
               {typeof node.result === "object" ? (
                 <ReadOnlyJSON json={node.result} />
               ) : (
-                <span className="text-sm font-mono">{JSON.stringify(node.result)}</span>
-              )}
+                  <span className="text-sm font-mono">{JSON.stringify(node.result)}</span>
+                )}
             </div>
           )}
         </div>
@@ -508,6 +553,7 @@ export default function WorkflowExecutionDetailsPage({
         ]
       : []),
     ...(timeline?.results.map(resultToNode) || []),
+    ...(timeline?.structured.map(structuredToNode) || []),
   ].filter(Boolean) as Node[];
 
   // Sort nodes by date in ascending order (oldest first) - but keep result at the end

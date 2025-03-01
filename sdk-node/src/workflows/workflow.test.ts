@@ -37,6 +37,7 @@ describe("workflow", () => {
 
     workflow.version(1).define(async (ctx, input) => {
       onStart(input);
+      ctx.log("info", { message: "Starting workflow" });
       const searchAgent = ctx.agent({
         name: "search",
         tools: ["searchHaystack"],
@@ -53,12 +54,28 @@ describe("workflow", () => {
         data: {},
       });
 
+      ctx.result("testResultCall", async () => {
+        return {
+          word: "needle",
+        };
+      });
+
       if (!result || !result.result || !result.result.word) {
         throw new Error("No result");
       }
 
       onAgentResult(result.result.word);
 
+      ctx.log("info", { message: "About to run simple LLM call" });
+
+      await ctx.llm.structured({
+        input: "Return the word, needle.",
+        schema: z.object({
+          word: z.string(),
+        })
+      });
+
+      // Duplicate call
       const simpleResult = await ctx.llm.structured({
         input: "Return the word, needle.",
         schema: z.object({
@@ -70,6 +87,7 @@ describe("workflow", () => {
         throw new Error("No simpleResult");
       }
       onSimpleResult(simpleResult.word);
+
     });
 
     await workflow.listen();
