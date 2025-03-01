@@ -10,7 +10,7 @@ import { env } from "../utilities/env";
 import { AuthenticationError, BadRequestError, NotFoundError } from "../utilities/errors";
 import { safeParse } from "../utilities/safe-parse";
 import { unqualifiedEntityId } from "./auth/auth";
-import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
+import { createApiKey, listApiKeys, revokeApiKey, verify } from "./auth/cluster";
 import { createBlob, getBlobData, getBlobsForJobs } from "./blobs";
 import { getClusterDetails } from "./cluster";
 import { contract, interruptSchema } from "./contract";
@@ -49,6 +49,9 @@ import {
   getWorkflowExecutionTimeline,
 } from "./workflows/executions";
 import { createWorkflowLog } from "./workflows/logs";
+import { inferType, structured, validateJsonSchema, validTypes } from "@l1m/core";
+import { buildModel } from "./models";
+import Anthropic from "@anthropic-ai/sdk";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -1564,5 +1567,137 @@ export const router = initServer().router(contract, {
       status: 200,
       body: tools,
     };
+ },
+  l1mStructured: async request => {
+    const { input, instruction, schema } = request.body;
+
+    const providerKey = request.headers["x-provider-key"];
+    const providerModel = request.headers["x-provider-model"];
+    const providerUrl = request.headers["x-provider-url"];
+
+    const schemaError = validateJsonSchema(schema);
+    if (schemaError) {
+      return {
+        status: 400,
+        body: {
+          message: schemaError,
+        },
+      };
+    }
+
+    const type = await inferType(input);
+
+    if (type && !validTypes.includes(type)) {
+      return {
+        status: 400,
+        body: {
+          message: "Provided content has invalid mime type",
+          type,
+        },
+      };
+    }
+
+    let provider: Parameters<typeof structured>[0]["provider"] = {
+      url: providerUrl,
+      key: providerKey,
+      model: providerModel,
+    }
+
+    if (providerUrl.includes("inferable") || providerUrl === "") {
+
+      const auth = await verify(providerKey);
+
+      if (!auth) {
+        throw new AuthenticationError("Invalid API key");
+      }
+
+
+      if (!["claude-3-5-sonnet", "claude-3-haiku"].includes(providerModel)) {
+        return {
+          status: 400,
+          body: {
+            message: `Unsupported model: ${providerModel}`,
+          },
+        };
+      }
+
+      const model = buildModel({
+        identifier: providerModel as any,
+        trackingOptions: {
+          clusterId: auth.clusterId,
+        }
+      });
+
+      provider = async (params, minimal, descriptions) => {
+        const messages: Anthropic.MessageParam[] = [];
+        const promptText = `Answer in JSON using this schema: ${descriptions} ${minimal}`;
+
+        logger.info("Prompt", {
+          prompt: promptText,
+        });
+
+        const { type, input } = params;
+
+        if (type && type.startsWith("image/")) {
+          messages.push({
+            role: "user",
+            content: [
+              { type: "text", text: `${instruction} ${promptText}` },
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: type as any,
+                  data: input,
+                },
+              },
+            ],
+          });
+        } else {
+          messages.push({
+            role: "user",
+            content: `${input} ${instruction} ${promptText}`,
+          });
+        }
+
+        const result = await model.call({
+          messages,
+        });
+
+        if (result.raw.content[0]?.type === "text") {
+          return result.raw.content[0].text;
+        } else {
+          throw new Error("Anthropic API returned invalid response");
+        }
+      }
+    }
+
+    const result = await structured({
+      input,
+      type,
+      schema,
+      instruction,
+      provider,
+    })
+
+    if (!result.valid || !result.structured) {
+      return {
+        status: 422,
+        body: {
+          message: "Failed to extract structured data",
+          validation: result.errors,
+          raw: result.raw,
+          data: result.structured,
+        },
+      };
+    }
+
+    return {
+      status: 200,
+      body: {
+        data: result.structured,
+      },
+    };
+
   },
 });
