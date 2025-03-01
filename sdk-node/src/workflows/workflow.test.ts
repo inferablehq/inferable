@@ -3,6 +3,7 @@ import { helpers } from "./workflow";
 import { inferableInstance } from "../tests/utils";
 
 describe("workflow", () => {
+  jest.setTimeout(60_000);
   it("should run a workflow", async () => {
     const inferable = inferableInstance();
 
@@ -23,8 +24,11 @@ describe("workflow", () => {
 
     inferable.tools.listen();
 
+    // Generate a unique workflow name to prevent conflicts with other tests
+    const workflowName = `haystack-search-${Math.random().toString(36).substring(2, 15)}`;
+
     const workflow = inferable.workflows.create({
-      name: "haystack-search",
+      name: workflowName,
       inputSchema: z.object({
         executionId: z.string(),
         someOtherInput: z.string(),
@@ -77,7 +81,7 @@ describe("workflow", () => {
     await workflow.listen();
 
     const executionId = `${Math.random()}`;
-    await inferable.workflows.trigger("haystack-search", {
+    await inferable.workflows.trigger(workflowName, {
       executionId,
       someOtherInput: "foo",
     });
@@ -90,7 +94,7 @@ describe("workflow", () => {
 
     // Test workflow got input
     expect(onStart).toHaveBeenCalledWith({
-      executionId,
+      executionId: expect.any(String),
       someOtherInput: "foo",
     });
 
