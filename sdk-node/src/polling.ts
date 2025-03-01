@@ -38,7 +38,6 @@ export class PollingAgent {
     clusterId: string;
     tools: ToolRegistrationInput<any>[];
   }) {
-
     this.client = createApiClient({
       baseUrl: options.endpoint,
       machineId: options.machineId,
@@ -72,8 +71,8 @@ export class PollingAgent {
       try {
         await this.pollIteration();
         if (failureCount > 0) {
-          failureCount = 0;
           log(`Poll iteration recovered after ${failureCount} failures`);
+          failureCount = 0;
         }
       } catch (e) {
         log("Failed poll iteration", {
@@ -90,7 +89,7 @@ export class PollingAgent {
     }
 
     //@eslint-disable-next-line no-console
-    console.error("Quitting polling agent")
+    console.error("Quitting polling agent");
   }
 
   private async pollIteration() {
@@ -286,7 +285,7 @@ export class PollingAgent {
 
 export const registerMachine = async (
   client: ReturnType<typeof createApiClient>,
-  tools?: ToolRegistrationInput<any>[]
+  tools?: ToolRegistrationInput<any>[],
 ) => {
   log("registering machine", {
     tools: tools?.map((f) => f.name),
@@ -299,7 +298,11 @@ export const registerMachine = async (
       tools: tools?.map((func) => ({
         name: func.name,
         description: func.description,
-        schema: JSON.stringify(isZodType(func.schema?.input) ? zodToJsonSchema(func.schema?.input) : func.schema?.input),
+        schema: JSON.stringify(
+          isZodType(func.schema?.input)
+            ? zodToJsonSchema(func.schema?.input)
+            : func.schema?.input,
+        ),
         config: func.config,
       })),
     },
