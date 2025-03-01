@@ -2,12 +2,7 @@
 
 import { Queue, Worker } from "bullmq";
 import { logger } from "./observability/logger";
-
-// Redis connection configuration
-const redisConnection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-};
+import { bullmqRedisConnection } from "./queues/core";
 
 // Store queues and workers for cleanup
 const queues: Queue[] = [];
@@ -29,7 +24,7 @@ export const registerCron = async (
   const queueName = `cron-queue-${name}`;
 
   // Create a queue for the cron job
-  const queue = new Queue(queueName, { connection: redisConnection });
+  const queue = new Queue(queueName, { connection: bullmqRedisConnection });
   queues.push(queue);
 
   // Create a worker to process the jobs
@@ -42,7 +37,7 @@ export const registerCron = async (
         logger.error("Cron job failed", { name, error: e });
       }
     },
-    { connection: redisConnection }
+    { connection: bullmqRedisConnection }
   );
 
   workers.push(worker);

@@ -7,7 +7,7 @@ import { logger } from "../observability/logger";
 
 export type QueueHandler<T> = (data: T) => Promise<void>;
 
-const defaultConnection = new IORedis(env.REDIS_URL, {
+export const bullmqRedisConnection = new IORedis(env.REDIS_URL, {
   maxRetriesPerRequest: null,
 });
 
@@ -21,8 +21,8 @@ const defaultQueueOptions: Partial<QueueOptions> = {
     },
     removeOnFail: {
       age: 24 * 3600,
-    }
-  }
+    },
+  },
 };
 
 export class QueueWrapper<T extends BaseMessage> {
@@ -38,7 +38,7 @@ export class QueueWrapper<T extends BaseMessage> {
     private jobIdKey?: (data: T) => string
   ) {
     this.queue = new Queue(name, {
-      connection: defaultConnection,
+      connection: bullmqRedisConnection,
       ...defaultQueueOptions,
       ...options,
     });
@@ -69,17 +69,13 @@ export class QueueWrapper<T extends BaseMessage> {
   async start() {
     if (!env.ENABLE_QUEUE_INGESTION) {
       logger.info("Skipping queue start. ENABLE_QUEUE_INGESTION is disabled.");
-      return
+      return;
     }
-    this.worker = new Worker(
-      this.name,
-      withObservability<T>(this.name, this.handler),
-      {
-        connection: defaultConnection,
-        telemetry,
-        concurrency: this.options.concurrency,
-      }
-    );
+    this.worker = new Worker(this.name, withObservability<T>(this.name, this.handler), {
+      connection: bullmqRedisConnection,
+      telemetry,
+      concurrency: this.options.concurrency,
+    });
   }
 }
 
