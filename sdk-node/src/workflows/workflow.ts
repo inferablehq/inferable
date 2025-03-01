@@ -55,7 +55,11 @@ type WorkflowContext<TInput> = {
     }) => Promise<{ result: TAgentResult }>;
   };
   input: TInput;
-} & Pick<JobContext, 'approved'>;
+  log: (
+    status: "info" | "warn" | "error",
+    meta: { [key: string]: unknown },
+  ) => Promise<void>;
+} & Pick<JobContext, "approved">;
 
 class WorkflowPausableError extends Error {
   constructor(message: string) {
@@ -117,7 +121,10 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   version(version: number) {
     return {
       define: (
-        handler: (ctx: WorkflowContext<TInput>, input: TInput) => Promise<unknown>,
+        handler: (
+          ctx: WorkflowContext<TInput>,
+          input: TInput,
+        ) => Promise<unknown>,
       ) => {
         this.logger?.info("Defining workflow handler", {
           version,
@@ -132,7 +139,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     version: number,
     executionId: string,
     input: TInput,
-    jobCtx: JobContext
+    jobCtx: JobContext,
   ): WorkflowContext<TInput> {
     this.logger?.info("Creating workflow context", {
       version,
@@ -146,7 +153,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         name: string,
         fn: (ctx: WorkflowContext<TInput>) => Promise<void>,
       ) => {
-        const ctx = this.createWorkflowContext(version, executionId, input, jobCtx);
+        const ctx = this.createWorkflowContext(
+          version,
+          executionId,
+          input,
+          jobCtx,
+        );
 
         const rand = crypto.randomUUID();
 
@@ -199,7 +211,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         name: string,
         fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,
       ): Promise<TResult> => {
-        const ctx = this.createWorkflowContext(version, executionId, input, jobCtx);
+        const ctx = this.createWorkflowContext(
+          version,
+          executionId,
+          input,
+          jobCtx,
+        );
 
         const serialize = (value: unknown) => JSON.stringify({ value });
         const deserialize = (value: string) => {
@@ -339,6 +356,18 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         };
       },
       input,
+      log: async (
+        status: "info" | "warn" | "error",
+        meta: { [key: string]: unknown },
+      ) => {
+        await this.client.createWorkflowLog({
+          params: {
+            clusterId: await this.getClusterId(),
+            executionId,
+          },
+          body: { status, data: meta },
+        });
+      },
     };
   }
 
@@ -364,7 +393,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
             this.logger?.error(error);
             throw new Error(error);
           }
-          const ctx = this.createWorkflowContext(version, input.executionId, input, jobCtx);
+          const ctx = this.createWorkflowContext(
+            version,
+            input.executionId,
+            input,
+            jobCtx,
+          );
           try {
             return await handler(ctx, input);
           } catch (e) {

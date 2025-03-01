@@ -20,15 +20,17 @@ const functionReference = z.object({
 const anyObject = z.object({}).passthrough();
 
 export const notificationSchema = z.object({
-  destination: z.discriminatedUnion("type", [
-    z.object({
-      type: z.literal("slack"),
-      channelId: z.string().optional(),
-      threadId: z.string().optional(),
-      userId: z.string().optional(),
-      email: z.string().optional(),
-    }),
-  ]).optional(),
+  destination: z
+    .discriminatedUnion("type", [
+      z.object({
+        type: z.literal("slack"),
+        channelId: z.string().optional(),
+        threadId: z.string().optional(),
+        userId: z.string().optional(),
+        email: z.string().optional(),
+      }),
+    ])
+    .optional(),
   message: z.string().optional(),
 });
 
@@ -896,6 +898,7 @@ export const definition = {
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
       tags: z.string().optional().describe("Filter runs by a tag value (value:key)"),
+      type: z.enum(["conversation", "workflow", "all"]).default("all"),
     }),
     responses: {
       200: z.array(
@@ -1230,33 +1233,80 @@ export const definition = {
     },
   },
 
-  listWorkflowExecutions: {
-    method: "GET",
-    path: "/clusters/:clusterId/workflows/:workflowName",
+  createWorkflowLog: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflow-executions/:executionId/logs",
+    headers: z.object({ authorization: z.string() }),
     pathParams: z.object({
       clusterId: z.string(),
-      workflowName: z.string(),
+      executionId: z.string(),
+    }),
+    body: z.object({
+      status: z.enum(["info", "warn", "error"]),
+      data: z.object({}).passthrough(),
+    }),
+    responses: {
+      201: z.object({
+        id: z.string(),
+        status: z.enum(["info", "warn", "error"]),
+        workflowExecutionId: z.string(),
+        createdAt: z.date(),
+      }),
+    },
+  },
+
+  listWorkflowExecutions: {
+    method: "GET",
+    path: "/clusters/:clusterId/workflow-executions",
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    query: z.object({
+      workflowName: z.string().optional(),
+      workflowVersion: z.string().optional(),
+      workflowExecutionId: z.string().optional(),
+      workflowExecutionStatus: z
+        .enum(["pending", "running", "success", "failure", "stalled", "interrupted"])
+        .optional(),
+      limit: z.coerce.number().min(10).max(50).default(50),
     }),
     headers: z.object({ authorization: z.string() }),
     responses: {
       200: z.array(
         z.object({
-          id: z.string(),
-          workflowName: z.string(),
-          workflowVersion: z.number(),
-          createdAt: z.date(),
-          job: z.object({
+          execution: z.object({
             id: z.string(),
-            status: z.string(),
-            targetFn: z.string(),
-            executingMachineId: z.string().nullable(),
-            targetArgs: z.string(),
+            workflowName: z.string(),
+            workflowVersion: z.number(),
+            jobId: z.string(),
+            createdAt: z.date(),
+            updatedAt: z.date(),
+          }),
+          job: z.object({
+            id: z.string().nullable(),
+            status: z
+              .enum(["pending", "running", "success", "failure", "stalled", "interrupted"])
+              .nullable(),
+            targetFn: z.string().nullable(),
+            executingMachineId: z.string().nullable().optional(),
+            targetArgs: z.string().nullable(),
             result: z.string().nullable(),
             resultType: z.string().nullable(),
             createdAt: z.date(),
-            approved: z.boolean().nullable(),
-            approvalRequested: z.boolean().nullable(),
-          })
+            approvalRequested: z.boolean().nullable().optional(),
+            approved: z.boolean().nullable().optional(),
+          }),
+          runs: z.array(
+            z.object({
+              id: z.string().nullable(),
+              name: z.string().nullable(),
+              createdAt: z.date().nullable(),
+              status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+              failureReason: z.string().nullable(),
+              type: z.enum(["single-step", "multi-step"]).nullable(),
+              modelIdentifier: z.string().nullable(),
+            })
+          ),
         })
       ),
       401: z.undefined(),
@@ -1317,12 +1367,11 @@ export const definition = {
             createdAt: z.date(),
             approved: z.boolean().nullable(),
             approvalRequested: z.boolean().nullable(),
-          })
+          }),
         }),
       }),
     },
   },
-
 
   // KV Endpoints
   setClusterKV: {

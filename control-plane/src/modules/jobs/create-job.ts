@@ -36,6 +36,7 @@ const extractCacheKeyFromJsonPath = (path: string, args: unknown) => {
 };
 
 export const createJobV2 = async (params: {
+  jobId?: string;
   targetFn: string;
   targetArgs: string;
   owner: { clusterId: string };
@@ -43,7 +44,6 @@ export const createJobV2 = async (params: {
   authContext?: unknown;
   runContext?: unknown;
   schemaUnavailableRetryCount?: number;
-  toolCallId?: string;
 }): Promise<{
   id: string;
   created: boolean;
@@ -81,12 +81,14 @@ export const createJobV2 = async (params: {
     args: params.targetArgs,
   });
 
+  const jobId = params.jobId ?? ulid();
+
   const jobConfig = {
     timeoutIntervalSeconds: config?.timeoutSeconds ?? jobDefaults.timeoutIntervalSeconds,
     maxAttempts: config?.retryCountOnStall
       ? config?.retryCountOnStall + 1
       : jobDefaults.maxAttempts,
-    jobId: params.toolCallId ?? ulid(),
+    jobId,
   };
 
   if (config?.cache?.keyPath && config?.cache?.ttlSeconds) {
