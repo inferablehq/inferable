@@ -8,7 +8,7 @@ import * as redis from "../redis";
 import { getClusterBackgroundRun } from "../runs";
 import { upsertToolDefinition } from "../tools";
 import { sql, and, eq } from "drizzle-orm";
-import * as data from "../data"
+import * as data from "../data";
 
 const mockTargetFn = "testTargetFn";
 const mockTargetArgs = packer.pack({ test: "test" });
@@ -140,14 +140,9 @@ describe("selfHealCalls", () => {
       .update(data.jobs)
       .set({
         status: "interrupted",
-        updated_at: sql`now() - interval '10 minutes'`
+        updated_at: sql`now() - interval '10 minutes'`,
       })
-      .where(
-        and(
-          eq(data.jobs.id, createJobResult.id),
-          eq(data.jobs.cluster_id, owner.clusterId),
-        )
-      )
+      .where(and(eq(data.jobs.id, createJobResult.id), eq(data.jobs.cluster_id, owner.clusterId)))
       .returning({
         targetFn: data.jobs.target_fn,
         targetArgs: data.jobs.target_args,
@@ -207,14 +202,9 @@ describe("selfHealCalls", () => {
       .update(data.jobs)
       .set({
         status: "interrupted",
-        updated_at: sql`now() - interval '2 days'`
+        updated_at: sql`now() - interval '2 days'`,
       })
-      .where(
-        and(
-          eq(data.jobs.id, createJobResult.id),
-          eq(data.jobs.cluster_id, owner.clusterId),
-        )
-      )
+      .where(and(eq(data.jobs.id, createJobResult.id), eq(data.jobs.cluster_id, owner.clusterId)))
       .returning({
         targetFn: data.jobs.target_fn,
         targetArgs: data.jobs.target_args,
@@ -348,7 +338,7 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      toolCallId,
+      jobId: toolCallId,
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -359,7 +349,7 @@ describe("selfHealCalls", () => {
       targetFn: mockTargetFn,
       targetArgs: mockTargetArgs,
       owner,
-      toolCallId,
+      jobId: toolCallId,
       runId: getClusterBackgroundRun(owner.clusterId),
     });
 
@@ -532,7 +522,7 @@ describe("submitApproval", () => {
       jobId: result.id,
       clusterId: owner.clusterId,
       machineId: "testMachineId",
-    })
+    });
 
     await requestApproval({
       clusterId: owner.clusterId,
@@ -594,7 +584,7 @@ describe("submitApproval", () => {
       jobId: result.id,
       clusterId: owner.clusterId,
       machineId: "testMachineId",
-    })
+    });
 
     await requestApproval({
       clusterId: owner.clusterId,
