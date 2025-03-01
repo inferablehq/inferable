@@ -395,8 +395,8 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
               {typeof node.result === "object" ? (
                 <ReadOnlyJSON json={node.result} />
               ) : (
-                  <span className="text-sm font-mono">{JSON.stringify(node.result)}</span>
-                )}
+                <span className="text-sm font-mono">{JSON.stringify(node.result)}</span>
+              )}
             </div>
           )}
         </div>

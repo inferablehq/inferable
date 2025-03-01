@@ -1373,14 +1373,14 @@ export const definition = {
           z.object({
             key: z.string(),
             value: z.string(),
-            createdAt: z.number(),
+            createdAt: z.date(),
           })
         ),
         structured: z.array(
           z.object({
             key: z.string(),
             value: z.string(),
-            createdAt: z.number(),
+            createdAt: z.date(),
           })
         ),
       }),
@@ -1475,8 +1475,6 @@ export const definition = {
       }),
     },
   },
-
-
 } as const;
 
 export const contract = c.router(definition);
