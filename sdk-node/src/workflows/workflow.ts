@@ -8,6 +8,7 @@ import { PollingAgent } from "../polling";
 import { JobContext, ToolRegistrationInput } from "../types";
 import { Interrupt } from "../util";
 import { ToolConfigSchema } from "../contract";
+import L1M from "l1m";
 
 type WorkflowInput = {
   executionId: string;
@@ -42,6 +43,7 @@ type AgentConfig<TResult> = {
 };
 
 type WorkflowContext<TInput> = {
+  llm: L1M;
   result: <TResult>(
     name: string,
     fn: () => Promise<TResult>,
@@ -146,8 +148,18 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       executionId,
     });
 
+    const l1m = new L1M({
+      baseUrl: `${this.endpoint}/l1m`,
+      provider: {
+        model: "claude-3-5-sonnet",
+        key: this.apiSecret,
+        url: ``,
+      },
+    });
+
     return {
       ...jobCtx,
+      llm: l1m,
       result: async <TResult>(
         name: string,
         fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,

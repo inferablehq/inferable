@@ -1433,6 +1433,31 @@ export const definition = {
       401: z.undefined(),
     },
   },
+
+  // L1M Endpoints
+  // https://github.com/inferablehq/l1m
+  l1mStructured: {
+    method: "POST",
+    path: "/l1m/structured",
+    body: z.object({
+      input: z.string(),
+      instruction: z.string().optional(),
+      schema: z.record(z.any()),
+    }),
+    headers: z.object({
+      "x-provider-model": z.string(),
+      "x-provider-url": z.string(),
+      "x-provider-key": z.string(),
+      "x-cache-ttl": z.string().optional(),
+    }),
+    responses: {
+      200: z.object({
+        data: z.record(z.any()),
+      }),
+    },
+  },
+
+
 } as const;
 
 export const contract = c.router(definition);
