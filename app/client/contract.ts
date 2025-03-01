@@ -19,9 +19,25 @@ const functionReference = z.object({
 
 const anyObject = z.object({}).passthrough();
 
+export const notificationSchema = z.object({
+  destination: z
+    .discriminatedUnion("type", [
+      z.object({
+        type: z.literal("slack"),
+        channelId: z.string().optional(),
+        threadId: z.string().optional(),
+        userId: z.string().optional(),
+        email: z.string().optional(),
+      }),
+    ])
+    .optional(),
+  message: z.string().optional(),
+});
+
 export const interruptSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.enum(["approval", "general"]),
+    notification: notificationSchema.optional(),
   }),
 ]);
 
@@ -1217,6 +1233,28 @@ export const definition = {
     },
   },
 
+  createWorkflowLog: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflow-executions/:executionId/logs",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      executionId: z.string(),
+    }),
+    body: z.object({
+      status: z.enum(["info", "warn", "error"]),
+      data: z.object({}).passthrough(),
+    }),
+    responses: {
+      201: z.object({
+        id: z.string(),
+        status: z.enum(["info", "warn", "error"]),
+        workflowExecutionId: z.string(),
+        createdAt: z.date(),
+      }),
+    },
+  },
+
   listWorkflowExecutions: {
     method: "GET",
     path: "/clusters/:clusterId/workflow-executions",
@@ -1331,6 +1369,13 @@ export const definition = {
             approvalRequested: z.boolean().nullable(),
           }),
         }),
+        results: z.array(
+          z.object({
+            key: z.string(),
+            value: z.string(),
+            createdAt: z.number(),
+          })
+        ),
       }),
     },
   },

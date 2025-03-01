@@ -8,6 +8,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
 import { getEventsForJobId } from "../observability/events";
+import { kv } from "../kv";
 
 export const getWorkflowExecutionTimeline = async ({
   executionId,
@@ -18,59 +19,50 @@ export const getWorkflowExecutionTimeline = async ({
   workflowName: string;
   clusterId: string;
 }) => {
-  const [execution] = await data.db
-    .select({
-      id: data.workflowExecutions.id,
-      workflowName: data.workflowExecutions.workflow_name,
-      workflowVersion: data.workflowExecutions.workflow_version,
-      createdAt: data.workflowExecutions.created_at,
-      updatedAt: data.workflowExecutions.updated_at,
-      job: {
-        id: data.jobs.id,
-        clusterId: data.jobs.cluster_id,
-        status: data.jobs.status,
-        targetFn: data.jobs.target_fn,
-        executingMachineId: data.jobs.executing_machine_id,
-        targetArgs: data.jobs.target_args,
-        result: data.jobs.result,
-        resultType: data.jobs.result_type,
-        createdAt: data.jobs.created_at,
-        runId: data.jobs.run_id,
-        runContext: data.jobs.run_context,
-        authContext: data.jobs.auth_context,
-        approvalRequested: data.jobs.approval_requested,
-        approved: data.jobs.approved,
-      },
-    })
-    .from(data.workflowExecutions)
-    .innerJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))
-    .where(
-      and(
-        eq(data.workflowExecutions.workflow_name, workflowName),
-        eq(data.workflowExecutions.cluster_id, clusterId),
-        eq(data.workflowExecutions.id, executionId)
-      )
-    );
-
-  if (!execution) {
-    throw new NotFoundError(`Workflow execution ${executionId} not found`);
-  }
-
-  const runs = await getWorkflowRuns({
-    workflowName,
-    clusterId,
-    executionId,
-  });
-
-  const events = await getEventsForJobId({
-    jobId: execution.job.id,
-    clusterId,
-  });
+  const [[execution], runs, events, results] = await Promise.all([
+    data.db
+      .select({
+        id: data.workflowExecutions.id,
+        workflowName: data.workflowExecutions.workflow_name,
+        workflowVersion: data.workflowExecutions.workflow_version,
+        createdAt: data.workflowExecutions.created_at,
+        updatedAt: data.workflowExecutions.updated_at,
+        job: {
+          id: data.jobs.id,
+          clusterId: data.jobs.cluster_id,
+          status: data.jobs.status,
+          targetFn: data.jobs.target_fn,
+          executingMachineId: data.jobs.executing_machine_id,
+          targetArgs: data.jobs.target_args,
+          result: data.jobs.result,
+          resultType: data.jobs.result_type,
+          createdAt: data.jobs.created_at,
+          runId: data.jobs.run_id,
+          runContext: data.jobs.run_context,
+          authContext: data.jobs.auth_context,
+          approvalRequested: data.jobs.approval_requested,
+          approved: data.jobs.approved,
+        },
+      })
+      .from(data.workflowExecutions)
+      .innerJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))
+      .where(
+        and(
+          eq(data.workflowExecutions.workflow_name, workflowName),
+          eq(data.workflowExecutions.cluster_id, clusterId),
+          eq(data.workflowExecutions.id, executionId)
+        )
+      ),
+    getWorkflowRuns({ clusterId, executionId, workflowName }),
+    getEventsForJobId({ jobId: executionId, clusterId }),
+    kv.getAllByPrefix(clusterId, `${executionId}_result_`),
+  ]);
 
   return {
     execution,
     runs,
     events,
+    results,
   };
 };
 

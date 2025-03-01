@@ -608,11 +608,11 @@ export const workflowExecutions = pgTable(
   {
     id: varchar("id", { length: 1024 }).notNull(),
     job_id: varchar("job_id", { length: 1024 })
-    .references(() => jobs.id)
-    .notNull(),
+      .references(() => jobs.id)
+      .notNull(),
     cluster_id: varchar("cluster_id")
       .references(() => clusters.id)
-    .notNull(),
+      .notNull(),
     workflow_name: varchar("workflow_name", { length: 1024 }).notNull(),
     workflow_version: integer("version").notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -632,6 +632,9 @@ export const clusterKV = pgTable(
     cluster_id: varchar("cluster_id").notNull(),
     key: varchar("key", { length: 1024 }).notNull(),
     value: text("value").notNull(),
+    created_at: integer("created_at")
+      .notNull()
+      .default(sql`extract(epoch from now())`),
   },
   table => ({
     pk: primaryKey({ columns: [table.cluster_id, table.key] }),
