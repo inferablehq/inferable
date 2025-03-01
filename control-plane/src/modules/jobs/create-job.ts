@@ -82,7 +82,7 @@ export const createJobV2 = async (params: {
     args: params.targetArgs,
   });
 
-  const jobId = params.toolCallId || params.jobId || ulid();
+  const jobId = params.toolCallId ?? params.jobId ?? ulid();
 
   const jobConfig = {
     timeoutIntervalSeconds: config?.timeoutSeconds ?? jobDefaults.timeoutIntervalSeconds,
