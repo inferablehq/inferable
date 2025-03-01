@@ -850,8 +850,6 @@ export const router = initServer().router(contract, {
     }
     const result = pollResult;
 
-    request.reply.header("retry-after", 1);
-
     return {
       status: 200,
       body:
