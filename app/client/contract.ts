@@ -1373,14 +1373,14 @@ export const definition = {
           z.object({
             key: z.string(),
             value: z.string(),
-            createdAt: z.number(),
+            createdAt: z.date(),
           })
         ),
         structured: z.array(
           z.object({
             key: z.string(),
             value: z.string(),
-            createdAt: z.number(),
+            createdAt: z.date(),
           })
         ),
       }),
@@ -1452,28 +1452,6 @@ export const definition = {
   // https://github.com/inferablehq/l1m
   l1mStructured: {
     method: "POST",
-    path: "/l1m/structured",
-    body: z.object({
-      input: z.string(),
-      instruction: z.string().optional(),
-      schema: z.record(z.any()),
-    }),
-    headers: z.object({
-      "x-provider-model": z.string(),
-      "x-provider-url": z.string(),
-      "x-provider-key": z.string(),
-      "x-cache-ttl": z.string().optional(),
-    }),
-    responses: {
-      200: z.object({
-        data: z.record(z.any()),
-      }),
-    },
-  },
-
-  // https://github.com/inferablehq/l1m
-  l1mStructuredV2: {
-    method: "POST",
     path: "/clusters/:clusterId/l1m/structured",
     pathParams: z.object({
       clusterId: z.string(),
@@ -1497,8 +1475,6 @@ export const definition = {
       }),
     },
   },
-
-
 } as const;
 
 export const contract = c.router(definition);

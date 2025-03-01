@@ -632,9 +632,7 @@ export const clusterKV = pgTable(
     cluster_id: varchar("cluster_id").notNull(),
     key: varchar("key", { length: 1024 }).notNull(),
     value: text("value").notNull(),
-    created_at: integer("created_at")
-      .notNull()
-      .default(sql`extract(epoch from now())`),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   table => ({
     pk: primaryKey({ columns: [table.cluster_id, table.key] }),
