@@ -1698,4 +1698,133 @@ export const router = initServer().router(contract, {
     };
 
   },
+  l1mStructuredV2: async request => {
+    const { input, instruction, schema } = request.body;
+    const { clusterId } = request.params;
+
+    const auth = request.request.getAuth();
+    await auth.canAccess({ cluster: { clusterId } });
+
+    const providerKey = request.headers["x-provider-key"];
+    const providerModel = request.headers["x-provider-model"];
+    const providerUrl = request.headers["x-provider-url"];
+
+    const workflowId = request.headers["x-workflow-execution-id"];
+
+    const schemaError = validateJsonSchema(schema);
+    if (schemaError) {
+      return {
+        status: 400,
+        body: {
+          message: schemaError,
+        },
+      };
+    }
+
+    const type = await inferType(input);
+
+    if (type && !validTypes.includes(type)) {
+      return {
+        status: 400,
+        body: {
+          message: "Provided content has invalid mime type",
+          type,
+        },
+      };
+    }
+
+    let provider: Parameters<typeof structured>[0]["provider"] = {
+      url: providerUrl,
+      key: providerKey,
+      model: providerModel,
+    }
+
+    if (providerUrl.includes("inferable") || providerUrl === "") {
+      if (!["claude-3-5-sonnet", "claude-3-haiku"].includes(providerModel)) {
+        return {
+          status: 400,
+          body: {
+            message: `Unsupported model: ${providerModel}`,
+          },
+        };
+      }
+
+      const model = buildModel({
+        identifier: providerModel as any,
+        trackingOptions: {
+          clusterId: clusterId,
+        }
+      });
+
+      provider = async (params, minimal, descriptions) => {
+        const messages: Anthropic.MessageParam[] = [];
+        const promptText = `Answer in JSON using this schema: ${descriptions} ${minimal}`;
+
+        logger.info("Prompt", {
+          prompt: promptText,
+        });
+
+        const { type, input } = params;
+
+        if (type && type.startsWith("image/")) {
+          messages.push({
+            role: "user",
+            content: [
+              { type: "text", text: `${instruction} ${promptText}` },
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: type as any,
+                  data: input,
+                },
+              },
+            ],
+          });
+        } else {
+          messages.push({
+            role: "user",
+            content: `${input} ${instruction} ${promptText}`,
+          });
+        }
+
+        const result = await model.call({
+          messages,
+        });
+
+        if (result.raw.content[0]?.type === "text") {
+          return result.raw.content[0].text;
+        } else {
+          throw new Error("Anthropic API returned invalid response");
+        }
+      }
+    }
+
+    const result = await structured({
+      input,
+      type,
+      schema,
+      instruction,
+      provider,
+    })
+
+    if (!result.valid || !result.structured) {
+      return {
+        status: 422,
+        body: {
+          message: "Failed to extract structured data",
+          validation: result.errors,
+          raw: result.raw,
+          data: result.structured,
+        },
+      };
+    }
+
+    return {
+      status: 200,
+      body: {
+        data: result.structured,
+      },
+    };
+  },
 });

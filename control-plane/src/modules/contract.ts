@@ -1464,6 +1464,33 @@ export const definition = {
     },
   },
 
+  // https://github.com/inferablehq/l1m
+  l1mStructuredV2: {
+    method: "POST",
+    path: "/clusters/:clusterId/l1m/structured",
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    body: z.object({
+      input: z.string(),
+      instruction: z.string().optional(),
+      schema: z.record(z.any()),
+    }),
+    headers: z.object({
+      authorization: z.string(),
+      "x-provider-model": z.string(),
+      "x-provider-url": z.string(),
+      "x-provider-key": z.string(),
+      "x-cache-ttl": z.string().optional(),
+      "x-workflow-execution-id": z.string().optional(),
+    }),
+    responses: {
+      200: z.object({
+        data: z.record(z.any()),
+      }),
+    },
+  },
+
 
 } as const;
 

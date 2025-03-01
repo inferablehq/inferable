@@ -141,6 +141,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     executionId: string,
     input: TInput,
     jobCtx: JobContext,
+    clusterId: string,
   ): WorkflowContext<TInput> {
     this.logger?.info("Creating workflow context", {
       version,
@@ -149,7 +150,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     });
 
     const l1m = new L1M({
-      baseUrl: `${this.endpoint}/l1m`,
+      baseUrl: `${this.endpoint}/clusters/${clusterId}/l1m`,
       provider: {
         model: "claude-3-5-sonnet",
         key: this.apiSecret,
@@ -169,6 +170,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
           executionId,
           input,
           jobCtx,
+          clusterId,
         );
 
         const serialize = (value: unknown) => JSON.stringify({ value });
@@ -351,6 +353,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
             input.executionId,
             input,
             jobCtx,
+            await this.getClusterId(),
           );
           try {
             return await handler(ctx, input);
