@@ -1466,6 +1466,7 @@ export const definition = {
       "x-provider-model": z.string(),
       "x-provider-url": z.string(),
       "x-provider-key": z.string(),
+      "x-max-attempts": z.string().optional().default("3"),
       "x-cache-ttl": z.string().optional(),
       "x-workflow-execution-id": z.string().optional(),
     }),
