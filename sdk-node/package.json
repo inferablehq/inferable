@@ -4,7 +4,7 @@
   "description": "Javascript SDK for inferable.ai",
   "main": "bin/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "clean": "rm -rf ./bin",
     "prepare": "husky",
     "test": "jest ./src --runInBand --forceExit --setupFiles dotenv/config",
