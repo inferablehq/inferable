@@ -101,7 +101,7 @@ type WorkflowContext<TInput> = {
     fn: () => Promise<TResult>,
   ) => Promise<TResult>;
   /**
-   * @deprecated Use `agents.default` instead
+   * @deprecated Use `agents.react` instead
    * Agent functionality for the workflow.
    */
   agent: <TAgentResult = unknown>(
