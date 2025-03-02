@@ -1664,7 +1664,7 @@ export const router = initServer().router(contract, {
           messages.push({
             role: "user",
             content: [
-              { type: "text", text: `${instructions} ${promptText}` },
+              { type: "text", text: `${instructions} ${prompt}` },
               {
                 type: "image",
                 source: {
@@ -1678,7 +1678,20 @@ export const router = initServer().router(contract, {
         } else {
           messages.push({
             role: "user",
-            content: `${input} ${instruction} ${promptText}`,
+            content: `${input} ${instructions} ${prompt}`,
+          });
+        }
+
+        if (previousAttempts.length > 0) {
+          previousAttempts.forEach(attempt => {
+            messages.push({
+              role: "user",
+              content:
+                "You previously responded: " +
+                attempt.raw +
+                " which produced validation errors: " +
+                attempt.errors,
+            });
           });
         }
 
@@ -1698,7 +1711,8 @@ export const router = initServer().router(contract, {
       input,
       type,
       schema,
-      instruction,
+      maxAttempts: maxAttempts ? parseInt(maxAttempts) : 3,
+      instructions,
       provider,
     });
 
