@@ -1,5 +1,26 @@
+# Build artifacts
 node_modules
 dist
 build
 .next
 coverage
+lib
+out
+
+# Generated files
+*.generated.*
+*.gen.*
+drizzle/
+**/obj/
+**/.git/
+
+# Package files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Misc
+.DS_Store
+.env
+.env.*
+!.env.example
