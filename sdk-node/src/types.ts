@@ -78,13 +78,20 @@ export type ToolSchema<T extends z.ZodTypeAny | JsonSchemaInput> = {
   input: T;
 };
 
-export type ToolRegistrationInput<
-  T extends z.ZodTypeAny | JsonSchemaInput,
-> = {
+export type ToolRegistrationInput<T extends z.ZodTypeAny | JsonSchemaInput> = {
   name: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  func: (input: ToolInput<T>, context: JobContext) => any;
+  func: (input: ToolInput<T>, context: JobContext) => Promise<any>;
   schema?: ToolSchema<T>;
   config?: ToolConfig;
   description?: string;
+};
+
+export type WorkflowToolRegistrationInput<
+  T extends z.ZodTypeAny | JsonSchemaInput,
+> = {
+  name: string;
+  inputSchema?: T;
+  config?: ToolConfig;
+  func: (input: ToolInput<T>, context: JobContext) => Promise<unknown>;
 };

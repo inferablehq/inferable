@@ -1458,7 +1458,7 @@ export const definition = {
     }),
     body: z.object({
       input: z.string(),
-      instruction: z.string().optional(),
+      instructions: z.string().optional(),
       schema: z.record(z.any()),
     }),
     headers: z.object({

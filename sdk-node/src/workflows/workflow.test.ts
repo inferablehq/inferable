@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { helpers } from "./workflow";
 import { inferableInstance } from "../tests/utils";
+import assert from "assert";
 
 describe("workflow", () => {
   jest.setTimeout(60_000);
@@ -11,18 +12,6 @@ describe("workflow", () => {
     const onAgentResult = jest.fn();
     const onSimpleResult = jest.fn();
     const toolCall = jest.fn();
-
-    inferable.tools.register({
-      func: (_i, _c) => {
-        toolCall();
-        return {
-          word: "needle",
-        };
-      },
-      name: "searchHaystack",
-    });
-
-    inferable.tools.listen();
 
     // Generate a unique workflow name to prevent conflicts with other tests
     const workflowName = `haystack-search-${Math.random().toString(36).substring(2, 15)}`;
@@ -35,36 +24,60 @@ describe("workflow", () => {
       }),
     });
 
+    workflow.tools.register({
+      name: "searchHaystack2",
+      inputSchema: z.object({
+        searchQuery: z.string(),
+      }),
+      func: async (input) => {
+        toolCall(input);
+        if (input.searchQuery === "marco") {
+          return { word: "not-needle" };
+        } else if (input.searchQuery === "marco 42") {
+          return { word: "needle" };
+        } else {
+          return { word: `not-found-${input.searchQuery}` };
+        }
+      },
+    });
+
     workflow.version(1).define(async (ctx, input) => {
       onStart(input);
       ctx.log("info", { message: "Starting workflow" });
-      const searchAgent = ctx.agent({
+      const { word } = await ctx.agents.react({
         name: "search",
-        tools: ["searchHaystack"],
-        systemPrompt: helpers.structuredPrompt({
+        instructions: helpers.structuredPrompt({
           facts: ["You are haystack searcher"],
-          goals: ["Find the special word in the haystack"],
+          goals: [
+            "Find the special word in the haystack. Only search for the words asked explictly by the user.",
+          ],
         }),
-        resultSchema: z.object({
+        schema: z.object({
           word: z.string(),
         }),
+        tools: ["searchHaystack2"],
+        input: `Try the searchQuery 'marco'.`,
+        onBeforeReturn: async (result, agent) => {
+          if (result.word !== "needle") {
+            await agent.sendMessage("Try the searchQuery 'marco 42'.");
+          }
+        },
       });
 
-      const result = await searchAgent.trigger({
-        data: {},
-      });
+      assert(word === "needle", `Expected word to be "needle", got ${word}`);
 
-      ctx.result("testResultCall", async () => {
+      const cachedResult = await ctx.result("testResultCall", async () => {
         return {
           word: "needle",
         };
       });
 
-      if (!result || !result.result || !result.result.word) {
-        throw new Error("No result");
-      }
+      assert(
+        cachedResult.word === "needle",
+        `Expected cachedResult to be "needle", got ${cachedResult.word}`,
+      );
 
-      onAgentResult(result.result.word);
+      onAgentResult(cachedResult.word);
 
       ctx.log("info", { message: "About to run simple LLM call" });
 
@@ -72,7 +85,7 @@ describe("workflow", () => {
         input: "Return the word, needle.",
         schema: z.object({
           word: z.string(),
-        })
+        }),
       });
 
       // Duplicate call
@@ -80,14 +93,19 @@ describe("workflow", () => {
         input: "Return the word, needle.",
         schema: z.object({
           word: z.string(),
-        })
+        }),
       });
 
-      if (!simpleResult || !simpleResult.word) {
-        throw new Error("No simpleResult");
-      }
+      assert(
+        simpleResult.word === "needle",
+        `Expected simpleResult to be "needle", got ${simpleResult.word}`,
+      );
+
       onSimpleResult(simpleResult.word);
 
+      return {
+        word: "needle",
+      };
     });
 
     await workflow.listen();
@@ -114,7 +132,7 @@ describe("workflow", () => {
     expect(onAgentResult).toHaveBeenCalledWith("needle");
     expect(onAgentResult).toHaveBeenCalledTimes(1);
 
-    expect(toolCall).toHaveBeenCalledTimes(1);
+    expect(toolCall).toHaveBeenCalledTimes(2);
 
     expect(onSimpleResult).toHaveBeenCalledWith("needle");
     expect(onSimpleResult).toHaveBeenCalledTimes(1);

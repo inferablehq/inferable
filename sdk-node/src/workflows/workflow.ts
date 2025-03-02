@@ -1,11 +1,16 @@
-import { z } from "zod";
+import { z, ZodTypeAny } from "zod";
 import type { Inferable } from "../Inferable";
 import zodToJsonSchema from "zod-to-json-schema";
 import { cyrb53 } from "../util/cybr53";
 import { InferableAPIError, InferableError } from "../errors";
 import { createApiClient } from "../create-client";
 import { PollingAgent } from "../polling";
-import { JobContext, ToolRegistrationInput } from "../types";
+import {
+  JobContext,
+  JsonSchemaInput,
+  ToolRegistrationInput,
+  WorkflowToolRegistrationInput,
+} from "../types";
 import { Interrupt } from "../util";
 import { ToolConfigSchema } from "../contract";
 import L1M from "l1m";
@@ -42,12 +47,63 @@ type AgentConfig<TResult> = {
   runId?: string;
 };
 
+type ReactAgentConfig<TResult> = {
+  /**
+   * The name of the agent.
+   */
+  name: string;
+  /**
+   * The system prompt for the agent.
+   */
+  instructions: string;
+  /**
+   * The input for the agent.
+   */
+  input: string;
+  /**
+   * The result schema for the agent.
+   */
+  schema: z.ZodType<TResult>;
+  /**
+   * The tools for the agent.
+   */
+  tools: string[];
+  /**
+   * A function that is called before the agent returns its result.
+   */
+  onBeforeReturn?: (
+    /**
+     * The result of the agent.
+     */
+    result: TResult,
+    /**
+     * The agent object.
+     */
+    agent: {
+      /**
+       * Send a message to the agent.
+       */
+      sendMessage: (message: string) => Promise<void>;
+    },
+  ) => Promise<void>;
+};
+
 type WorkflowContext<TInput> = {
+  /**
+   * Core LLM functionality for the workflow.
+   */
   llm: L1M;
+  /**
+   * Result caching for the workflow.
+   */
   result: <TResult>(
     name: string,
     fn: () => Promise<TResult>,
   ) => Promise<TResult>;
+  /**
+   * @deprecated Use `agents.react` instead
+   * Agent functionality for the workflow.
+   */
   agent: <TAgentResult = unknown>(
     config: AgentConfig<TAgentResult>,
   ) => {
@@ -55,11 +111,28 @@ type WorkflowContext<TInput> = {
       data: { [key: string]: unknown };
     }) => Promise<{ result: TAgentResult }>;
   };
+  /**
+   * Input for the workflow.
+   */
   input: TInput;
+  /**
+   * Logging for the workflow.
+   */
   log: (
     status: "info" | "warn" | "error",
     meta: { [key: string]: unknown },
   ) => Promise<void>;
+  /**
+   * Agent functionality for the workflow.
+   */
+  agents: {
+    /**
+     * Default inferable agent functionality for the workflow. Muti-step.
+     */
+    react: <TAgentResult = unknown>(
+      config: ReactAgentConfig<TAgentResult>,
+    ) => Promise<TAgentResult>;
+  };
 } & Pick<JobContext, "approved">;
 
 class WorkflowPausableError extends Error {
@@ -101,6 +174,10 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
   private logger?: Logger;
   private config?: z.infer<typeof ToolConfigSchema>;
 
+  private agentTools: Array<
+    WorkflowToolRegistrationInput<ZodTypeAny | JsonSchemaInput>
+  > = [];
+
   private endpoint: string;
   private machineId: string;
   private apiSecret: string;
@@ -136,6 +213,19 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     };
   }
 
+  tools = {
+    register: <T extends z.ZodTypeAny | JsonSchemaInput>(
+      tool: WorkflowToolRegistrationInput<T>,
+    ) => {
+      this.logger?.info("Registering tool", {
+        name: this.name,
+        tool,
+      });
+
+      this.agentTools.push(tool);
+    },
+  };
+
   private createWorkflowContext(
     version: number,
     executionId: string,
@@ -153,12 +243,12 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       baseUrl: `${this.endpoint}/clusters/${clusterId}/l1m`,
       additionalHeaders: {
         "x-workflow-execution-id": executionId,
-        "Authorization": `Bearer ${this.apiSecret}`,
+        Authorization: `Bearer ${this.apiSecret}`,
       },
       provider: {
         model: "claude-3-5-sonnet",
-        key: '',
-        url: '',
+        key: "",
+        url: "",
       },
     });
 
@@ -227,6 +317,124 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
 
         return deserialize(setResult.body.value);
       },
+      agents: {
+        react: async <TAgentResult = unknown>(
+          config: ReactAgentConfig<TAgentResult>,
+        ) => {
+          this.logger?.info("Running agent in workflow", {
+            version,
+            name: this.name,
+            executionId,
+            agentName: config.name,
+          });
+
+          const resultSchema = config.schema
+            ? zodToJsonSchema(config.schema)
+            : undefined;
+
+          const runId = `${executionId}_${config.name}_${cyrb53(
+            JSON.stringify(
+              [
+                config.instructions,
+                executionId,
+                resultSchema,
+                this.name,
+                version,
+                config.input,
+              ].join("."),
+            ),
+          )}`;
+
+          const result = await this.client.createRun({
+            params: {
+              clusterId: await this.getClusterId(),
+            },
+            body: {
+              name: `${this.name}_${config.name}`,
+              id: runId,
+              systemPrompt: config.instructions,
+              resultSchema,
+              tools: config.tools.map((t) => `tool_${this.name}_${t}`),
+              onStatusChange: {
+                type: "workflow",
+                statuses: ["failed", "done"],
+                workflow: {
+                  executionId: executionId,
+                },
+              },
+              tags: {
+                "workflow.name": this.name,
+                "workflow.version": version.toString(),
+                "workflow.executionId": executionId,
+              },
+              initialPrompt: config.input,
+              interactive: true,
+            },
+          });
+
+          this.logger?.info("Agent run created", {
+            version,
+            name: this.name,
+            executionId,
+            agentName: config.name,
+            runId,
+            status: result.status,
+            result: result.body,
+          });
+
+          if (result.status !== 201) {
+            // TODO: Add better error handling
+            throw new InferableAPIError(
+              `Failed to create run: ${result.status}`,
+              result,
+            );
+          }
+
+          if (result.body.status === "done") {
+            if (!config.onBeforeReturn) {
+              return result.body.result as TAgentResult;
+            }
+
+            let shouldReturn = true;
+
+            await config.onBeforeReturn(result.body.result as TAgentResult, {
+              sendMessage: async (message: string) => {
+                await this.client.createMessage({
+                  params: {
+                    clusterId: await this.getClusterId(),
+                    runId,
+                  },
+                  body: {
+                    message,
+                    type: "human",
+                  },
+                });
+
+                shouldReturn = false;
+              },
+            });
+
+            if (shouldReturn) {
+              return result.body.result as TAgentResult;
+            } else {
+              throw new WorkflowPausableError(
+                `Agent ${config.name} is not done.`,
+              );
+            }
+          } else if (result.body.status === "failed") {
+            throw new WorkflowTerminableError(
+              `Agent ${config.name} failed. As a result, we've failed the entire workflow (executionId: ${executionId}). Please refer to run failure details for more information.`,
+            );
+          } else {
+            throw new WorkflowPausableError(
+              `Agent ${config.name} is not done.`,
+            );
+          }
+        },
+      },
+      /**
+       * @deprecated Use `agents` instead
+       */
       agent: <TAgentResult = unknown>(config: AgentConfig<TAgentResult>) => {
         return {
           trigger: async (params: { data: { [key: string]: unknown } }) => {
@@ -340,8 +548,15 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       versions: Array.from(this.versionHandlers.keys()),
     });
 
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tools: ToolRegistrationInput<any>[] = [];
+    const tools: ToolRegistrationInput<ZodTypeAny | JsonSchemaInput>[] =
+      this.agentTools.map((tool) => ({
+        name: `tool_${this.name}_${tool.name}`,
+        func: tool.func,
+        schema: {
+          input: tool.inputSchema ?? z.object({}),
+        },
+        config: tool.config,
+      }));
 
     this.versionHandlers.forEach((handler, version) => {
       tools.push({
