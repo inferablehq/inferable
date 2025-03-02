@@ -1566,9 +1566,9 @@ export const router = initServer().router(contract, {
       status: 200,
       body: tools,
     };
- },
+  },
   l1mStructured: async request => {
-    const { input, instruction, schema } = request.body;
+    const { input, instructions, schema } = request.body;
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
@@ -1590,14 +1590,14 @@ export const router = initServer().router(contract, {
     }
 
     const hash = crypto.createHash("sha256");
-    hash.update(input)
-    hash.update(JSON.stringify(schema))
-    hash.update(providerModel)
-    hash.update(providerKey)
-    hash.update(executionId)
-    instruction && hash.update(instruction)
+    hash.update(input);
+    hash.update(JSON.stringify(schema));
+    hash.update(providerModel);
+    hash.update(providerKey);
+    hash.update(executionId);
+    instructions && hash.update(instructions);
 
-    const messageKey = `${executionId}_structured_${hash.digest("hex")}`
+    const messageKey = `${executionId}_structured_${hash.digest("hex")}`;
 
     const existingMessage = await kv.get(clusterId, messageKey);
     if (existingMessage) {
@@ -1635,7 +1635,7 @@ export const router = initServer().router(contract, {
       url: providerUrl,
       key: providerKey,
       model: providerModel,
-    }
+    };
 
     if (providerUrl.includes("inferable") || providerUrl === "") {
       if (!["claude-3-5-sonnet", "claude-3-haiku"].includes(providerModel)) {
@@ -1651,7 +1651,7 @@ export const router = initServer().router(contract, {
         identifier: providerModel as any,
         trackingOptions: {
           clusterId: clusterId,
-        }
+        },
       });
 
       provider = async (params, minimal, descriptions) => {
@@ -1668,7 +1668,7 @@ export const router = initServer().router(contract, {
           messages.push({
             role: "user",
             content: [
-              { type: "text", text: `${instruction} ${promptText}` },
+              { type: "text", text: `${instructions} ${promptText}` },
               {
                 type: "image",
                 source: {
@@ -1682,7 +1682,7 @@ export const router = initServer().router(contract, {
         } else {
           messages.push({
             role: "user",
-            content: `${input} ${instruction} ${promptText}`,
+            content: `${input} ${instructions} ${promptText}`,
           });
         }
 
@@ -1695,16 +1695,16 @@ export const router = initServer().router(contract, {
         } else {
           throw new Error("Anthropic API returned invalid response");
         }
-      }
+      };
     }
 
     const result = await structured({
       input,
       type,
       schema,
-      instruction,
+      instructions,
       provider,
-    })
+    });
 
     if (!result.valid || !result.structured) {
       return {
