@@ -1579,6 +1579,7 @@ export const router = initServer().router(contract, {
     const providerUrl = request.headers["x-provider-url"];
 
     const executionId = request.headers["x-workflow-execution-id"];
+    const maxAttempts = request.headers["x-max-attempts"];
 
     if (!executionId) {
       return {
@@ -1654,13 +1655,8 @@ export const router = initServer().router(contract, {
         },
       });
 
-      provider = async (params, minimal, descriptions) => {
+      provider = async (params, prompt, previousAttempts) => {
         const messages: Anthropic.MessageParam[] = [];
-        const promptText = `Answer in JSON using this schema: ${descriptions} ${minimal}`;
-
-        logger.info("Prompt", {
-          prompt: promptText,
-        });
 
         const { type, input } = params;
 
@@ -1682,7 +1678,7 @@ export const router = initServer().router(contract, {
         } else {
           messages.push({
             role: "user",
-            content: `${input} ${instructions} ${promptText}`,
+            content: `${input} ${instruction} ${promptText}`,
           });
         }
 
@@ -1702,7 +1698,7 @@ export const router = initServer().router(contract, {
       input,
       type,
       schema,
-      instructions,
+      instruction,
       provider,
     });
 
