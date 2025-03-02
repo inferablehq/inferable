@@ -1579,6 +1579,7 @@ export const router = initServer().router(contract, {
     const providerUrl = request.headers["x-provider-url"];
 
     const executionId = request.headers["x-workflow-execution-id"];
+    const maxAttempts = request.headers["x-max-attempts"]
 
     if (!executionId) {
       return {
@@ -1654,13 +1655,8 @@ export const router = initServer().router(contract, {
         }
       });
 
-      provider = async (params, minimal, descriptions) => {
+      provider = async (params, prompt, previousAttempts) => {
         const messages: Anthropic.MessageParam[] = [];
-        const promptText = `Answer in JSON using this schema: ${descriptions} ${minimal}`;
-
-        logger.info("Prompt", {
-          prompt: promptText,
-        });
 
         const { type, input } = params;
 
@@ -1668,7 +1664,7 @@ export const router = initServer().router(contract, {
           messages.push({
             role: "user",
             content: [
-              { type: "text", text: `${instruction} ${promptText}` },
+              { type: "text", text: `${instruction} ${prompt}` },
               {
                 type: "image",
                 source: {
@@ -1682,7 +1678,16 @@ export const router = initServer().router(contract, {
         } else {
           messages.push({
             role: "user",
-            content: `${input} ${instruction} ${promptText}`,
+            content: `${input} ${instruction} ${prompt}`,
+          });
+        }
+
+        if (previousAttempts.length > 0) {
+          previousAttempts.forEach((attempt) => {
+            messages.push({
+              role: "user",
+              content: "You previously responded: " + attempt.raw + " which produced validation errors: " + attempt.errors,
+            });
           });
         }
 
@@ -1702,6 +1707,7 @@ export const router = initServer().router(contract, {
       input,
       type,
       schema,
+      maxAttempts: maxAttempts ? parseInt(maxAttempts) : 3,
       instruction,
       provider,
     })
