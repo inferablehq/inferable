@@ -82,7 +82,7 @@ namespace Inferable.API
       var toolString = string.Join(",", tools);
 
       HttpResponseMessage response = await _client.GetAsync(
-          $"/clusters/{clusterId}/jobs?tools={toolString}&acknowledge=true"
+          $"/clusters/{clusterId}/jobs?tools={toolString}&acknowledge=true&waitTime=20"
           );
 
       try {
