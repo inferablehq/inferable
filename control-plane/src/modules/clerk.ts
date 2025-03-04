@@ -24,7 +24,9 @@ const getUserForOrg = async (emailAddress: string, organizationId: string) => {
 
   const list = await clerk.users.getUserList({
     emailAddress: [emailAddress],
-    organizationId: [organizationId],
+    organizationId: [
+      organizationId
+    ],
   });
 
   if (list.totalCount > 1) {

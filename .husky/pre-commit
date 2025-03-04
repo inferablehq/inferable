@@ -1,3 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged (already only checks changed files)
 npx lint-staged
 
-npx prettier --check "**/*.{ts,tsx,js,jsx,json}"
+# Run prettier on staged files and write changes
+git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|js|jsx|json)$' | xargs -I{} npx prettier --write "{}"
