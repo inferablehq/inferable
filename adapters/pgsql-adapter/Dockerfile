@@ -3,7 +3,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Pre-install pgsql-adapter globally
-RUN npm install -g @inferable/pgsql-adapter@0.0.8
+RUN npm install -g @inferable/pgsql-adapter@0.0.9
 
 # Entrypoint script to handle environment variables
 COPY docker-entrypoint.sh /usr/local/bin/

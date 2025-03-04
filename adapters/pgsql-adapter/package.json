@@ -1,6 +1,6 @@
 {
   "name": "@inferable/pgsql-adapter",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "main": "bin/index.js",
   "types": "bin/index.d.ts",
   "bin": {
@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "inferable": "^0.30.93",
+    "inferable": "^0.30.120",
     "pg": "^8.13.1",
     "tsx": "^4.19.2",
     "yargs": "^17.7.2"

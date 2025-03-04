@@ -1,5 +1,5 @@
 import assert from "assert";
-import { blob, ContextInput, Inferable, Interrupt } from "inferable";
+import { blob, JobContext, Inferable, Interrupt } from "inferable";
 import pg from "pg";
 import { z } from "zod";
 import crypto from "crypto";
@@ -114,7 +114,7 @@ export class InferablePGSQLAdapter {
     return context;
   };
 
-  executePostgresQuery = async (input: { query: string }, ctx: ContextInput) => {
+  executePostgresQuery = async (input: { query: string }, ctx: JobContext) => {
     if (!this.initialized) throw new Error("Database not initialized");
     const client = await this.getClient();
 
