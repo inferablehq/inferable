@@ -490,6 +490,12 @@ export const definition = {
         .boolean()
         .default(false)
         .describe("Should retrieved Jobs be marked as running"),
+      waitTime: z.coerce
+        .number()
+        .min(0)
+        .max(20)
+        .default(0)
+        .describe("Time in seconds to keep the request open waiting for a response"),
     }),
     pathParams: z.object({
       clusterId: z.string(),

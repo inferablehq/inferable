@@ -490,6 +490,12 @@ export const definition = {
         .boolean()
         .default(false)
         .describe("Should retrieved Jobs be marked as running"),
+      waitTime: z.coerce
+        .number()
+        .min(0)
+        .max(20)
+        .default(0)
+        .describe("Time in seconds to keep the request open waiting for a response"),
     }),
     pathParams: z.object({
       clusterId: z.string(),
@@ -1369,6 +1375,20 @@ export const definition = {
             approvalRequested: z.boolean().nullable(),
           }),
         }),
+        results: z.array(
+          z.object({
+            key: z.string(),
+            value: z.string(),
+            createdAt: z.date(),
+          })
+        ),
+        structured: z.array(
+          z.object({
+            key: z.string(),
+            value: z.string(),
+            createdAt: z.date(),
+          })
+        ),
       }),
     },
   },
@@ -1431,6 +1451,35 @@ export const definition = {
         })
       ),
       401: z.undefined(),
+    },
+  },
+
+  // L1M Endpoints
+  // https://github.com/inferablehq/l1m
+  l1mStructured: {
+    method: "POST",
+    path: "/clusters/:clusterId/l1m/structured",
+    pathParams: z.object({
+      clusterId: z.string(),
+    }),
+    body: z.object({
+      input: z.string(),
+      instructions: z.string().optional(),
+      schema: z.record(z.any()),
+    }),
+    headers: z.object({
+      authorization: z.string(),
+      "x-provider-model": z.string(),
+      "x-provider-url": z.string(),
+      "x-provider-key": z.string(),
+      "x-max-attempts": z.string().optional().default("3"),
+      "x-cache-ttl": z.string().optional(),
+      "x-workflow-execution-id": z.string().optional(),
+    }),
+    responses: {
+      200: z.object({
+        data: z.record(z.any()),
+      }),
     },
   },
 } as const;
