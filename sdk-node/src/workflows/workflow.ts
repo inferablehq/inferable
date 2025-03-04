@@ -1,6 +1,6 @@
 import { z, ZodTypeAny } from "zod";
 import type { Inferable } from "../Inferable";
-import zodToJsonSchema from "zod-to-json-schema";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { cyrb53 } from "../util/cybr53";
 import { InferableAPIError, InferableError } from "../errors";
 import { createApiClient } from "../create-client";
@@ -13,7 +13,6 @@ import {
 } from "../types";
 import { Interrupt } from "../util";
 import { ToolConfigSchema } from "../contract";
-import L1M from "l1m";
 
 type WorkflowInput = {
   executionId: string;
@@ -102,7 +101,13 @@ type WorkflowContext<TInput> = {
    * });
    * ```
    */
-  llm: L1M;
+  llm: {
+    structured: <T>(params: {
+      input: string;
+      instructions?: string;
+      schema: z.ZodType<T>;
+    }) => Promise<T>;
+  };
   /**
    * Result caching for the workflow.
    * @deprecated Use `memo` instead
@@ -277,18 +282,39 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       executionId,
     });
 
-    const l1m = new L1M({
-      baseUrl: `${this.endpoint}/clusters/${clusterId}/l1m`,
-      additionalHeaders: {
-        "x-workflow-execution-id": executionId,
-        Authorization: `Bearer ${this.apiSecret}`,
+    const llm = {
+      structured: async <T>(params: {
+        input: string;
+        instructions?: string;
+        schema: z.ZodType<T>;
+      }): Promise<T> => {
+        const result = await this.client.l1mStructured({
+          params: {
+            clusterId,
+          },
+          body: {
+            input: params.input,
+            instructions: params.instructions,
+            schema: zodToJsonSchema(params.schema),
+          },
+          headers: {
+            authorization: `Bearer ${this.apiSecret}`,
+            "x-provider-model": "claude-3-5-sonnet",
+            "x-provider-url": "",
+            "x-provider-key": "",
+            "x-workflow-execution-id": executionId,
+          },
+        });
+
+        if (result.status !== 200) {
+          throw new Error(
+            `L1M structured call failed with status ${result.status}`,
+          );
+        }
+
+        return result.body.data as T;
       },
-      provider: {
-        model: "claude-3-5-sonnet",
-        key: "",
-        url: "",
-      },
-    });
+    };
 
     const memo = async <TResult>(
       name: string,
@@ -469,7 +495,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
 
     return {
       ...jobCtx,
-      llm: l1m,
+      llm,
       result: memo,
       memo,
       agents,
