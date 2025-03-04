@@ -142,10 +142,7 @@ export const findSimilarEntities = async <Entity>(
 > => {
   const embedding = await embedSearchQuery(query);
 
-  const similarity = sql<number>`1 - (${cosineDistance(
-    embeddings.embedding_1024,
-    embedding,
-  )})`;
+  const similarity = sql<number>`1 - (${cosineDistance(embeddings.embedding_1024, embedding)})`;
 
   const results = await db
     .select({
@@ -254,7 +251,7 @@ export const getEntity = async <Entity>(
 
 export const getAllEmbeddings = async <Entity>(
   clusterId: string,
-  type: "service-function"| "knowledgebase-artifact",
+  type: "service-function" | "knowledgebase-artifact",
 ) =>
   await db
     .select({

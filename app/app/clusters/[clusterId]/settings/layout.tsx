@@ -22,12 +22,10 @@ export default function SettingsLayout({
 
   return (
     <div className="space-y-6 p-6">
-    <div className="flex flex-col">
-      <h1 className="text-2xl">Settings</h1>
-      <p className="text-gray-500">
-        Manage your cluster&apos;s settings.
-      </p>
-    </div>
+      <div className="flex flex-col">
+        <h1 className="text-2xl">Settings</h1>
+        <p className="text-gray-500">Manage your cluster&apos;s settings.</p>
+      </div>
       <Tabs value={currentTab} className="space-y-6">
         <TabsList>
           <Link href={`/clusters/${clusterId}/settings/details`}>

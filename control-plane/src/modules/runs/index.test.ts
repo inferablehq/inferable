@@ -19,7 +19,7 @@ describe("assertRunReady", () => {
       assertRunReady({
         runId: run.id,
         clusterId: owner.clusterId,
-      })
+      }),
     ).resolves.not.toThrow();
   });
 
@@ -63,7 +63,7 @@ describe("assertRunReady", () => {
       assertRunReady({
         runId: updatedRun.id,
         clusterId: owner.clusterId,
-      })
+      }),
     ).rejects.toThrow(RunBusyError);
   });
 
@@ -77,7 +77,7 @@ describe("assertRunReady", () => {
       assertRunReady({
         runId: run.id,
         clusterId: owner.clusterId,
-      })
+      }),
     ).rejects.toThrow(BadRequestError);
   });
 
@@ -115,37 +115,40 @@ describe("assertRunReady", () => {
       assertRunReady({
         runId: updatedRun.id,
         clusterId: owner.clusterId,
-      })
+      }),
     ).resolves.not.toThrow();
   });
 
-  it.each(["human", "template"] as const)("should throw if last message is %s", async type => {
-    const run = await createRun({
-      clusterId: owner.clusterId,
-    });
-
-    await insertRunMessage({
-      id: ulid(),
-      data: {
-        message: "Some request",
-      },
-      type,
-      clusterId: owner.clusterId,
-      runId: run.id,
-    });
-
-    const updatedRun = await updateRun({
-      ...run,
-      status: "done",
-    });
-
-    await expect(
-      assertRunReady({
-        runId: updatedRun.id,
+  it.each(["human", "template"] as const)(
+    "should throw if last message is %s",
+    async (type) => {
+      const run = await createRun({
         clusterId: owner.clusterId,
-      })
-    ).rejects.toThrow(RunBusyError);
-  });
+      });
+
+      await insertRunMessage({
+        id: ulid(),
+        data: {
+          message: "Some request",
+        },
+        type,
+        clusterId: owner.clusterId,
+        runId: run.id,
+      });
+
+      const updatedRun = await updateRun({
+        ...run,
+        status: "done",
+      });
+
+      await expect(
+        assertRunReady({
+          runId: updatedRun.id,
+          clusterId: owner.clusterId,
+        }),
+      ).rejects.toThrow(RunBusyError);
+    },
+  );
 
   it.each([
     {
@@ -178,7 +181,7 @@ describe("assertRunReady", () => {
       },
       type: "template" as const,
     },
-  ])("messages should throw unless AI with no tool calls", async message => {
+  ])("messages should throw unless AI with no tool calls", async (message) => {
     const run = await createRun({
       clusterId: owner.clusterId,
     });
@@ -220,7 +223,7 @@ describe("assertRunReady", () => {
       assertRunReady({
         runId: updatedRun.id,
         clusterId: owner.clusterId,
-      })
+      }),
     ).rejects.toThrow(RunBusyError);
   });
 });

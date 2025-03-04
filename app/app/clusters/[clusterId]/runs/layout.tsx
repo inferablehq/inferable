@@ -36,5 +36,7 @@ export default function Home({
     fetchMetadata();
   }, [clusterId, getToken, pathname]);
 
-  return <ClusterRunsLayout clusterId={clusterId}>{children}</ClusterRunsLayout>;
+  return (
+    <ClusterRunsLayout clusterId={clusterId}>{children}</ClusterRunsLayout>
+  );
 }

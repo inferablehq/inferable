@@ -19,11 +19,11 @@ describe("cron", () => {
         executionCount++;
       },
       "test-cron",
-      { interval: 1000 } // 1 second interval
+      { interval: 1000 }, // 1 second interval
     );
 
     // Wait for 5 seconds to allow the cron to fire multiple times
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // Assert that the cron job has fired more than once
     expect(executionCount).toBeGreaterThan(1);

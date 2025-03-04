@@ -21,20 +21,22 @@ export function RunList({ clusterId }: WorkflowListProps) {
   const user = useUser();
   const [limit, setLimit] = useState(20);
   const [hasMore, setHasMore] = useState(true);
-  const [runs, setRuns] = useState<ClientInferResponseBody<typeof contract.listRuns, 200>>([]);
+  const [runs, setRuns] = useState<
+    ClientInferResponseBody<typeof contract.listRuns, 200>
+  >([]);
 
   const goToCluster = useCallback(
     (c: string) => {
       router.push(`/clusters/${c}/runs`);
     },
-    [router]
+    [router],
   );
 
   const goToRun = useCallback(
     (c: string, w: string) => {
       router.push(`/clusters/${c}/runs/${w}`);
     },
-    [router]
+    [router],
   );
 
   const fetchRuns = useCallback(async () => {
@@ -71,7 +73,7 @@ export function RunList({ clusterId }: WorkflowListProps) {
 
   const loadMore = () => {
     if (limit < 50) {
-      setLimit(prevLimit => Math.min(prevLimit + 10, 50));
+      setLimit((prevLimit) => Math.min(prevLimit + 10, 50));
     } else {
       setHasMore(false);
     }
@@ -88,7 +90,12 @@ export function RunList({ clusterId }: WorkflowListProps) {
           clusterId={clusterId}
         />
         {hasMore && (
-          <Button onClick={loadMore} className="w-full mt-4" variant="outline" size="sm">
+          <Button
+            onClick={loadMore}
+            className="w-full mt-4"
+            variant="outline"
+            size="sm"
+          >
             Load More
           </Button>
         )}

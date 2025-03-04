@@ -1,5 +1,4 @@
-node_modules
-dist
-build
-.next
-coverage
+node_modules;
+dist;
+build.next;
+coverage;

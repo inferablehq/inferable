@@ -7,7 +7,10 @@ async function fetchSOPContent(): Promise<string> {
   return response.text();
 }
 
-async function addTagToTicket(input: { ticketId: string; tag: string }): Promise<void> {
+async function addTagToTicket(input: {
+  ticketId: string;
+  tag: string;
+}): Promise<void> {
   await fetch(`${process.env.ZENDESK_API_URL}/tickets/${input.ticketId}/tags`, {
     method: "PUT",
     headers: {
@@ -24,7 +27,8 @@ async function addTagToTicket(input: { ticketId: string; tag: string }): Promise
 inferable.tools.register({
   name: "fetchSOPContent",
   func: fetchSOPContent,
-  description: "Fetches Standard Operating Procedures content from external URL",
+  description:
+    "Fetches Standard Operating Procedures content from external URL",
   schema: {
     input: z.object({}),
   },

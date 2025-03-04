@@ -17,7 +17,13 @@ workflow.version(1).define(async (ctx, input) => {
 
   // Create agent to analyze ticket and determine tag
   const tagAnalysisSchema = z.object({
-    tag: z.enum(["general", "refund", "tech-support", "billing", "feature-request"]),
+    tag: z.enum([
+      "general",
+      "refund",
+      "tech-support",
+      "billing",
+      "feature-request",
+    ]),
   });
 
   const tagAnalysisAgent = ctx.agent({

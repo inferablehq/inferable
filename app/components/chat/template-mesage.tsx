@@ -4,7 +4,11 @@ import { ChevronDown, Bot } from "lucide-react";
 import Link from "next/link";
 import { ReadOnlyJSON } from "../read-only-json";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 import { MessageContainerProps } from "./run-event";
 import { z } from "zod";
 
@@ -43,7 +47,9 @@ export function TemplateMessage({
             {templateId && templateName ? (
               <Link href={`/clusters/${clusterId}/prompts/${templateId}/edit`}>
                 <div className="flex flex-row space-x-1">
-                  <p className="text-muted-foreground font-normal">Triggered by</p>
+                  <p className="text-muted-foreground font-normal">
+                    Triggered by
+                  </p>
                   <p>{templateName}</p>
                 </div>
               </Link>
@@ -61,11 +67,15 @@ export function TemplateMessage({
           {key === "message" ? (
             <Collapsible>
               <CollapsibleTrigger className="flex items-center cursor-pointer">
-                <p className="text-sm text-muted-foreground mr-2">{startCase(key)}</p>
+                <p className="text-sm text-muted-foreground mr-2">
+                  {startCase(key)}
+                </p>
                 <ChevronDown className="w-4 h-4" />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <p className="text-sm whitespace-pre-wrap mt-2">{value as string}</p>
+                <p className="text-sm whitespace-pre-wrap mt-2">
+                  {value as string}
+                </p>
               </CollapsibleContent>
             </Collapsible>
           ) : (

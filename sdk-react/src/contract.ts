@@ -48,7 +48,7 @@ export const VersionedTextsSchema = z.object({
     z.object({
       version: z.string(),
       content: z.string(),
-    })
+    }),
   ),
 });
 
@@ -79,12 +79,18 @@ export const onStatusChangeSchema = z.preprocess(
   z.union([
     z.object({
       type: z.literal("function"),
-      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
-      function: functionReference.describe("A function to call when the run status changes"),
+      statuses: z.array(
+        z.enum(["pending", "running", "paused", "done", "failed"]),
+      ),
+      function: functionReference.describe(
+        "A function to call when the run status changes",
+      ),
     }),
     z.object({
       type: z.literal("webhook"),
-      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      statuses: z.array(
+        z.enum(["pending", "running", "paused", "done", "failed"]),
+      ),
       webhook: z
         .string()
         .regex(/^https?:\/\/.+$/)
@@ -92,14 +98,16 @@ export const onStatusChangeSchema = z.preprocess(
     }),
     z.object({
       type: z.literal("workflow"),
-      statuses: z.array(z.enum(["pending", "running", "paused", "done", "failed"])),
+      statuses: z.array(
+        z.enum(["pending", "running", "paused", "done", "failed"]),
+      ),
       workflow: z
         .object({
           executionId: z.string().describe("The execution ID of the workflow"),
         })
         .describe("A workflow to run when the run status changes"),
     }),
-  ])
+  ]),
 );
 
 export const integrationSchema = z.object({
@@ -166,13 +174,17 @@ const resultDataSchema = z
 export const learningSchema = z.object({
   summary: z
     .string()
-    .describe("The new information that was learned. Be generic, do not refer to the entities."),
+    .describe(
+      "The new information that was learned. Be generic, do not refer to the entities.",
+    ),
   entities: z
     .array(
       z.object({
-        name: z.string().describe("The name of the entity this learning relates to."),
+        name: z
+          .string()
+          .describe("The name of the entity this learning relates to."),
         type: z.enum(["tool"]),
-      })
+      }),
     )
     .describe("The entities this learning relates to."),
   relevance: z.object({
@@ -196,7 +208,7 @@ const agentDataSchema = z
           toolName: z.string(),
           reasoning: z.string().optional(),
           input: z.object({}).passthrough(),
-        })
+        }),
       )
       .optional(),
   })
@@ -258,7 +270,10 @@ export type MessageTypes =
   | "supervisor"
   | "agent-invalid";
 
-export type UnifiedMessageOfType<T extends MessageTypes> = Extract<UnifiedMessage, { type: T }>;
+export type UnifiedMessageOfType<T extends MessageTypes> = Extract<
+  UnifiedMessage,
+  { type: T }
+>;
 
 export const FunctionConfigSchema = z.object({
   cache: z
@@ -277,23 +292,29 @@ const RunSchema = z.object({
     .string()
     .optional()
     .describe(
-      "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned."
+      "The run ID. If not provided, a new run will be created. If provided, the run will be created with the given. If the run already exists, it will be returned.",
     )
     .refine(
-      val => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
-      "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long."
+      (val) => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
+      "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long.",
     ),
   runId: z
     .string()
     .optional()
     .describe("Deprecated. Use `id` instead.")
     .refine(
-      val => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
-      "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long."
+      (val) => !val || /^[0-9A-Za-z-_.]{4,128}$/.test(val),
+      "Run ID must contain only alphanumeric characters, dashes, underscores, and periods. Must be between 4 and 128 characters long.",
     ),
-  initialPrompt: z.string().optional().describe("An initial 'human' message to trigger the run"),
+  initialPrompt: z
+    .string()
+    .optional()
+    .describe("An initial 'human' message to trigger the run"),
   systemPrompt: z.string().optional().describe("A system prompt for the run."),
-  name: z.string().optional().describe("The name of the run, if not provided it will be generated"),
+  name: z
+    .string()
+    .optional()
+    .describe("The name of the run, if not provided it will be generated"),
   model: z
     .enum(["claude-3-5-sonnet", "claude-3-haiku"])
     .optional()
@@ -301,43 +322,57 @@ const RunSchema = z.object({
   resultSchema: anyObject
     .optional()
     .describe(
-      "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema"
+      "A JSON schema definition which the result object should conform to. By default the result will be a JSON object which does not conform to any schema",
     ),
   attachedFunctions: z
     .array(functionReference)
     .optional()
     .describe(
-      "An array of functions to make available to the run. By default all functions in the cluster will be available"
+      "An array of functions to make available to the run. By default all functions in the cluster will be available",
     ),
   onStatusChange: onStatusChangeSchema
     .optional()
-    .describe("Mechanism for receiving notifications when the run status changes"),
-  tags: z.record(z.string()).optional().describe("Run tags which can be used to filter runs"),
+    .describe(
+      "Mechanism for receiving notifications when the run status changes",
+    ),
+  tags: z
+    .record(z.string())
+    .optional()
+    .describe("Run tags which can be used to filter runs"),
   test: z
     .object({
       enabled: z.boolean().default(false),
       mocks: z
         .record(
           z.object({
-            output: z.object({}).passthrough().describe("The mock output of the function"),
-          })
+            output: z
+              .object({})
+              .passthrough()
+              .describe("The mock output of the function"),
+          }),
         )
         .optional()
         .describe(
-          "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)"
+          "Function mocks to be used in the run. (Keys should be function in the format <SERVICE>_<FUNCTION>)",
         ),
     })
     .optional()
-    .describe("When provided, the run will be marked as as a test / evaluation"),
+    .describe(
+      "When provided, the run will be marked as as a test / evaluation",
+    ),
   input: z
     .object({})
     .passthrough()
-    .describe(
-      "Structured input arguments to merge with the initial prompt."
-    )
+    .describe("Structured input arguments to merge with the initial prompt.")
     .optional(),
-  context: anyObject.optional().describe("Additional context to propogate to all Jobs in the Run"),
-  reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
+  context: anyObject
+    .optional()
+    .describe("Additional context to propogate to all Jobs in the Run"),
+  reasoningTraces: z
+    .boolean()
+    .default(true)
+    .optional()
+    .describe("Enable reasoning traces"),
   callSummarization: z
     .boolean()
     .default(false)
@@ -346,8 +381,13 @@ const RunSchema = z.object({
   interactive: z
     .boolean()
     .default(true)
-    .describe("Allow the run to be continued with follow-up messages / message edits"),
-  enableResultGrounding: z.boolean().default(false).describe("Enable result grounding"),
+    .describe(
+      "Allow the run to be continued with follow-up messages / message edits",
+    ),
+  enableResultGrounding: z
+    .boolean()
+    .default(false)
+    .describe("Enable result grounding"),
 });
 
 export const definition = {
@@ -417,7 +457,9 @@ export const definition = {
         .min(0)
         .max(20)
         .default(0)
-        .describe("Time in seconds to keep the request open waiting for a response"),
+        .describe(
+          "Time in seconds to keep the request open waiting for a response",
+        ),
     }),
     headers: z.object({
       authorization: z.string(),
@@ -481,7 +523,9 @@ export const definition = {
     path: "/clusters/:clusterId/jobs",
     query: z.object({
       service: z.string(),
-      status: z.enum(["pending", "running", "paused", "done", "failed"]).default("pending"),
+      status: z
+        .enum(["pending", "running", "paused", "done", "failed"])
+        .default("pending"),
       limit: z.coerce.number().min(1).max(20).default(10),
       acknowledge: z.coerce
         .boolean()
@@ -508,7 +552,7 @@ export const definition = {
           authContext: z.any().nullable(),
           runContext: z.any().nullable(),
           approved: z.boolean(),
-        })
+        }),
       ),
     },
   },
@@ -556,11 +600,13 @@ export const definition = {
         message: z.string(),
       }),
     },
-    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, runId: true }).and(
-      z.object({
-        data: z.string(),
-      })
-    ),
+    body: blobSchema
+      .omit({ id: true, createdAt: true, jobId: true, runId: true })
+      .and(
+        z.object({
+          data: z.string(),
+        }),
+      ),
   },
 
   createMachine: {
@@ -579,7 +625,7 @@ export const definition = {
             description: z.string().optional(),
             schema: z.string().optional(),
             config: FunctionConfigSchema.optional(),
-          })
+          }),
         )
         .optional(),
     }),
@@ -602,8 +648,13 @@ export const definition = {
       204: z.undefined(),
     },
     body: z.object({
-      description: z.string().describe("Human readable description of the cluster"),
-      name: z.string().optional().describe("Human readable name of the cluster"),
+      description: z
+        .string()
+        .describe("Human readable description of the cluster"),
+      name: z
+        .string()
+        .optional()
+        .describe("Human readable name of the cluster"),
       isDemo: z
         .boolean()
         .optional()
@@ -636,13 +687,13 @@ export const definition = {
       name: z.string().optional(),
       description: z.string().optional(),
       additionalContext: VersionedTextsSchema.optional().describe(
-        "Additional cluster context which is included in all runs"
+        "Additional cluster context which is included in all runs",
       ),
       debug: z
         .boolean()
         .optional()
         .describe(
-          "Enable additional logging (Including prompts and results) for use by Inferable support"
+          "Enable additional logging (Including prompts and results) for use by Inferable support",
         ),
       enableCustomAuth: z.boolean().optional(),
       enableKnowledgebase: z.boolean().optional(),
@@ -673,14 +724,14 @@ export const definition = {
             ip: z.string().nullable(),
             sdkVersion: z.string().nullable(),
             sdkLanguage: z.string().nullable(),
-          })
+          }),
         ),
         services: z.array(
           z.object({
             service: z.string(),
             definition: z.unknown().nullable(),
             timestamp: z.date().nullable(),
-          })
+          }),
         ),
       }),
       401: z.undefined(),
@@ -703,7 +754,7 @@ export const definition = {
           name: z.string(),
           createdAt: z.date(),
           description: z.string().nullable(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -763,7 +814,7 @@ export const definition = {
           workflowId: z.string().nullable(),
           meta: z.any().nullable(),
           id: z.string(),
-        })
+        }),
       ),
       401: z.undefined(),
       404: z.undefined(),
@@ -815,14 +866,14 @@ export const definition = {
             totalInputTokens: z.number(),
             totalOutputTokens: z.number(),
             totalModelInvocations: z.number(),
-          })
+          }),
         ),
         runs: z.array(
           z.object({
             date: z.string(),
             totalRuns: z.number(),
-          })
-        )
+          }),
+        ),
       }),
     },
     pathParams: z.object({
@@ -881,10 +932,13 @@ export const definition = {
       userId: z.string().optional(),
       test: z.coerce
         .string()
-        .transform(value => value === "true")
+        .transform((value) => value === "true")
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
-      tags: z.string().optional().describe("Filter runs by a tag value (value:key)"),
+      tags: z
+        .string()
+        .optional()
+        .describe("Filter runs by a tag value (value:key)"),
     }),
     responses: {
       200: z.array(
@@ -893,10 +947,12 @@ export const definition = {
           name: z.string(),
           userId: z.string().nullable(),
           createdAt: z.date(),
-          status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+          status: z
+            .enum(["pending", "running", "paused", "done", "failed"])
+            .nullable(),
           test: z.boolean(),
           feedbackScore: z.number().nullable(),
-        })
+        }),
       ),
       401: z.undefined(),
     },
@@ -924,7 +980,12 @@ export const definition = {
     }),
     body: z.object({
       comment: z.string().describe("Feedback comment").nullable(),
-      score: z.number().describe("Score between 0 and 1").min(0).max(1).nullable(),
+      score: z
+        .number()
+        .describe("Score between 0 and 1")
+        .min(0)
+        .max(1)
+        .nullable(),
     }),
     responses: {
       204: z.undefined(),
@@ -980,7 +1041,9 @@ export const definition = {
         .min(0)
         .max(20)
         .default(0)
-        .describe("Time in seconds to keep the request open waiting for a response"),
+        .describe(
+          "Time in seconds to keep the request open waiting for a response",
+        ),
       after: z.string().default("0"),
       limit: z.coerce.number().min(10).max(50).default(50),
     }),
@@ -1012,7 +1075,7 @@ export const definition = {
           targetFn: z.string(),
           service: z.string(),
           executingMachineId: z.string().nullable(),
-        })
+        }),
       ),
     },
   },
@@ -1050,7 +1113,7 @@ export const definition = {
           createdAt: z.date(),
           createdBy: z.string(),
           revokedAt: z.date().nullable(),
-        })
+        }),
       ),
     },
   },
@@ -1083,7 +1146,7 @@ export const definition = {
           id: z.string(),
           lastPingAt: z.date(),
           ip: z.string(),
-        })
+        }),
       ),
     },
     pathParams: z.object({
@@ -1109,11 +1172,11 @@ export const definition = {
                 description: z.string().optional(),
                 schema: z.string().optional(),
                 config: FunctionConfigSchema.optional(),
-              })
+              }),
             )
             .optional(),
           timestamp: z.date(),
-        })
+        }),
       ),
     },
     pathParams: z.object({
@@ -1145,7 +1208,7 @@ export const definition = {
             createdAt: z.date(),
             jobId: z.string().nullable(),
             targetFn: z.string().nullable(),
-          })
+          }),
         ),
         jobs: z.array(
           z.object({
@@ -1157,12 +1220,14 @@ export const definition = {
             createdAt: z.date(),
             approved: z.boolean().nullable(),
             approvalRequested: z.boolean().nullable(),
-          })
+          }),
         ),
         run: z.object({
           id: z.string(),
           userId: z.string().nullable(),
-          status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
+          status: z
+            .enum(["pending", "running", "paused", "done", "failed"])
+            .nullable(),
           failureReason: z.string().nullable(),
           test: z.boolean(),
           context: z.any().nullable(),

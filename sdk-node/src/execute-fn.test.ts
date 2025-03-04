@@ -4,7 +4,7 @@ import { Interrupt } from "./util";
 describe("executeFn", () => {
   it("should run a function with arguments", async () => {
     const fn = (val: { [key: string]: string }) => Promise.resolve(val.foo);
-    const result = await executeFn(fn, [{foo: "bar"}] as any);
+    const result = await executeFn(fn, [{ foo: "bar" }] as any);
     expect(result).toEqual({
       content: "bar",
       type: "resolution",

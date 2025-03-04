@@ -35,14 +35,14 @@ function anonymize<T>(value: T): T {
 
 export const formatJobsContext = (
   jobs: { targetArgs: string | null; result: string | null }[],
-  status: "success" | "failed"
+  status: "success" | "failed",
 ) => {
   if (jobs.length === 0) return "";
 
   const jobEntries = jobs
     .map(
-      job =>
-        `<input>${JSON.stringify(anonymize(safeParse(job.targetArgs)))}</input><output>${JSON.stringify(anonymize(safeParse(job.result)))}</output>`
+      (job) =>
+        `<input>${JSON.stringify(anonymize(safeParse(job.targetArgs)))}</input><output>${JSON.stringify(anonymize(safeParse(job.result)))}</output>`,
     )
     .join("\n");
 
@@ -69,15 +69,15 @@ export const getToolContexts = async ({
   }[];
 }) => {
   const toolContexts = await Promise.all(
-    relatedTools.map(async toolDetails => {
+    relatedTools.map(async (toolDetails) => {
       const [resolvedJobs, rejectedJobs] = await Promise.all([
         getLatestJobsResultedByFunctionName({
           clusterId,
           functionName: toolDetails.functionName,
           limit: 3,
           resultType: "resolution",
-        }).then(jobs => {
-          return jobs?.map(j => ({
+        }).then((jobs) => {
+          return jobs?.map((j) => ({
             targetArgs: anonymize(j.targetArgs),
             result: anonymize(j.result),
           }));
@@ -87,8 +87,8 @@ export const getToolContexts = async ({
           functionName: toolDetails.functionName,
           limit: 3,
           resultType: "rejection",
-        }).then(jobs => {
-          return jobs?.map(j => ({
+        }).then((jobs) => {
+          return jobs?.map((j) => ({
             targetArgs: anonymize(j.targetArgs),
             result: anonymize(j.result),
           }));
@@ -109,9 +109,9 @@ export const getToolContexts = async ({
 
       return {
         functionName: toolDetails.functionName,
-        toolContext: contextArr.map(c => c.trim()).join("\n\n"),
+        toolContext: contextArr.map((c) => c.trim()).join("\n\n"),
       };
-    })
+    }),
   );
 
   return toolContexts;
@@ -125,7 +125,7 @@ async function findRelatedFunctionTools(
     resultSchema: unknown | null;
     debug: boolean;
   },
-  search: string
+  search: string,
 ) {
   const relatedTools = await searchTools({
     query: search,
@@ -133,16 +133,18 @@ async function findRelatedFunctionTools(
   });
 
   const selectedTools = relatedTools
-  .filter(definition => !definition.config?.private)
-  .map(
-    definition =>
-      new AgentTool({
-        name: definition.name,
-        description: (definition.description ?? `${definition.name} function`).substring(0, 1024),
-        schema: definition.schema ?? undefined,
-        func: async () => undefined,
-      })
-  );
+    .filter((definition) => !definition.config?.private)
+    .map(
+      (definition) =>
+        new AgentTool({
+          name: definition.name,
+          description: (
+            definition.description ?? `${definition.name} function`
+          ).substring(0, 1024),
+          schema: definition.schema ?? undefined,
+          func: async () => undefined,
+        }),
+    );
 
   return {
     selectedTools,
@@ -166,16 +168,20 @@ export const findRelevantTools = async (state: RunGraphState) => {
       });
 
       if (!definition) {
-        throw new NotFoundError(`Tool ${tool} not found in cluster ${run.clusterId}`);
+        throw new NotFoundError(
+          `Tool ${tool} not found in cluster ${run.clusterId}`,
+        );
       }
 
       tools.push(
         new AgentTool({
           name: definition.name,
-          description: (definition.description ?? `${definition.name} function`).substring(0, 1024),
+          description: (
+            definition.description ?? `${definition.name} function`
+          ).substring(0, 1024),
           schema: definition.schema ?? undefined,
           func: async () => undefined,
-        })
+        }),
       );
     }
   } else {
@@ -200,16 +206,18 @@ export const findRelevantTools = async (state: RunGraphState) => {
           type: "human",
           id: ulid(),
           data: {
-            message: ["Here is the system prompt for Agent X:", run.systemPrompt ?? "(empty)"].join(
-              "\n"
-            ),
+            message: [
+              "Here is the system prompt for Agent X:",
+              run.systemPrompt ?? "(empty)",
+            ].join("\n"),
           },
         }),
         toAnthropicMessage({
           type: "agent",
           id: ulid(),
           data: {
-            message: "Acknowledged. Give me the message history conducted by Agent X.",
+            message:
+              "Acknowledged. Give me the message history conducted by Agent X.",
           },
         }),
         toAnthropicMessage({
@@ -218,7 +226,7 @@ export const findRelevantTools = async (state: RunGraphState) => {
           data: {
             message: [
               "Here is the message history conducted by Agent X:",
-              ...state.messages.map(m => JSON.stringify(m.data)),
+              ...state.messages.map((m) => JSON.stringify(m.data)),
             ].join("\n"),
           },
         }),
@@ -226,7 +234,8 @@ export const findRelevantTools = async (state: RunGraphState) => {
           type: "agent",
           id: ulid(),
           data: {
-            message: "Acknowledged. I have thought deeply, and you must search for tools that can:",
+            message:
+              "Acknowledged. I have thought deeply, and you must search for tools that can:",
           },
         }),
       ],
@@ -240,9 +249,12 @@ export const findRelevantTools = async (state: RunGraphState) => {
       .safeParse(searchQuery.raw.content[0]);
 
     if (!searchQueryContent.success) {
-      logger.warn("Failed to parse search query. Will use message history instead.", {
-        searchQuery,
-      });
+      logger.warn(
+        "Failed to parse search query. Will use message history instead.",
+        {
+          searchQuery,
+        },
+      );
     }
 
     const { selectedTools } = await findRelatedFunctionTools(
@@ -250,9 +262,9 @@ export const findRelevantTools = async (state: RunGraphState) => {
       searchQueryContent.success
         ? searchQueryContent.data.text
         : state.messages
-            .map(m => JSON.stringify(m.data))
+            .map((m) => JSON.stringify(m.data))
             .concat(run.systemPrompt ?? "")
-            .join("\n")
+            .join("\n"),
     );
 
     tools.push(...selectedTools);
@@ -262,8 +274,10 @@ export const findRelevantTools = async (state: RunGraphState) => {
       runId: run.id,
       clusterId: run.clusterId,
       meta: {
-        query: searchQueryContent.success ? searchQueryContent.data.text : "(message history)",
-        tools: tools.map(t => {
+        query: searchQueryContent.success
+          ? searchQueryContent.data.text
+          : "(message history)",
+        tools: tools.map((t) => {
           return {
             name: t.name,
             description: t.description,

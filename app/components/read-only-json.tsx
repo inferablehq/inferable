@@ -1,7 +1,13 @@
 import { colorizeJSON } from "@/lib/colorize-json";
 import { cn } from "@/lib/utils";
 
-export const ReadOnlyJSON = ({ json, dark }: { json: string | object; dark?: boolean }) => {
+export const ReadOnlyJSON = ({
+  json,
+  dark,
+}: {
+  json: string | object;
+  dark?: boolean;
+}) => {
   let formattedJson: string;
 
   if (typeof json === "object") {

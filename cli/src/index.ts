@@ -14,10 +14,10 @@ import { Generate } from "./commands/generate";
 import { AppOpen } from "./commands/open";
 
 // Check for updates and notify
-updateNotifier({ 
-  pkg: pkg, 
+updateNotifier({
+  pkg: pkg,
   updateCheckInterval: 1000 * 60 * 60 * 24,
-  shouldNotifyInNpmScript: true, 
+  shouldNotifyInNpmScript: true,
 });
 
 const cli = yargs(hideBin(process.argv))

@@ -27,8 +27,16 @@ type Query {
   getUserByName(username: String!): User!
   getRepositoriesByOwner(username: String!): [Repository!]!
   getRepository(username: String!, slug: String!): Repository!
-  getPullRequestsByRepository(username: String!, slug: String!, state: PullRequestState): [PullRequest!]!
-  getPullRequestById(username: String!, slug: String!, pid: String!): PullRequest!
+  getPullRequestsByRepository(
+    username: String!
+    slug: String!
+    state: PullRequestState
+  ): [PullRequest!]!
+  getPullRequestById(
+    username: String!
+    slug: String!
+    pid: String!
+  ): PullRequest!
 }
 
 # Mutations

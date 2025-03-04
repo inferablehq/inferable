@@ -8,15 +8,27 @@ import path from "path";
 import { ulid } from "ulid";
 import util from "util";
 import { env } from "../utilities/env";
-import { AuthenticationError, BadRequestError, NotFoundError } from "../utilities/errors";
+import {
+  AuthenticationError,
+  BadRequestError,
+  NotFoundError,
+} from "../utilities/errors";
 import { safeParse } from "../utilities/safe-parse";
 import { unqualifiedEntityId } from "./auth/auth";
-import { createApiKey, listApiKeys, revokeApiKey, verify } from "./auth/cluster";
+import {
+  createApiKey,
+  listApiKeys,
+  revokeApiKey,
+  verify,
+} from "./auth/cluster";
 import { createBlob, getBlobData, getBlobsForJobs } from "./blobs";
 import { getClusterDetails } from "./cluster";
 import { contract, interruptSchema } from "./contract";
 import * as data from "./data";
-import { getIntegrations, upsertIntegrations } from "./integrations/integrations";
+import {
+  getIntegrations,
+  upsertIntegrations,
+} from "./integrations/integrations";
 import { getSession, nango, webhookSchema } from "./integrations/nango";
 import { validateConfig } from "./integrations/toolhouse";
 import * as jobs from "./jobs/jobs";
@@ -42,7 +54,12 @@ import {
 import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
-import { getWorkflowTools, listTools, recordPoll, upsertToolDefinition } from "./tools";
+import {
+  getWorkflowTools,
+  listTools,
+  recordPoll,
+  upsertToolDefinition,
+} from "./tools";
 import { persistJobInterrupt } from "./jobs/job-results";
 import {
   createWorkflowExecution,
@@ -50,14 +67,19 @@ import {
   getWorkflowExecutionTimeline,
 } from "./workflows/executions";
 import { createWorkflowLog } from "./workflows/logs";
-import { inferType, structured, validateJsonSchema, validTypes } from "@l1m/core";
+import {
+  inferType,
+  structured,
+  validateJsonSchema,
+  validTypes,
+} from "@l1m/core";
 import { buildModel } from "./models";
 import Anthropic from "@anthropic-ai/sdk";
 
 const readFile = util.promisify(fs.readFile);
 
 export const router = initServer().router(contract, {
-  createMachine: async request => {
+  createMachine: async (request) => {
     const machine = request.request.getAuth().isMachine();
 
     const machineId = request.headers["x-machine-id"];
@@ -75,8 +97,10 @@ export const router = initServer().router(contract, {
       });
     }
 
-    const derefedFns = tools?.map(fn => {
-      const schema = fn.schema ? safeParse(fn.schema) : { success: true, data: undefined };
+    const derefedFns = tools?.map((fn) => {
+      const schema = fn.schema
+        ? safeParse(fn.schema)
+        : { success: true, data: undefined };
 
       if (!schema.success) {
         throw new BadRequestError(`Function ${fn.name} has an invalid schema.`);
@@ -86,7 +110,9 @@ export const router = initServer().router(contract, {
         clusterId: machine.clusterId,
         name: fn.name,
         description: fn.description,
-        schema: schema.data ? JSON.stringify(dereferenceSync(schema.data)) : undefined,
+        schema: schema.data
+          ? JSON.stringify(dereferenceSync(schema.data))
+          : undefined,
         config: fn.config,
       };
     });
@@ -102,15 +128,15 @@ export const router = initServer().router(contract, {
       }),
       derefedFns &&
         Promise.all(
-          derefedFns?.map(fn =>
+          derefedFns?.map((fn) =>
             upsertToolDefinition({
               name: fn.name,
               clusterId: machine.clusterId,
               description: fn.description,
               schema: fn.schema,
               config: fn.config,
-            })
-          )
+            }),
+          ),
         ),
     ]);
 
@@ -127,7 +153,7 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  getRun: async request => {
+  getRun: async (request) => {
     const { clusterId, runId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ run: { clusterId, runId } });
@@ -162,7 +188,7 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  createRun: async request => {
+  createRun: async (request) => {
     const { clusterId } = request.params;
     const body = request.body;
 
@@ -200,13 +226,19 @@ export const router = initServer().router(contract, {
 
     if (body.type === "single-step") {
       if (body.attachedFunctions || body.tools) {
-        throw new BadRequestError("Single Step runs cannot have attached tools");
+        throw new BadRequestError(
+          "Single Step runs cannot have attached tools",
+        );
       }
       if (body.reasoningTraces) {
-        throw new BadRequestError("Single step runs cannot have reasoning traces");
+        throw new BadRequestError(
+          "Single step runs cannot have reasoning traces",
+        );
       }
       if (body.enableResultGrounding) {
-        throw new BadRequestError("Single step runs cannot have result grounding");
+        throw new BadRequestError(
+          "Single step runs cannot have result grounding",
+        );
       }
     }
 
@@ -234,7 +266,10 @@ export const router = initServer().router(contract, {
     }
 
     const attachedFunctions =
-      body.tools ?? body.attachedFunctions?.map(f => (typeof f === "string" ? f : f.function));
+      body.tools ??
+      body.attachedFunctions?.map((f) =>
+        typeof f === "string" ? f : f.function,
+      );
 
     const runOptions: RunOptions = {
       id,
@@ -321,7 +356,10 @@ export const router = initServer().router(contract, {
       },
     });
 
-    const result = run.status === "done" ? await getRunResult({ clusterId, runId: run.id }) : null;
+    const result =
+      run.status === "done"
+        ? await getRunResult({ clusterId, runId: run.id })
+        : null;
 
     return {
       status: 201,
@@ -332,7 +370,7 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  deleteRun: async request => {
+  deleteRun: async (request) => {
     const { clusterId, runId } = request.params;
 
     const auth = request.request.getAuth();
@@ -363,7 +401,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  createFeedback: async request => {
+  createFeedback: async (request) => {
     const { clusterId, runId } = request.params;
     const { comment, score } = request.body;
 
@@ -409,7 +447,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  listRuns: async request => {
+  listRuns: async (request) => {
     const { clusterId } = request.params;
     const { test, limit, tags, type } = request.query;
     let { userId } = request.query;
@@ -445,7 +483,7 @@ export const router = initServer().router(contract, {
 
       return {
         status: 200,
-        body: result.map(run => ({
+        body: result.map((run) => ({
           ...run,
           tags: {
             [key]: value,
@@ -467,7 +505,7 @@ export const router = initServer().router(contract, {
       body: result,
     };
   },
-  getRunTimeline: async request => {
+  getRunTimeline: async (request) => {
     const { clusterId, runId } = request.params;
     const { messagesAfter, activityAfter } = request.query;
 
@@ -489,7 +527,7 @@ export const router = initServer().router(contract, {
 
     const blobs = await getBlobsForJobs({
       clusterId,
-      jobIds: jobs.map(job => job.id),
+      jobIds: jobs.map((job) => job.id),
     });
 
     return {
@@ -507,7 +545,7 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  createApiKey: async request => {
+  createApiKey: async (request) => {
     const { name } = request.body;
     const { clusterId } = request.params;
 
@@ -562,7 +600,7 @@ export const router = initServer().router(contract, {
       body: { id, key },
     };
   },
-  listApiKeys: async request => {
+  listApiKeys: async (request) => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth().isAdmin();
@@ -575,7 +613,7 @@ export const router = initServer().router(contract, {
       body: apiKeys,
     };
   },
-  revokeApiKey: async request => {
+  revokeApiKey: async (request) => {
     const { clusterId, keyId } = request.params;
 
     const auth = request.request.getAuth().isAdmin();
@@ -603,7 +641,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  createJob: async request => {
+  createJob: async (request) => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
@@ -665,7 +703,7 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  cancelJob: async request => {
+  cancelJob: async (request) => {
     const { clusterId, jobId } = request.params;
 
     const auth = request.request.getAuth();
@@ -682,7 +720,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  createJobResult: async request => {
+  createJobResult: async (request) => {
     const { clusterId, jobId } = request.params;
     let { result, resultType } = request.body;
     const { meta } = request.body;
@@ -756,7 +794,8 @@ export const router = initServer().router(contract, {
         });
 
         result = {
-          message: "The result was too large and was returned to the user directly",
+          message:
+            "The result was too large and was returned to the user directly",
         };
 
         resultType = "rejection";
@@ -771,7 +810,7 @@ export const router = initServer().router(contract, {
         sdkLanguage: request.headers["x-machine-sdk-language"],
         xForwardedFor: request.headers["x-forwarded-for"],
         ip: request.request.ip,
-      }).catch(e => {
+      }).catch((e) => {
         // don't fail the request if the machine upsert fails
 
         logger.error("Failed to upsert machine", {
@@ -793,10 +832,10 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  listJobs: async request => {
+  listJobs: async (request) => {
     const { clusterId } = request.params;
     const { limit, acknowledge, status, waitTime } = request.query;
-    const tools = request.query.tools?.split(",").map(t => t.trim());
+    const tools = request.query.tools?.split(",").map((t) => t.trim());
 
     if (acknowledge && status !== "pending") {
       throw new BadRequestError("Only pending jobs can be acknowledged");
@@ -855,7 +894,7 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body:
-        result?.map(job => ({
+        result?.map((job) => ({
           id: job.id,
           function: job.targetFn,
           input: packer.unpack(job.targetArgs),
@@ -865,7 +904,7 @@ export const router = initServer().router(contract, {
         })) ?? [],
     };
   },
-  createJobBlob: async request => {
+  createJobBlob: async (request) => {
     const { jobId, clusterId } = request.params;
     const body = request.body;
 
@@ -895,7 +934,7 @@ export const router = initServer().router(contract, {
       body: blob,
     };
   },
-  getJob: async request => {
+  getJob: async (request) => {
     const { clusterId, jobId } = request.params;
 
     const auth = request.request.getAuth();
@@ -923,7 +962,7 @@ export const router = initServer().router(contract, {
       body: job,
     };
   },
-  createJobApproval: async request => {
+  createJobApproval: async (request) => {
     const { clusterId, jobId } = request.params;
 
     const auth = request.request.getAuth();
@@ -951,7 +990,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  upsertIntegrations: async request => {
+  upsertIntegrations: async (request) => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth().isAdmin();
@@ -1007,7 +1046,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  getIntegrations: async request => {
+  getIntegrations: async (request) => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
@@ -1023,7 +1062,7 @@ export const router = initServer().router(contract, {
       body: integrations,
     };
   },
-  createNangoSession: async request => {
+  createNangoSession: async (request) => {
     if (!nango) {
       throw new Error("Nango is not configured");
     }
@@ -1042,11 +1081,14 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: {
-        token: await getSession({ clusterId, integrationId: env.NANGO_SLACK_INTEGRATION_ID }),
+        token: await getSession({
+          clusterId,
+          integrationId: env.NANGO_SLACK_INTEGRATION_ID,
+        }),
       },
     };
   },
-  createNangoEvent: async request => {
+  createNangoEvent: async (request) => {
     if (!nango) {
       throw new Error("Nango is not configured");
     }
@@ -1078,7 +1120,7 @@ export const router = initServer().router(contract, {
     ) {
       const connection = await nango.getConnection(
         webhook.data.providerConfigKey,
-        webhook.data.connectionId
+        webhook.data.connectionId,
       );
 
       logger.info("New Slack connection registered", {
@@ -1119,9 +1161,9 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  createEphemeralSetup: async request => {
+  createEphemeralSetup: async (request) => {
     const result = await management.createEphemeralSetup(
-      (request.headers["x-forwarded-for"] as string) ?? "unknown"
+      (request.headers["x-forwarded-for"] as string) ?? "unknown",
     );
 
     return {
@@ -1133,13 +1175,16 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: {
-        contract: await readFile(path.join(__dirname, "..", "..", "src", "./modules/contract.ts"), {
-          encoding: "utf-8",
-        }),
+        contract: await readFile(
+          path.join(__dirname, "..", "..", "src", "./modules/contract.ts"),
+          {
+            encoding: "utf-8",
+          },
+        ),
       },
     };
   },
-  listClusters: async request => {
+  listClusters: async (request) => {
     const user = request.request.getAuth().isAdmin();
     const clusters = await management.getClusters(user);
 
@@ -1148,7 +1193,7 @@ export const router = initServer().router(contract, {
       body: clusters,
     };
   },
-  createCluster: async request => {
+  createCluster: async (request) => {
     const auth = request.request.getAuth().isAdmin();
     auth.canCreate({ cluster: true });
 
@@ -1181,7 +1226,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  deleteCluster: async request => {
+  deleteCluster: async (request) => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth().isAdmin();
     await auth.canManage({ cluster: { clusterId } });
@@ -1207,7 +1252,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  updateCluster: async request => {
+  updateCluster: async (request) => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth().isAdmin();
     await auth.canManage({ cluster: { clusterId } });
@@ -1253,7 +1298,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  getCluster: async request => {
+  getCluster: async (request) => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
@@ -1273,7 +1318,7 @@ export const router = initServer().router(contract, {
       body: cluster,
     };
   },
-  listEvents: async request => {
+  listEvents: async (request) => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
@@ -1294,7 +1339,7 @@ export const router = initServer().router(contract, {
       body: result,
     };
   },
-  listUsageActivity: async request => {
+  listUsageActivity: async (request) => {
     const { clusterId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
@@ -1306,7 +1351,7 @@ export const router = initServer().router(contract, {
       body: result,
     };
   },
-  getEventMeta: async request => {
+  getEventMeta: async (request) => {
     const { clusterId, eventId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
@@ -1321,7 +1366,7 @@ export const router = initServer().router(contract, {
       body: result,
     };
   },
-  createMessage: async request => {
+  createMessage: async (request) => {
     const { clusterId, runId } = request.params;
     const { message, id, type } = request.body;
 
@@ -1357,7 +1402,7 @@ export const router = initServer().router(contract, {
       body: undefined,
     };
   },
-  listMessages: async request => {
+  listMessages: async (request) => {
     const { clusterId, runId } = request.params;
     const auth = request.request.getAuth();
     await auth.canAccess({ run: { clusterId, runId } });
@@ -1386,7 +1431,7 @@ export const router = initServer().router(contract, {
           version: require("../../package.json").version,
         },
       },
-      { setOperationId: true }
+      { setOperationId: true },
     );
 
     return {
@@ -1394,7 +1439,7 @@ export const router = initServer().router(contract, {
       body: openApiDocument,
     };
   },
-  listMachines: async request => {
+  listMachines: async (request) => {
     const { clusterId } = request.params;
     const user = request.request.getAuth();
     await user.canAccess({ cluster: { clusterId } });
@@ -1408,7 +1453,7 @@ export const router = initServer().router(contract, {
       body: machines,
     };
   },
-  getBlobData: async request => {
+  getBlobData: async (request) => {
     const { clusterId, blobId } = request.params;
 
     const user = request.request.getAuth();
@@ -1434,7 +1479,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  listWorkflows: async request => {
+  listWorkflows: async (request) => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
@@ -1448,14 +1493,18 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createWorkflowExecution: async request => {
+  createWorkflowExecution: async (request) => {
     const { clusterId, workflowName } = request.params;
 
     const machine = request.request.getAuth();
     machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
-    const result = await createWorkflowExecution(clusterId, workflowName, request.body);
+    const result = await createWorkflowExecution(
+      clusterId,
+      workflowName,
+      request.body,
+    );
 
     return {
       status: 201,
@@ -1463,7 +1512,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createWorkflowLog: async request => {
+  createWorkflowLog: async (request) => {
     const { clusterId, executionId } = request.params;
     const { status, data } = request.body;
 
@@ -1483,10 +1532,14 @@ export const router = initServer().router(contract, {
     };
   },
 
-  listWorkflowExecutions: async request => {
+  listWorkflowExecutions: async (request) => {
     const { clusterId } = request.params;
-    const { workflowName, workflowExecutionStatus, workflowExecutionId, workflowVersion } =
-      request.query;
+    const {
+      workflowName,
+      workflowExecutionStatus,
+      workflowExecutionId,
+      workflowVersion,
+    } = request.query;
 
     const auth = request.request.getAuth();
     auth.canAccess({ cluster: { clusterId } });
@@ -1507,10 +1560,14 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getWorkflowExecutionTimeline: async request => {
+  getWorkflowExecutionTimeline: async (request) => {
     const { clusterId, workflowName, executionId } = request.params;
 
-    const result = await getWorkflowExecutionTimeline({ clusterId, workflowName, executionId });
+    const result = await getWorkflowExecutionTimeline({
+      clusterId,
+      workflowName,
+      executionId,
+    });
 
     return {
       status: 200,
@@ -1518,7 +1575,7 @@ export const router = initServer().router(contract, {
     };
   },
 
-  getClusterKV: async request => {
+  getClusterKV: async (request) => {
     const { clusterId, key } = request.params;
 
     const machine = request.request.getAuth().isMachine();
@@ -1534,7 +1591,7 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  setClusterKV: async request => {
+  setClusterKV: async (request) => {
     const { clusterId, key } = request.params;
     const { value, onConflict } = request.body;
 
@@ -1542,7 +1599,8 @@ export const router = initServer().router(contract, {
     machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
-    const setter = onConflict === "replace" ? kv.setOrReplace : kv.setIfNotExists;
+    const setter =
+      onConflict === "replace" ? kv.setOrReplace : kv.setIfNotExists;
 
     const result = await setter(clusterId, key, value);
 
@@ -1553,7 +1611,7 @@ export const router = initServer().router(contract, {
       },
     };
   },
-  listTools: async request => {
+  listTools: async (request) => {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
@@ -1568,7 +1626,7 @@ export const router = initServer().router(contract, {
       body: tools,
     };
   },
-  l1mStructured: async request => {
+  l1mStructured: async (request) => {
     const { input, instructions, schema } = request.body;
     const { clusterId } = request.params;
 
@@ -1684,7 +1742,7 @@ export const router = initServer().router(contract, {
         }
 
         if (previousAttempts.length > 0) {
-          previousAttempts.forEach(attempt => {
+          previousAttempts.forEach((attempt) => {
             messages.push({
               role: "user",
               content:

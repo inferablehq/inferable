@@ -118,7 +118,6 @@ export class Inferable {
 
     this.machineId = options?.machineId || machineId();
 
-
     this.client = createApiClient({
       baseUrl: this.endpoint,
       machineId: this.machineId,

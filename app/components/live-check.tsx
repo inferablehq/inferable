@@ -51,11 +51,7 @@ export function LiveCheck() {
         <div className="text-[10px] text-gray-400">api.inferable.ai</div>
         <div className="flex items-center gap-1.5">
           <div className="tabular-nums text-gray-600">
-            {latency === null
-              ? "..."
-              : isError
-              ? "offline"
-              : `${latency}ms`}
+            {latency === null ? "..." : isError ? "offline" : `${latency}ms`}
           </div>
         </div>
       </div>

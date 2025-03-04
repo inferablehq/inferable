@@ -39,7 +39,8 @@ inferable.tools.register({
 inferable.tools.register({
   name: "getCommitDiff",
   func: getCommitDiff,
-  description: "Gets the full diff for a specific commit. Warning: this is a large response.",
+  description:
+    "Gets the full diff for a specific commit. Warning: this is a large response.",
   schema: {
     input: z.object({
       hash: z.string().describe("The commit hash to get the diff for."),

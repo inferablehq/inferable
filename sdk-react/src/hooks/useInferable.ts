@@ -137,7 +137,7 @@ export function useInferable(options: UseInferableOptions): {
             : `bearer ${options.apiSecret}`,
         baseUrl: options.baseUrl,
       }),
-    [options]
+    [options],
   );
 
   const createRun = useCallback(
@@ -169,16 +169,16 @@ export function useInferable(options: UseInferableOptions): {
             context: createRunOptions.context,
           },
         })
-        .then(response => {
+        .then((response) => {
           if (response.status !== 201) {
             throw new Error(
-              `Could not create run. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
+              `Could not create run. Status: ${response.status} Body: ${JSON.stringify(response.body)}`,
             );
           }
           return response.body;
         });
     },
-    [client, options.clusterId]
+    [client, options.clusterId],
   );
 
   const listRuns = useCallback(() => {
@@ -192,10 +192,10 @@ export function useInferable(options: UseInferableOptions): {
           clusterId: options.clusterId,
         },
       })
-      .then(response => {
+      .then((response) => {
         if (response.status !== 200) {
           throw new Error(
-            `Could not list runs. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
+            `Could not list runs. Status: ${response.status} Body: ${JSON.stringify(response.body)}`,
           );
         }
         const runs = Array.isArray(response.body) ? response.body : [];

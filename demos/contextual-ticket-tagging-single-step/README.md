@@ -4,21 +4,30 @@
 <img src="./../../assets/logo.png" alt="Inferable Logo" width="200" />
 </div>
 
-This demo showcases how to use Inferable workflows to automatically tag Zendesk support tickets based on their content and Standard Operating Procedures (SOP). The workflow demonstrates how to create a simple but effective ticket classification system using AI agents and external integrations.
+This demo showcases how to use Inferable workflows to automatically tag Zendesk
+support tickets based on their content and Standard Operating Procedures (SOP).
+The workflow demonstrates how to create a simple but effective ticket
+classification system using AI agents and external integrations.
 
 ## Features
 
 - Analyzes ticket content against SOP guidelines
 - Uses AI to determine appropriate ticket categories
 - Automatically adds tags to Zendesk tickets
-- Supports multiple tag categories (general, refund, tech-support, billing, feature-request)
+- Supports multiple tag categories (general, refund, tech-support, billing,
+  feature-request)
 - Integrates with external SOP documentation
 
 ## Implementation Components
 
 ### Tools
 
-This workflow doesn't use any tools. Instead, it demonstrates a specific pattern for tool orchestration where tools are implemented as utility functions and called directly within the workflow control flow, rather than being orchestrated by the AI agent. This is different from the [contextual-ticket-tagging](../contextual-ticket-tagging) demo, where the agent orchestrates the tools.
+This workflow doesn't use any tools. Instead, it demonstrates a specific pattern
+for tool orchestration where tools are implemented as utility functions and
+called directly within the workflow control flow, rather than being orchestrated
+by the AI agent. This is different from the
+[contextual-ticket-tagging](../contextual-ticket-tagging) demo, where the agent
+orchestrates the tools.
 
 **Pattern Overview**
 

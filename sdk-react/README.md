@@ -10,7 +10,8 @@
 
 This is the official Inferable AI SDK for React.
 
-It is used to start and interact with [Inferable runs](https://docs.inferable.ai/pages/runs) from React applications.
+It is used to start and interact with
+[Inferable runs](https://docs.inferable.ai/pages/runs) from React applications.
 
 ## Installation
 
@@ -46,12 +47,7 @@ function Chat() {
     // customAuthToken: "your-custom-auth-token",
   });
 
-  const {
-    createMessage,
-    messages,
-    setRunId,
-    run,
-  } = useRun(inferable);
+  const { createMessage, messages, setRunId, run } = useRun(inferable);
 
   // Get utility functions for working with messages
   const messages = useMessages(run.messages);
@@ -59,7 +55,7 @@ function Chat() {
   return (
     <div>
       {/* Display messages */}
-      {messages.all("asc")?.map(msg => (
+      {messages.all("asc")?.map((msg) => (
         <div key={msg.id}>
           {msg.type === "human" ? "You: " : "Assistant: "}
           {msg.data.message}
@@ -68,7 +64,7 @@ function Chat() {
 
       {/* Message input */}
       <input
-        onKeyPress={e => {
+        onKeyPress={(e) => {
           if (e.key === "Enter") {
             if (!run?.id) {
               const { id } = await inferable.createRun({
@@ -82,7 +78,9 @@ function Chat() {
             e.target.value = "";
           }
         }}
-        placeholder={run?.id ? "Type your message..." : "Type your initial message..."}
+        placeholder={
+          run?.id ? "Type your message..." : "Type your initial message..."
+        }
       />
     </div>
   );
@@ -106,7 +104,8 @@ npm install
 npm run dev
 ```
 
-This will start a Vite dev server at http://localhost:3000 with a test page that provides a simple interface to test the SDK's functionality.
+This will start a Vite dev server at http://localhost:3000 with a test page that
+provides a simple interface to test the SDK's functionality.
 
 ## API Reference
 
@@ -188,12 +187,15 @@ const results = getOfType("invocation-result"); // Get only invocation results
 
 ## Documentation
 
-For more detailed information, visit the [Inferable documentation](https://docs.inferable.ai/).
+For more detailed information, visit the
+[Inferable documentation](https://docs.inferable.ai/).
 
 ## Support
 
-For support or questions, please [create an issue in the repository](https://github.com/inferablehq/inferable/issues).
+For support or questions, please
+[create an issue in the repository](https://github.com/inferablehq/inferable/issues).
 
 ## Contributing
 
-Contributions to the Inferable React SDK are welcome. Please ensure that your code adheres to the existing style and includes appropriate tests.
+Contributions to the Inferable React SDK are welcome. Please ensure that your
+code adheres to the existing style and includes appropriate tests.

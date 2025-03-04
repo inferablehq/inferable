@@ -84,7 +84,7 @@ describe("event-aggregation", () => {
         });
 
         // wait 100ms
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         await jobs.acknowledgeJob({
           jobId: job.id,
@@ -93,7 +93,7 @@ describe("event-aggregation", () => {
         });
 
         // wait 100ms
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         await jobs.persistJobResult({
           jobId: job.id,
@@ -107,7 +107,7 @@ describe("event-aggregation", () => {
         });
 
         return job.id;
-      })
+      }),
     );
 
     return { jobIds };
@@ -130,7 +130,7 @@ describe("event-aggregation", () => {
             jobId,
           },
         })
-        .then(a => a.reverse());
+        .then((a) => a.reverse());
 
       expect(activity[0].type).toEqual("jobCreated");
       expect(activity[1].type).toEqual("jobAcknowledged");

@@ -25,20 +25,23 @@ export const createExternalMessage = async ({
 
 export const getExternalMessage = async ({
   clusterId,
-  externalId
+  externalId,
 }: {
   clusterId: string;
   externalId: string;
 }) => {
-  const [result] = await db.select({
-    runId: externalMessages.run_id,
-    messageId: externalMessages.message_id
-  }).from(externalMessages).where(
-    and(
-      eq(externalMessages.external_id, externalId),
-      eq(externalMessages.cluster_id, clusterId)
-    )
-  );
+  const [result] = await db
+    .select({
+      runId: externalMessages.run_id,
+      messageId: externalMessages.message_id,
+    })
+    .from(externalMessages)
+    .where(
+      and(
+        eq(externalMessages.external_id, externalId),
+        eq(externalMessages.cluster_id, clusterId),
+      ),
+    );
 
   return result;
 };

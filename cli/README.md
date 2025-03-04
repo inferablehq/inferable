@@ -18,15 +18,17 @@ npx @inferable/cli <cmd>
 
 ### Authentication
 
-To authenticate the CLI, run `inf auth login`.
-This will open a browser and prompt you to login to the Inferable console.
+To authenticate the CLI, run `inf auth login`. This will open a browser and
+prompt you to login to the Inferable console.
 
 ### Environment
 
 The CLI respects use the following environment variables if available:
 
-- `INFERABLE_API_ENDPOINT`: The Inferable API endpoint to use (See [self-hosting guide](https://docs.inferable.ai/pages/self-hosting)).
-- `INFERABLE_CLUSTER_ID`: Cluster related commands will automatically use this cluster.
+- `INFERABLE_API_ENDPOINT`: The Inferable API endpoint to use (See
+  [self-hosting guide](https://docs.inferable.ai/pages/self-hosting)).
+- `INFERABLE_CLUSTER_ID`: Cluster related commands will automatically use this
+  cluster.
 
 ### Commands
 

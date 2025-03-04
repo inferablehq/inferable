@@ -11,15 +11,8 @@
     "allowJs": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "lib": [
-      "es2017",
-      "dom"
-    ]
+    "lib": ["es2017", "dom"]
   },
-  "include": [
-    "src/index.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/index.ts"],
+  "exclude": ["node_modules"]
 }

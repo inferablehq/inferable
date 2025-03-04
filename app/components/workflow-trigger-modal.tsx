@@ -4,10 +4,30 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { client } from "@/client/client";
@@ -17,23 +37,29 @@ import toast from "react-hot-toast";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { contract } from "@/client/contract";
 
-type Workflow = ClientInferResponseBody<typeof contract.listWorkflows, 200>[number];
+type Workflow = ClientInferResponseBody<
+  typeof contract.listWorkflows,
+  200
+>[number];
 
 const WorkflowInputForm = ({
   schema,
-  onSubmit
+  onSubmit,
 }: {
-  schema: z.ZodObject<any>,
-  onSubmit: (data: any) => void
+  schema: z.ZodObject<any>;
+  onSubmit: (data: any) => void;
 }) => {
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: Object.keys(schema.shape).reduce((acc, key) => {
-      acc[key] = key === 'executionId'
-        ? crypto.randomUUID()
-        : (schema.shape[key] instanceof z.ZodBoolean ? false : undefined);
+      acc[key] =
+        key === "executionId"
+          ? crypto.randomUUID()
+          : schema.shape[key] instanceof z.ZodBoolean
+            ? false
+            : undefined;
       return acc;
-    }, {} as any)
+    }, {} as any),
   });
 
   const handleSubmit = (data: any) => {
@@ -53,7 +79,7 @@ const WorkflowInputForm = ({
                 <div className="flex flex-col">
                   <FormLabel className="mb-2">{key}</FormLabel>
                   <FormControl>
-                    {key === 'executionId' ? (
+                    {key === "executionId" ? (
                       <div className="relative">
                         <Input
                           {...field}
@@ -68,18 +94,30 @@ const WorkflowInputForm = ({
                     ) : (
                       <Input
                         {...field}
-                        type={typeof field.value === 'number' ? 'number' : 'text'}
+                        type={
+                          typeof field.value === "number" ? "number" : "text"
+                        }
                         onChange={(e) => {
-                          const value = typeof field.value === 'number'
-                            ? Number(e.target.value)
-                            : e.target.value;
+                          const value =
+                            typeof field.value === "number"
+                              ? Number(e.target.value)
+                              : e.target.value;
                           field.onChange(value);
                         }}
                       />
                     )}
                   </FormControl>
-                  { (zodType as any).description && <FormDescription>{(zodType as any).description}</FormDescription> }
-                  { key === "executionId" && <FormDescription>Unique execution ID, if none provided a random one will be generated</FormDescription> }
+                  {(zodType as any).description && (
+                    <FormDescription>
+                      {(zodType as any).description}
+                    </FormDescription>
+                  )}
+                  {key === "executionId" && (
+                    <FormDescription>
+                      Unique execution ID, if none provided a random one will be
+                      generated
+                    </FormDescription>
+                  )}
                 </div>
                 <FormMessage />
               </FormItem>
@@ -96,13 +134,15 @@ const WorkflowInputForm = ({
 
 export const WorkflowTriggerModal = ({
   clusterId,
-  onTrigger
+  onTrigger,
 }: {
-    clusterId: string,
-    onTrigger?: () => void
-  }) => {
+  clusterId: string;
+  onTrigger?: () => void;
+}) => {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const { getToken } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -113,7 +153,7 @@ export const WorkflowTriggerModal = ({
         const token = await getToken();
         const result = await client.listWorkflows({
           headers: { authorization: `Bearer ${token}` },
-          params: { clusterId }
+          params: { clusterId },
         });
 
         if (result.status === 200) {
@@ -128,7 +168,7 @@ export const WorkflowTriggerModal = ({
   }, [clusterId, getToken]);
 
   const handleWorkflowSelect = (workflowName: string) => {
-    const workflow = workflows.find(w => w.name === workflowName);
+    const workflow = workflows.find((w) => w.name === workflowName);
     setSelectedWorkflow(workflow || null);
   };
 
@@ -142,9 +182,9 @@ export const WorkflowTriggerModal = ({
         headers: { authorization: `Bearer ${token}` },
         params: {
           clusterId,
-          workflowName: selectedWorkflow.name
+          workflowName: selectedWorkflow.name,
         },
-        body: data
+        body: data,
       });
 
       if (response.status == 201) {
@@ -168,13 +208,14 @@ export const WorkflowTriggerModal = ({
       const parsedSchema = JSON.parse(selectedWorkflow.schema);
       const zodSchema = buildFormSchema(parsedSchema);
 
-      return <WorkflowInputForm
-        schema={zodSchema}
-        onSubmit={handleSubmit}
-      />;
+      return <WorkflowInputForm schema={zodSchema} onSubmit={handleSubmit} />;
     } catch (error) {
       if (error instanceof Error) {
-        return <p>Unable to render workflow input form:<pre>{error.message}</pre></p>;
+        return (
+          <p>
+            Unable to render workflow input form:<pre>{error.message}</pre>
+          </p>
+        );
       } else {
         return <p>Unable to render workflow input form</p>;
       }
@@ -201,7 +242,7 @@ export const WorkflowTriggerModal = ({
               <SelectValue placeholder="Select a workflow" />
             </SelectTrigger>
             <SelectContent>
-              {workflows.map(workflow => (
+              {workflows.map((workflow) => (
                 <SelectItem
                   key={`${workflow.name}-${workflow.version}`}
                   value={workflow.name}
@@ -238,29 +279,34 @@ const buildFormSchema = (jsonSchema: any): z.ZodObject<any> => {
 
   Object.entries(properties).forEach(([key, prop]: [string, any]) => {
     switch (prop.type) {
-      case 'string':
+      case "string":
         let stringSchema = z.string().describe(prop.description);
         if (prop.minLength) stringSchema = stringSchema.min(prop.minLength);
         if (prop.maxLength) stringSchema = stringSchema.max(prop.maxLength);
-        if (requiredFields.includes(key)) stringSchema = stringSchema.nonempty('This field is required');
+        if (requiredFields.includes(key))
+          stringSchema = stringSchema.nonempty("This field is required");
         schemaFields[key] = stringSchema;
         break;
-      case 'number':
+      case "number":
         let numberSchema = z.number().describe(prop.description);
-        if (prop.minimum !== undefined) numberSchema = numberSchema.min(prop.minimum);
-        if (prop.maximum !== undefined) numberSchema = numberSchema.max(prop.maximum);
-        if (requiredFields.includes(key)) numberSchema = z.number({
-          required_error: 'This field is required',
-          invalid_type_error: 'This field is required'
-        });
+        if (prop.minimum !== undefined)
+          numberSchema = numberSchema.min(prop.minimum);
+        if (prop.maximum !== undefined)
+          numberSchema = numberSchema.max(prop.maximum);
+        if (requiredFields.includes(key))
+          numberSchema = z.number({
+            required_error: "This field is required",
+            invalid_type_error: "This field is required",
+          });
         schemaFields[key] = numberSchema;
         break;
-      case 'boolean':
+      case "boolean":
         let booleanSchema = z.boolean().describe(prop.description);
-        if (requiredFields.includes(key)) booleanSchema = z.boolean({
-          required_error: 'This field is required',
-          invalid_type_error: 'This field is required'
-        });
+        if (requiredFields.includes(key))
+          booleanSchema = z.boolean({
+            required_error: "This field is required",
+            invalid_type_error: "This field is required",
+          });
         schemaFields[key] = booleanSchema;
         break;
       default:

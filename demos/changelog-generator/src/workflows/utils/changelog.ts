@@ -25,7 +25,7 @@ export function formatChangelogContent({
 }: FormatChangelogContentParams): string {
   // Get the latest date from changes
   const latestDate = changes
-    .map(change => new Date(change.date))
+    .map((change) => new Date(change.date))
     .reduce((latest, current) => (current > latest ? current : latest))
     .toISOString()
     .split("T")[0];
@@ -55,10 +55,13 @@ ${Object.entries(
       acc[type].push(change.description);
       return acc;
     },
-    {} as Record<string, string[]>
-  )
+    {} as Record<string, string[]>,
+  ),
 )
-  .map(([type, descriptions]) => `### ${type}\n${descriptions.map(desc => `- ${desc}`).join("\n")}`)
+  .map(
+    ([type, descriptions]) =>
+      `### ${type}\n${descriptions.map((desc) => `- ${desc}`).join("\n")}`,
+  )
   .join("\n\n")}`;
 
   return content;

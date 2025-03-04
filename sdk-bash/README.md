@@ -1,11 +1,14 @@
 # Inferable Bash SDK
 
-> **Note**: This is a demonstration project to show that "all we need is HTTP" for an Inferable integration. We don't recommend creating bash-based AI clients for production use.
+> **Note**: This is a demonstration project to show that "all we need is HTTP"
+> for an Inferable integration. We don't recommend creating bash-based AI
+> clients for production use.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/)
 
-A lightweight Bash SDK for interacting with the Inferable API. This SDK allows you to register and run Inferable functions directly from shell scripts.
+A lightweight Bash SDK for interacting with the Inferable API. This SDK allows
+you to register and run Inferable functions directly from shell scripts.
 
 ## Installation
 
@@ -184,7 +187,8 @@ esac
 
 ## Error Handling
 
-The SDK includes basic error handling. Functions will return non-zero exit codes on failure. We recommend wrapping critical operations in error checks:
+The SDK includes basic error handling. Functions will return non-zero exit codes
+on failure. We recommend wrapping critical operations in error checks:
 
 ```bash
 if ! inferable_init; then
@@ -246,4 +250,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE file for
+details.

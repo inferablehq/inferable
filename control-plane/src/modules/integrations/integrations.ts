@@ -54,7 +54,7 @@ export const getIntegrations = async ({
           valtown: null,
           slack: null,
           email: null,
-        }
+        },
     );
 };
 
@@ -88,10 +88,18 @@ export const upsertIntegrations = async ({
       .filter(([key]) => installables[key as keyof typeof installables])
       .map(([key, value]) => {
         if (value) {
-          return getInstallables(key)?.onActivate?.(clusterId, config, existing);
+          return getInstallables(key)?.onActivate?.(
+            clusterId,
+            config,
+            existing,
+          );
         } else if (value === null) {
-          return getInstallables(key)?.onDeactivate?.(clusterId, config, existing);
+          return getInstallables(key)?.onDeactivate?.(
+            clusterId,
+            config,
+            existing,
+          );
         }
-      })
+      }),
   );
 };

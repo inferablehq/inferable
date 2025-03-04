@@ -30,14 +30,13 @@ export const notifyApprovalRequest = async ({
   if (runId) {
     const tags = await getRunTags({ clusterId, runId });
     if (tags?.[slack.THREAD_META_KEY] && tags?.[slack.CHANNEL_META_KEY]) {
-
       const notification = {
         destination: {
           type: "slack" as const,
           channelId: tags[slack.CHANNEL_META_KEY],
           threadId: tags[slack.THREAD_META_KEY],
-        }
-      }
+        },
+      };
 
       await slack.notifyApprovalRequest({
         jobId,
@@ -52,9 +51,9 @@ export const notifyApprovalRequest = async ({
         clusterId,
         runId,
         meta: {
-          notification
-        }
-      })
+          notification,
+        },
+      });
     }
   }
 
@@ -73,9 +72,9 @@ export const notifyApprovalRequest = async ({
       clusterId,
       runId,
       meta: {
-        notification
-      }
-    })
+        notification,
+      },
+    });
   }
 };
 
@@ -94,10 +93,13 @@ export const notifyNewRunMessage = async ({
 }) => {
   // Check if the Run is associated with a Slack thread
   if (tags?.[slack.THREAD_META_KEY] && tags?.[slack.CHANNEL_META_KEY]) {
-    await slack.notifyNewRunMessage({ message, destination: {
-      channelId: tags[slack.CHANNEL_META_KEY],
-      threadId: tags[slack.THREAD_META_KEY],
-    }});
+    await slack.notifyNewRunMessage({
+      message,
+      destination: {
+        channelId: tags[slack.CHANNEL_META_KEY],
+        threadId: tags[slack.THREAD_META_KEY],
+      },
+    });
   }
 };
 
@@ -167,10 +169,12 @@ export const notifyStatusChange = async ({
       },
       {
         retries: 5,
-      }
+      },
     );
   } else if (onStatusChangeDefinition.type === "function") {
-    logger.warn("OnStatusChange handler registerd with deprecated function type");
+    logger.warn(
+      "OnStatusChange handler registerd with deprecated function type",
+    );
     const { id } = await jobs.createJobV2({
       targetFn: onStatusChangeDefinition.function.function,
       targetArgs: packer.pack(await getRunPayload()),
@@ -216,6 +220,8 @@ export const notifyStatusChange = async ({
       });
     }
   } else {
-    throw new Error(`Unknown onStatusChange type: ${JSON.stringify(onStatusChangeDefinition)}`);
+    throw new Error(
+      `Unknown onStatusChange type: ${JSON.stringify(onStatusChangeDefinition)}`,
+    );
   }
 };

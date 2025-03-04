@@ -73,9 +73,7 @@ function toJsonSchema({
           if (descriptionMap.has(varDef.variable.name.value)) {
             // If the type has a description and the variable also does, combine them
             if (!jsonSchema.description) {
-              `${varDef.variable.name.value} - ${descriptionMap.get(
-                varDef.variable.name.value,
-              )}`;
+              `${varDef.variable.name.value} - ${descriptionMap.get(varDef.variable.name.value)}`;
             }
 
             jsonSchema.description = descriptionMap.get(

@@ -17,7 +17,7 @@ const langfuseCache = new NodeCache({
 });
 
 const integrationsCache = createCache<z.infer<typeof integrationSchema>>(
-  Symbol("langfuseIntegrations")
+  Symbol("langfuseIntegrations"),
 );
 
 export async function getLangfuseClient(clusterId: string) {
@@ -55,7 +55,7 @@ export async function getLangfuseClient(clusterId: string) {
       client: langfuse,
       sendMessagePayloads: integrations.langfuse.sendMessagePayloads,
     },
-    60
+    60,
   ); // Cache for 1 minute
 
   return {
@@ -74,7 +74,9 @@ export async function flushCluster(clusterId: string) {
   }
 }
 
-export async function processModelCall(event: z.infer<typeof modelCallEventSchema>) {
+export async function processModelCall(
+  event: z.infer<typeof modelCallEventSchema>,
+) {
   const langfuse = await getLangfuseClient(event.clusterId);
 
   const trace = langfuse?.client.trace({
@@ -99,7 +101,9 @@ export async function processModelCall(event: z.infer<typeof modelCallEventSchem
   });
 }
 
-export async function processRunFeedback(event: z.infer<typeof runFeedbackEventSchema>) {
+export async function processRunFeedback(
+  event: z.infer<typeof runFeedbackEventSchema>,
+) {
   const langfuse = await getLangfuseClient(event.clusterId);
 
   langfuse?.client.score({
@@ -110,7 +114,9 @@ export async function processRunFeedback(event: z.infer<typeof runFeedbackEventS
   });
 }
 
-export async function processToolCall(event: z.infer<typeof toolCallEventSchema>) {
+export async function processToolCall(
+  event: z.infer<typeof toolCallEventSchema>,
+) {
   const langfuse = await getLangfuseClient(event.clusterId);
 
   langfuse?.client.span({
@@ -125,7 +131,7 @@ export async function processToolCall(event: z.infer<typeof toolCallEventSchema>
 }
 
 export const start = () => {
-  CustomerTelemetryListeners.addListener(async data => {
+  CustomerTelemetryListeners.addListener(async (data) => {
     if (data.type === "modelCall") {
       await processModelCall(data);
     } else if (data.type === "runFeedback") {
@@ -133,9 +139,12 @@ export const start = () => {
     } else if (data.type === "toolCall") {
       await processToolCall(data);
     } else {
-      logger.error("Received customer telemetry message that does not conform to expected schema", {
-        message: data,
-      });
+      logger.error(
+        "Received customer telemetry message that does not conform to expected schema",
+        {
+          message: data,
+        },
+      );
     }
 
     flushCluster(data.clusterId);

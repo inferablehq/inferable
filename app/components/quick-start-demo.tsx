@@ -21,10 +21,10 @@ export function QuickStartDemo({ clusterId }: { clusterId: string }) {
   const [status, setStatus] = useState<"creating" | "created" | "error">();
   const { getToken } = useAuth();
   const [actualCommand, setActualCommand] = useState<string>(
-    "npx @inferable/demo@latest run --secret=sk_inf_***"
+    "npx @inferable/demo@latest run --secret=sk_inf_***",
   );
   const [displayCommand, setDisplayCommand] = useState<string>(
-    "npx @inferable/demo@latest run --secret=sk_inf_***"
+    "npx @inferable/demo@latest run --secret=sk_inf_***",
   );
   const [showCommandDialog, setShowCommandDialog] = useState(false);
 
@@ -38,7 +38,7 @@ export function QuickStartDemo({ clusterId }: { clusterId: string }) {
         params: { clusterId },
         body: { name },
       })
-      .catch(err => {
+      .catch((err) => {
         setStatus("error");
         createErrorToast(err, "Failed to create API key");
 
@@ -112,7 +112,7 @@ export function QuickStartDemo({ clusterId }: { clusterId: string }) {
             "h-auto py-4 font-mono text-sm group relative overflow-hidden transition-all",
             "bg-black hover:bg-black/80 border-gray-800 text-white hover:text-white",
             "flex items-center gap-2 w-full max-w-full",
-            status === "creating" && "opacity-70 cursor-wait"
+            status === "creating" && "opacity-70 cursor-wait",
           )}
           disabled={status === "creating"}
         >
@@ -128,7 +128,7 @@ export function QuickStartDemo({ clusterId }: { clusterId: string }) {
                   ? "bg-red-500/20 text-red-300"
                   : status === "creating"
                     ? "bg-yellow-500/20 text-yellow-300"
-                    : "bg-gray-700 text-gray-300"
+                    : "bg-gray-700 text-gray-300",
             )}
           >
             {getStatusText()}

@@ -8,7 +8,7 @@ describe("useInferable", () => {
         clusterId: "test-cluster",
         authType: "cluster",
         apiSecret: "test-secret",
-      })
+      }),
     );
 
     expect(result.current.clusterId).toBe("test-cluster");
@@ -21,7 +21,7 @@ describe("useInferable", () => {
         clusterId: "test-cluster",
         authType: "custom",
         customAuthToken: "test-token",
-      })
+      }),
     );
 
     expect(result.current.clusterId).toBe("test-cluster");
@@ -35,7 +35,7 @@ describe("useInferable", () => {
         authType: "cluster",
         apiSecret: "test-secret",
         baseUrl: "https://custom-api.example.com",
-      })
+      }),
     );
 
     expect(result.current.clusterId).toBe("test-cluster");
@@ -48,7 +48,7 @@ describe("useInferable", () => {
         clusterId: "test-cluster",
         authType: "cluster",
         apiSecret: "test-secret",
-      })
+      }),
     );
 
     expect(typeof result.current.createRun).toBe("function");

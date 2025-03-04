@@ -9,7 +9,9 @@ import { withSpan } from "./observability/tracer";
 import { customerTelemetryQueue } from "./queues/customer-telemetry";
 
 type ObservabilityEvent = z.infer<
-  typeof modelCallEventSchema | typeof runFeedbackEventSchema | typeof toolCallEventSchema
+  | typeof modelCallEventSchema
+  | typeof runFeedbackEventSchema
+  | typeof toolCallEventSchema
 >;
 
 export async function trackCustomerTelemetry(event: ObservabilityEvent) {
@@ -34,8 +36,8 @@ export async function trackCustomerTelemetry(event: ObservabilityEvent) {
         "cluster.id": event.clusterId,
         "run.id": event.runId,
       },
-    }
-  ).catch(error => {
+    },
+  ).catch((error) => {
     logger.warn("Error sending customer telemetry event to queue", {
       error,
       event,

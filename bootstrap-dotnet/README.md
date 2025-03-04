@@ -8,7 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/)
 
-This is a bootstrap project demonstrating how to create an Inferable service in .NET.
+This is a bootstrap project demonstrating how to create an Inferable service in
+.NET.
 
 ## Installation
 
@@ -35,14 +36,16 @@ var options = new InferableOptions
 var client = new InferableClient(options);
 ```
 
-If you don't provide an API key or base URL, it will attempt to read them from the following environment variables:
+If you don't provide an API key or base URL, it will attempt to read them from
+the following environment variables:
 
 - `INFERABLE_API_SECRET`
 - `INFERABLE_API_ENDPOINT`
 
 ### Registering the Exec Function
 
-This bootstrap demonstrates registering a secure command execution [tools](https://docs.inferable.ai/pages/tools):
+This bootstrap demonstrates registering a secure command execution
+[tools](https://docs.inferable.ai/pages/tools):
 
 ```csharp
 public class ExecInput
@@ -65,7 +68,8 @@ await client.ListenAsync();
 
 ### Using the Function
 
-The exec function can be called through Inferable to execute safe system commands:
+The exec function can be called through Inferable to execute safe system
+commands:
 
 ```bash
 ls ./src           # Lists contents of ./src directory
@@ -99,11 +103,13 @@ This bootstrap implements several security measures:
 
 ## Support
 
-For support or questions, please [create an issue in the repository](https://github.com/inferablehq/inferable/issues).
+For support or questions, please
+[create an issue in the repository](https://github.com/inferablehq/inferable/issues).
 
 ## Contributing
 
-Contributions to the Inferable .NET Bootstrap are welcome. Please ensure that your code adheres to the existing style and includes appropriate tests.
+Contributions to the Inferable .NET Bootstrap are welcome. Please ensure that
+your code adheres to the existing style and includes appropriate tests.
 
 ## License
 

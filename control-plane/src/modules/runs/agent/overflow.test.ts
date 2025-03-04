@@ -1,39 +1,40 @@
-import { AgentError } from '../../../utilities/errors';
-import { RunGraphStateMessage } from './state';
-import { handleContextWindowOverflow } from './overflow';
-import { estimateTokenCount } from './utils';
+import { AgentError } from "../../../utilities/errors";
+import { RunGraphStateMessage } from "./state";
+import { handleContextWindowOverflow } from "./overflow";
+import { estimateTokenCount } from "./utils";
 
-jest.mock('./utils', () => ({
+jest.mock("./utils", () => ({
   estimateTokenCount: jest.fn(),
 }));
 
-describe('handleContextWindowOverflow', () => {
+describe("handleContextWindowOverflow", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should throw if system prompt exceeds threshold', async () => {
-    const systemPrompt = 'System prompt';
+  it("should throw if system prompt exceeds threshold", async () => {
+    const systemPrompt = "System prompt";
     const messages: RunGraphStateMessage[] = [];
     const modelContextWindow = 1000;
 
-    (estimateTokenCount as jest.Mock)
-      .mockResolvedValueOnce(701); // system prompt (0.7 * 1000)
+    (estimateTokenCount as jest.Mock).mockResolvedValueOnce(701); // system prompt (0.7 * 1000)
 
     await expect(
       handleContextWindowOverflow({
         systemPrompt,
         messages,
         modelContextWindow,
-      })
-    ).rejects.toThrow(new AgentError('System prompt can not exceed 700 tokens'));
+      }),
+    ).rejects.toThrow(
+      new AgentError("System prompt can not exceed 700 tokens"),
+    );
   });
 
-  it('should not modify messages if total tokens are under threshold', async () => {
-    const systemPrompt = 'System prompt';
+  it("should not modify messages if total tokens are under threshold", async () => {
+    const systemPrompt = "System prompt";
     const messages: RunGraphStateMessage[] = [
-      { type: 'human', data: { message: 'Hello' } } as any,
-      { type: 'agent', data: { message: 'Hi' } } as any,
+      { type: "human", data: { message: "Hello" } } as any,
+      { type: "agent", data: { message: "Hi" } } as any,
     ];
     const modelContextWindow = 1000;
 
@@ -53,8 +54,8 @@ describe('handleContextWindowOverflow', () => {
     expect(messages).toHaveLength(2);
   });
 
-  it('should handle empty messages array', async () => {
-    const systemPrompt = 'System prompt';
+  it("should handle empty messages array", async () => {
+    const systemPrompt = "System prompt";
     const messages: RunGraphStateMessage[] = [];
     const modelContextWindow = 1000;
 
@@ -74,12 +75,12 @@ describe('handleContextWindowOverflow', () => {
     expect(messages).toHaveLength(0);
   });
 
-  describe('truncate strategy', () => {
-    it('should remove messages until total tokens are under threshold', async () => {
-      const systemPrompt = 'System prompt';
+  describe("truncate strategy", () => {
+    it("should remove messages until total tokens are under threshold", async () => {
+      const systemPrompt = "System prompt";
       const messages: RunGraphStateMessage[] = Array(5).fill({
-        type: 'human',
-        data: { message: 'Message' },
+        type: "human",
+        data: { message: "Message" },
       });
       const modelContextWindow = 600;
 
@@ -101,10 +102,10 @@ describe('handleContextWindowOverflow', () => {
       expect(result).toHaveLength(2);
     });
 
-    it('should throw if a single message exceeds the context window', async () => {
-      const systemPrompt = 'System prompt';
+    it("should throw if a single message exceeds the context window", async () => {
+      const systemPrompt = "System prompt";
       const messages: RunGraphStateMessage[] = [
-        { type: 'human', data: { message: 'Message' } } as any,
+        { type: "human", data: { message: "Message" } } as any,
       ];
       const modelContextWindow = 400;
 
@@ -117,31 +118,49 @@ describe('handleContextWindowOverflow', () => {
           systemPrompt,
           messages,
           modelContextWindow,
-        })
+        }),
       ).rejects.toThrow(AgentError);
 
-      expect(estimateTokenCount).toHaveBeenCalledTimes(2)
+      expect(estimateTokenCount).toHaveBeenCalledTimes(2);
     });
 
-
-    it('should remove tool invocation result when removing agent message', async () => {
-      const systemPrompt = 'System prompt';
+    it("should remove tool invocation result when removing agent message", async () => {
+      const systemPrompt = "System prompt";
       const messages: RunGraphStateMessage[] = [
-        { id: "123", type: 'agent', data: { message: 'Hi', invocations: [
-          {
-            id: "toolCallId1",
+        {
+          id: "123",
+          type: "agent",
+          data: {
+            message: "Hi",
+            invocations: [
+              {
+                id: "toolCallId1",
+              },
+              {
+                id: "toolCallId2",
+              },
+              {
+                id: "toolCallId3",
+              },
+            ],
           },
-          {
-            id: "toolCallId2",
-          },
-          {
-            id: "toolCallId3",
-          },
-        ]}} as any,
-        { id: "456", type: 'invocation-result', data: { id: "toolCallId1" } } as any,
-        { id: "456", type: 'invocation-result', data: { id: "toolCallId2" } } as any,
-        { id: "456", type: 'invocation-result', data: { id: "toolCallId3" } } as any,
-        { id: "789", type: 'human', data: { message: 'Hello' }} as any,
+        } as any,
+        {
+          id: "456",
+          type: "invocation-result",
+          data: { id: "toolCallId1" },
+        } as any,
+        {
+          id: "456",
+          type: "invocation-result",
+          data: { id: "toolCallId2" },
+        } as any,
+        {
+          id: "456",
+          type: "invocation-result",
+          data: { id: "toolCallId3" },
+        } as any,
+        { id: "789", type: "human", data: { message: "Hello" } } as any,
       ];
 
       // Only one message needs to be removed to satisfy context window
@@ -153,7 +172,7 @@ describe('handleContextWindowOverflow', () => {
         .mockResolvedValueOnce(800) // after first removal
         .mockResolvedValueOnce(600) // after second removal
         .mockResolvedValueOnce(400) // after third removal
-        .mockResolvedValueOnce(200) // after fourth removal
+        .mockResolvedValueOnce(200); // after fourth removal
 
       const result = await handleContextWindowOverflow({
         systemPrompt,
@@ -164,19 +183,30 @@ describe('handleContextWindowOverflow', () => {
       expect(estimateTokenCount).toHaveBeenCalledTimes(6);
 
       expect(result).toHaveLength(1);
-      expect(result[0].type).toBe('human');
+      expect(result[0].type).toBe("human");
     });
 
-    it('should remove agent message when removing tool invocation result', async () => {
-      const systemPrompt = 'System prompt';
+    it("should remove agent message when removing tool invocation result", async () => {
+      const systemPrompt = "System prompt";
       const messages: RunGraphStateMessage[] = [
-        { id: "456", type: 'invocation-result', data: { id: "toolCallId1" } } as any,
-        { id: "123", type: 'agent', data: { message: 'Hi', invocations: [
-          {
-            id: "toolCallId1",
+        {
+          id: "456",
+          type: "invocation-result",
+          data: { id: "toolCallId1" },
+        } as any,
+        {
+          id: "123",
+          type: "agent",
+          data: {
+            message: "Hi",
+            invocations: [
+              {
+                id: "toolCallId1",
+              },
+            ],
           },
-        ]}} as any,
-        { id: "789", type: 'human', data: { message: 'Hello' }} as any,
+        } as any,
+        { id: "789", type: "human", data: { message: "Hello" } } as any,
       ];
 
       // Only one message needs to be removed to satisfy context window
@@ -186,7 +216,7 @@ describe('handleContextWindowOverflow', () => {
         .mockResolvedValueOnce(200) // system prompt
         .mockResolvedValueOnce(1000) // initial messages
         .mockResolvedValueOnce(800) // after first removal
-        .mockResolvedValueOnce(600) // after second removal
+        .mockResolvedValueOnce(600); // after second removal
 
       const result = await handleContextWindowOverflow({
         systemPrompt,
@@ -197,19 +227,26 @@ describe('handleContextWindowOverflow', () => {
       expect(estimateTokenCount).toHaveBeenCalledTimes(4);
 
       expect(result).toHaveLength(1);
-      expect(result[0].type).toBe('human');
-    })
+      expect(result[0].type).toBe("human");
+    });
 
-    it('should ensure first message is human', async () => {
-      const systemPrompt = 'System prompt';
+    it("should ensure first message is human", async () => {
+      const systemPrompt = "System prompt";
       const messages: RunGraphStateMessage[] = [
-        { id: "789", type: 'human', data: { message: 'Hello' }} as any,
-        { id: "123", type: 'agent', data: { message: 'Hi', invocations: [
-          {
-            id: "toolCallId1",
+        { id: "789", type: "human", data: { message: "Hello" } } as any,
+        {
+          id: "123",
+          type: "agent",
+          data: {
+            message: "Hi",
+            invocations: [
+              {
+                id: "toolCallId1",
+              },
+            ],
           },
-        ]}} as any,
-        { id: "789", type: 'human', data: { message: 'Hello' }} as any,
+        } as any,
+        { id: "789", type: "human", data: { message: "Hello" } } as any,
       ];
 
       // Only one message needs to be removed to satisfy context window
@@ -219,7 +256,7 @@ describe('handleContextWindowOverflow', () => {
         .mockResolvedValueOnce(200) // system prompt
         .mockResolvedValueOnce(1000) // initial messages
         .mockResolvedValueOnce(800) // after first removal
-        .mockResolvedValueOnce(600) // after second removal
+        .mockResolvedValueOnce(600); // after second removal
 
       const result = await handleContextWindowOverflow({
         systemPrompt,
@@ -230,7 +267,7 @@ describe('handleContextWindowOverflow', () => {
       expect(estimateTokenCount).toHaveBeenCalledTimes(4);
 
       expect(result).toHaveLength(1);
-      expect(result[0].type).toBe('human');
-    })
-  })
+      expect(result[0].type).toBe("human");
+    });
+  });
 });

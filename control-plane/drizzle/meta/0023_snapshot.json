@@ -178,11 +178,7 @@
       "compositePrimaryKeys": {
         "jobs_owner_hash_target_fn_idempotency_key": {
           "name": "jobs_owner_hash_target_fn_idempotency_key",
-          "columns": [
-            "owner_hash",
-            "target_fn",
-            "idempotency_key"
-          ]
+          "columns": ["owner_hash", "target_fn", "idempotency_key"]
         }
       },
       "uniqueConstraints": {}
@@ -261,13 +257,9 @@
         "services_cluster_id_clusters_id_fk": {
           "name": "services_cluster_id_clusters_id_fk",
           "tableFrom": "services",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -275,10 +267,7 @@
       "compositePrimaryKeys": {
         "services_cluster_id_service": {
           "name": "services_cluster_id_service",
-          "columns": [
-            "cluster_id",
-            "service"
-          ]
+          "columns": ["cluster_id", "service"]
         }
       },
       "uniqueConstraints": {}

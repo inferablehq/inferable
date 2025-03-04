@@ -15,15 +15,17 @@ type MessageData = {
 
 const searchInventory = z.union([
   z.record(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      description: z.string(),
-      price: z.number(),
-      qty: z.number(),
-    }).strict()
+    z
+      .object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+        price: z.number(),
+        qty: z.number(),
+      })
+      .strict(),
   ),
-  z.object({ message: z.string() })
+  z.object({ message: z.string() }),
 ]);
 
 const getMessageContent = (msg: { type: string; data: MessageData }) => {
@@ -68,9 +70,9 @@ export function TestPage(props: UseInferableOptions) {
 
   const messages = useMessages(rawMessages, {
     resultMap: {
-      "default_searchInventory": searchInventory,
-      "default_anotherFunction": z.number(),
-    }
+      default_searchInventory: searchInventory,
+      default_anotherFunction: z.number(),
+    },
   });
 
   const fetchRuns = async () => {
@@ -133,9 +135,11 @@ export function TestPage(props: UseInferableOptions) {
     <div className="chat-container">
       <div className="chat-main">
         <div className="messages-container">
-          {sortedMessages?.map(msg => (
+          {sortedMessages?.map((msg) => (
             <div key={msg.id} className={`message ${msg.type}`}>
-              <div className="message-header">{msg.type === "human" ? "You" : "Assistant"}</div>
+              <div className="message-header">
+                {msg.type === "human" ? "You" : "Assistant"}
+              </div>
               <div className="message-content">{getMessageContent(msg)}</div>
             </div>
           ))}
@@ -144,9 +148,11 @@ export function TestPage(props: UseInferableOptions) {
           <input
             type="text"
             value={message}
-            onChange={e => setMessage(e.target.value)}
+            onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={run?.id ? "Type your message..." : "Type your initial message..."}
+            placeholder={
+              run?.id ? "Type your message..." : "Type your initial message..."
+            }
             className="message-input"
           />
           <button onClick={handleSubmit} className="send-button">
@@ -178,7 +184,9 @@ export function TestPage(props: UseInferableOptions) {
           />
           <label htmlFor="persist-checkbox" style={{ cursor: "pointer" }}>
             Save chat in localStorage{" "}
-            <span style={{ opacity: 0.6 }}>run.persist={persist.toString()}</span>{" "}
+            <span style={{ opacity: 0.6 }}>
+              run.persist={persist.toString()}
+            </span>{" "}
             {persist && "(refresh will restore chat)"}
           </label>
         </div>
@@ -219,17 +227,25 @@ export function TestPage(props: UseInferableOptions) {
             marginBottom: "12px",
           }}
         >
-          Using <strong>{props.authType}</strong> auth. All runs created using this token will be
-          visible here.
+          Using <strong>{props.authType}</strong> auth. All runs created using
+          this token will be visible here.
         </div>
         <div className="runs-list">
-          {runs.map(run => (
-            <div key={run.id} className="run-item" onClick={() => setRunId(run.id)}>
+          {runs.map((run) => (
+            <div
+              key={run.id}
+              className="run-item"
+              onClick={() => setRunId(run.id)}
+            >
               <div className="run-header">
                 <span className="run-name">{run.name || "Unnamed Run"}</span>
-                <span className={`run-status status-${run.status}`}>{run.status}</span>
+                <span className={`run-status status-${run.status}`}>
+                  {run.status}
+                </span>
               </div>
-              <div className="run-time">{new Date(run.createdAt).toLocaleString()}</div>
+              <div className="run-time">
+                {new Date(run.createdAt).toLocaleString()}
+              </div>
             </div>
           ))}
         </div>

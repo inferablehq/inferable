@@ -3,9 +3,9 @@ name: Update Changelog
 on:
   push:
     tags:
-      - '**'
+      - "**"
 
-skip: []  # Allows `[skip ci]` commits
+skip: [] # Allows `[skip ci]` commits
 
 jobs:
   generate_changelog:
@@ -28,8 +28,8 @@ jobs:
       - name: Commit changelog
         uses: EndBug/add-and-commit@v9
         with:
-          add: 'CHANGELOG.md'
-          message: '[skip ci] chore: Update changelog'
+          add: "CHANGELOG.md"
+          message: "[skip ci] chore: Update changelog"
           default_author: github_actions
           push: true
           github_token: ${{ secrets.GITHUB_TOKEN }}

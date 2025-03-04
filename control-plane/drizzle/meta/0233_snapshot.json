@@ -78,12 +78,8 @@
           "name": "agents_cluster_id_clusters_id_fk",
           "tableFrom": "agents",
           "tableTo": "clusters",
-          "columnsFrom": [
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cluster_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -91,10 +87,7 @@
       "compositePrimaryKeys": {
         "prompt_templates_pkey": {
           "name": "prompt_templates_pkey",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -121,9 +114,7 @@
       "compositePrimaryKeys": {
         "analytics_snapshots_pkey": {
           "name": "analytics_snapshots_pkey",
-          "columns": [
-            "timestamp"
-          ]
+          "columns": ["timestamp"]
         }
       },
       "uniqueConstraints": {}
@@ -204,12 +195,8 @@
           "name": "api_keys_cluster_id_clusters_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "clusters",
-          "columnsFrom": [
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cluster_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -217,10 +204,7 @@
       "compositePrimaryKeys": {
         "api_keys_cluster_id_id_pk": {
           "name": "api_keys_cluster_id_id_pk",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -297,14 +281,8 @@
           "name": "blobs_cluster_id_job_id_jobs_cluster_id_id_fk",
           "tableFrom": "blobs",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "cluster_id",
-            "job_id"
-          ],
-          "columnsTo": [
-            "cluster_id",
-            "id"
-          ],
+          "columnsFrom": ["cluster_id", "job_id"],
+          "columnsTo": ["cluster_id", "id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -312,14 +290,8 @@
           "name": "blobs_cluster_id_run_id_runs_cluster_id_id_fk",
           "tableFrom": "blobs",
           "tableTo": "runs",
-          "columnsFrom": [
-            "cluster_id",
-            "run_id"
-          ],
-          "columnsTo": [
-            "cluster_id",
-            "id"
-          ],
+          "columnsFrom": ["cluster_id", "run_id"],
+          "columnsTo": ["cluster_id", "id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -327,10 +299,7 @@
       "compositePrimaryKeys": {
         "blobs_cluster_id_id_pk": {
           "name": "blobs_cluster_id_id_pk",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -363,10 +332,7 @@
       "compositePrimaryKeys": {
         "cluster_kv_cluster_id_key_pk": {
           "name": "cluster_kv_cluster_id_key_pk",
-          "columns": [
-            "cluster_id",
-            "key"
-          ]
+          "columns": ["cluster_id", "key"]
         }
       },
       "uniqueConstraints": {}
@@ -615,11 +581,7 @@
       "compositePrimaryKeys": {
         "embeddings_cluster_id_id_type_pk": {
           "name": "embeddings_cluster_id_id_type_pk",
-          "columns": [
-            "cluster_id",
-            "id",
-            "type"
-          ]
+          "columns": ["cluster_id", "id", "type"]
         }
       },
       "uniqueConstraints": {}
@@ -835,16 +797,8 @@
           "name": "external_messages_message_id_run_id_cluster_id_run_messages_id_run_id_cluster_id_fk",
           "tableFrom": "external_messages",
           "tableTo": "run_messages",
-          "columnsFrom": [
-            "message_id",
-            "run_id",
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id",
-            "run_id",
-            "cluster_id"
-          ],
+          "columnsFrom": ["message_id", "run_id", "cluster_id"],
+          "columnsTo": ["id", "run_id", "cluster_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -852,10 +806,7 @@
       "compositePrimaryKeys": {
         "external_messages_pkey": {
           "name": "external_messages_pkey",
-          "columns": [
-            "cluster_id",
-            "external_id"
-          ]
+          "columns": ["cluster_id", "external_id"]
         }
       },
       "uniqueConstraints": {}
@@ -927,12 +878,8 @@
           "name": "integrations_cluster_id_clusters_id_fk",
           "tableFrom": "integrations",
           "tableTo": "clusters",
-          "columnsFrom": [
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cluster_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -940,9 +887,7 @@
       "compositePrimaryKeys": {
         "integrations_pkey": {
           "name": "integrations_pkey",
-          "columns": [
-            "cluster_id"
-          ]
+          "columns": ["cluster_id"]
         }
       },
       "uniqueConstraints": {}
@@ -1155,19 +1100,14 @@
       "compositePrimaryKeys": {
         "jobs_cluster_id_id": {
           "name": "jobs_cluster_id_id",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {
         "jobs_id_unique": {
           "name": "jobs_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       }
     },
@@ -1217,10 +1157,7 @@
       "compositePrimaryKeys": {
         "machines_id_cluster_id": {
           "name": "machines_id_cluster_id",
-          "columns": [
-            "id",
-            "cluster_id"
-          ]
+          "columns": ["id", "cluster_id"]
         }
       },
       "uniqueConstraints": {}
@@ -1291,14 +1228,8 @@
           "name": "run_messages_run_id_cluster_id_runs_id_cluster_id_fk",
           "tableFrom": "run_messages",
           "tableTo": "runs",
-          "columnsFrom": [
-            "run_id",
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id",
-            "cluster_id"
-          ],
+          "columnsFrom": ["run_id", "cluster_id"],
+          "columnsTo": ["id", "cluster_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1306,11 +1237,7 @@
       "compositePrimaryKeys": {
         "run_messages_cluster_id_run_id_id": {
           "name": "run_messages_cluster_id_run_id_id",
-          "columns": [
-            "cluster_id",
-            "run_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "run_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -1378,14 +1305,8 @@
           "name": "run_tags_run_id_cluster_id_runs_id_cluster_id_fk",
           "tableFrom": "run_tags",
           "tableTo": "runs",
-          "columnsFrom": [
-            "run_id",
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id",
-            "cluster_id"
-          ],
+          "columnsFrom": ["run_id", "cluster_id"],
+          "columnsTo": ["id", "cluster_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1393,11 +1314,7 @@
       "compositePrimaryKeys": {
         "run_tags_cluster_id_run_id_key": {
           "name": "run_tags_cluster_id_run_id_key",
-          "columns": [
-            "cluster_id",
-            "run_id",
-            "key"
-          ]
+          "columns": ["cluster_id", "run_id", "key"]
         }
       },
       "uniqueConstraints": {}
@@ -1599,12 +1516,8 @@
           "name": "runs_cluster_id_clusters_id_fk",
           "tableFrom": "runs",
           "tableTo": "clusters",
-          "columnsFrom": [
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cluster_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1612,10 +1525,7 @@
       "compositePrimaryKeys": {
         "workflows_cluster_id_id": {
           "name": "workflows_cluster_id_id",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -1661,12 +1571,8 @@
           "name": "services_cluster_id_clusters_id_fk",
           "tableFrom": "services",
           "tableTo": "clusters",
-          "columnsFrom": [
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cluster_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1674,10 +1580,7 @@
       "compositePrimaryKeys": {
         "services_cluster_id_service": {
           "name": "services_cluster_id_service",
-          "columns": [
-            "cluster_id",
-            "service"
-          ]
+          "columns": ["cluster_id", "service"]
         }
       },
       "uniqueConstraints": {}
@@ -1777,12 +1680,8 @@
           "name": "tools_cluster_id_clusters_id_fk",
           "tableFrom": "tools",
           "tableTo": "clusters",
-          "columnsFrom": [
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cluster_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1790,10 +1689,7 @@
       "compositePrimaryKeys": {
         "tools_cluster_id_tools": {
           "name": "tools_cluster_id_tools",
-          "columns": [
-            "cluster_id",
-            "name"
-          ]
+          "columns": ["cluster_id", "name"]
         }
       },
       "uniqueConstraints": {}
@@ -1845,12 +1741,7 @@
       "compositePrimaryKeys": {
         "versioned_entities_pkey": {
           "name": "versioned_entities_pkey",
-          "columns": [
-            "cluster_id",
-            "id",
-            "type",
-            "version"
-          ]
+          "columns": ["cluster_id", "id", "type", "version"]
         }
       },
       "uniqueConstraints": {}
@@ -1910,12 +1801,8 @@
           "name": "workflow_executions_job_id_jobs_id_fk",
           "tableFrom": "workflow_executions",
           "tableTo": "jobs",
-          "columnsFrom": [
-            "job_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1923,12 +1810,8 @@
           "name": "workflow_executions_cluster_id_clusters_id_fk",
           "tableFrom": "workflow_executions",
           "tableTo": "clusters",
-          "columnsFrom": [
-            "cluster_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cluster_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1936,10 +1819,7 @@
       "compositePrimaryKeys": {
         "workflow_executions_pkey": {
           "name": "workflow_executions_pkey",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}

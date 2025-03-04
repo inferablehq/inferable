@@ -284,9 +284,7 @@ export const extractInterrupt = (
   input: unknown,
 ): z.infer<typeof interruptSchema> | undefined => {
   if (input && typeof input === "object" && INTERRUPT_KEY in input) {
-    const parsedInterrupt = interruptSchema.safeParse(
-      input[INTERRUPT_KEY],
-    );
+    const parsedInterrupt = interruptSchema.safeParse(input[INTERRUPT_KEY]);
 
     if (!parsedInterrupt.success) {
       throw new InferableError("Found invalid Interrupt data");
@@ -299,18 +297,25 @@ export const extractInterrupt = (
 export class Interrupt {
   [INTERRUPT_KEY]: z.infer<typeof interruptSchema>;
 
-  constructor(type: VALID_INTERRUPT_TYPES, notification?: z.infer<typeof interruptSchema>["notification"]) {
+  constructor(
+    type: VALID_INTERRUPT_TYPES,
+    notification?: z.infer<typeof interruptSchema>["notification"],
+  ) {
     this[INTERRUPT_KEY] = {
       type,
       notification,
     };
   }
 
-  static approval(notification?: z.infer<typeof interruptSchema>["notification"]) {
+  static approval(
+    notification?: z.infer<typeof interruptSchema>["notification"],
+  ) {
     return new Interrupt("approval", notification);
   }
 
-  static general(notification?: z.infer<typeof interruptSchema>["notification"]) {
+  static general(
+    notification?: z.infer<typeof interruptSchema>["notification"],
+  ) {
     return new Interrupt("general", notification);
   }
 }

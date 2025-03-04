@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { get } from "lodash";
 import { Blocks, Info } from "lucide-react";
@@ -8,7 +14,9 @@ import { ReadOnlyJSON } from "../read-only-json";
 import type { MessageContainerProps } from "./run-event";
 import { formatRelative } from "date-fns";
 
-export function InvocationResult(props: MessageContainerProps<"invocation-result">) {
+export function InvocationResult(
+  props: MessageContainerProps<"invocation-result">,
+) {
   const componentRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -24,13 +32,17 @@ export function InvocationResult(props: MessageContainerProps<"invocation-result
               <SheetTrigger asChild>
                 <button
                   className={cn(
-                    "flex items-center gap-2 group/header hover:bg-secondary/20 rounded-md px-2 py-1 -ml-2 transition-colors duration-200 w-full text-left"
+                    "flex items-center gap-2 group/header hover:bg-secondary/20 rounded-md px-2 py-1 -ml-2 transition-colors duration-200 w-full text-left",
                   )}
                 >
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="font-medium text-gray-700">Invocation Result</span>
+                    <span className="font-medium text-gray-700">
+                      Invocation Result
+                    </span>
                     <span className="text-muted-foreground font-mono">
-                      {props.createdAt ? formatRelative(props.createdAt, new Date()) : "unknown"}
+                      {props.createdAt
+                        ? formatRelative(props.createdAt, new Date())
+                        : "unknown"}
                     </span>
                   </div>
                 </button>

@@ -4,7 +4,8 @@ import { z } from "zod";
 import { BadRequestError } from "../../../utilities/errors";
 import { logger } from "../../observability/logger";
 
-export const nango = env.NANGO_SECRET_KEY && new Nango({ secretKey: env.NANGO_SECRET_KEY });
+export const nango =
+  env.NANGO_SECRET_KEY && new Nango({ secretKey: env.NANGO_SECRET_KEY });
 
 export const webhookSchema = z.object({
   connectionId: z.string(),
@@ -14,8 +15,8 @@ export const webhookSchema = z.object({
   success: z.boolean(),
   endUser: z.object({
     endUserId: z.string(),
-  })
-})
+  }),
+});
 
 export const getSession = async ({
   clusterId,
@@ -28,20 +29,20 @@ export const getSession = async ({
     throw new Error("Nango is not configured");
   }
 
-  const existing = await nango?.listConnections(
-    undefined,
-    undefined,
-    {
-      endUserId: clusterId,
-    }
-  )
+  const existing = await nango?.listConnections(undefined, undefined, {
+    endUserId: clusterId,
+  });
 
-  if (existing?.connections.find((c) => c.provider_config_key === integrationId)) {
+  if (
+    existing?.connections.find((c) => c.provider_config_key === integrationId)
+  ) {
     logger.warn("Attempted to create duplicate nango connection", {
       integrationId,
       existing: existing?.connections,
     });
-    throw new BadRequestError(`Nango ${integrationId} connection already exists for cluster`);
+    throw new BadRequestError(
+      `Nango ${integrationId} connection already exists for cluster`,
+    );
   }
 
   const res = await nango?.createConnectSession({

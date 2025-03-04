@@ -59,10 +59,10 @@ describe("useMessages", () => {
     const agentMessages = result.current.getOfType("agent");
 
     expect(humanMessages).toHaveLength(2);
-    expect(humanMessages?.every(msg => msg.type === "human")).toBe(true);
+    expect(humanMessages?.every((msg) => msg.type === "human")).toBe(true);
 
     expect(agentMessages).toHaveLength(1);
-    expect(agentMessages?.every(msg => msg.type === "agent")).toBe(true);
+    expect(agentMessages?.every((msg) => msg.type === "agent")).toBe(true);
   });
 
   it("should handle empty messages array", () => {
@@ -89,8 +89,12 @@ describe("useMessages", () => {
     const agentMessages = result.current.getOfType("agent");
 
     // Since getOfType doesn't sort, we need to sort the filtered messages ourselves
-    const sortedHumanMessages = humanMessages?.sort((a, b) => b.id.localeCompare(a.id));
-    const sortedAgentMessages = agentMessages?.sort((a, b) => b.id.localeCompare(a.id));
+    const sortedHumanMessages = humanMessages?.sort((a, b) =>
+      b.id.localeCompare(a.id),
+    );
+    const sortedAgentMessages = agentMessages?.sort((a, b) =>
+      b.id.localeCompare(a.id),
+    );
 
     const lastHuman = sortedHumanMessages?.[0];
     expect(lastHuman?.id).toBe("3");

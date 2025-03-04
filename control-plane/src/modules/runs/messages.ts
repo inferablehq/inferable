@@ -16,7 +16,10 @@ export type AgentMessage = Extract<TypedMessage, { type: "agent" }>;
 /**
  * The result of a tool call.
  */
-export type InvocationResultMessage = Extract<TypedMessage, { type: "invocation-result" }>;
+export type InvocationResultMessage = Extract<
+  TypedMessage,
+  { type: "invocation-result" }
+>;
 
 /**
  * A generic message container.
@@ -59,7 +62,7 @@ export const insertRunMessage = async ({
     .returning({
       id: runMessages.id,
     })
-    .then(result => result[0]);
+    .then((result) => result[0]);
 };
 
 export const getRunMessagesForDisplay = async ({
@@ -90,13 +93,13 @@ export const getRunMessagesForDisplay = async ({
         gt(runMessages.id, after),
         ne(runMessages.type, "agent-invalid"),
         ne(runMessages.type, "supervisor"),
-        ne(runMessages.type, "result" as any)
-      )
+        ne(runMessages.type, "result" as any),
+      ),
     )
     .limit(limit);
 
   const parsed = messages
-    .map(message => {
+    .map((message) => {
       // handle result messages before they were renamed
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((message as any).type === "result") {
@@ -106,11 +109,11 @@ export const getRunMessagesForDisplay = async ({
       // Handle invocation-result messages before resutlType and toolName were added
       if (message.type === "invocation-result") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (!('resultType' in (message.data as any))) {
+        if (!("resultType" in (message.data as any))) {
           (message.data as any).resultType = "resolution";
         }
 
-        if (!('toolName' in (message.data as any))) {
+        if (!("toolName" in (message.data as any))) {
           // Intentionally setting this to a "falsy" value as it will calculated below
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (message.data as any).toolName = "";
@@ -129,7 +132,7 @@ export const getRunMessagesForDisplay = async ({
 
       return message;
     })
-    .map(message => {
+    .map((message) => {
       const { success, data, error } = unifiedMessageSchema.safeParse(message);
 
       if (!success) {
@@ -154,38 +157,41 @@ export const getRunMessagesForDisplay = async ({
       return data;
     });
 
-  parsed.forEach(message => {
+  parsed.forEach((message) => {
     if (message.type === "invocation-result") {
-
       // Handle invocation-result from before toolName was added
       if (!message.data.toolName) {
-
         // Find the initial invocation
         parsed
-          .filter(m => m.type === "agent" && m.data.invocations?.length)
-          .forEach(m => {
-            assertMessageOfType("agent", m).data.invocations?.forEach(invocation => {
-              if (invocation.id === message.data.id) {
-                message.data.toolName = invocation.toolName;
-              }
-            });
-          })
+          .filter((m) => m.type === "agent" && m.data.invocations?.length)
+          .forEach((m) => {
+            assertMessageOfType("agent", m).data.invocations?.forEach(
+              (invocation) => {
+                if (invocation.id === message.data.id) {
+                  message.data.toolName = invocation.toolName;
+                }
+              },
+            );
+          });
       }
 
       // Remove nested result ulid which is present for result grounding but makes the result difficult to type on the client
       if (message.data.id in message.data.result) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const nested = message.data.result[message.data.id] as any;
-        if ('result' in nested) {
+        if ("result" in nested) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           message.data.result = nested.result as any;
         }
       }
 
       if (!message.data.toolName) {
-        logger.error("Could not find invocation for invocation-result message", {
-          msg: message,
-        });
+        logger.error(
+          "Could not find invocation for invocation-result message",
+          {
+            msg: message,
+          },
+        );
       }
     }
   });
@@ -211,14 +217,19 @@ export const getRunMessagesForDisplayWithPolling = async ({
   const startTime = Date.now();
 
   do {
-    const messages = await getRunMessagesForDisplay({ clusterId, runId, limit, after });
+    const messages = await getRunMessagesForDisplay({
+      clusterId,
+      runId,
+      limit,
+      after,
+    });
     rowsCount = messages.length;
 
     if (rowsCount > 0) {
       return messages;
     }
 
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
   } while (Date.now() - startTime < timeout);
 
   // Return empty array if no messages found after timeout
@@ -261,14 +272,14 @@ export const getRunMessages = async ({
       and(
         eq(runMessages.cluster_id, clusterId),
         eq(runMessages.run_id, runId),
-        gt(runMessages.id, after)
-      )
+        gt(runMessages.id, after),
+      ),
     )
     .limit(limit)
-    .then(messages => messages.reverse());
+    .then((messages) => messages.reverse());
 
   return messages
-    .map(message => {
+    .map((message) => {
       // handle result messages before they were renamed
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((message as any).type === "result") {
@@ -284,7 +295,7 @@ export const getRunMessages = async ({
       }
       return message;
     })
-    .map(message => {
+    .map((message) => {
       return {
         ...message,
         ...unifiedMessageSchema.parse(message),
@@ -292,7 +303,9 @@ export const getRunMessages = async ({
     });
 };
 
-export const toAnthropicMessages = (messages: TypedMessage[]): Anthropic.MessageParam[] => {
+export const toAnthropicMessages = (
+  messages: TypedMessage[],
+): Anthropic.MessageParam[] => {
   return (
     messages
       .map(toAnthropicMessage)
@@ -302,7 +315,10 @@ export const toAnthropicMessages = (messages: TypedMessage[]): Anthropic.Message
         const previousMsg = acc[acc.length - 1];
 
         if (previousMsg?.role === currentRole) {
-          if (Array.isArray(previousMsg.content) && Array.isArray(msg.content)) {
+          if (
+            Array.isArray(previousMsg.content) &&
+            Array.isArray(msg.content)
+          ) {
             previousMsg.content.push(...msg.content);
             return acc;
           }
@@ -314,11 +330,13 @@ export const toAnthropicMessages = (messages: TypedMessage[]): Anthropic.Message
   );
 };
 
-export const toAnthropicMessage = (message: TypedMessage): Anthropic.MessageParam => {
+export const toAnthropicMessage = (
+  message: TypedMessage,
+): Anthropic.MessageParam => {
   switch (message.type) {
     case "agent": {
       const toolUses =
-        message.data.invocations?.map(invocation => {
+        message.data.invocations?.map((invocation) => {
           if (!invocation.id) throw new Error("Invocation is missing id");
           return {
             type: "tool_use" as const,
@@ -370,18 +388,28 @@ export const toAnthropicMessage = (message: TypedMessage): Anthropic.MessagePara
     case "template": {
       return {
         role: "user",
-        content: message.data.details ? JSON.stringify(message.data) : message.data.message,
+        content: message.data.details
+          ? JSON.stringify(message.data)
+          : message.data.message,
       };
     }
   }
 };
 
 export function hasInvocations(message: AgentMessage): boolean {
-  return (message.data.invocations && message.data.invocations.length > 0) ?? false;
+  return (
+    (message.data.invocations && message.data.invocations.length > 0) ?? false
+  );
 }
 
 export function assertMessageOfType<
-  T extends "agent" | "invocation-result" | "human" | "template" | "supervisor" | "agent-invalid",
+  T extends
+    | "agent"
+    | "invocation-result"
+    | "human"
+    | "template"
+    | "supervisor"
+    | "agent-invalid",
 >(type: T, message: unknown) {
   const result = unifiedMessageSchema.safeParse(message);
 
@@ -418,8 +446,8 @@ export const lastAgentMessage = async ({
       and(
         eq(runMessages.cluster_id, clusterId),
         eq(runMessages.run_id, runId),
-        eq(runMessages.type, "agent")
-      )
+        eq(runMessages.type, "agent"),
+      ),
     )
     .orderBy(desc(runMessages.created_at))
     .limit(1);

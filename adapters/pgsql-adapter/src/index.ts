@@ -29,7 +29,8 @@ if (require.main === module) {
       })
       .option("privacy-mode", {
         type: "boolean",
-        describe: "Enable privacy mode. All data will be returned as blobs (not sent to the model)",
+        describe:
+          "Enable privacy mode. All data will be returned as blobs (not sent to the model)",
         default: false,
       })
       .option("schema", {

@@ -86,7 +86,8 @@ jobs:
   test-control-plane:
     runs-on: ubuntu-latest
     needs: [check_changes]
-    if: ${{ needs.check_changes.outputs.control_plane == 'true' || needs.check_changes.outputs.deploy == 'true' }}
+    if: ${{ needs.check_changes.outputs.control_plane == 'true' ||
+      needs.check_changes.outputs.deploy == 'true' }}
     defaults:
       run:
         working-directory: control-plane
@@ -96,18 +97,14 @@ jobs:
         ports:
           - 6379:6379
         options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout
+          5s --health-retries 5
       postgres:
         image: pgvector/pgvector:pg16
         env:
           POSTGRES_PASSWORD: postgres
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
           --health-retries 5
         ports:
           - 5432:5432
@@ -269,7 +266,6 @@ jobs:
       - name: Run tests
         run: npm run test
 
-
   build-dotnet:
     needs: check_changes
     if: ${{ needs.check_changes.outputs.sdk_dotnet == 'true' }}
@@ -420,7 +416,8 @@ jobs:
     needs: check_changes
     permissions:
       id-token: write
-    if: ${{ needs.check_changes.outputs.load_tests == 'true' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.check_changes.outputs.load_tests == 'true' && github.ref ==
+      'refs/heads/main' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -459,7 +456,8 @@ jobs:
   build-app-image:
     runs-on: ubuntu-latest
     needs: check_changes
-    if: ${{ needs.check_changes.outputs.deploy == 'true' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.check_changes.outputs.deploy == 'true' && github.ref ==
+      'refs/heads/main' }}
     permissions:
       id-token: write
     steps:
@@ -505,7 +503,8 @@ jobs:
   build-control-plane-image:
     runs-on: ubuntu-latest
     needs: check_changes
-    if: ${{ needs.check_changes.outputs.deploy == 'true' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.check_changes.outputs.deploy == 'true' && github.ref ==
+      'refs/heads/main' }}
     permissions:
       id-token: write
     steps:
@@ -554,49 +553,54 @@ jobs:
 
   deploy-cloud:
     runs-on: ubuntu-latest
-    if: ${{ needs.check_changes.outputs.deploy == 'true' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.check_changes.outputs.deploy == 'true' && github.ref ==
+      'refs/heads/main' }}
     permissions:
       id-token: write
     needs:
-      [check_changes, build-app-image, build-control-plane-image, test-control-plane]
+      [
+        check_changes,
+        build-app-image,
+        build-control-plane-image,
+        test-control-plane,
+      ]
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-        aws-region: us-east-1
-    - name: Notify start deploy to Rollbar
-      uses: rollbar/github-deploy-action@2.1.2
-      id: rollbar_pre_deploy
-      with:
-        environment: 'production'
-        version: ${{ github.sha }}
-        status: 'started'
-      env:
-        ROLLBAR_ACCESS_TOKEN: ${{ secrets.CLOUD_ROLLBAR_ACCESS_TOKEN }}
-        ROLLBAR_USERNAME: ${{ github.actor }}
-    - name: Deploy to AWS CloudFormation
-      uses: aws-actions/aws-cloudformation-github-deploy@v1
-      with:
-        name: "prod-inferable"
-        role-arn: ${{ secrets.CLOUD_AWS_CFN_ROLE_ARN }}
-        template: ${{ secrets.CLOUD_AWS_CFN_TEMPLATE }}
-        tags: "Environment=prod"
-        capabilities: "CAPABILITY_NAMED_IAM,CAPABILITY_IAM"
-        parameter-overrides: >-
-          Environment=prod,
-          ApiImageTag=${{ github.sha }},
-          AppImageTag=${{ github.sha }}
-    - name: Notify finish deploy to Rollbar
-      uses: rollbar/github-deploy-action@2.1.2
-      id: rollbar_post_deploy
-      with:
-        environment: 'production'
-        version: ${{ github.sha }}
-        status: 'succeeded'
-      env:
-        ROLLBAR_ACCESS_TOKEN: ${{ secrets.CLOUD_ROLLBAR_ACCESS_TOKEN }}
-        ROLLBAR_USERNAME: ${{ github.actor }}
-        DEPLOY_ID: ${{ steps.rollbar_pre_deploy.outputs.deploy_id }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Notify start deploy to Rollbar
+        uses: rollbar/github-deploy-action@2.1.2
+        id: rollbar_pre_deploy
+        with:
+          environment: "production"
+          version: ${{ github.sha }}
+          status: "started"
+        env:
+          ROLLBAR_ACCESS_TOKEN: ${{ secrets.CLOUD_ROLLBAR_ACCESS_TOKEN }}
+          ROLLBAR_USERNAME: ${{ github.actor }}
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: "prod-inferable"
+          role-arn: ${{ secrets.CLOUD_AWS_CFN_ROLE_ARN }}
+          template: ${{ secrets.CLOUD_AWS_CFN_TEMPLATE }}
+          tags: "Environment=prod"
+          capabilities: "CAPABILITY_NAMED_IAM,CAPABILITY_IAM"
+          parameter-overrides: >-
+            Environment=prod, ApiImageTag=${{ github.sha }}, AppImageTag=${{
+            github.sha }}
+      - name: Notify finish deploy to Rollbar
+        uses: rollbar/github-deploy-action@2.1.2
+        id: rollbar_post_deploy
+        with:
+          environment: "production"
+          version: ${{ github.sha }}
+          status: "succeeded"
+        env:
+          ROLLBAR_ACCESS_TOKEN: ${{ secrets.CLOUD_ROLLBAR_ACCESS_TOKEN }}
+          ROLLBAR_USERNAME: ${{ github.actor }}
+          DEPLOY_ID: ${{ steps.rollbar_pre_deploy.outputs.deploy_id }}

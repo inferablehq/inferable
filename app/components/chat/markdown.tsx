@@ -1,6 +1,12 @@
 import { contract } from "@/client/contract";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { memo } from "react";
@@ -31,7 +37,8 @@ const MarkdownBase = ({ content, className, messages }: MarkdownProps) => {
               const [id] = path.split(".");
               const resultPath = path;
               const message = messages?.find(
-                m => m.type === "invocation-result" && get(m, "data.id") === id
+                (m) =>
+                  m.type === "invocation-result" && get(m, "data.id") === id,
               );
 
               const invocationResult = get(message, "data.result", {
@@ -89,7 +96,9 @@ const MarkdownBase = ({ content, className, messages }: MarkdownProps) => {
                             <ClipboardCopy className="w-5 h-5 text-primary" />
                           </div>
                           <div className="">
-                            <div className="font-mono text-xl">Reference Details</div>
+                            <div className="font-mono text-xl">
+                              Reference Details
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               View the referenced data and its context
                             </div>
@@ -103,7 +112,7 @@ const MarkdownBase = ({ content, className, messages }: MarkdownProps) => {
                         "flex flex-col gap-2 px-4 py-3 border rounded-lg mb-6",
                         isValueModified
                           ? "bg-blue-50 border-blue-100"
-                          : "bg-green-50 border-green-100"
+                          : "bg-green-50 border-green-100",
                       )}
                     >
                       {isValueModified ? (
@@ -116,20 +125,31 @@ const MarkdownBase = ({ content, className, messages }: MarkdownProps) => {
                           </div>
                           <div className="pl-6 space-y-1.5">
                             <div className="text-xs text-blue-600 flex items-baseline">
-                              <span className="font-medium w-20">Displayed:</span>
-                              <span className="font-mono">{JSON.stringify(children)}</span>
+                              <span className="font-medium w-20">
+                                Displayed:
+                              </span>
+                              <span className="font-mono">
+                                {JSON.stringify(children)}
+                              </span>
                               <span className="text-blue-400 ml-2">
-                                ({typeof children === "object" ? "object" : typeof children})
+                                (
+                                {typeof children === "object"
+                                  ? "object"
+                                  : typeof children}
+                                )
                               </span>
                             </div>
                             <div className="text-xs text-blue-600 flex items-baseline">
                               <span className="font-medium w-20">Actual:</span>
                               <span className="font-mono">
-                                {JSON.stringify(get(invocationResult, resultPath))}
+                                {JSON.stringify(
+                                  get(invocationResult, resultPath),
+                                )}
                               </span>
                               <span className="text-blue-400 ml-2">
                                 (
-                                {typeof get(invocationResult, resultPath) === "object"
+                                {typeof get(invocationResult, resultPath) ===
+                                "object"
                                   ? "object"
                                   : typeof get(invocationResult, resultPath)}
                                 )
@@ -141,8 +161,9 @@ const MarkdownBase = ({ content, className, messages }: MarkdownProps) => {
                         <div className="flex items-center gap-2">
                           <ShieldCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
                           <p className="text-sm text-green-700">
-                            Inferable has verified that this value was referenced from a tool result
-                            by the model, without any tampering.
+                            Inferable has verified that this value was
+                            referenced from a tool result by the model, without
+                            any tampering.
                           </p>
                         </div>
                       )}
@@ -153,7 +174,9 @@ const MarkdownBase = ({ content, className, messages }: MarkdownProps) => {
                         <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
                           <div>
                             <h3 className="text-sm font-medium">Path</h3>
-                            <p className="text-sm font-mono mt-2 text-muted-foreground">{path}</p>
+                            <p className="text-sm font-mono mt-2 text-muted-foreground">
+                              {path}
+                            </p>
                           </div>
                         </div>
                         <div className="space-y-4">
@@ -182,7 +205,10 @@ const MarkdownBase = ({ content, className, messages }: MarkdownProps) => {
               );
             }
             return (
-              <a href={href} className="text-blue-500 hover:text-blue-700 underline">
+              <a
+                href={href}
+                className="text-blue-500 hover:text-blue-700 underline"
+              >
                 {children}
               </a>
             );

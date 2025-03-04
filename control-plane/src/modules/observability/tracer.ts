@@ -15,7 +15,9 @@ export interface TraceContextCarrier {
   tracestate?: string;
 }
 
-export const extractTraceContext = (carrier: TraceContextCarrier): Context | undefined => {
+export const extractTraceContext = (
+  carrier: TraceContextCarrier,
+): Context | undefined => {
   return propagation.extract(context.active(), carrier);
 };
 
@@ -38,7 +40,7 @@ export const withSpan = async <T>(
   spanName: string,
   fn: () => Promise<T>,
   options?: SpanOptions,
-  context?: Context
+  context?: Context,
 ): Promise<T> => {
   const handler = async (span: Span) => {
     let result: T;
@@ -49,7 +51,7 @@ export const withSpan = async <T>(
           ...(logContext.getStore() ?? {}),
           ...(options?.attributes ?? {}),
         },
-        () => fn()
+        () => fn(),
       );
     } catch (error) {
       if (error instanceof Error) {
@@ -68,5 +70,7 @@ export const withSpan = async <T>(
       .startActiveSpan(spanName, options ?? {}, context, handler);
   }
 
-  return trace.getTracer("inferable-tracer").startActiveSpan(spanName, options ?? {}, handler);
+  return trace
+    .getTracer("inferable-tracer")
+    .startActiveSpan(spanName, options ?? {}, handler);
 };

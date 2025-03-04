@@ -9,8 +9,8 @@ async function searchProduct(input: { query: string }) {
     { id: "P3", name: "Gadget X", inStock: true },
   ];
 
-  const results = mockProducts.filter(p =>
-    p.name.toLowerCase().includes(input.query.toLowerCase())
+  const results = mockProducts.filter((p) =>
+    p.name.toLowerCase().includes(input.query.toLowerCase()),
   );
 
   return { products: results };
@@ -33,7 +33,10 @@ async function generateQuote(input: {
   };
 }
 
-async function translateProductNames(input: { text: string; fromLanguage: string }) {
+async function translateProductNames(input: {
+  text: string;
+  fromLanguage: string;
+}) {
   // Simulated translation service
   // In a real implementation, this would call a translation API
   return {
@@ -45,7 +48,10 @@ async function translateProductNames(input: { text: string; fromLanguage: string
 
 async function getProductAlternatives(input: { productId: string }) {
   // Simulated alternatives lookup
-  const mockAlternatives: Record<string, Array<{ id: string; name: string; inStock: boolean }>> = {
+  const mockAlternatives: Record<
+    string,
+    Array<{ id: string; name: string; inStock: boolean }>
+  > = {
     P1: [{ id: "P4", name: "Widget A Pro", inStock: true }],
     P2: [{ id: "P5", name: "Widget B Plus", inStock: true }],
   };
@@ -102,7 +108,9 @@ inferable.tools.register({
   description: "Searches for product details in the back office system",
   schema: {
     input: z.object({
-      query: z.string().describe("Product description or details to search for"),
+      query: z
+        .string()
+        .describe("Product description or details to search for"),
     }),
   },
 });
@@ -135,10 +143,13 @@ inferable.tools.register({
 inferable.tools.register({
   name: "getProductAlternatives",
   func: getProductAlternatives,
-  description: "Finds alternative products when requested product is out of stock",
+  description:
+    "Finds alternative products when requested product is out of stock",
   schema: {
     input: z.object({
-      productId: z.string().describe("ID of the product to find alternatives for"),
+      productId: z
+        .string()
+        .describe("ID of the product to find alternatives for"),
     }),
   },
 });

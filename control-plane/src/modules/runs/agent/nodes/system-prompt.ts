@@ -6,7 +6,7 @@ export const FINAL_RESULT_SCHEMA_TAG_NAME = "final_result_schema";
 export const getSystemPrompt = (
   state: RunGraphState,
   tools: AgentTool[],
-  mustProduceStructuredOutput: boolean
+  mustProduceStructuredOutput: boolean,
 ): string => {
   const basePrompt = [
     "You are a helpful assistant with access to a set of tools designed to assist in completing tasks.",
@@ -24,18 +24,18 @@ export const getSystemPrompt = (
 
   if (state.run.enableResultGrounding) {
     basePrompt.push(
-      "When referring to facts, reference the json path of the fact as a markdown link [value](jsonpath). JSON paths must start with the ULID."
+      "When referring to facts, reference the json path of the fact as a markdown link [value](jsonpath). JSON paths must start with the ULID.",
     );
     basePrompt.push("For example, [John](ULID.result.users[0].name)");
   }
 
   if (state.run.resultSchema) {
     basePrompt.push(
-      "Once all tasks have been completed, return the final result as a structured json object in the requested format"
+      "Once all tasks have been completed, return the final result as a structured json object in the requested format",
     );
   } else {
     basePrompt.push(
-      "Once all tasks have been completed, return the final result in markdown with your message."
+      "Once all tasks have been completed, return the final result in markdown with your message.",
     );
   }
 
@@ -47,16 +47,18 @@ export const getSystemPrompt = (
   // Add tool schemas
   basePrompt.push("<TOOLS_SCHEMAS>");
   basePrompt.push(
-    ...tools.map(tool => {
+    ...tools.map((tool) => {
       return `${tool.name} - ${tool.description} ${tool.schema}`;
-    })
+    }),
   );
   basePrompt.push("</TOOLS_SCHEMAS>");
 
   // Add other available tools
   basePrompt.push("<OTHER_AVAILABLE_TOOLS>");
-  basePrompt.push(...state.allAvailableTools.filter(t => !tools.find(s => s.name === t)));
+  basePrompt.push(
+    ...state.allAvailableTools.filter((t) => !tools.find((s) => s.name === t)),
+  );
   basePrompt.push("</OTHER_AVAILABLE_TOOLS>");
 
-  return basePrompt.map(p => p.trim()).join("\n");
+  return basePrompt.map((p) => p.trim()).join("\n");
 };

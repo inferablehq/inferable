@@ -6,14 +6,14 @@ import { z } from "zod";
 export const truthy = z
   .enum(["0", "1", "true", "false"])
   .catch("false")
-  .transform(value => value == "true" || value == "1");
+  .transform((value) => value == "true" || value == "1");
 
 const envSchema = z
   .object({
     NODE_ENV: z
       .enum(["test", "development", "production"])
       .default("development")
-      .transform(value => {
+      .transform((value) => {
         if (process.env.CI) {
           return "test";
         }
@@ -90,7 +90,8 @@ const envSchema = z
       if (value.JWKS_URL) {
         return ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "MANAGEMENT_API_SECRET can not be set with JWKS_URL (Headless mode only)",
+          message:
+            "MANAGEMENT_API_SECRET can not be set with JWKS_URL (Headless mode only)",
           path: ["MANAGEMENT_API_SECRET"],
         });
       }
@@ -112,7 +113,7 @@ const envSchema = z
       "NANGO_SECRET_KEY",
       "SLACK_SIGNING_SECRET",
       "E2B_ACCESS_TOKEN",
-      "FIRECRAWL_API_KEY"
+      "FIRECRAWL_API_KEY",
     ];
 
     for (const key of EE_REQUIRED) {

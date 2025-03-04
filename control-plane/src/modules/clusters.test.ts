@@ -20,7 +20,8 @@ describe("clusters", () => {
       additionalContext: {
         current: {
           version: "1",
-          content: "<h1>Hello</h1><p>This is <strong>formatted</strong> text.</p>",
+          content:
+            "<h1>Hello</h1><p>This is <strong>formatted</strong> text.</p>",
         },
         history: [],
       },
@@ -133,7 +134,10 @@ describe("clusters", () => {
           deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 24),
         })
         .where(
-          or(eq(data.clusters.id, markedCluster1.id), eq(data.clusters.id, markedCluster2.id))
+          or(
+            eq(data.clusters.id, markedCluster1.id),
+            eq(data.clusters.id, markedCluster2.id),
+          ),
         );
 
       await cleanupMarkedClusters();
@@ -142,7 +146,10 @@ describe("clusters", () => {
         .select({ count: count(data.clusters.id) })
         .from(data.clusters)
         .where(
-          or(eq(data.clusters.id, markedCluster1.id), eq(data.clusters.id, markedCluster2.id))
+          or(
+            eq(data.clusters.id, markedCluster1.id),
+            eq(data.clusters.id, markedCluster2.id),
+          ),
         );
 
       expect(exists.count).toBe(0);

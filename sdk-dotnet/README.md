@@ -8,7 +8,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/)
 
-The **Inferable .NET Client** is a .NET library that allows you to interact with the Inferable API. This library provides functionality to register your .NET functions, manage services, and handle API communication easily.
+The **Inferable .NET Client** is a .NET library that allows you to interact with
+the Inferable API. This library provides functionality to register your .NET
+functions, manage services, and handle API communication easily.
 
 ## Installation
 
@@ -36,14 +38,17 @@ var options = new InferableOptions
 var client = new InferableClient(options);
 ```
 
-If you don't provide an API key or base URL, it will attempt to read them from the following environment variables:
+If you don't provide an API key or base URL, it will attempt to read them from
+the following environment variables:
 
 - `INFERABLE_API_SECRET`
 - `INFERABLE_API_ENDPOINT`
 
 ### Registering a Function
 
-Register a "sayHello" [tool](https://docs.inferable.ai/pages/tools). This file will register the function with the [control-plane](https://docs.inferable.ai/pages/control-plane).
+Register a "sayHello" [tool](https://docs.inferable.ai/pages/tools). This file
+will register the function with the
+[control-plane](https://docs.inferable.ai/pages/control-plane).
 
 ```cs
 public class MyInput
@@ -67,9 +72,15 @@ _ = client.ListenAsync();
 
 <summary>👉 The DotNet SDK for Inferable reflects the types from the input class of the function.</summary>
 
-Unlike the [NodeJs SDK](https://github.com/inferablehq/inferable/sdk-node), the Dotnet SDK for Inferable reflects the types from the input struct of the function. It uses the [NJsonSchema](https://github.com/RicoSuter/NJsonSchema) under the hood to generate JSON schemas from C# types through reflection.
+Unlike the [NodeJs SDK](https://github.com/inferablehq/inferable/sdk-node), the
+Dotnet SDK for Inferable reflects the types from the input struct of the
+function. It uses the [NJsonSchema](https://github.com/RicoSuter/NJsonSchema)
+under the hood to generate JSON schemas from C# types through reflection.
 
-If the input class defines [System.Text.Json.Serialization](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.serialization) attributes, the SDK will use those in the generated schema. This allows for fine-grained control over the schema generation.
+If the input class defines
+[System.Text.Json.Serialization](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.serialization)
+attributes, the SDK will use those in the generated schema. This allows for
+fine-grained control over the schema generation.
 
 Here's an example to illustrate this:
 
@@ -97,7 +108,9 @@ client.RegisterTool(new ToolRegistration<MyInput>
 });
 ```
 
-In this example, the UserInput class uses [System.Text.Json.Serialization](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.serialization) attributes to define additional properties for the schema:
+In this example, the UserInput class uses
+[System.Text.Json.Serialization](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.serialization)
+attributes to define additional properties for the schema:
 
 - The email field is ignored when writing null.
 
@@ -105,12 +118,15 @@ In this example, the UserInput class uses [System.Text.Json.Serialization](https
 
 ## Documentation
 
-- [Inferable documentation](https://docs.inferable.ai/) contains all the information you need to get started with Inferable.
+- [Inferable documentation](https://docs.inferable.ai/) contains all the
+  information you need to get started with Inferable.
 
 ## Support
 
-For support or questions, please [create an issue in the repository](https://github.com/inferablehq/inferable/issues).
+For support or questions, please
+[create an issue in the repository](https://github.com/inferablehq/inferable/issues).
 
 ## Contributing
 
-Contributions to the Inferable .NET Client are welcome. Please ensure that your code adheres to the existing style and includes appropriate tests.
+Contributions to the Inferable .NET Client are welcome. Please ensure that your
+code adheres to the existing style and includes appropriate tests.

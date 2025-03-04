@@ -35,7 +35,7 @@ export const timeline = {
 
       rowsCount = newMessages.length + newActivity.length;
 
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     } while (rowsCount === 0 && Date.now() - startTime < timeout);
 
     const [messages, activity, jobs, run] = await Promise.all([

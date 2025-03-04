@@ -152,20 +152,26 @@ describe("handleModelCall", () => {
     expect(result.status).toBe("running");
 
     expect(result.messages![0]).toHaveProperty("type", "agent-invalid");
-    const invalidMessage = assertMessageOfType("agent-invalid", result.messages![0]);
+    const invalidMessage = assertMessageOfType(
+      "agent-invalid",
+      result.messages![0],
+    );
     expect(invalidMessage.data).toHaveProperty(
       "details",
       expect.objectContaining({
         message: "nothing to do",
-      })
+      }),
     );
 
     expect(result.messages![1]).toHaveProperty("type", "supervisor");
-    const supervisorMessage = assertMessageOfType("supervisor", result.messages![1]);
+    const supervisorMessage = assertMessageOfType(
+      "supervisor",
+      result.messages![1],
+    );
 
     expect(supervisorMessage.data).toHaveProperty(
       "message",
-      "If you are not done, please provide an invocation, otherwise return done."
+      "If you are not done, please provide an invocation, otherwise return done.",
     );
   });
 
@@ -187,20 +193,26 @@ describe("handleModelCall", () => {
     expect(result.status).toBe("running");
 
     expect(result.messages![0]).toHaveProperty("type", "agent-invalid");
-    const invalidMessage = assertMessageOfType("agent-invalid", result.messages![0]);
+    const invalidMessage = assertMessageOfType(
+      "agent-invalid",
+      result.messages![0],
+    );
     expect(invalidMessage.data).toHaveProperty(
       "details",
       expect.objectContaining({
         done: true,
-      })
+      }),
     );
 
     expect(result.messages![1]).toHaveProperty("type", "supervisor");
 
-    const supervisorMessage = assertMessageOfType("supervisor", result.messages![1]);
+    const supervisorMessage = assertMessageOfType(
+      "supervisor",
+      result.messages![1],
+    );
     expect(supervisorMessage.data).toHaveProperty(
       "message",
-      "Please provide a final result before stopping. Refer to the final_result_schema for the expected format. If you have insufficient information to provide a result, please provide a message describing why you can't provide a result."
+      "Please provide a final result before stopping. Refer to the final_result_schema for the expected format. If you have insufficient information to provide a result, please provide a message describing why you can't provide a result.",
     );
   });
 
@@ -211,7 +223,9 @@ describe("handleModelCall", () => {
       throw error;
     };
 
-    expect(handleModelCall(state, model, errorFindRelevantTools)).rejects.toThrow(error);
+    expect(
+      handleModelCall(state, model, errorFindRelevantTools),
+    ).rejects.toThrow(error);
   });
 
   it("should abort if a cycle is detected", async () => {
@@ -224,7 +238,9 @@ describe("handleModelCall", () => {
         runId: run.id,
         type: "agent" as const,
         data: {
-          invocations: [{ done: false, learning: "I learnt some stuff" } as any],
+          invocations: [
+            { done: false, learning: "I learnt some stuff" } as any,
+          ],
         },
       });
       messages.push({
@@ -239,9 +255,9 @@ describe("handleModelCall", () => {
       });
     }
 
-    expect(handleModelCall({ ...state, messages }, model, findRelevantTools)).rejects.toThrow(
-      "Detected cycle in Run."
-    );
+    expect(
+      handleModelCall({ ...state, messages }, model, findRelevantTools),
+    ).rejects.toThrow("Detected cycle in Run.");
   });
 
   it("should trigger supervisor if parsing fails", async () => {
@@ -261,17 +277,23 @@ describe("handleModelCall", () => {
     expect(result.status).toBe("running");
 
     expect(result.messages![0]).toHaveProperty("type", "agent-invalid");
-    const invalidMessage = assertMessageOfType("agent-invalid", result.messages![0]);
+    const invalidMessage = assertMessageOfType(
+      "agent-invalid",
+      result.messages![0],
+    );
     expect(invalidMessage.data).toHaveProperty("details");
 
     expect(result.messages![1]).toHaveProperty("type", "supervisor");
-    const supervisorMessage = assertMessageOfType("supervisor", result.messages![1]);
+    const supervisorMessage = assertMessageOfType(
+      "supervisor",
+      result.messages![1],
+    );
 
     expect(supervisorMessage.data).toHaveProperty(
       "message",
       expect.stringContaining(
-        "You provided an invalid output. Refer to the final_result_schema for the expected format. The validation errors are mentioned below."
-      )
+        "You provided an invalid output. Refer to the final_result_schema for the expected format. The validation errors are mentioned below.",
+      ),
     );
     expect(supervisorMessage.data.details).toHaveProperty("errors");
   });

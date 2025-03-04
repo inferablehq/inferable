@@ -23,7 +23,9 @@ export async function sendToZapier({ data, webhookUrl }: SendToZapierParams) {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: response.statusText }));
     throw new Error(errorData.message || "Failed to send to Zapier");
   }
 

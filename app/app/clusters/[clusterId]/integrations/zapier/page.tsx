@@ -1,7 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -28,7 +34,9 @@ export default function ZapierIntegration({
             <span className="text-2xl">⚡</span>
             <CardTitle>Configure Zapier</CardTitle>
           </div>
-          <CardDescription>Connect Inferable to thousands of apps through Zapier.</CardDescription>
+          <CardDescription>
+            Connect Inferable to thousands of apps through Zapier.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">

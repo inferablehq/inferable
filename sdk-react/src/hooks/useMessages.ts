@@ -28,13 +28,17 @@ type UntypedInvocationResultMessage = {
 };
 
 // All RunTimelineMessage that are not type.invocation-results
-type NonInvocationTimelineMessage = Exclude<RunTimelineMessage, { type: "invocation-result" }>;
+type NonInvocationTimelineMessage = Exclude<
+  RunTimelineMessage,
+  { type: "invocation-result" }
+>;
 
 // Update ParsedMessage to handle both cases
-type ParsedMessage<TSchemas extends ToolSchemas> = NonInvocationTimelineMessage |
-  (TSchemas extends Record<string, never>
-    ? UntypedInvocationResultMessage
-    : KnownInvocationResultMessages<TSchemas>);
+type ParsedMessage<TSchemas extends ToolSchemas> =
+  | NonInvocationTimelineMessage
+  | (TSchemas extends Record<string, never>
+      ? UntypedInvocationResultMessage
+      : KnownInvocationResultMessages<TSchemas>);
 
 /**
  * Options for the useMessages hook
@@ -72,7 +76,7 @@ interface UseMessagesReturn<TSchemas extends ToolSchemas> {
  */
 function parseMessage<TSchemas extends ToolSchemas>(
   message: RunTimelineMessage,
-  schemas?: TSchemas
+  schemas?: TSchemas,
 ): ParsedMessage<TSchemas> | null {
   // Only relevant for invocation-result messages
   if (message.type !== "invocation-result") {
@@ -86,7 +90,9 @@ function parseMessage<TSchemas extends ToolSchemas>(
     const parsed = schema.safeParse(result);
 
     if (!parsed.success) {
-      throw new Error(`Failed to parse result for ${toolName}: ${parsed.error}`);
+      throw new Error(
+        `Failed to parse result for ${toolName}: ${parsed.error}`,
+      );
     }
 
     // Return typed invocation-result message
@@ -178,26 +184,24 @@ function parseMessage<TSchemas extends ToolSchemas>(
  * });
  * ```
  */
-export function useMessages<
-  TSchemas extends ToolSchemas = {}
->(
+export function useMessages<TSchemas extends ToolSchemas = {}>(
   messages?: RunTimelineMessages,
-  options?: UseMessagesOptions<TSchemas>
+  options?: UseMessagesOptions<TSchemas>,
 ): UseMessagesReturn<TSchemas> {
   const [error, setError] = useState<Error | null>(null);
 
   const parse = React.useCallback(
     (msg: RunTimelineMessage) => {
       try {
-        return parseMessage(msg, options?.resultMap)
+        return parseMessage(msg, options?.resultMap);
       } catch (e) {
         if (e instanceof Error && e.message !== error?.message) {
-          setError(e)
+          setError(e);
         }
-        return msg
+        return msg;
       }
     },
-    [options?.resultMap, error]
+    [options?.resultMap, error],
   );
 
   return {
@@ -207,12 +211,12 @@ export function useMessages<
         .map(parse)
         .filter((m): m is ParsedMessage<TSchemas> => m !== null)
         .sort((a, b) =>
-          sort === "asc" ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id)
+          sort === "asc" ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id),
         );
     },
 
     getOfType: (
-      type: RunTimelineMessage["type"]
+      type: RunTimelineMessage["type"],
     ): ParsedMessage<TSchemas>[] => {
       if (!messages) return [];
       return messages
@@ -222,5 +226,5 @@ export function useMessages<
     },
 
     error,
-  }
+  };
 }

@@ -105,13 +105,9 @@
         "deployment_notifications_deployment_id_deployments_id_fk": {
           "name": "deployment_notifications_deployment_id_deployments_id_fk",
           "tableFrom": "deployment_notifications",
-          "columnsFrom": [
-            "deployment_id"
-          ],
+          "columnsFrom": ["deployment_id"],
           "tableTo": "deployments",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -207,13 +203,9 @@
         "deployments_cluster_id_clusters_id_fk": {
           "name": "deployments_cluster_id_clusters_id_fk",
           "tableFrom": "deployments",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -285,54 +277,36 @@
         "events_cluster_id_clusters_id_fk": {
           "name": "events_cluster_id_clusters_id_fk",
           "tableFrom": "events",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "events_job_id_jobs_id_fk": {
           "name": "events_job_id_jobs_id_fk",
           "tableFrom": "events",
-          "columnsFrom": [
-            "job_id"
-          ],
+          "columnsFrom": ["job_id"],
           "tableTo": "jobs",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "events_deployment_id_deployments_id_fk": {
           "name": "events_deployment_id_deployments_id_fk",
           "tableFrom": "events",
-          "columnsFrom": [
-            "deployment_id"
-          ],
+          "columnsFrom": ["deployment_id"],
           "tableTo": "deployments",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         },
         "events_machine_id_cluster_id_machines_id_cluster_id_fk": {
           "name": "events_machine_id_cluster_id_machines_id_cluster_id_fk",
           "tableFrom": "events",
-          "columnsFrom": [
-            "machine_id",
-            "cluster_id"
-          ],
+          "columnsFrom": ["machine_id", "cluster_id"],
           "tableTo": "machines",
-          "columnsTo": [
-            "id",
-            "cluster_id"
-          ],
+          "columnsTo": ["id", "cluster_id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -485,19 +459,13 @@
       "compositePrimaryKeys": {
         "jobs_owner_hash_target_fn_idempotency_key": {
           "name": "jobs_owner_hash_target_fn_idempotency_key",
-          "columns": [
-            "owner_hash",
-            "target_fn",
-            "idempotency_key"
-          ]
+          "columns": ["owner_hash", "target_fn", "idempotency_key"]
         }
       },
       "uniqueConstraints": {
         "jobs_id_unique": {
           "name": "jobs_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "nullsNotDistinct": false
         }
       }
@@ -561,10 +529,7 @@
       "compositePrimaryKeys": {
         "machines_id_cluster_id": {
           "name": "machines_id_cluster_id",
-          "columns": [
-            "id",
-            "cluster_id"
-          ]
+          "columns": ["id", "cluster_id"]
         }
       },
       "uniqueConstraints": {}
@@ -603,13 +568,9 @@
         "services_cluster_id_clusters_id_fk": {
           "name": "services_cluster_id_clusters_id_fk",
           "tableFrom": "services",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -617,10 +578,7 @@
       "compositePrimaryKeys": {
         "services_cluster_id_service": {
           "name": "services_cluster_id_service",
-          "columns": [
-            "cluster_id",
-            "service"
-          ]
+          "columns": ["cluster_id", "service"]
         }
       },
       "uniqueConstraints": {}

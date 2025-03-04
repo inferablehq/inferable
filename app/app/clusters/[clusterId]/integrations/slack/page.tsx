@@ -2,7 +2,13 @@
 
 import { client } from "@/client/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
@@ -23,7 +29,11 @@ export default function SlackIntegration({
   const { getToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [connection, setConnection] = useState<
-    ClientInferResponses<typeof contract.getIntegrations, 200>["body"]["slack"] | null
+    | ClientInferResponses<
+        typeof contract.getIntegrations,
+        200
+      >["body"]["slack"]
+    | null
   >(null);
 
   const fetchConfig = useCallback(async () => {
@@ -39,7 +49,6 @@ export default function SlackIntegration({
       }),
     ]);
     setLoading(false);
-
 
     if (integrationsResponse.status === 200) {
       setConnection(integrationsResponse.body?.slack);
@@ -66,7 +75,7 @@ export default function SlackIntegration({
 
     nango.openConnectUI({
       sessionToken: response.body.token,
-      onEvent: async event => {
+      onEvent: async (event) => {
         if (event.type === "connect") {
           toast.success("Connected to Slack");
           // Best effort refresh, hopefully the connection will be there on reload
@@ -105,8 +114,13 @@ export default function SlackIntegration({
             <CardTitle>Configure Slack</CardTitle>
           </div>
           <CardDescription>
-            Connect your Slack workspace to trigger runs in this Cluster. For more information, see{" "}
-            <a href="https://docs.inferable.ai/pages/slack" target="_blank" className="underline">
+            Connect your Slack workspace to trigger runs in this Cluster. For
+            more information, see{" "}
+            <a
+              href="https://docs.inferable.ai/pages/slack"
+              target="_blank"
+              className="underline"
+            >
               our docs
             </a>
             .

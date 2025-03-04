@@ -8,7 +8,7 @@ export class AgentToolInputError extends Error {
   validatorResult: ValidatorResult;
 
   constructor(validatorResult: ValidatorResult) {
-    super(validatorResult.errors.map(e => e.stack).join("\n"));
+    super(validatorResult.errors.map((e) => e.stack).join("\n"));
     this.validatorResult = validatorResult;
   }
 }

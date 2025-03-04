@@ -16,7 +16,7 @@ export class InferablePGSQLAdapter {
       connectionString: string;
       privacyMode: boolean;
       approvalMode: "always" | "mutate" | "off";
-    }
+    },
   ) {
     assert(params.schema, "Schema parameter is required");
   }
@@ -27,12 +27,14 @@ export class InferablePGSQLAdapter {
       const res = await client.query(`SELECT NOW() as now`);
       console.log(`Initial probe successful: ${res.rows[0].now}`);
       if (this.params.privacyMode) {
-        console.log("Privacy mode is enabled, table data will not be sent to the model.");
+        console.log(
+          "Privacy mode is enabled, table data will not be sent to the model.",
+        );
       }
       console.log(
         `Approval mode set to '${this.params.approvalMode}' - queries will ${
           this.params.approvalMode === "off" ? "not" : ""
-        } require approval${this.params.approvalMode === "mutate" ? " for data-modifying operations" : ""}`
+        } require approval${this.params.approvalMode === "mutate" ? " for data-modifying operations" : ""}`,
       );
 
       process.removeListener("SIGTERM", this.handleSigterm);
@@ -67,9 +69,10 @@ export class InferablePGSQLAdapter {
 
   private getAllTables = async () => {
     const client = await this.getClient();
-    const res = await client.query("SELECT * FROM pg_catalog.pg_tables WHERE schemaname = $1", [
-      this.params.schema,
-    ]);
+    const res = await client.query(
+      "SELECT * FROM pg_catalog.pg_tables WHERE schemaname = $1",
+      [this.params.schema],
+    );
     return res.rows;
   };
 
@@ -82,30 +85,32 @@ export class InferablePGSQLAdapter {
 
     for (const table of tables) {
       const sample = await client.query(
-        `SELECT * FROM ${this.params.schema}.${table.tablename} LIMIT 1`
+        `SELECT * FROM ${this.params.schema}.${table.tablename} LIMIT 1`,
       );
 
       if (sample.rows.length > 0) {
         const columns = Object.keys(sample.rows[0]);
         const tableContext = {
           tableName: table.tablename.substring(0, 100),
-          columns: columns.map(col => col.substring(0, 100)),
+          columns: columns.map((col) => col.substring(0, 100)),
           sampleData: this.params.privacyMode
             ? []
-            : sample.rows.map(row =>
-                Object.values(row).map(value => String(value).substring(0, 50))
+            : sample.rows.map((row) =>
+                Object.values(row).map((value) =>
+                  String(value).substring(0, 50),
+                ),
               )[0],
         };
         context.push(tableContext);
       } else {
         const schema = await client.query(
           `SELECT * FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2`,
-          [this.params.schema, table.tablename]
+          [this.params.schema, table.tablename],
         );
 
         context.push({
           tableName: table.tablename.substring(0, 100),
-          columns: schema.rows.map(col => col.column_name.substring(0, 100)),
+          columns: schema.rows.map((col) => col.column_name.substring(0, 100)),
           sampleData: [],
         });
       }
@@ -120,7 +125,8 @@ export class InferablePGSQLAdapter {
 
     if (
       this.params.approvalMode === "always" ||
-      (this.params.approvalMode === "mutate" && (await isMutativeQuery(client, input.query)))
+      (this.params.approvalMode === "mutate" &&
+        (await isMutativeQuery(client, input.query)))
     ) {
       if (!ctx.approved) {
         console.log("Query requires approval");
@@ -134,7 +140,8 @@ export class InferablePGSQLAdapter {
 
     if (this.params.privacyMode) {
       return {
-        message: "This query was executed in privacy mode. Data was returned to the user directly.",
+        message:
+          "This query was executed in privacy mode. Data was returned to the user directly.",
         blob: blob({
           name: "Results",
           type: "application/json",

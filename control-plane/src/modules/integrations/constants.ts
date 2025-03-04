@@ -12,7 +12,11 @@ export const allowedIntegrations = [
   slackIntegration,
 ] as const;
 
-export const externalServices = [toolhouseIntegration, tavilyIntegration, valtownIntegration];
+export const externalServices = [
+  toolhouseIntegration,
+  tavilyIntegration,
+  valtownIntegration,
+];
 
 // Special value that allows a new connection to be created
 export const NEW_CONNECTION_ID = "NEW";

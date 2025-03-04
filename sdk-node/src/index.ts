@@ -28,9 +28,6 @@ export {
   JobContext,
 } from "./types";
 
-export {
-  blob,
-  Interrupt
-} from "./util";
+export { blob, Interrupt } from "./util";
 
 export { createApiClient } from "./create-client";

@@ -1,6 +1,12 @@
 import { client } from "@/client/client";
 import { contract } from "@/client/contract";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { startCase } from "lodash";
@@ -39,7 +45,10 @@ export function DebugEvent({
   clusterId,
   msSincePreviousEvent,
 }: {
-  event: ClientInferResponseBody<typeof contract.getRunTimeline, 200>["activity"][number];
+  event: ClientInferResponseBody<
+    typeof contract.getRunTimeline,
+    200
+  >["activity"][number];
   clusterId: string;
   msSincePreviousEvent: number;
 }) {
@@ -68,7 +77,12 @@ export function DebugEvent({
   };
 
   return (
-    <div className={cn("ml-8 relative group", getEventSpacing(msSincePreviousEvent))}>
+    <div
+      className={cn(
+        "ml-8 relative group",
+        getEventSpacing(msSincePreviousEvent),
+      )}
+    >
       <div
         className={cn(
           "absolute left-1 w-[2px] -top-4 -bottom-4 -z-10",
@@ -76,7 +90,7 @@ export function DebugEvent({
             ? "bg-border/50"
             : isSessionEnd
               ? "bg-gradient-to-b from-transparent via-transparent to-border/50"
-              : "bg-gradient-to-b from-transparent via-border/50 to-border/50"
+              : "bg-gradient-to-b from-transparent via-border/50 to-border/50",
         )}
       />
 
@@ -84,8 +98,10 @@ export function DebugEvent({
         <div
           className={cn(
             "shrink-0 mt-2 rounded-full relative z-10 ring-4 ring-white",
-            isSessionEnd ? "w-3 h-3 -ml-0.5 border-2 border-gray-400 bg-white" : "bg-gray-900",
-            msSincePreviousEvent < 60000 ? "w-2 h-2" : "w-3 h-3 -ml-0.5"
+            isSessionEnd
+              ? "w-3 h-3 -ml-0.5 border-2 border-gray-400 bg-white"
+              : "bg-gray-900",
+            msSincePreviousEvent < 60000 ? "w-2 h-2" : "w-3 h-3 -ml-0.5",
           )}
         />
 
@@ -97,13 +113,13 @@ export function DebugEvent({
                 className="flex items-center gap-2 group/header hover:bg-secondary/20 rounded-md px-2 py-1 -ml-2 transition-colors duration-200 w-full text-left"
               >
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="font-medium text-gray-700">{startCase(event.type)}</span>
+                  <span className="font-medium text-gray-700">
+                    {startCase(event.type)}
+                  </span>
                   <span className="text-muted-foreground font-mono">
                     {formatDateTime(event.createdAt)}
                     {msSincePreviousEvent > 0 && (
-                      <span className="text-primary/70">
-                        {` +${(msSincePreviousEvent / 1000).toFixed(1)}s`}
-                      </span>
+                      <span className="text-primary/70">{` +${(msSincePreviousEvent / 1000).toFixed(1)}s`}</span>
                     )}
                   </span>
                 </div>
@@ -138,7 +154,9 @@ export function DebugEvent({
                     </div>
                     <div>
                       <div className="text-sm font-medium">Event Details</div>
-                      <div className="text-xs text-muted-foreground">Event ID: {event.id}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Event ID: {event.id}
+                      </div>
                     </div>
                   </div>
 
@@ -149,7 +167,9 @@ export function DebugEvent({
                           {sanitizedKey[key] ?? startCase(key)}
                         </dt>
                         <dd className="text-sm">
-                          {value instanceof Date ? formatDateTime(value) : String(value) || "—"}
+                          {value instanceof Date
+                            ? formatDateTime(value)
+                            : String(value) || "—"}
                         </dd>
                       </div>
                     ))}
@@ -173,7 +193,9 @@ export function DebugEvent({
                     <ReadOnlyJSON key={event.id} json={eventMeta} />
                   ) : (
                     <div className="flex items-center justify-center h-24">
-                      <p className="text-sm text-muted-foreground">No metadata available</p>
+                      <p className="text-sm text-muted-foreground">
+                        No metadata available
+                      </p>
                     </div>
                   )}
                 </div>

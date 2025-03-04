@@ -10,7 +10,7 @@ export const generateTitle = async (
     id: string;
     clusterId: string;
   },
-  words: number = 10
+  words: number = 10,
 ): Promise<{ summary: string }> => {
   const system = [
     `You are a title generation assistant that is capable of succintly summarizing a set of messages in a single sentence. The title should be no more than ${words} words. Generate title for the following messages. Use identifying information such as names, dates, and locations if necessary. Good examples:

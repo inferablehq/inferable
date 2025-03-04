@@ -9,9 +9,9 @@ import { VersionedTexts } from "./versioned-text";
 import { createApiKey } from "./auth/cluster";
 import { rateLimiter } from "./rate-limiter";
 
-const clusterDetailsCache = createCache<Awaited<ReturnType<typeof getClusterDetails>>>(
-  Symbol("clusterDetails")
-);
+const clusterDetailsCache = createCache<
+  Awaited<ReturnType<typeof getClusterDetails>>
+>(Symbol("clusterDetails"));
 
 export const getClusters = async ({
   organizationId,
@@ -41,7 +41,7 @@ export const getClusters = async ({
 };
 
 export const createEphemeralSetup = async (
-  ip: string
+  ip: string,
 ): Promise<{
   clusterId: string;
   apiKey: string;
@@ -52,7 +52,7 @@ export const createEphemeralSetup = async (
 
   if (!allowed) {
     throw new errors.TooManyRequestsError(
-      "Too many ephemeral setups for this IP. Try again in 1h."
+      "Too many ephemeral setups for this IP. Try again in 1h.",
     );
   } else {
     await limiter.consume(`ephemeral-setup:${ip}`, 1);
@@ -113,10 +113,14 @@ export const createCluster = async ({
       name: data.clusters.name,
     })
     .execute()
-    .then(r => r[0]);
+    .then((r) => r[0]);
 };
 
-export const markClusterForDeletion = async ({ clusterId }: { clusterId: string }) => {
+export const markClusterForDeletion = async ({
+  clusterId,
+}: {
+  clusterId: string;
+}) => {
   await data.db
     .update(data.clusters)
     .set({ deleted_at: new Date(), organization_id: null })
@@ -155,7 +159,12 @@ export const editClusterDetails = async ({
       handle_custom_auth_function: handleCustomAuthFunction,
       enable_knowledgebase: enableKnowledgebase,
     })
-    .where(and(eq(data.clusters.id, clusterId), eq(data.clusters.organization_id, organizationId)))
+    .where(
+      and(
+        eq(data.clusters.id, clusterId),
+        eq(data.clusters.organization_id, organizationId),
+      ),
+    )
     .returning({
       id: data.clusters.id,
     })
@@ -250,20 +259,20 @@ export const getClusterDetails = async ({
     enableCustomAuth: results[0].enableCustomAuth,
     machines: uniqBy(
       results
-        .filter(r => r.machineId !== null)
-        .map(r => ({
+        .filter((r) => r.machineId !== null)
+        .map((r) => ({
           id: r.machineId!,
           lastPingAt: r.machineLastPingAt?.getTime() ?? null,
           ip: r.machineIp,
           sdkVersion: r.machineSdkVersion,
           sdkLanguage: r.machineSdkLanguage,
         })),
-      r => r.id
+      (r) => r.id,
     ),
     tools: uniqBy(
       results
-        .filter(r => r.toolName !== null)
-        .map(r => ({
+        .filter((r) => r.toolName !== null)
+        .map((r) => ({
           name: r.toolName!,
           description: r.toolDescription,
           schema: r.toolSchema as unknown,
@@ -272,7 +281,7 @@ export const getClusterDetails = async ({
           createdAt: r.toolCreatedAt?.getTime() ?? 0,
           lastPingAt: r.toolLastPingAt?.getTime() ?? null,
         })),
-      r => r.name
+      (r) => r.name,
     ),
     additionalContext: results[0].additionalContext,
   } as const;
@@ -281,7 +290,11 @@ export const getClusterDetails = async ({
   return response;
 };
 
-export const getClusterMachines = async ({ clusterId }: { clusterId: string }) => {
+export const getClusterMachines = async ({
+  clusterId,
+}: {
+  clusterId: string;
+}) => {
   const machines = await data.db
     .select({
       id: data.machines.id,

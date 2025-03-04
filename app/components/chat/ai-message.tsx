@@ -1,4 +1,8 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { formatRelative } from "date-fns";
 import { startCase } from "lodash";
 import { AlertTriangle, Brain, ChevronDown } from "lucide-react";
@@ -10,7 +14,8 @@ import { MessageContainerProps } from "./run-event";
 const basicResultSchema = z.record(z.string());
 
 const ResultSection = ({ result }: { result: object }) => {
-  const { success: basic, data: basicData } = basicResultSchema.safeParse(result);
+  const { success: basic, data: basicData } =
+    basicResultSchema.safeParse(result);
 
   if (basic) {
     return (
@@ -36,9 +41,13 @@ const ResultSection = ({ result }: { result: object }) => {
   return <JSONDisplay json={result} />;
 };
 
-export const AiMessage = ({ data, createdAt, messages }: MessageContainerProps<"agent">) => {
+export const AiMessage = ({
+  data,
+  createdAt,
+  messages,
+}: MessageContainerProps<"agent">) => {
   const { issue, result, message, invocations, learnings } = data;
-  const hasReasoning = invocations?.find(invocation => invocation.reasoning);
+  const hasReasoning = invocations?.find((invocation) => invocation.reasoning);
   if (!hasReasoning && !message && !result && !issue && !learnings) {
     return null;
   }
@@ -62,7 +71,11 @@ export const AiMessage = ({ data, createdAt, messages }: MessageContainerProps<"
           {(message || hasReasoning) && (
             <div className="bg-secondary/10 rounded-lg p-1">
               <Markdown
-                content={message || invocations?.map(i => i.reasoning).join("\n") || ""}
+                content={
+                  message ||
+                  invocations?.map((i) => i.reasoning).join("\n") ||
+                  ""
+                }
                 messages={messages}
               />
             </div>
@@ -70,7 +83,9 @@ export const AiMessage = ({ data, createdAt, messages }: MessageContainerProps<"
 
           {result && (
             <div className="bg-secondary/5 rounded-lg p-4 border border-border/50">
-              <div className="text-sm font-medium mb-2 text-muted-foreground">Results</div>
+              <div className="text-sm font-medium mb-2 text-muted-foreground">
+                Results
+              </div>
               <ResultSection result={result} />
             </div>
           )}
@@ -90,16 +105,24 @@ export const AiMessage = ({ data, createdAt, messages }: MessageContainerProps<"
                         key={index}
                         className="bg-muted/30 rounded-md p-3 text-xs text-muted-foreground"
                       >
-                        <span className="font-medium">Invoking {invocation.toolName}:</span>{" "}
+                        <span className="font-medium">
+                          Invoking {invocation.toolName}:
+                        </span>{" "}
                         {invocation.reasoning}
                       </div>
                     ))}
 
                   {learnings?.map((learning, index) => (
-                    <div key={index} className="bg-muted/30 rounded-md p-3 text-xs">
-                      <div className="text-muted-foreground">{learning.summary}</div>
+                    <div
+                      key={index}
+                      className="bg-muted/30 rounded-md p-3 text-xs"
+                    >
+                      <div className="text-muted-foreground">
+                        {learning.summary}
+                      </div>
                       <div className="text-[10px] text-muted-foreground/70 mt-1">
-                        Entities: {learning.entities.map((e: any) => e.name).join(", ")}
+                        Entities:{" "}
+                        {learning.entities.map((e: any) => e.name).join(", ")}
                       </div>
                     </div>
                   ))}

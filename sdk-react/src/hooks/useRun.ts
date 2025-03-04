@@ -4,10 +4,22 @@ import { z } from "zod";
 import { contract } from "../contract";
 import { useInferable } from "./useInferable";
 
-export type RunTimelineMessages = ClientInferResponseBody<(typeof contract)["listMessages"], 200>;
-type RunTimelineRun = ClientInferResponseBody<(typeof contract)["getRunTimeline"], 200>["run"];
-type RunTimelineJobs = ClientInferResponseBody<(typeof contract)["getRunTimeline"], 200>["jobs"];
-type RunTimelineBlobs = ClientInferResponseBody<(typeof contract)["getRunTimeline"], 200>["blobs"];
+export type RunTimelineMessages = ClientInferResponseBody<
+  (typeof contract)["listMessages"],
+  200
+>;
+type RunTimelineRun = ClientInferResponseBody<
+  (typeof contract)["getRunTimeline"],
+  200
+>["run"];
+type RunTimelineJobs = ClientInferResponseBody<
+  (typeof contract)["getRunTimeline"],
+  200
+>["jobs"];
+type RunTimelineBlobs = ClientInferResponseBody<
+  (typeof contract)["getRunTimeline"],
+  200
+>["blobs"];
 
 /**
  * Return type for the useRun hook containing all the necessary methods and data for managing a run session
@@ -109,7 +121,7 @@ const STORAGE_KEY = "inferable_current_run_id";
  */
 export function useRun<T extends z.ZodObject<any>>(
   inferable: ReturnType<typeof useInferable>,
-  options: UseRunOptions = {}
+  options: UseRunOptions = {},
 ): UseRunReturn<T> {
   const { persist = true } = options;
   const [messages, setMessages] = useState<RunTimelineMessages>([]);
@@ -135,7 +147,7 @@ export function useRun<T extends z.ZodObject<any>>(
       setJobs([]);
       lastMessageId.current = null;
     },
-    [persist]
+    [persist],
   );
 
   const lastMessageId = useRef<string | null>(null);
@@ -161,45 +173,52 @@ export function useRun<T extends z.ZodObject<any>>(
         if (!isMounted) return;
 
         if (timelineResponse.status === 200) {
-          const runHasChanged = JSON.stringify(timelineResponse.body.run) !== JSON.stringify(run);
+          const runHasChanged =
+            JSON.stringify(timelineResponse.body.run) !== JSON.stringify(run);
 
           if (runHasChanged) {
             setRun(timelineResponse.body.run);
           }
 
-          const jobsHaveChanged = JSON.stringify(timelineResponse.body.jobs) !== JSON.stringify(jobs);
+          const jobsHaveChanged =
+            JSON.stringify(timelineResponse.body.jobs) !== JSON.stringify(jobs);
           if (jobsHaveChanged) {
             setJobs(timelineResponse.body.jobs);
           }
 
-          const blobsHaveChanged = JSON.stringify(timelineResponse.body.blobs) !== JSON.stringify(blobs);
+          const blobsHaveChanged =
+            JSON.stringify(timelineResponse.body.blobs) !==
+            JSON.stringify(blobs);
           if (blobsHaveChanged) {
             setBlobs(timelineResponse.body.blobs);
           }
 
           lastMessageId.current =
-            timelineResponse.body.messages.sort((a, b) => b.id.localeCompare(a.id))[0]?.id ??
-            lastMessageId.current;
+            timelineResponse.body.messages.sort((a, b) =>
+              b.id.localeCompare(a.id),
+            )[0]?.id ?? lastMessageId.current;
 
-          const messagesHaveChanged = JSON.stringify(timelineResponse.body.messages) !== JSON.stringify(messages);
+          const messagesHaveChanged =
+            JSON.stringify(timelineResponse.body.messages) !==
+            JSON.stringify(messages);
 
           if (messagesHaveChanged) {
-            setMessages(existing =>
+            setMessages((existing) =>
               existing.concat(
                 timelineResponse.body.messages.filter(
-                  message =>
+                  (message) =>
                     message.type === "agent" ||
-                      message.type === "human" ||
-                      message.type === "invocation-result"
-                )
-              )
+                    message.type === "human" ||
+                    message.type === "invocation-result",
+                ),
+              ),
             );
           }
         } else {
           setError(
             new Error(
-              `Could not list messages. Status: ${timelineResponse.status} Body: ${JSON.stringify(timelineResponse.body)}`
-            )
+              `Could not list messages. Status: ${timelineResponse.status} Body: ${JSON.stringify(timelineResponse.body)}`,
+            ),
           );
         }
 
@@ -237,12 +256,12 @@ export function useRun<T extends z.ZodObject<any>>(
       if (response.status !== 201) {
         setError(
           new Error(
-            `Could not create message. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
-          )
+            `Could not create message. Status: ${response.status} Body: ${JSON.stringify(response.body)}`,
+          ),
         );
       }
     },
-    [inferable.client, runId]
+    [inferable.client, runId],
   );
 
   const submitApproval = useMemo(
@@ -255,12 +274,12 @@ export function useRun<T extends z.ZodObject<any>>(
       if (response.status !== 204) {
         setError(
           new Error(
-            `Could not submit approval. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
-          )
+            `Could not submit approval. Status: ${response.status} Body: ${JSON.stringify(response.body)}`,
+          ),
         );
       }
     },
-    [inferable.client]
+    [inferable.client],
   );
 
   const getBlobData = useMemo(
@@ -274,12 +293,12 @@ export function useRun<T extends z.ZodObject<any>>(
       } else {
         setError(
           new Error(
-            `Could not get blob data. Status: ${response.status} Body: ${JSON.stringify(response.body)}`
-          )
+            `Could not get blob data. Status: ${response.status} Body: ${JSON.stringify(response.body)}`,
+          ),
         );
       }
     },
-    [inferable.client]
+    [inferable.client],
   );
 
   return {

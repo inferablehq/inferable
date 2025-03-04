@@ -8,7 +8,8 @@
 [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-This package provides a PostgreSQL adapter for Inferable allowing you to chat with your PostgreSQL database in natural language.
+This package provides a PostgreSQL adapter for Inferable allowing you to chat
+with your PostgreSQL database in natural language.
 
 ## Quickstart
 
@@ -19,7 +20,8 @@ npx @inferable/pgsql-adapter postgresql://user:pass@localhost:5432/postgres --se
 
 ## Usage
 
-The package can be used either as a library in your Node.js application or as a standalone CLI tool.
+The package can be used either as a library in your Node.js application or as a
+standalone CLI tool.
 
 ### CLI Usage
 
@@ -86,7 +88,9 @@ docker run -e CONNECTION_STRING=postgresql://user:pass@localhost:5432/postgres \
 
 #### Health Checks
 
-For container orchestration platforms like ECS, Kubernetes, or Docker Swarm, the adapter provides a built-in health-check command which will validate the database connection healthjk:
+For container orchestration platforms like ECS, Kubernetes, or Docker Swarm, the
+adapter provides a built-in health-check command which will validate the
+database connection healthjk:
 
 ```bash
 # Example ECS task definition health check
@@ -102,31 +106,31 @@ For container orchestration platforms like ECS, Kubernetes, or Docker Swarm, the
 
 You can configure the adapter using the following environment variables:
 
-| Environment Variable | Description | Default | Required |
-|---------------------|-------------|---------|----------|
-| `CONNECTION_STRING` | PostgreSQL connection string | None | Yes |
-| `SECRET` | Inferable API cluster secret | None | Yes |
-| `APPROVAL_MODE` | Query approval mode: "always", "mutate", or "off" | "always" | No |
-| `PRIVACY_MODE` | Enable privacy mode (true/false) | "false" | No |
-| `SCHEMA` | Database schema to use | "public" | No |
-| `ENDPOINT` | Optional custom Inferable API endpoint | None | No |
+| Environment Variable | Description                                       | Default  | Required |
+| -------------------- | ------------------------------------------------- | -------- | -------- |
+| `CONNECTION_STRING`  | PostgreSQL connection string                      | None     | Yes      |
+| `SECRET`             | Inferable API cluster secret                      | None     | Yes      |
+| `APPROVAL_MODE`      | Query approval mode: "always", "mutate", or "off" | "always" | No       |
+| `PRIVACY_MODE`       | Enable privacy mode (true/false)                  | "false"  | No       |
+| `SCHEMA`             | Database schema to use                            | "public" | No       |
+| `ENDPOINT`           | Optional custom Inferable API endpoint            | None     | No       |
 
 ### Library Usage
 
 ```typescript
-import { InferablePGSQLAdapter } from '@inferable/pgsql-adapter';
-import { Inferable } from 'inferable';
+import { InferablePGSQLAdapter } from "@inferable/pgsql-adapter";
+import { Inferable } from "inferable";
 
 const client = new Inferable({
-  apiSecret: 'your-api-secret',
-  endpoint: 'optional-custom-endpoint'
+  apiSecret: "your-api-secret",
+  endpoint: "optional-custom-endpoint",
 });
 
 const adapter = new InferablePGSQLAdapter({
-  connectionString: 'postgresql://user:pass@localhost:5432/db',
-  schema: 'public',
-  approvalMode: 'always',
-  privacyMode: false
+  connectionString: "postgresql://user:pass@localhost:5432/db",
+  schema: "public",
+  approvalMode: "always",
+  privacyMode: false,
 });
 
 await adapter.initialize();
@@ -135,7 +139,7 @@ adapter.register(client);
 await client.tools.listen();
 
 // Handle cleanup
-process.on('SIGTERM', async () => {
+process.on("SIGTERM", async () => {
   await client.tools.unlisten();
 });
 ```
@@ -147,23 +151,29 @@ process.on('SIGTERM', async () => {
 - `privacyMode`: Don't send query results through the LLM (default: false)
 - `approvalMode`: Control when query approval is required:
   - `always`: Require approval for all queries (default)
-  - `mutate`: Only require approval for data-modifying queries (INSERT, UPDATE, DELETE, etc.)
+  - `mutate`: Only require approval for data-modifying queries (INSERT, UPDATE,
+    DELETE, etc.)
   - `off`: No approval required
 
-> Please note, approvalMode = mutate performs a **best effort** check to determine if the query is data-modifying based on the query and the pgsql EXPLAIN output.
-> If the risk of data mutation is too high, please consider using `always` and optionally using a read-only connection string.
+> Please note, approvalMode = mutate performs a **best effort** check to
+> determine if the query is data-modifying based on the query and the pgsql
+> EXPLAIN output. If the risk of data mutation is too high, please consider
+> using `always` and optionally using a read-only connection string.
 
 ## Documentation
 
-[Inferable documentation](https://docs.inferable.ai) contains all the information you need to get started with Inferable.
+[Inferable documentation](https://docs.inferable.ai) contains all the
+information you need to get started with Inferable.
 
 ## Support
 
-For support or questions, please [create an issue in the repository](https://github.com/inferablehq/inferable/issues).
+For support or questions, please
+[create an issue in the repository](https://github.com/inferablehq/inferable/issues).
 
 ## Contributing
 
-Contributions to the Inferable PostgreSQL Adapter are welcome. Please ensure that your code adheres to the existing style and includes appropriate tests.
+Contributions to the Inferable PostgreSQL Adapter are welcome. Please ensure
+that your code adheres to the existing style and includes appropriate tests.
 
 ## License
 

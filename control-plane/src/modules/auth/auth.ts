@@ -84,7 +84,7 @@ export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {
   });
 
   // Pre-handler hook to extract the auth state from the request and add it to the "auth" decorator property
-  fastify.addHook("preHandler", async request => {
+  fastify.addHook("preHandler", async (request) => {
     const authorization = request.headers.authorization;
 
     const substrings = authorization?.split(" ");
@@ -103,7 +103,7 @@ export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {
 
       if (!clusterId) {
         throw new AuthenticationError(
-          `Custom auth can only be used with /clusters/:clusterId paths. Request URL: ${request.url}.`
+          `Custom auth can only be used with /clusters/:clusterId paths. Request URL: ${request.url}.`,
         );
       }
 
@@ -115,7 +115,9 @@ export const plugin = fastifyPlugin(async (fastify: FastifyInstance) => {
   });
 });
 
-export const extractAuthState = async (token: string): Promise<Auth | undefined> => {
+export const extractAuthState = async (
+  token: string,
+): Promise<Auth | undefined> => {
   // Management Secret support (Hobby deployments only)
   if (token && token === env.MANAGEMENT_API_SECRET) {
     // This is also validated on startup
@@ -137,13 +139,19 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
         return this;
       },
       isMachine: function () {
-        throw new AuthenticationError("Management API secret auth is not machine");
+        throw new AuthenticationError(
+          "Management API secret auth is not machine",
+        );
       },
       isClerk: function () {
-        throw new AuthenticationError("Management API secret auth is not clerk");
+        throw new AuthenticationError(
+          "Management API secret auth is not clerk",
+        );
       },
       isCustomAuth: function () {
-        throw new AuthenticationError("Management API secret auth is not custom auth");
+        throw new AuthenticationError(
+          "Management API secret auth is not custom auth",
+        );
       },
       isAdmin: function () {
         return this;
@@ -168,13 +176,17 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
 
           if (opts.job) {
             if (opts.job.clusterId !== clusterAuthDetails.clusterId) {
-              throw new AuthenticationError("API Key does not have access to this cluster");
+              throw new AuthenticationError(
+                "API Key does not have access to this cluster",
+              );
             }
           }
 
           if (opts.cluster) {
             if (opts.cluster.clusterId !== this.clusterId) {
-              throw new AuthenticationError("API Key does not have access to this cluster");
+              throw new AuthenticationError(
+                "API Key does not have access to this cluster",
+              );
             }
           }
 
@@ -192,13 +204,16 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
           }
 
           if (opts.cluster) {
-            throw new AuthenticationError("API key can not manage this cluster");
+            throw new AuthenticationError(
+              "API key can not manage this cluster",
+            );
           }
-
 
           if (opts.job) {
             if (opts.job.clusterId !== clusterAuthDetails.clusterId) {
-              throw new AuthenticationError("API Key does not have access to this cluster");
+              throw new AuthenticationError(
+                "API Key does not have access to this cluster",
+              );
             }
           }
 
@@ -241,7 +256,9 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
   }
 
   // Check if the token is a Clerk-provided JWT token and validate it.
-  const clerkAuthDetails = env.JWKS_URL ? await clerkAuth.verify(token) : undefined;
+  const clerkAuthDetails = env.JWKS_URL
+    ? await clerkAuth.verify(token)
+    : undefined;
 
   if (clerkAuthDetails) {
     return {
@@ -254,7 +271,10 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
           throw new AuthenticationError("Invalid assertion");
         }
 
-        const clusterId = opts.cluster?.clusterId ?? (opts.run?.clusterId as string) ?? (opts.job?.clusterId as string);
+        const clusterId =
+          opts.cluster?.clusterId ??
+          (opts.run?.clusterId as string) ??
+          (opts.job?.clusterId as string);
 
         // First check the cluster
         if (
@@ -263,7 +283,9 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
             clusterId,
           }))
         ) {
-          throw new AuthenticationError("User does not have access to the cluster");
+          throw new AuthenticationError(
+            "User does not have access to the cluster",
+          );
         }
 
         // If the User has access to the cluster, they also have access to the run
@@ -321,7 +343,9 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
       },
       isAdmin: function () {
         if (this.organizationRole !== CLERK_ADMIN_ROLE) {
-          throw new AuthenticationError("User is not an admin of the organization");
+          throw new AuthenticationError(
+            "User is not an admin of the organization",
+          );
         }
         return this;
       },
@@ -340,7 +364,7 @@ export const extractAuthState = async (token: string): Promise<Auth | undefined>
 
 export const extractCustomAuthState = async (
   token: string,
-  clusterId: string
+  clusterId: string,
 ): Promise<CustomAuth | undefined> => {
   const cluster = await getClusterDetails(clusterId);
 
@@ -358,7 +382,7 @@ export const extractCustomAuthState = async (
   if (!cluster.enable_custom_auth) {
     throw new AuthenticationError(
       "Custom auth is not enabled for this cluster",
-      "https://docs.inferable.ai/pages/custom-auth"
+      "https://docs.inferable.ai/pages/custom-auth",
     );
   }
 
@@ -380,16 +404,21 @@ export const extractCustomAuthState = async (
       }
 
       if (opts.cluster && opts.cluster.clusterId !== clusterId) {
-        throw new AuthenticationError("Custom auth does not have access to this cluster");
+        throw new AuthenticationError(
+          "Custom auth does not have access to this cluster",
+        );
       }
 
       if (opts.run && opts.run.clusterId !== clusterId) {
-        throw new AuthenticationError("Custom auth does not have access to this run");
+        throw new AuthenticationError(
+          "Custom auth does not have access to this run",
+        );
       }
 
-
       if (opts.job && opts.job.clusterId !== clusterId) {
-        throw new AuthenticationError("Custom auth does not have access to this job");
+        throw new AuthenticationError(
+          "Custom auth does not have access to this job",
+        );
       }
 
       if (opts.run) {
@@ -399,22 +428,28 @@ export const extractCustomAuthState = async (
         });
 
         if (!existingRun) {
-          throw new AuthenticationError("Custom auth does not have access to this run");
+          throw new AuthenticationError(
+            "Custom auth does not have access to this run",
+          );
         }
 
         if (existingRun.userId !== this.entityId) {
-          throw new AuthenticationError("Custom auth does not have access to this run");
+          throw new AuthenticationError(
+            "Custom auth does not have access to this run",
+          );
         }
       }
 
       if (opts.job) {
         const job = await getJob({
           clusterId: opts.job.clusterId,
-          jobId: opts.job.jobId
-        })
+          jobId: opts.job.jobId,
+        });
 
         if (!job || !job.runId) {
-          throw new AuthenticationError("Custom auth does not have access to this job");
+          throw new AuthenticationError(
+            "Custom auth does not have access to this job",
+          );
         }
 
         const existingRun = await getRun({
@@ -423,11 +458,15 @@ export const extractCustomAuthState = async (
         });
 
         if (!existingRun) {
-          throw new AuthenticationError("Custom auth does not have access to this job");
+          throw new AuthenticationError(
+            "Custom auth does not have access to this job",
+          );
         }
 
         if (existingRun.userId !== this.entityId) {
-          throw new AuthenticationError("Custom auth does not have access to this job");
+          throw new AuthenticationError(
+            "Custom auth does not have access to this job",
+          );
         }
       }
 
@@ -443,11 +482,15 @@ export const extractCustomAuthState = async (
       }
 
       if (opts.run && opts.run.clusterId !== clusterId) {
-        throw new AuthenticationError("Custom auth does not have access to this run");
+        throw new AuthenticationError(
+          "Custom auth does not have access to this run",
+        );
       }
 
       if (!opts.run && !opts.job) {
-        throw new AuthenticationError("Custom auth can only manage runs and jobs");
+        throw new AuthenticationError(
+          "Custom auth can only manage runs and jobs",
+        );
       }
 
       if (opts.run) {
@@ -456,16 +499,16 @@ export const extractCustomAuthState = async (
             clusterId: opts.run.clusterId,
             runId: opts.run.runId,
           },
-        })
+        });
       }
 
       if (opts.job) {
         await this.canAccess({
           job: {
             clusterId: opts.job.clusterId,
-            jobId: opts.job.jobId
-          }
-        })
+            jobId: opts.job.jobId,
+          },
+        });
       }
 
       return this;
@@ -502,10 +545,9 @@ export const extractCustomAuthState = async (
 };
 
 export const unqualifiedEntityId = (id: string) => {
-  const parts = id.split(":")
+  const parts = id.split(":");
   if (parts.length > 1) {
     return parts[1];
   }
   return id;
-}
-
+};

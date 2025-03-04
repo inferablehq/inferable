@@ -82,10 +82,7 @@ export default async function UsagePage({
   );
 
   // Calculate totals for agent runs
-  const predictionsTotal = runs.reduce(
-    (acc, curr) => acc + curr.totalRuns,
-    0,
-  );
+  const predictionsTotal = runs.reduce((acc, curr) => acc + curr.totalRuns, 0);
 
   // Calculate current billing cycle dates
   const today = new Date();

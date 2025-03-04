@@ -58,7 +58,9 @@ export async function searchTavily({
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: response.statusText }));
     throw new Error(errorData.message || "Failed to perform search");
   }
 
@@ -80,7 +82,8 @@ const definition = {
           searchDepth: {
             type: "string",
             enum: ["basic", "advanced"],
-            description: "The depth of the search. 'basic' is faster, 'advanced' is more thorough",
+            description:
+              "The depth of the search. 'basic' is faster, 'advanced' is more thorough",
           },
           topic: {
             type: "string",
@@ -110,7 +113,13 @@ const definition = {
   ],
 };
 
-const syncTavilyService = async ({ clusterId, apiKey }: { clusterId: string; apiKey?: string }) => {
+const syncTavilyService = async ({
+  clusterId,
+  apiKey,
+}: {
+  clusterId: string;
+  apiKey?: string;
+}) => {
   logger.info("Syncing Tavily", { clusterId });
 
   if (!apiKey) {
@@ -118,13 +127,13 @@ const syncTavilyService = async ({ clusterId, apiKey }: { clusterId: string; api
     return;
   }
 
-  definition.functions.forEach(async fn => {
+  definition.functions.forEach(async (fn) => {
     await upsertToolDefinition({
       name: `tavily_${fn.name}`,
       clusterId,
       description: fn.description,
       schema: fn.schema,
-    })
+    });
   });
 };
 
@@ -137,7 +146,7 @@ const unsyncTavilyService = async ({ clusterId }: { clusterId: string }) => {
 
 const handleCall = async (
   call: NonNullable<Awaited<ReturnType<typeof getJob>>>,
-  integrations: z.infer<typeof integrationSchema>
+  integrations: z.infer<typeof integrationSchema>,
 ) => {
   await acknowledgeJob({
     jobId: call.id,
@@ -179,7 +188,10 @@ const handleCall = async (
 
 export const tavily: InstallableIntegration = {
   name: "Tavily",
-  onActivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {
+  onActivate: async (
+    clusterId: string,
+    integrations: z.infer<typeof integrationSchema>,
+  ) => {
     await syncTavilyService({
       clusterId,
       apiKey: integrations.tavily?.apiKey,

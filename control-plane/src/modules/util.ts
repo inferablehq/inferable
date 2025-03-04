@@ -10,7 +10,11 @@ export const extractWithJsonPath = (path: string, args: unknown) => {
   return result;
 };
 
-export const withThrottle = async <T>(key: string, expiry: number, fn: () => Promise<T>) => {
+export const withThrottle = async <T>(
+  key: string,
+  expiry: number,
+  fn: () => Promise<T>,
+) => {
   if (await redisClient?.get(key)) {
     return;
   }

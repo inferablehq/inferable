@@ -1,6 +1,12 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -45,9 +51,12 @@ type IntegrationConfig = {
 };
 
 const descriptionsForCategory = {
-  ["Observability"]: "These integrations allow you to monitor your Inferable Runs",
-  ["Triggers"]: "These integrations allow you to trigger Inferable Runs via external events",
-  ["Tools"]: "These integrations allow you to build tools that can be used in your Inferable Runs",
+  ["Observability"]:
+    "These integrations allow you to monitor your Inferable Runs",
+  ["Triggers"]:
+    "These integrations allow you to trigger Inferable Runs via external events",
+  ["Tools"]:
+    "These integrations allow you to build tools that can be used in your Inferable Runs",
 };
 
 const config: IntegrationConfig = {
@@ -62,7 +71,8 @@ const config: IntegrationConfig = {
   },
   slack: {
     name: "Slack",
-    description: "Receive notifications and converse with your Agents via Slack.",
+    description:
+      "Receive notifications and converse with your Agents via Slack.",
     icon: Slack,
     stage: "stable",
     category: "Triggers",
@@ -95,7 +105,9 @@ export default function IntegrationsPage({
 }) {
   const { getToken } = useAuth();
   const router = useRouter();
-  const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(null);
+  const [integrationToDelete, setIntegrationToDelete] = useState<string | null>(
+    null,
+  );
   const [integrations, setIntegrations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
@@ -148,7 +160,7 @@ export default function IntegrationsPage({
         toast.error(`Failed to uninstall ${name} integration`);
       }
     },
-    [clusterId, getToken, router, fetchIntegrations]
+    [clusterId, getToken, router, fetchIntegrations],
   );
 
   useEffect(() => {
@@ -166,13 +178,17 @@ export default function IntegrationsPage({
   return (
     <div className="p-6">
       <h1 className="text-2xl mb-2">Integrations</h1>
-      <p className="text-gray-500 mb-6">Connect your Inferable cluster with other tools</p>
+      <p className="text-gray-500 mb-6">
+        Connect your Inferable cluster with other tools
+      </p>
 
-      {["Triggers", "Observability"].map(category => (
+      {["Triggers", "Observability"].map((category) => (
         <div key={category}>
           <h2 className="text-xl font-semibold mt-6">{category}</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            {descriptionsForCategory[category as keyof typeof descriptionsForCategory] ?? ""}
+            {descriptionsForCategory[
+              category as keyof typeof descriptionsForCategory
+            ] ?? ""}
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Object.entries(integrations)
@@ -221,7 +237,11 @@ export default function IntegrationsPage({
                             <ArrowRight className="w-4 h-4 ml-2" />
                           </Button>
                         </Link>
-                        <Link href={c.docs} target="_blank" rel="noopener noreferrer">
+                        <Link
+                          href={c.docs}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           <Button variant="outline" title="View documentation">
                             Docs
                           </Button>
@@ -229,7 +249,9 @@ export default function IntegrationsPage({
                         {integration !== null && (
                           <AlertDialog
                             open={integrationToDelete === key}
-                            onOpenChange={open => !open && setIntegrationToDelete(null)}
+                            onOpenChange={(open) =>
+                              !open && setIntegrationToDelete(null)
+                            }
                           >
                             <Button
                               variant="destructive"
@@ -241,12 +263,18 @@ export default function IntegrationsPage({
                             </Button>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Remove {c.name} Integration</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Remove {c.name} Integration
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to remove the {c.name} integration?
+                                  Are you sure you want to remove the {c.name}{" "}
+                                  integration?
                                   <br />
                                   <br />
-                                  <b>This will remove all associated configuration.</b>
+                                  <b>
+                                    This will remove all associated
+                                    configuration.
+                                  </b>
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

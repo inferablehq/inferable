@@ -113,7 +113,7 @@ export function Blob({
               json={JSON.stringify(
                 JSON.parse(Buffer.from(data, "base64").toString()),
                 null,
-                2
+                2,
               )}
             />
           </div>

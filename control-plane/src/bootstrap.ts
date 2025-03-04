@@ -27,7 +27,7 @@ let totalRequestRewrites = 0;
 
 const app = fastify({
   logger: env.ENABLE_FASTIFY_LOGGER,
-  rewriteUrl: req => {
+  rewriteUrl: (req) => {
     if (!req.url) {
       throw new Error("No URL available in rewriteUrl");
     }
@@ -51,7 +51,7 @@ const app = fastify({
 
 app.register(auth.plugin);
 
-app.register(initServer().plugin(router.router), parent => {
+app.register(initServer().plugin(router.router), (parent) => {
   return parent;
 });
 
@@ -133,7 +133,7 @@ app.addHook("onRequest", (request, _reply, done) => {
         method: request.method,
       },
     },
-    done
+    done,
   );
 });
 
@@ -181,7 +181,7 @@ const startTime = Date.now();
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });
     })
-    .catch(err => {
+    .catch((err) => {
       logger.error("Failed to start dependencies", { error: err });
       process.exit(1);
     });
@@ -198,7 +198,7 @@ const startTime = Date.now();
     port: 4000,
     latency: Date.now() - startTime,
   });
-})().catch(err => {
+})().catch((err) => {
   logger.error("Failed to start server", { error: err });
   process.exit(1);
 });

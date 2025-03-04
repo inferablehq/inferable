@@ -6,7 +6,6 @@ import { Inferable } from "../Inferable";
 import { createServices } from "./workflow-test-services";
 import { getEphemeralSetup } from "./workflow-test-utils";
 import { helpers } from "./workflow";
-
 (async function demo() {
   const ephemeralSetup = process.env.INFERABLE_TEST_CLUSTER_ID
     ? {
@@ -125,9 +124,7 @@ import { helpers } from "./workflow";
           systemPrompt: helpers.structuredPrompt({
             facts: [
               "You are a loan risk analyst",
-              `Here are the asset classes for the loan: ${JSON.stringify(
-                record.assetClassIds,
-              )}`,
+              `Here are the asset classes for the loan: ${JSON.stringify(record.assetClassIds)}`,
             ],
             goals: [
               "Analyze the loan's asset classes",

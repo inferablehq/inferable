@@ -18,7 +18,8 @@ export const baseMessageSchema = z
 export type BaseMessage = z.infer<typeof baseMessageSchema>;
 
 export const withObservability =
-  <T>(queueName: string, fn: (message: T) => Promise<void>): Processor<T> => async (job: Job<T>) => {
+  <T>(queueName: string, fn: (message: T) => Promise<void>): Processor<T> =>
+  async (job: Job<T>) => {
     const zodResult = baseMessageSchema.safeParse(job.data);
 
     if (!zodResult.success) {
@@ -37,7 +38,7 @@ export const withObservability =
       "run.id": parsed.runId,
       "queue.name": queueName,
       "queue.job.id": job.id,
-      "queue.job.attemptsMade": job.attemptsMade
+      "queue.job.attemptsMade": job.attemptsMade,
     };
 
     // Existing trace context propogated via the job data
@@ -53,7 +54,7 @@ export const withObservability =
         {
           attributes,
         },
-        existingTraceContext
+        existingTraceContext,
       );
     } catch (e) {
       if (isRetryableError(e)) {

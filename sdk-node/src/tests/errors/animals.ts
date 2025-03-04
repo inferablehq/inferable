@@ -18,9 +18,9 @@ export const getCustomAnimal = async () => {
 
 export const animalService = () => {
   const prefix = `animal${Math.random().toString(36).substring(2, 5)}`;
-  const client = inferableInstance()
+  const client = inferableInstance();
 
-  client.tools.register ({
+  client.tools.register({
     name: `${prefix}_getNormalAnimal`,
     func: getNormalAnimal,
     schema: {
@@ -38,6 +38,6 @@ export const animalService = () => {
 
   return {
     client,
-    prefix
-  }
-}
+    prefix,
+  };
+};

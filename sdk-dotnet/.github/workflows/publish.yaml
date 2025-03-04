@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      INFERABLE_API_ENDPOINT: 'https://api.inferable.ai'
+      INFERABLE_API_ENDPOINT: "https://api.inferable.ai"
       INFERABLE_CLUSTER_ID: ${{ vars.INFERABLE_CLUSTER_ID }}
       INFERABLE_MACHINE_SECRET: ${{ secrets.INFERABLE_MACHINE_SECRET }}
       INFERABLE_CONSUME_SECRET: ${{ secrets.INFERABLE_CONSUME_SECRET }}
@@ -19,57 +19,57 @@ jobs:
       contents: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: '8.0'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: "8.0"
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
 
-    - name: Test
-      run: dotnet test --no-restore
+      - name: Test
+        run: dotnet test --no-restore
 
-    - name: Pack
-      run: dotnet pack --configuration Release --no-restore --output ./output
+      - name: Pack
+        run: dotnet pack --configuration Release --no-restore --output ./output
 
-    - name: Setup NuGet
-      uses: nuget/setup-nuget@v1
-      with:
-        nuget-api-key: ${{ secrets.NUGET_API_KEY }}
-        nuget-version: latest
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v1
+        with:
+          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
+          nuget-version: latest
 
-    - name: Publish
-      if: github.ref == 'refs/heads/main'
-      run: |
-        dotnet nuget push output\*.nupkg -s https://api.nuget.org/v3/index.json
+      - name: Publish
+        if: github.ref == 'refs/heads/main'
+        run: |
+          dotnet nuget push output\*.nupkg -s https://api.nuget.org/v3/index.json
 
-    - name: Extract version from NuGet package
-      id: extract_version
-      shell: pwsh
-      run: |
-        # Get the first .nupkg file in the output directory
-        $nupkg = Get-ChildItem -Path ./output -Filter *.nupkg | Select-Object -First 1
+      - name: Extract version from NuGet package
+        id: extract_version
+        shell: pwsh
+        run: |
+          # Get the first .nupkg file in the output directory
+          $nupkg = Get-ChildItem -Path ./output -Filter *.nupkg | Select-Object -First 1
 
-        # Extract the version from the filename
-        if ($nupkg) {
-          $version = $nupkg.Name -replace '^[a-zA-Z0-9.-]+\.([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?)\.nupkg$', '$1'
-          Write-Host "Extracted version: $version"
-          echo "::set-output name=version::$version"
-        } else {
-          Write-Error "No .nupkg file found."
-        }
+          # Extract the version from the filename
+          if ($nupkg) {
+            $version = $nupkg.Name -replace '^[a-zA-Z0-9.-]+\.([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?)\.nupkg$', '$1'
+            Write-Host "Extracted version: $version"
+            echo "::set-output name=version::$version"
+          } else {
+            Write-Error "No .nupkg file found."
+          }
 
-    - name: Create release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.extract_version.outputs.version }}
-        release_name: ${{ steps.extract_version.outputs.version }}
+      - name: Create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.extract_version.outputs.version }}
+          release_name: ${{ steps.extract_version.outputs.version }}

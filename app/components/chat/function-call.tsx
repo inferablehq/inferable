@@ -7,7 +7,13 @@ import {
   SmallLiveAmberCircle,
   SmallLiveBlueCircle,
 } from "@/components/circles";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { RunJob } from "@/lib/types";
 import { unpack } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
@@ -19,7 +25,10 @@ import { Button } from "../ui/button";
 import ToolContextButton from "./tool-context-button";
 import { formatRelative } from "date-fns";
 
-const statusCircle = (status: RunJob["status"], resultType: RunJob["resultType"]) => {
+const statusCircle = (
+  status: RunJob["status"],
+  resultType: RunJob["resultType"],
+) => {
   if (status === "pending") return <SmallLiveAmberCircle />;
   if (status === "success") {
     if (resultType === "rejection") return <SmallDeadRedCircle />;
@@ -60,12 +69,13 @@ function FunctionCall({
 }) {
   const [isExpanded, setExpanded] = useState(isFocused);
   const [editing, setEditing] = useState(false);
-  const [job, setJob] = useState<Partial<ClientInferResponseBody<typeof contract.getJob>> | null>(
-    null
-  );
+  const [job, setJob] = useState<Partial<
+    ClientInferResponseBody<typeof contract.getJob>
+  > | null>(null);
   const { getToken } = useAuth();
 
-  const completedWithRejection = job?.resultType === "rejection" && job?.status === "success";
+  const completedWithRejection =
+    job?.resultType === "rejection" && job?.status === "success";
 
   useEffect(() => {
     onFocusChange(isExpanded);
@@ -139,10 +149,18 @@ function FunctionCall({
 
               {approvalRequested && approved === null && (
                 <div className="flex gap-2">
-                  <Button size="sm" variant="default" onClick={() => submitApproval(true)}>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => submitApproval(true)}
+                  >
                     Approve
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={() => submitApproval(false)}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => submitApproval(false)}
+                  >
                     Deny
                   </Button>
                 </div>
@@ -169,7 +187,9 @@ function FunctionCall({
               <div className="ml-8 space-y-2">
                 {showInlineInput && (
                   <div className="bg-muted rounded-md p-2">
-                    <div className="text-xs text-muted-foreground mb-1">Input</div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Input
+                    </div>
                     <JSONDisplay json={inputData} />
                   </div>
                 )}
@@ -185,7 +205,9 @@ function FunctionCall({
                 )}
                 {showInlineOutput && (
                   <div className="bg-muted rounded-md p-2">
-                    <div className="text-xs text-muted-foreground mb-1">Output</div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Output
+                    </div>
                     <JSONDisplay json={outputData} />
                   </div>
                 )}
@@ -253,8 +275,13 @@ function FunctionCall({
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="text-muted-foreground">Status</div>
                       <div className="font-medium flex items-center gap-2">
-                        <span className="font-mono">{job?.status || "Unknown"}</span>
-                        {statusCircle(job?.status as RunJob["status"], resultType)}
+                        <span className="font-mono">
+                          {job?.status || "Unknown"}
+                        </span>
+                        {statusCircle(
+                          job?.status as RunJob["status"],
+                          resultType,
+                        )}
                       </div>
 
                       <div className="text-muted-foreground">Machine ID</div>
@@ -281,7 +308,9 @@ function FunctionCall({
                     {inputData ? (
                       <JSONDisplay json={inputData} />
                     ) : (
-                      <p className="text-sm text-muted-foreground">No input data</p>
+                      <p className="text-sm text-muted-foreground">
+                        No input data
+                      </p>
                     )}
                   </div>
                 </div>
@@ -295,7 +324,9 @@ function FunctionCall({
                     {outputData ? (
                       <JSONDisplay json={outputData} />
                     ) : (
-                      <p className="text-sm text-muted-foreground">Waiting...</p>
+                      <p className="text-sm text-muted-foreground">
+                        Waiting...
+                      </p>
                     )}
                   </div>
                 </div>

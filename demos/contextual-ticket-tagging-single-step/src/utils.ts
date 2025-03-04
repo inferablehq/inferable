@@ -3,7 +3,10 @@ export async function fetchSOPContent(): Promise<string> {
   return response.text();
 }
 
-export async function addTagToTicket(input: { ticketId: string; tag: string }): Promise<void> {
+export async function addTagToTicket(input: {
+  ticketId: string;
+  tag: string;
+}): Promise<void> {
   await fetch(`${process.env.ZENDESK_API_URL}/tickets/${input.ticketId}/tags`, {
     method: "PUT",
     headers: {

@@ -17,7 +17,13 @@ workflow.version(1).define(async (ctx, input) => {
   console.log("Starting ticket tagging workflow", { ticketId: input.ticketId });
 
   const tagAnalysisSchema = z.object({
-    tag: z.enum(["general", "refund", "tech-support", "billing", "feature-request"]),
+    tag: z.enum([
+      "general",
+      "refund",
+      "tech-support",
+      "billing",
+      "feature-request",
+    ]),
   });
 
   const sopContent = await ctx.result("fetchSOPContent", async () => {

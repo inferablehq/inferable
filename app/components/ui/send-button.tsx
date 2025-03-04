@@ -6,7 +6,8 @@ import { Command } from "lucide-react";
 import { useState } from "react";
 import { useEffect } from "react";
 
-interface SendButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface SendButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   disabled?: boolean;
   children?: React.ReactNode;
   showShortcut?: boolean;
@@ -26,7 +27,12 @@ export function SendButton({
   }, []);
 
   return (
-    <Button size="sm" className={cn("gap-2", className)} disabled={disabled} {...props}>
+    <Button
+      size="sm"
+      className={cn("gap-2", className)}
+      disabled={disabled}
+      {...props}
+    >
       {children || "Send"}
       {showShortcut && (
         <span className="text-xs opacity-50 hidden sm:inline-flex items-center gap-1">

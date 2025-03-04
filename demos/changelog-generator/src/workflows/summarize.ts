@@ -19,7 +19,7 @@ export const workflow = inferable.workflows.create({
   }),
 });
 
-workflow.version(1).define(async ctx => {
+workflow.version(1).define(async (ctx) => {
   const commitHashes = await ctx.result("getCommits", async () => {
     const lastCommitHash = (
       await fs.readFile(path.join(__dirname, "last-commit-hash.txt"), "utf-8")
@@ -31,11 +31,11 @@ workflow.version(1).define(async ctx => {
       .toString()
       .split("\n")
       .slice(0, 10) // Limit to 10 commits maximum
-      .map(commit => commit.split(" ")[0]);
+      .map((commit) => commit.split(" ")[0]);
   });
 
   const commits = await Promise.all(
-    commitHashes.map(hash => {
+    commitHashes.map((hash) => {
       const agent = ctx.agent({
         name: "summarizeCommit",
         systemPrompt: helpers.structuredPrompt({
@@ -63,7 +63,7 @@ workflow.version(1).define(async ctx => {
           commitHash: hash,
         },
       });
-    })
+    }),
   );
 
   const summaryAgent = ctx.agent({
@@ -88,7 +88,7 @@ workflow.version(1).define(async ctx => {
           type: z.enum(["bugfix", "feature", "other", "sdk-release"]),
           description: z.string(),
           date: z.string().describe("The date of the commit in ISO format"),
-        })
+        }),
       ),
     }),
   });
@@ -107,7 +107,9 @@ workflow.version(1).define(async ctx => {
     const changelogPath = path.join(process.cwd(), "..", "..", "CHANGELOG.md");
 
     // Read existing content if file exists, otherwise use empty string
-    const existingContent = await fs.readFile(changelogPath, "utf-8").catch(() => "");
+    const existingContent = await fs
+      .readFile(changelogPath, "utf-8")
+      .catch(() => "");
 
     // Combine new content with existing content
     const fullContent = `${content}\n\n${existingContent}`.trim();
@@ -120,7 +122,7 @@ workflow.version(1).define(async ctx => {
     await fs.writeFile(
       path.join(__dirname, "last-commit-hash.txt"),
       lastCommitHash.trim(),
-      "utf-8"
+      "utf-8",
     );
 
     return content;
@@ -128,7 +130,7 @@ workflow.version(1).define(async ctx => {
 
   const zapierResponse = await ctx.result("sendToZapier", async () => {
     const latestDate = summaryResult.result.changes
-      .map(change => new Date(change.date))
+      .map((change) => new Date(change.date))
       .reduce((latest, current) => (current > latest ? current : latest))
       .toISOString()
       .split("T")[0];
@@ -140,7 +142,7 @@ workflow.version(1).define(async ctx => {
         summary: summaryResult.result.overallSummary,
         changes: summaryResult.result.changes
           .sort((a, b) => a.type.localeCompare(b.type))
-          .map(change => `- ${change.type}: ${change.description}`)
+          .map((change) => `- ${change.type}: ${change.description}`)
           .join("\n"),
         title: `Release ${latestDate}`,
       },

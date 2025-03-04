@@ -34,8 +34,8 @@ export async function acknowledgeJob({
       and(
         eq(data.jobs.id, jobId),
         eq(data.jobs.cluster_id, clusterId),
-        eq(data.jobs.status, "pending")
-      )
+        eq(data.jobs.status, "pending"),
+      ),
     )
     .returning({
       targetFn: data.jobs.target_fn,
@@ -64,19 +64,19 @@ export async function persistJobInterrupt({
   jobId,
   clusterId,
   machineId,
-  approvalRequested
+  approvalRequested,
 }: {
-    jobId: string;
-    clusterId: string,
-    machineId: string
-    approvalRequested?: boolean
-  }) {
-  const [updated] =  await data.db
+  jobId: string;
+  clusterId: string;
+  machineId: string;
+  approvalRequested?: boolean;
+}) {
+  const [updated] = await data.db
     .update(data.jobs)
     .set({
       status: "interrupted",
       approval_requested: approvalRequested,
-      updated_at: sql`now()`
+      updated_at: sql`now()`,
     })
     .where(
       and(
@@ -84,7 +84,8 @@ export async function persistJobInterrupt({
         eq(data.jobs.cluster_id, clusterId),
         eq(data.jobs.executing_machine_id, machineId),
         eq(data.jobs.status, "running"),
-      ))
+      ),
+    )
     .returning({
       jobId: data.jobs.id,
       clusterId: data.jobs.cluster_id,
@@ -100,7 +101,6 @@ export async function persistJobInterrupt({
 
   return updated;
 }
-
 
 export async function persistJobResult({
   result,
@@ -125,8 +125,8 @@ export async function persistJobResult({
         eq(data.jobs.cluster_id, owner.clusterId),
         eq(data.jobs.executing_machine_id, machineId),
         eq(data.jobs.status, "running"),
-        isNull(data.jobs.resulted_at)
-      )
+        isNull(data.jobs.resulted_at),
+      ),
     )
     .returning({
       targetFn: data.jobs.target_fn,

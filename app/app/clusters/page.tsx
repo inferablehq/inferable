@@ -17,7 +17,7 @@ async function App() {
         authorization: `Bearer ${await auth().getToken()}`,
       },
     })
-    .catch(e => {
+    .catch((e) => {
       console.error(e);
       error = e;
       return null;

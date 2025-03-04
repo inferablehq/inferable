@@ -172,11 +172,7 @@
       "compositePrimaryKeys": {
         "jobs_owner_hash_target_fn_idempotency_key": {
           "name": "jobs_owner_hash_target_fn_idempotency_key",
-          "columns": [
-            "owner_hash",
-            "target_fn",
-            "idempotency_key"
-          ]
+          "columns": ["owner_hash", "target_fn", "idempotency_key"]
         }
       },
       "uniqueConstraints": {}

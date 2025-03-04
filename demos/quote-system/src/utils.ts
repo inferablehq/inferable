@@ -1,7 +1,7 @@
 export async function sendBackOfficeEmail(
   recipientEmail: string,
   customerEmail: string,
-  quotes: unknown[]
+  quotes: unknown[],
 ): Promise<void> {
   // In reality, this would use your email service
   // This is a placeholder implementation

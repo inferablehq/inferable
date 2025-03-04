@@ -1,13 +1,13 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  root: './demo',
+  root: "./demo",
   resolve: {
     preserveSymlinks: true,
   },
   server: {
-    port: 3000
-  }
+    port: 3000,
+  },
 });

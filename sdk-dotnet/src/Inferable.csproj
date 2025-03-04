@@ -16,4 +16,4 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
     <PackageReference Include="NJsonSchema" Version="11.1.0" />
   </ItemGroup>
-</Project>
+</Project>;

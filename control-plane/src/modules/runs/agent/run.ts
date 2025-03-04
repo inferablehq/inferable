@@ -40,7 +40,7 @@ export const processAgentRun = async (
     context: unknown | null;
   },
   tags?: Record<string, string>,
-  mockModelResponses?: string[]
+  mockModelResponses?: string[],
   // Deprecated, to be removed once all SDKs are updated
 ) => {
   logger.info("Processing Run", {
@@ -56,7 +56,10 @@ export const processAgentRun = async (
   ] = await Promise.all([
     buildAdditionalContext(run),
     availableTools({ clusterId: run.clusterId }),
-    db.update(runs).set({ status: "running", failure_reason: "" }).where(eq(runs.id, run.id)),
+    db
+      .update(runs)
+      .set({ status: "running", failure_reason: "" })
+      .where(eq(runs.id, run.id)),
   ]);
 
   const allAvailableTools: string[] = [];
@@ -66,7 +69,10 @@ export const processAgentRun = async (
 
   allAvailableTools.push(...toolNames);
 
-  if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
+  if (
+    !!env.LOAD_TEST_CLUSTER_ID &&
+    run.clusterId === env.LOAD_TEST_CLUSTER_ID
+  ) {
     //https://github.com/inferablehq/inferable/blob/main/load-tests/script.js
     mockModelResponses = [
       JSON.stringify({
@@ -96,7 +102,7 @@ export const processAgentRun = async (
     mockModelResponses,
     allAvailableTools,
     additionalContext,
-    getTool: async toolCall => {
+    getTool: async (toolCall) => {
       if (!toolCall.id) {
         throw new Error("Can not return tool without call ID");
       }
@@ -107,7 +113,9 @@ export const processAgentRun = async (
       });
 
       if (!tool) {
-        throw new AgentError(`Definition for tool not found: ${toolCall.toolName}`);
+        throw new AgentError(
+          `Definition for tool not found: ${toolCall.toolName}`,
+        );
       }
 
       return buildTool({
@@ -118,8 +126,8 @@ export const processAgentRun = async (
         description: tool.description ?? undefined,
       });
     },
-    findRelevantTools: state => findRelevantTools(state),
-    postStepSave: async state => {
+    findRelevantTools: (state) => findRelevantTools(state),
+    postStepSave: async (state) => {
       logger.debug("Saving run state", {
         runId: run.id,
         clusterId: run.clusterId,
@@ -128,12 +136,17 @@ export const processAgentRun = async (
       if (attachedFunctions.length == 0) {
         // optimistically embed the next search query
         // this is not critical to the Run, so we can do it in the background
-        embedSearchQuery(state.messages.map(m => JSON.stringify(m.data)).join(" "));
+        embedSearchQuery(
+          state.messages.map((m) => JSON.stringify(m.data)).join(" "),
+        );
       }
 
       // Insert messages in a loop to ensure they are created with differing timestamps
-      for (const message of state.messages.filter(m => !m.persisted)) {
-        await Promise.allSettled([insertRunMessage(message), notifyNewRunMessage({ message, tags })]);
+      for (const message of state.messages.filter((m) => !m.persisted)) {
+        await Promise.allSettled([
+          insertRunMessage(message),
+          notifyNewRunMessage({ message, tags }),
+        ]);
         message.persisted = true;
       }
     },
@@ -153,7 +166,7 @@ export const processAgentRun = async (
   try {
     const output = await app.invoke(
       {
-        messages: messages.map(m => ({
+        messages: messages.map((m) => ({
           ...m,
           persisted: true,
         })),
@@ -162,7 +175,7 @@ export const processAgentRun = async (
       },
       {
         recursionLimit: 100,
-      }
+      },
     );
 
     const parsedOutput = z
@@ -262,14 +275,14 @@ const safeParse = (value: string | null) => {
 
 export const formatJobsContext = (
   jobs: { targetArgs: string | null; result: string | null }[],
-  status: "success" | "failed"
+  status: "success" | "failed",
 ) => {
   if (jobs.length === 0) return "";
 
   const jobEntries = jobs
     .map(
-      job =>
-        `<input>${JSON.stringify(anonymize(safeParse(job.targetArgs)))}</input><output>${JSON.stringify(anonymize(safeParse(job.result)))}</output>`
+      (job) =>
+        `<input>${JSON.stringify(anonymize(safeParse(job.targetArgs)))}</input><output>${JSON.stringify(anonymize(safeParse(job.result)))}</output>`,
     )
     .join("\n");
 
@@ -303,7 +316,7 @@ export const generateRunName = async ({
     .select({ name: runs.name })
     .from(runs)
     .where(eq(runs.id, id))
-    .then(r => r[0]?.name);
+    .then((r) => r[0]?.name);
 
   if (runName) {
     return;

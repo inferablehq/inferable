@@ -35,7 +35,7 @@ export class QueueWrapper<T extends BaseMessage> {
     private options: Omit<QueueOptions, "connection"> & {
       concurrency?: number;
     } = {},
-    private jobIdKey?: (data: T) => string
+    private jobIdKey?: (data: T) => string,
   ) {
     this.queue = new Queue(name, {
       connection: bullmqRedisConnection,
@@ -44,7 +44,10 @@ export class QueueWrapper<T extends BaseMessage> {
     });
   }
 
-  async send(data: T, options?: JobsOptions): Promise<ReturnType<Queue["add"]>> {
+  async send(
+    data: T,
+    options?: JobsOptions,
+  ): Promise<ReturnType<Queue["add"]>> {
     return this.queue.add(this.name, data, {
       ...options,
       attempts: options?.attempts ?? 3,
@@ -71,11 +74,15 @@ export class QueueWrapper<T extends BaseMessage> {
       logger.info("Skipping queue start. ENABLE_QUEUE_INGESTION is disabled.");
       return;
     }
-    this.worker = new Worker(this.name, withObservability<T>(this.name, this.handler), {
-      connection: bullmqRedisConnection,
-      telemetry,
-      concurrency: this.options.concurrency,
-    });
+    this.worker = new Worker(
+      this.name,
+      withObservability<T>(this.name, this.handler),
+      {
+        connection: bullmqRedisConnection,
+        telemetry,
+        concurrency: this.options.concurrency,
+      },
+    );
   }
 }
 
@@ -88,7 +95,7 @@ export function createQueue<T extends BaseMessage>(
   options?: Omit<QueueOptions, "connection"> & {
     concurrency?: number;
   },
-  jobIdKey?: (data: T) => string
+  jobIdKey?: (data: T) => string,
 ): QueueWrapper<T> {
   if (queueMap.has(name)) {
     return queueMap.get(name) as QueueWrapper<T>;

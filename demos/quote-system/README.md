@@ -4,7 +4,9 @@
 <img src="./../../assets/logo.png" alt="Inferable Logo" width="200" />
 </div>
 
-This demo showcases how to build a quote generation system using Inferable. The system processes customer email requests for product quotes, extracts relevant information using AI, and generates appropriate quotes.
+This demo showcases how to build a quote generation system using Inferable. The
+system processes customer email requests for product quotes, extracts relevant
+information using AI, and generates appropriate quotes.
 
 ## Features
 
@@ -134,7 +136,8 @@ The demo includes an example trigger in `index.ts`:
 inferable.workflows.trigger("quoteRequest", {
   executionId: `${hashOfTheEmailBody}`,
   customerEmail: "customer@example.com",
-  emailBody: "I need a quote for 5 Enterprise Widgets with rush delivery, and 2 Premium Gadgets",
+  emailBody:
+    "I need a quote for 5 Enterprise Widgets with rush delivery, and 2 Premium Gadgets",
   backOfficeEmail: "quotes@company.com",
 });
 ```

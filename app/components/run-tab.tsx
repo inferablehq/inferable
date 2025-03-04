@@ -78,12 +78,12 @@ export function RunTab({
         }
       }
     },
-    [onRefetchRuns, onGoToCluster, runId, getToken]
+    [onRefetchRuns, onGoToCluster, runId, getToken],
   );
 
   // Sort runs by creation date, newest first
   const sortedRuns = [...runs].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
   const pathname = usePathname();
@@ -114,12 +114,12 @@ export function RunTab({
       </div>
       <div className="overflow-y-auto">
         <div className="divide-y divide-border">
-          {sortedRuns.map(run => (
+          {sortedRuns.map((run) => (
             <div
               key={run.id}
               className={cn(
                 "px-4 py-3 flex items-start gap-4 hover:bg-muted/50 transition-colors cursor-pointer",
-                runId === run.id && "bg-muted/50"
+                runId === run.id && "bg-muted/50",
               )}
               onClick={() => onGoToRun(clusterId, run.id)}
             >
@@ -161,7 +161,7 @@ export function RunTab({
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       deleteRun(run.id, clusterId);
                     }}

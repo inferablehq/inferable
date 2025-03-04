@@ -7,15 +7,15 @@ export type InstallableIntegration = {
   onActivate: (
     clusterId: string,
     config: z.infer<typeof integrationSchema>,
-    prevConfig: z.infer<typeof integrationSchema>
+    prevConfig: z.infer<typeof integrationSchema>,
   ) => Promise<void>;
   onDeactivate: (
     clusterId: string,
     config: z.infer<typeof integrationSchema>,
-    prevConfig: z.infer<typeof integrationSchema>
+    prevConfig: z.infer<typeof integrationSchema>,
   ) => Promise<void>;
   handleCall: (
     call: NonNullable<Awaited<ReturnType<typeof getJob>>>,
-    config: z.infer<typeof integrationSchema>
+    config: z.infer<typeof integrationSchema>,
   ) => Promise<void>;
 };

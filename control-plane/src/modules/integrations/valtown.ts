@@ -20,7 +20,7 @@ const valtownMetaSchema = z.object({
         properties: z.record(z.any()),
         required: z.array(z.string()).optional(),
       }),
-    })
+    }),
   ),
 });
 
@@ -44,7 +44,10 @@ export async function fetchValTownMeta({
     },
   });
 
-  if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) {
+  if (
+    !response.ok ||
+    !response.headers.get("content-type")?.includes("application/json")
+  ) {
     logger.error("Failed to fetch Val.town metadata", {
       endpoint,
       status: response.status,
@@ -72,7 +75,10 @@ export async function executeValTownFunction({
   params: Record<string, unknown>;
   token: string;
 }) {
-  const execUrl = new URL(`/exec/functions/${functionName}`, endpoint).toString();
+  const execUrl = new URL(
+    `/exec/functions/${functionName}`,
+    endpoint,
+  ).toString();
   const body = JSON.stringify(params);
 
   const response = await fetch(execUrl, {
@@ -85,7 +91,9 @@ export async function executeValTownFunction({
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: response.statusText }));
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: response.statusText }));
     throw new Error(errorData.message || "Failed to execute Val.town function");
   }
 
@@ -119,15 +127,11 @@ const syncValTownService = async ({
       clusterId,
       description: fn.description,
       schema: JSON.stringify(fn.input),
-    })
-  })
+    });
+  });
 };
 
-const unsyncValTownService = async ({
-  clusterId,
-}: {
-  clusterId: string;
-}) => {
+const unsyncValTownService = async ({ clusterId }: { clusterId: string }) => {
   await deleteToolDefinitionByPrefix({
     prefix: "valtown_",
     clusterId,
@@ -136,7 +140,7 @@ const unsyncValTownService = async ({
 
 const handleCall = async (
   call: NonNullable<Awaited<ReturnType<typeof getJob>>>,
-  integrations: z.infer<typeof integrationSchema>
+  integrations: z.infer<typeof integrationSchema>,
 ) => {
   await acknowledgeJob({
     jobId: call.id,
@@ -180,7 +184,10 @@ const handleCall = async (
 
 export const valtown: InstallableIntegration = {
   name: "valtown",
-  onActivate: async (clusterId: string, integrations: z.infer<typeof integrationSchema>) => {
+  onActivate: async (
+    clusterId: string,
+    integrations: z.infer<typeof integrationSchema>,
+  ) => {
     const config = integrations.valtown;
 
     assert(config, "Missing valtown configuration");
@@ -191,7 +198,10 @@ export const valtown: InstallableIntegration = {
       token: config.token,
     });
   },
-  onDeactivate: async (clusterId: string, _: z.infer<typeof integrationSchema> ) => {
+  onDeactivate: async (
+    clusterId: string,
+    _: z.infer<typeof integrationSchema>,
+  ) => {
     await unsyncValTownService({ clusterId });
   },
   handleCall,

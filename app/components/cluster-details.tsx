@@ -1,6 +1,12 @@
 "use client";
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Blocks, Cpu, Plus, PlusCircleIcon } from "lucide-react";
 import { DeadGrayCircle, DeadRedCircle, LiveGreenCircle } from "./circles";
 import { Button } from "./ui/button";
@@ -21,7 +27,13 @@ import { EventsOverlayButton } from "./events-overlay";
 import { QuickStartDemo } from "./quick-start-demo";
 import { ClusterState, useClusterState } from "./use-cluster-state";
 
-function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clusterId: string }) {
+function FlatToolsList({
+  tools,
+  clusterId,
+}: {
+  tools: ClusterState["tools"];
+  clusterId: string;
+}) {
   const allTools = tools.sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -35,7 +47,7 @@ function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clu
           </TableRow>
         </TableHeader>
         <TableBody>
-          {allTools.map(tool => {
+          {allTools.map((tool) => {
             const isActive =
               new Date(tool.createdAt) > new Date() ||
               Date.now() - new Date(tool.createdAt).getTime() < 1000 * 60;
@@ -75,7 +87,7 @@ function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clu
                       <span
                         className={cn(
                           "w-2 h-2 rounded-full",
-                          isActive ? "bg-green-500" : "bg-gray-300"
+                          isActive ? "bg-green-500" : "bg-gray-300",
                         )}
                       />
                       <span className="font-mono text-sm">
@@ -95,7 +107,13 @@ function FlatToolsList({ tools, clusterId }: { tools: ClusterState["tools"]; clu
   );
 }
 
-function FlatWorkflowsList({ tools, clusterId }: { tools: ClusterState["tools"]; clusterId: string }) {
+function FlatWorkflowsList({
+  tools,
+  clusterId,
+}: {
+  tools: ClusterState["tools"];
+  clusterId: string;
+}) {
   const allWorkflows = tools.sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -109,18 +127,26 @@ function FlatWorkflowsList({ tools, clusterId }: { tools: ClusterState["tools"];
           </TableRow>
         </TableHeader>
         <TableBody>
-          {allWorkflows.map(workflow => {
+          {allWorkflows.map((workflow) => {
             const isActive =
               new Date(workflow.createdAt) > new Date() ||
               Date.now() - new Date(workflow.createdAt).getTime() < 1000 * 60;
 
             return (
-              <TableRow key={`${workflow.name}`} className="hover:bg-secondary/40">
+              <TableRow
+                key={`${workflow.name}`}
+                className="hover:bg-secondary/40"
+              >
                 <TableCell>
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{workflow.name.replace('workflows_', '')}</span>
-                      <ToolContextButton clusterId={clusterId} tool={workflow} />
+                      <span className="font-medium">
+                        {workflow.name.replace("workflows_", "")}
+                      </span>
+                      <ToolContextButton
+                        clusterId={clusterId}
+                        tool={workflow}
+                      />
                     </div>
                     <div
                       className="truncate text-xs text-muted-foreground max-w-[40vw] font-mono"
@@ -149,13 +175,17 @@ function FlatWorkflowsList({ tools, clusterId }: { tools: ClusterState["tools"];
                       <span
                         className={cn(
                           "w-2 h-2 rounded-full",
-                          isActive ? "bg-green-500" : "bg-gray-300"
+                          isActive ? "bg-green-500" : "bg-gray-300",
                         )}
                       />
                       <span className="font-mono text-sm">
-                        {formatDistance(new Date(workflow.createdAt), new Date(), {
-                          addSuffix: true,
-                        })}
+                        {formatDistance(
+                          new Date(workflow.createdAt),
+                          new Date(),
+                          {
+                            addSuffix: true,
+                          },
+                        )}
                       </span>
                     </div>
                   )}
@@ -191,12 +221,19 @@ export default function ServicesOverview({
                 <PlusCircleIcon className="w-5 h-5 text-gray-600" />
               </div>
               <div className="text-center">
-                <h3 className="font-medium text-gray-900">No Tools Connected</h3>
-                <p className="text-sm text-gray-500">Click here to add your first tool</p>
+                <h3 className="font-medium text-gray-900">
+                  No Tools Connected
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Click here to add your first tool
+                </p>
               </div>
             </Button>
           </SheetTrigger>
-          <SheetContent style={{ minWidth: 800 }} className="overflow-y-auto h-screen">
+          <SheetContent
+            style={{ minWidth: 800 }}
+            className="overflow-y-auto h-screen"
+          >
             <SheetHeader className="pb-6">
               <SheetTitle>
                 <div className="flex items-center gap-3">
@@ -249,8 +286,12 @@ export function WorkflowsOverview({
               <PlusCircleIcon className="w-5 h-5 text-gray-600" />
             </div>
             <div className="text-center">
-              <h3 className="font-medium text-gray-900">No Workflows Connected</h3>
-              <p className="text-sm text-gray-500">Click here to add your first workflow</p>
+              <h3 className="font-medium text-gray-900">
+                No Workflows Connected
+              </h3>
+              <p className="text-sm text-gray-500">
+                Click here to add your first workflow
+              </p>
             </div>
           </Button>
         </Link>
@@ -261,7 +302,11 @@ export function WorkflowsOverview({
   );
 }
 
-export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Element {
+export function ClusterDetails({
+  clusterId,
+}: {
+  clusterId: string;
+}): JSX.Element {
   const {
     machines,
     tools,
@@ -269,9 +314,13 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
     liveMachineCount,
   } = useClusterState(clusterId);
 
-  const workflowTools = tools.filter(tool => tool.name.startsWith("workflows_"));
+  const workflowTools = tools.filter((tool) =>
+    tool.name.startsWith("workflows_"),
+  );
 
-  const nonWorkflowTools = tools.filter(tool => !tool.name.startsWith("workflows_"));
+  const nonWorkflowTools = tools.filter(
+    (tool) => !tool.name.startsWith("workflows_"),
+  );
 
   return (
     <div className="flex flex-col space-y-3 w-full">
@@ -285,7 +334,9 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               {isInitialLoading ? (
                 <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs font-medium text-amber-700">Loading</span>
+                  <span className="text-xs font-medium text-amber-700">
+                    Loading
+                  </span>
                 </div>
               ) : liveMachineCount > 0 ? (
                 <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
@@ -303,7 +354,9 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               </div>
               <div className="flex flex-col items-start gap-0.5">
                 <span className="font-semibold text-gray-900">Machines</span>
-                <span className="text-xs text-gray-500 font-mono">{liveMachineCount} Active</span>
+                <span className="text-xs text-gray-500 font-mono">
+                  {liveMachineCount} Active
+                </span>
               </div>
             </div>
           </Button>
@@ -318,7 +371,8 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
                 <div className="space-y-1">
                   <div className="font-mono text-xl">Machines</div>
                   <div className="text-sm text-muted-foreground">
-                    Machines are instances with the Inferable SDK installed and polling.
+                    Machines are instances with the Inferable SDK installed and
+                    polling.
                   </div>
                 </div>
               </div>
@@ -346,7 +400,9 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               {isInitialLoading ? (
                 <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs font-medium text-amber-700">Loading</span>
+                  <span className="text-xs font-medium text-amber-700">
+                    Loading
+                  </span>
                 </div>
               ) : nonWorkflowTools.length > 0 ? (
                 <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
@@ -371,7 +427,10 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
             </div>
           </Button>
         </SheetTrigger>
-        <SheetContent style={{ minWidth: "80%" }} className="overflow-y-auto h-screen">
+        <SheetContent
+          style={{ minWidth: "80%" }}
+          className="overflow-y-auto h-screen"
+        >
           <SheetHeader className="pb-6">
             <SheetTitle>
               <div className="flex items-center gap-3">
@@ -409,7 +468,9 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               {isInitialLoading ? (
                 <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs font-medium text-amber-700">Loading</span>
+                  <span className="text-xs font-medium text-amber-700">
+                    Loading
+                  </span>
                 </div>
               ) : workflowTools.length > 0 ? (
                 <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
@@ -428,13 +489,17 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
               <div className="flex flex-col items-start gap-0.5">
                 <span className="font-semibold text-gray-900">Workflows</span>
                 <span className="text-xs text-gray-500 font-mono">
-                  {workflowTools.length} {pluralize("Workflow", workflowTools.length)}
+                  {workflowTools.length}{" "}
+                  {pluralize("Workflow", workflowTools.length)}
                 </span>
               </div>
             </div>
           </Button>
         </SheetTrigger>
-        <SheetContent style={{ minWidth: "80%" }} className="overflow-y-auto h-screen">
+        <SheetContent
+          style={{ minWidth: "80%" }}
+          className="overflow-y-auto h-screen"
+        >
           <SheetHeader className="pb-6">
             <SheetTitle>
               <div className="flex items-center gap-3">
@@ -469,24 +534,29 @@ export function ClusterDetails({ clusterId }: { clusterId: string }): JSX.Elemen
             data-add-services-trigger
             className={cn(
               "group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg",
-              !tools.length && !machines.length && "border-primary"
+              !tools.length && !machines.length && "border-primary",
             )}
           >
             <div className="flex items-center gap-4 w-full">
               <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
                 <PlusCircleIcon
                   className={cn(
-                    "w-5 h-5 text-primary/80 transition-all duration-300 group-hover:text-primary"
+                    "w-5 h-5 text-primary/80 transition-all duration-300 group-hover:text-primary",
                   )}
                 />
               </div>
               <div className="flex flex-col items-start gap-0.5 py-2">
-                <span className="font-semibold text-gray-900">Add Services</span>
+                <span className="font-semibold text-gray-900">
+                  Add Services
+                </span>
               </div>
             </div>
           </Button>
         </SheetTrigger>
-        <SheetContent style={{ minWidth: 800 }} className="overflow-y-auto h-screen">
+        <SheetContent
+          style={{ minWidth: 800 }}
+          className="overflow-y-auto h-screen"
+        >
           <SheetHeader className="pb-6">
             <SheetTitle>
               <div className="flex items-center gap-3">
@@ -522,7 +592,9 @@ export function CreateNewServiceOptions({ clusterId }: { clusterId: string }) {
             <Blocks className="w-5 h-5 text-gray-600" />
           </div>
           <div>
-            <div className="text-base font-medium text-gray-900">Custom Local Service</div>
+            <div className="text-base font-medium text-gray-900">
+              Custom Local Service
+            </div>
             <div className="text-sm text-gray-500">
               Create your own service with custom functions running locally
             </div>
@@ -606,16 +678,24 @@ function MachinesOverview({ clusterId }: { clusterId: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {machines && machines.length > 0 ? (
           machines
-            .sort((a, b) => new Date(b.lastPingAt!).getTime() - new Date(a.lastPingAt!).getTime())
-            .map(m => <MachineCard key={m.id} machine={m} clusterId={clusterId} />)
+            .sort(
+              (a, b) =>
+                new Date(b.lastPingAt!).getTime() -
+                new Date(a.lastPingAt!).getTime(),
+            )
+            .map((m) => (
+              <MachineCard key={m.id} machine={m} clusterId={clusterId} />
+            ))
         ) : (
           <div className="col-span-full flex items-center justify-center p-8 rounded-xl bg-gray-50 border border-gray-200">
             <div className="flex flex-col items-center gap-3">
               <DeadRedCircle />
-              <span className="text-sm text-gray-600">Your machines are offline</span>
+              <span className="text-sm text-gray-600">
+                Your machines are offline
+              </span>
               <p className="text-xs text-muted-foreground max-w-[300px] text-center">
-                No active machines found in this cluster. Make sure your machines are running and
-                properly configured.
+                No active machines found in this cluster. Make sure your
+                machines are running and properly configured.
               </p>
             </div>
           </div>
@@ -640,7 +720,9 @@ function MachineCard({
     <div
       className={cn(
         "rounded-xl p-5 shadow-sm border transition-all duration-200 hover:shadow-md",
-        isLive ? "bg-green-50/30 border-green-100" : "bg-gray-50/30 border-gray-100"
+        isLive
+          ? "bg-green-50/30 border-green-100"
+          : "bg-gray-50/30 border-gray-100",
       )}
     >
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
@@ -651,13 +733,18 @@ function MachineCard({
             <div className="text-xs text-muted-foreground">{machine.ip}</div>
           </div>
         </div>
-        <EventsOverlayButton clusterId={clusterId} query={{ machineId: machine.id }} />
+        <EventsOverlayButton
+          clusterId={clusterId}
+          query={{ machineId: machine.id }}
+        />
       </div>
       <div className="flex items-center gap-2 text-xs">
         <div
           className={cn(
             "px-2 py-1 rounded-full font-medium",
-            isLive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+            isLive
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-gray-700",
           )}
         >
           {isLive ? "Active" : "Inactive"}

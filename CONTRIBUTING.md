@@ -1,15 +1,21 @@
 # Contributing to Inferable
 
-First off, thank you for considering contributing to Inferable! We value every contribution that helps make this project better.
+First off, thank you for considering contributing to Inferable! We value every
+contribution that helps make this project better.
 
 ## Welcome!
 
-We accept contributions in various forms, from bug fixes and documentation improvements to major feature additions. While we welcome most contributions, please note that not all submissions may be accepted. Our team will review each contribution carefully to ensure it aligns with the project's goals and standards.
+We accept contributions in various forms, from bug fixes and documentation
+improvements to major feature additions. While we welcome most contributions,
+please note that not all submissions may be accepted. Our team will review each
+contribution carefully to ensure it aligns with the project's goals and
+standards.
 
 ## Getting Started
 
 1. Fork the repository
-2. Create a new branch for your feature (`git checkout -b feature/amazing-feature`)
+2. Create a new branch for your feature
+   (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Run the appropriate tests for your changes
 5. Commit your changes (`git commit -m 'Add some amazing feature'`)
@@ -18,11 +24,15 @@ We accept contributions in various forms, from bug fixes and documentation impro
 
 ## Development Setup
 
-Since Inferable is a polyglot repository containing multiple programming languages, you'll need to set up the appropriate development environment for the specific component you're working on. Please refer to the README in each specific directory for detailed setup instructions.
+Since Inferable is a polyglot repository containing multiple programming
+languages, you'll need to set up the appropriate development environment for the
+specific component you're working on. Please refer to the README in each
+specific directory for detailed setup instructions.
 
 ## Code Style
 
-We maintain different code style guidelines for each programming language in the repository. Please follow the conventions.
+We maintain different code style guidelines for each programming language in the
+repository. Please follow the conventions.
 
 ## Testing
 
@@ -38,7 +48,8 @@ We maintain different code style guidelines for each programming language in the
 3. Ensure your code passes all tests and linting requirements
 4. Add your changes to the CHANGELOG.md under the "Unreleased" section
 5. The PR must be reviewed and approved by at least one maintainer
-6. If you modify multiple languages/components, seek review from respective component owners
+6. If you modify multiple languages/components, seek review from respective
+   component owners
 
 ## Commit Messages
 
@@ -84,6 +95,7 @@ If you have questions about contributing, feel free to:
 
 ## License
 
-By contributing to Inferable, you agree that your contributions will be licensed under the same license as the project.
+By contributing to Inferable, you agree that your contributions will be licensed
+under the same license as the project.
 
 Thank you for contributing to Inferable!

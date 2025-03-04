@@ -9,7 +9,7 @@ const winston = createLogger({
   level: env.LOG_LEVEL,
   defaultMeta: {
     "deployment.version": env.VERSION,
-    "queue.ingestionEnabled": env.ENABLE_QUEUE_INGESTION
+    "queue.ingestionEnabled": env.ENABLE_QUEUE_INGESTION,
   },
   transports: [
     new transports.Console({

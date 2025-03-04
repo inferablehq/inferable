@@ -18,9 +18,9 @@ const ToolHouseResultSchema = z.array(
     content: z.array(
       z.object({
         content: z.string().optional(),
-      })
+      }),
     ),
-  })
+  }),
 );
 
 export const start = () =>
@@ -28,7 +28,9 @@ export const start = () =>
     interval: 1000 * 60 * 5,
   }); // every 5 minutes
 
-export const validateConfig = async (config: z.infer<typeof integrationSchema>) => {
+export const validateConfig = async (
+  config: z.infer<typeof integrationSchema>,
+) => {
   if (!config.toolhouse?.apiKey) {
     throw new Error("ToolHouse API key is required");
   }
@@ -43,7 +45,7 @@ export const validateConfig = async (config: z.infer<typeof integrationSchema>) 
 
 const handleCall = async (
   job: NonNullable<Awaited<ReturnType<typeof getJob>>>,
-  integrations: z.infer<typeof integrationSchema>
+  integrations: z.infer<typeof integrationSchema>,
 ) => {
   await acknowledgeJob({
     jobId: job.id,
@@ -159,13 +161,13 @@ const syncToolHouseService = async ({
 
   const tools = (await toolhouse.getTools()) as Anthropic.Messages.Tool[];
 
-  tools.forEach(tool => {
+  tools.forEach((tool) => {
     upsertToolDefinition({
       name: toInferableName(tool.name),
       clusterId,
       description: tool.description,
       schema: JSON.stringify(tool.input_schema),
-    })
+    });
   });
 };
 
@@ -184,7 +186,7 @@ const syncToolHouse = async () => {
 
   await Promise.all(
     // TODO: We will need to shard this
-    toolHouseClusters.map(async integration => {
+    toolHouseClusters.map(async (integration) => {
       try {
         await syncToolHouseService({
           clusterId: integration.clusterId,
@@ -196,7 +198,7 @@ const syncToolHouse = async () => {
           error,
         });
       }
-    })
+    }),
   );
 };
 
@@ -204,7 +206,7 @@ const syncToolHouse = async () => {
 const toInferableName = (input: string) => {
   const transformed = input
     .split("_")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join("");
 
   return transformed.charAt(0).toLowerCase() + transformed.slice(1);
@@ -217,17 +219,23 @@ const toToolHouseName = (input: string) => {
 
 export const toolhouse: InstallableIntegration = {
   name: "ToolHouse",
-  onActivate: async (clusterId: string, config: z.infer<typeof integrationSchema>) => {
+  onActivate: async (
+    clusterId: string,
+    config: z.infer<typeof integrationSchema>,
+  ) => {
     return syncToolHouseService({
       clusterId,
       apiKey: config.toolhouse?.apiKey,
     });
   },
-  onDeactivate: async (clusterId: string, _: z.infer<typeof integrationSchema>) => {
+  onDeactivate: async (
+    clusterId: string,
+    _: z.infer<typeof integrationSchema>,
+  ) => {
     await deleteToolDefinitionByPrefix({
       clusterId,
       prefix: toolhouseIntegration,
-    })
+    });
   },
   handleCall,
 };

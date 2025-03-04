@@ -22,5 +22,5 @@ export const customerTelemetryQueue = createQueue<CustomerTelemetryMessage>(
   handleCustomerTelemetry,
   {
     concurrency: 10,
-  }
+  },
 );

@@ -18,7 +18,9 @@ export function useHashState<T>(initialValue: T) {
     (newValue: T | ((prev: T) => T)) => {
       // Handle function updates
       const resolvedValue =
-        typeof newValue === "function" ? (newValue as (prev: T) => T)(state) : newValue;
+        typeof newValue === "function"
+          ? (newValue as (prev: T) => T)(state)
+          : newValue;
 
       const newHash = hashValue(resolvedValue);
 
@@ -28,7 +30,7 @@ export function useHashState<T>(initialValue: T) {
         setState(resolvedValue);
       }
     },
-    [state]
+    [state],
   );
 
   return [state, setHashState] as const;

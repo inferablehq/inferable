@@ -5,7 +5,10 @@ import type { contract } from "@/client/contract";
 import { ClientInferResponseBody } from "@ts-rest/core";
 import { useHashState } from "@/lib/use-hash-state";
 
-export type ClusterResponse = ClientInferResponseBody<typeof contract.getCluster, 200>;
+export type ClusterResponse = ClientInferResponseBody<
+  typeof contract.getCluster,
+  200
+>;
 
 export interface ClusterState {
   machines: ClusterResponse["machines"];
@@ -21,7 +24,7 @@ let lastResponse: { status: 200; body: ClusterResponse } | null = null;
 const fetchCluster = async (
   token: string,
   clusterId: string,
-  pollInterval: number
+  pollInterval: number,
 ): Promise<{ status: 200; body: ClusterResponse } | null> => {
   const inInterval = Date.now() - lastFetchAt < pollInterval;
 
@@ -50,7 +53,10 @@ const fetchCluster = async (
   }
 };
 
-export function useClusterState(clusterId: string, polling = true): ClusterState {
+export function useClusterState(
+  clusterId: string,
+  polling = true,
+): ClusterState {
   const [machines, setMachines] = useHashState<ClusterState["machines"]>([]);
   const [tools, setTools] = useHashState<ClusterState["tools"]>([]);
   const [cluster, setCluster] = useHashState<ClusterResponse | null>(null);
@@ -82,9 +88,10 @@ export function useClusterState(clusterId: string, polling = true): ClusterState
 
         setLiveMachineCount(
           (clusterResponse.body.machines ?? []).filter(
-            machine =>
-              machine.lastPingAt && Date.now() - new Date(machine.lastPingAt).getTime() < 1000 * 60
-          ).length
+            (machine) =>
+              machine.lastPingAt &&
+              Date.now() - new Date(machine.lastPingAt).getTime() < 1000 * 60,
+          ).length,
         );
         setError(null);
       } else {

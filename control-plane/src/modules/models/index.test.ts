@@ -54,7 +54,6 @@ describe("buildModel", () => {
       });
     });
 
-
     it("should not retry other errors", async () => {
       const error = new Error("");
       mockCreate.mockImplementationOnce(() => {
@@ -89,10 +88,10 @@ describe("buildModel", () => {
         identifier: "claude-3-haiku",
       });
 
-      await expect(
-        () => model.call({
+      await expect(() =>
+        model.call({
           messages: [],
-        })
+        }),
       ).rejects.toThrow(RetryableError);
 
       expect(getRouting).toHaveBeenCalledTimes(6);

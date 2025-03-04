@@ -38,7 +38,7 @@ export const createCache = <T>(namespace: symbol) => {
         ?.set(`${namespace.toString()}:${key}`, JSON.stringify(value), {
           EX: stdTTLSeconds,
         })
-        .catch(error => {
+        .catch((error) => {
           logger.error("Error setting cache", {
             error,
             key,

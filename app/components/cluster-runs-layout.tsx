@@ -27,13 +27,18 @@ interface ClusterRunsLayoutProps {
   children: React.ReactNode;
 }
 
-export function ClusterRunsLayout({ clusterId, children }: ClusterRunsLayoutProps) {
+export function ClusterRunsLayout({
+  clusterId,
+  children,
+}: ClusterRunsLayoutProps) {
   return (
     <div className="flex flex-row gap-6 p-6 w-full">
       <div className="flex-shrink-0 transition-all duration-300">
         <RunList clusterId={clusterId} />
       </div>
-      <div className="relative transition-all duration-300 flex-grow">{children}</div>
+      <div className="relative transition-all duration-300 flex-grow">
+        {children}
+      </div>
       <div className="flex-shrink-0 transition-all duration-300">
         <ClusterDetails clusterId={clusterId} />
       </div>

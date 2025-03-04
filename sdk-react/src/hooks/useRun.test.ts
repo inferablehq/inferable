@@ -48,7 +48,8 @@ describe("useRun", () => {
       body: {
         messages: [],
         run: { id: existingRunId, status: "running" },
-      }, headers: new Headers()
+      },
+      headers: new Headers(),
     });
 
     const mockInferable = createMockInferable(mockApiClient);
@@ -71,7 +72,7 @@ describe("useRun", () => {
     mockApiClient.getRunTimeline.mockResolvedValue({
       status: 200,
       body: {
-        run: {id: runId, status: "running" },
+        run: { id: runId, status: "running" },
         messages: [],
       },
       headers: new Headers(),

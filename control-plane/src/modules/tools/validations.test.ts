@@ -1,7 +1,4 @@
-import {
-  ajvErrorToFailures,
-  validateToolSchema,
-} from "./validations";
+import { ajvErrorToFailures, validateToolSchema } from "./validations";
 
 describe("validateToolSchema", () => {
   it("should fail for empty schema", () => {

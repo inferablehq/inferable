@@ -6,7 +6,11 @@ import { ChatIdentifiers } from "../../models/routing";
 import { z } from "zod";
 import { buildModel } from "../../models";
 import { addAttributes } from "../../observability/tracer";
-import { getRunMessages, insertRunMessage, toAnthropicMessages } from "../messages";
+import {
+  getRunMessages,
+  insertRunMessage,
+  toAnthropicMessages,
+} from "../messages";
 import { AgentError, RetryableError } from "../../../utilities/errors";
 import { JsonSchemaInput, validateToolSchema } from "../../tools/validations";
 import { Validator } from "jsonschema";
@@ -33,7 +37,10 @@ export const processSimpleRun = async (run: {
     type: run.type,
   });
 
-  await db.update(runs).set({ status: "running", failure_reason: "" }).where(eq(runs.id, run.id));
+  await db
+    .update(runs)
+    .set({ status: "running", failure_reason: "" })
+    .where(eq(runs.id, run.id));
 
   const model = buildModel({
     identifier: run.modelIdentifier ?? "claude-3-5-sonnet",
@@ -57,10 +64,10 @@ export const processSimpleRun = async (run: {
     addAttributes({
       "model.input.systemPrompt": run.systemPrompt ?? "",
       "model.input.messages": JSON.stringify(
-        messages.map(m => ({
+        messages.map((m) => ({
           id: m.id,
           type: m.type,
-        }))
+        })),
       ),
     });
   }
@@ -138,7 +145,7 @@ export const processSimpleRun = async (run: {
     },
     {
       retries: 5,
-    }
+    },
   );
 
   try {

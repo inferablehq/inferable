@@ -1,7 +1,8 @@
 import { createCluster } from "../management";
 import { upsertToolDefinition, getWorkflowTools } from "./";
 
-const schema = "{\"type\":\"object\",\"properties\":{\"foo\":{\"type\":\"string\"}},\"required\":[\"foo\"]}";
+const schema =
+  '{"type":"object","properties":{"foo":{"type":"string"}},"required":["foo"]}';
 
 describe("getWorkflowTools", () => {
   let clusterId: string;
@@ -32,28 +33,29 @@ describe("getWorkflowTools", () => {
       schema,
       clusterId,
     });
-
-  })
+  });
 
   it("should fetch a workflow's tool with multiple versions", async () => {
     const tools = await getWorkflowTools({
       clusterId,
-      workflowName: "mySearchWorkflow"
+      workflowName: "mySearchWorkflow",
     });
 
     expect(tools.length).toBe(2);
-    expect(tools).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        name: "mySearchWorkflow",
-        toolName: "workflows_mySearchWorkflow_1",
-        version: 1,
-      }),
-      expect.objectContaining({
-        name: "mySearchWorkflow",
-        toolName: "workflows_mySearchWorkflow_2",
-        version: 2,
-      }),
-    ]))
+    expect(tools).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "mySearchWorkflow",
+          toolName: "workflows_mySearchWorkflow_1",
+          version: 1,
+        }),
+        expect.objectContaining({
+          name: "mySearchWorkflow",
+          toolName: "workflows_mySearchWorkflow_2",
+          version: 2,
+        }),
+      ]),
+    );
   });
 
   it("should fetch snake cased workflow names", async () => {
@@ -63,13 +65,15 @@ describe("getWorkflowTools", () => {
     });
 
     expect(tools.length).toBe(1);
-    expect(tools).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        name: "my_search_workflow",
-        toolName: "workflows_my_search_workflow_1",
-        version: 1,
-      }),
-    ]))
+    expect(tools).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "my_search_workflow",
+          toolName: "workflows_my_search_workflow_1",
+          version: 1,
+        }),
+      ]),
+    );
   });
 
   it("should fetch all tools if no workflow name is provided", async () => {
@@ -78,31 +82,33 @@ describe("getWorkflowTools", () => {
     });
 
     expect(tools.length).toBe(3);
-    expect(tools).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        name: "mySearchWorkflow",
-        toolName: "workflows_mySearchWorkflow_1",
-        version: 1,
-      }),
-      expect.objectContaining({
-        name: "mySearchWorkflow",
-        toolName: "workflows_mySearchWorkflow_2",
-        version: 2,
-      }),
-      expect.objectContaining({
-        name: "my_search_workflow",
-        toolName: "workflows_my_search_workflow_1",
-        version: 1,
-      }),
-    ]))
+    expect(tools).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "mySearchWorkflow",
+          toolName: "workflows_mySearchWorkflow_1",
+          version: 1,
+        }),
+        expect.objectContaining({
+          name: "mySearchWorkflow",
+          toolName: "workflows_mySearchWorkflow_2",
+          version: 2,
+        }),
+        expect.objectContaining({
+          name: "my_search_workflow",
+          toolName: "workflows_my_search_workflow_1",
+          version: 1,
+        }),
+      ]),
+    );
   });
 
   it("should not return a non-matching workflow", async () => {
     const tools = await getWorkflowTools({
       clusterId,
-      workflowName: "mySearch"
+      workflowName: "mySearch",
     });
 
     expect(tools.length).toBe(0);
-  })
+  });
 });

@@ -27,7 +27,9 @@ export function validateToolName(name: string, isPrivate: boolean) {
 
   // must be 50 characters or less
   if (name.length > 50) {
-    throw new InvalidServiceRegistrationError("Tool name must be 50 characters or less");
+    throw new InvalidServiceRegistrationError(
+      "Tool name must be 50 characters or less",
+    );
   }
 
   logger.info("Validating tool name", {
@@ -39,7 +41,7 @@ export function validateToolName(name: string, isPrivate: boolean) {
   // https://docs.anthropic.com/en/docs/build-with-claude/tool-use
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
     throw new InvalidServiceRegistrationError(
-      `Tools can have alphanumeric, hyphen and underscore got ${name}`
+      `Tools can have alphanumeric, hyphen and underscore got ${name}`,
     );
   }
 }
@@ -48,21 +50,25 @@ export const validatePropertyName = (name: string) => {
   const ALLOWED_PROPERTY_NAME_CHARACTERS = /^[a-zA-Z0-9_]+$/;
   if (!ALLOWED_PROPERTY_NAME_CHARACTERS.test(name)) {
     throw new InvalidServiceRegistrationError(
-      `Property name must only contain letters, numbers and underscore '_'. Got: ${name}`
+      `Property name must only contain letters, numbers and underscore '_'. Got: ${name}`,
     );
   }
 };
 
 export const validateToolDescription = (description?: string) => {
   if (description === "") {
-    throw new InvalidServiceRegistrationError("Tool description must not be empty");
+    throw new InvalidServiceRegistrationError(
+      "Tool description must not be empty",
+    );
   }
 };
 
 /*
  * Validate a function schema.
  */
-export const validateToolSchema = (input: JsonSchemaInput): { path: string; error: string }[] => {
+export const validateToolSchema = (
+  input: JsonSchemaInput,
+): { path: string; error: string }[] => {
   delete input.properties?.undefined;
 
   if (!input || !input.properties) {
@@ -70,7 +76,7 @@ export const validateToolSchema = (input: JsonSchemaInput): { path: string; erro
   }
 
   const errors = Object.keys(input.properties)
-    .map(key => {
+    .map((key) => {
       return validateProperty(key, input.properties[key]);
     })
     .flat();
@@ -101,7 +107,10 @@ export const validateToolSchema = (input: JsonSchemaInput): { path: string; erro
 /**
  * Recursively validate $.properties
  */
-const validateProperty = (key: string, value: JsonSchema): ValidationError[] => {
+const validateProperty = (
+  key: string,
+  value: JsonSchema,
+): ValidationError[] => {
   let errors: ValidationError[] = [];
   try {
     validatePropertyName(key);
@@ -120,10 +129,10 @@ const validateProperty = (key: string, value: JsonSchema): ValidationError[] => 
 
     errors = errors.concat(
       Object.keys(properties)
-        .map(key => {
+        .map((key) => {
           return validateProperty(key, properties[key]);
         })
-        .flat()
+        .flat(),
     );
   }
 
@@ -133,14 +142,16 @@ const validateProperty = (key: string, value: JsonSchema): ValidationError[] => 
 /*
  * Accepts an AJV compilation error and extracts the error details from the message.
  */
-export const ajvErrorToFailures = (error: Error): { path: string; error: string }[] => {
+export const ajvErrorToFailures = (
+  error: Error,
+): { path: string; error: string }[] => {
   // example: /data/properties/name some error message
   if (error.message.startsWith("schema is invalid:")) {
     return error.message
       .replace("schema is invalid:", "")
       .split(",")
-      .map(s => s.trim())
-      .map(s => {
+      .map((s) => s.trim())
+      .map((s) => {
         const firstSpace = s.indexOf(" ");
 
         if (firstSpace === -1) {

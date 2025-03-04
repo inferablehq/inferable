@@ -1,4 +1,7 @@
-import { AuthenticationError, JobPollTimeoutError } from "../../utilities/errors";
+import {
+  AuthenticationError,
+  JobPollTimeoutError,
+} from "../../utilities/errors";
 import { packer } from "../packer";
 import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
@@ -9,7 +12,13 @@ import { z } from "zod";
 import { getToolDefinition } from "../tools";
 
 const customAuthContextCache = createCache<{
-  status: "pending" | "running" | "success" | "failure" | "stalled" | "interrupted";
+  status:
+    | "pending"
+    | "running"
+    | "success"
+    | "failure"
+    | "stalled"
+    | "interrupted";
   result: string | null;
   resultType: jobs.ResultType | null;
 }>(Symbol("customAuthContextCache"));
@@ -44,7 +53,7 @@ export const verify = async ({
     ) {
       throw new AuthenticationError(
         "Custom auth token is not valid",
-        "https://docs.inferable.ai/pages/custom-auth"
+        "https://docs.inferable.ai/pages/custom-auth",
       );
     }
 
@@ -56,7 +65,7 @@ export const verify = async ({
   if (!handleCustomAuthFunction) {
     throw new AuthenticationError(
       "Custom auth is not configured for this cluster",
-      "https://docs.inferable.ai/pages/custom-auth"
+      "https://docs.inferable.ai/pages/custom-auth",
     );
   }
 
@@ -71,7 +80,7 @@ export const verify = async ({
     if (!definition) {
       throw new AuthenticationError(
         `${handleCustomAuthFunction} is not registered`,
-        "https://docs.inferable.ai/pages/custom-auth"
+        "https://docs.inferable.ai/pages/custom-auth",
       );
     }
 
@@ -97,7 +106,7 @@ export const verify = async ({
     if (result.status == "success" && result.resultType !== "resolution") {
       throw new AuthenticationError(
         "Custom auth token is not valid",
-        "https://docs.inferable.ai/pages/custom-auth"
+        "https://docs.inferable.ai/pages/custom-auth",
       );
     }
 
@@ -109,16 +118,18 @@ export const verify = async ({
     if (!result.result) {
       throw new AuthenticationError(
         `${authFunction} did not return a result`,
-        "https://docs.inferable.ai/pages/custom-auth"
+        "https://docs.inferable.ai/pages/custom-auth",
       );
     }
 
-    const parsed = customAuthResultSchema.safeParse(packer.unpack(result.result));
+    const parsed = customAuthResultSchema.safeParse(
+      packer.unpack(result.result),
+    );
 
     if (!parsed.success) {
       throw new AuthenticationError(
         `${authFunction} returned invalid result object`,
-        "https://docs.inferable.ai/pages/custom-auth"
+        "https://docs.inferable.ai/pages/custom-auth",
       );
     }
 
@@ -129,7 +140,7 @@ export const verify = async ({
     if (e instanceof JobPollTimeoutError) {
       throw new AuthenticationError(
         `Call to ${authFunction} did not complete in time`,
-        "https://docs.inferable.ai/pages/custom-auth"
+        "https://docs.inferable.ai/pages/custom-auth",
       );
     }
 
@@ -144,7 +155,7 @@ export const verify = async ({
           }),
           resultType: "resolution",
         },
-        60
+        60,
       );
       throw e;
     }

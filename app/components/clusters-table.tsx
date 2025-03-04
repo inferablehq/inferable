@@ -11,11 +11,23 @@ import {
   getSortedRowModel,
 } from "@tanstack/react-table";
 import Link from "next/link";
-import { Eye, Trash2, Settings, Play, ArrowUpDown, Brain, ArrowRight } from "lucide-react";
+import {
+  Eye,
+  Trash2,
+  Settings,
+  Play,
+  ArrowUpDown,
+  Brain,
+  ArrowRight,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { CreateClusterButton } from "./create-cluster-button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export type ClusterData = {
   id: string;
@@ -47,9 +59,15 @@ const columns: ColumnDef<ClusterData>[] = [
         >
           {row.getValue("name")}
         </Link>
-        <div className="text-sm text-gray-500 truncate mt-1" title={row.original.description || ""}>
+        <div
+          className="text-sm text-gray-500 truncate mt-1"
+          title={row.original.description || ""}
+        >
           {row.original.description || "No description"}
-          <div className="text-xs font-mono text-gray-400 mt-1" title={row.original.id}>
+          <div
+            className="text-xs font-mono text-gray-400 mt-1"
+            title={row.original.id}
+          >
             ID: {row.original.id}
           </div>
         </div>
@@ -73,7 +91,10 @@ const columns: ColumnDef<ClusterData>[] = [
     cell: ({ row }) => {
       const date = new Date(row.getValue("createdAt"));
       return (
-        <span title={date.toLocaleString()} className="text-gray-600 whitespace-nowrap">
+        <span
+          title={date.toLocaleString()}
+          className="text-gray-600 whitespace-nowrap"
+        >
           {formatDistanceToNow(date, { addSuffix: true })}
         </span>
       );
@@ -149,7 +170,8 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
           Create your first cluster
         </h3>
         <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-          Get started by creating your first cluster to organize your functions and runs.
+          Get started by creating your first cluster to organize your functions
+          and runs.
         </p>
         <div className="mt-6 flex gap-4 justify-center">
           <Popover defaultOpen>
@@ -181,7 +203,7 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
         <Input
           placeholder="Filter clusters..."
           value={(columnFilters[0]?.value as string) ?? ""}
-          onChange={event =>
+          onChange={(event) =>
             setColumnFilters([
               {
                 id: "name",

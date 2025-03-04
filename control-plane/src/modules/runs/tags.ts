@@ -37,15 +37,21 @@ export const getRunsByTag = async ({
         eq(runTags.cluster_id, clusterId),
         eq(runTags.key, key),
         eq(runTags.value, value),
-        ...(userId ? [eq(runs.user_id, userId)] : [])
-      )
+        ...(userId ? [eq(runs.user_id, userId)] : []),
+      ),
     )
     .rightJoin(runs, eq(runTags.run_id, runs.id))
     .orderBy(desc(runs.created_at))
     .limit(limit);
 };
 
-export const getRunTags = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+export const getRunTags = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
   const tags = await db
     .select({
       key: runTags.key,
@@ -59,6 +65,6 @@ export const getRunTags = async ({ clusterId, runId }: { clusterId: string; runI
       acc[key] = value;
       return acc;
     },
-    {} as Record<string, string>
+    {} as Record<string, string>,
   );
 };

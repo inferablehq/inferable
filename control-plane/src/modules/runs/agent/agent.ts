@@ -2,7 +2,12 @@ import { START, StateGraph } from "@langchain/langgraph";
 import { MODEL_CALL_NODE_NAME, handleModelCall } from "./nodes/model-call";
 import { TOOL_CALL_NODE_NAME, handleToolCalls } from "./nodes/tool-call";
 import { RunGraphState, createStateGraphChannels } from "./state";
-import { PostStepSave, postModelEdge, postStartEdge, postToolEdge } from "./nodes/edges";
+import {
+  PostStepSave,
+  postModelEdge,
+  postStartEdge,
+  postToolEdge,
+} from "./nodes/edges";
 import { AgentMessage } from "../messages";
 import { buildMockModel, buildModel } from "../../models";
 import { AgentTool } from "./tool";
@@ -11,7 +16,7 @@ import { ChatIdentifiers } from "../../models/routing";
 export type ReleventToolLookup = (state: RunGraphState) => Promise<AgentTool[]>;
 
 export type ToolFetcher = (
-  toolCall: Required<AgentMessage["data"]>["invocations"][number]
+  toolCall: Required<AgentMessage["data"]>["invocations"][number],
 ) => Promise<AgentTool>;
 
 export const createRunGraph = async ({
@@ -51,14 +56,15 @@ export const createRunGraph = async ({
       additionalContext,
     }),
   })
-    .addNode(MODEL_CALL_NODE_NAME, state =>
+    .addNode(MODEL_CALL_NODE_NAME, (state) =>
       handleModelCall(
         state,
         mockModelResponses
           ? // If mock responses are provided, use the mock model
             buildMockModel({
               mockResponses: mockModelResponses,
-              responseCount: state.messages.filter(m => m.type === "agent").length,
+              responseCount: state.messages.filter((m) => m.type === "agent")
+                .length,
             })
           : // Otherwise, use the real model
             buildModel({
@@ -69,13 +75,17 @@ export const createRunGraph = async ({
                 runId: state.run.id,
               },
             }),
-        findRelevantTools
-      )
+        findRelevantTools,
+      ),
     )
-    .addNode(TOOL_CALL_NODE_NAME, state => handleToolCalls(state, getTool))
+    .addNode(TOOL_CALL_NODE_NAME, (state) => handleToolCalls(state, getTool))
     .addConditionalEdges(START, postStartEdge)
-    .addConditionalEdges(MODEL_CALL_NODE_NAME, state => postModelEdge(state, postStepSave))
-    .addConditionalEdges(TOOL_CALL_NODE_NAME, state => postToolEdge(state, postStepSave));
+    .addConditionalEdges(MODEL_CALL_NODE_NAME, (state) =>
+      postModelEdge(state, postStepSave),
+    )
+    .addConditionalEdges(TOOL_CALL_NODE_NAME, (state) =>
+      postToolEdge(state, postStepSave),
+    );
 
   return graph.compile();
 };

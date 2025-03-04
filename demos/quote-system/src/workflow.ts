@@ -37,7 +37,7 @@ quoteRequestWorkflow.version(1).define(async (ctx, input) => {
           description: z.string(),
           quantity: z.number(),
           isAlternativeProduct: z.boolean(),
-        })
+        }),
       ),
     }),
     tools: [
@@ -93,7 +93,11 @@ quoteRequestWorkflow.version(1).define(async (ctx, input) => {
 
   // Send email to back office with quotes for verification
   await ctx.result("send-backoffice-email", async () => {
-    await sendBackOfficeEmail(input.backOfficeEmail, input.customerEmail, allQuotes);
+    await sendBackOfficeEmail(
+      input.backOfficeEmail,
+      input.customerEmail,
+      allQuotes,
+    );
   });
 
   return {

@@ -123,9 +123,12 @@ export const createRun = async ({
       context: context,
       enable_result_grounding: enableResultGrounding,
       // Temporary hack to make the sdk be backwards compatible
-      workflow_execution_id: workflowExecutionId ?? tags?.["workflow.executionId"],
+      workflow_execution_id:
+        workflowExecutionId ?? tags?.["workflow.executionId"],
       workflow_version:
-        (workflowVersion ?? tags?.["workflow.version"]) ? Number(tags?.["workflow.version"]) : null,
+        (workflowVersion ?? tags?.["workflow.version"])
+          ? Number(tags?.["workflow.version"])
+          : null,
       workflow_name: workflowName ?? tags?.["workflow.name"],
     })
     .onConflictDoNothing()
@@ -138,7 +141,7 @@ export const createRun = async ({
         .from(runs)
         .where(and(eq(runs.id, id), eq(runs.cluster_id, clusterId)))
         .limit(1)
-        .then(result => {
+        .then((result) => {
           return {
             ...result[0],
             created: false,
@@ -157,7 +160,7 @@ export const createRun = async ({
         run_id: run.id,
         key,
         value,
-      }))
+      })),
     );
   }
 
@@ -167,8 +170,16 @@ export const createRun = async ({
   };
 };
 
-export const deleteRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
-  await db.delete(runs).where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId)));
+export const deleteRun = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
+  await db
+    .delete(runs)
+    .where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId)));
 };
 
 export const updateRunFeedback = async (run: {
@@ -179,7 +190,10 @@ export const updateRunFeedback = async (run: {
 }) => {
   await db
     .update(runs)
-    .set({ feedback_comment: run.feedbackComment, feedback_score: run.feedbackScore })
+    .set({
+      feedback_comment: run.feedbackComment,
+      feedback_score: run.feedbackScore,
+    })
     .where(and(eq(runs.cluster_id, run.clusterId), eq(runs.id, run.id)));
 };
 
@@ -212,7 +226,7 @@ export const updateRun = async (run: {
 
   const [updated] = await db
     .update(runs)
-    .set(omitBy(updateSet, value => value === undefined))
+    .set(omitBy(updateSet, (value) => value === undefined))
     .where(and(eq(runs.cluster_id, run.clusterId), eq(runs.id, run.id)))
     .returning({
       id: runs.id,
@@ -242,7 +256,13 @@ export const updateRun = async (run: {
   return updated;
 };
 
-export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+export const getRun = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
   const [run] = await db
     .select({
       id: runs.id,
@@ -315,10 +335,14 @@ export const getClusterRuns = async ({
       and(
         eq(runs.cluster_id, clusterId),
         eq(runs.test, test),
-        ...(type === "conversation" ? [isNull(runs.workflow_execution_id)] : []),
-        ...(type === "workflow" ? [not(isNull(runs.workflow_execution_id))] : []),
-        ...(userId ? [eq(runs.user_id, userId)] : [])
-      )
+        ...(type === "conversation"
+          ? [isNull(runs.workflow_execution_id)]
+          : []),
+        ...(type === "workflow"
+          ? [not(isNull(runs.workflow_execution_id))]
+          : []),
+        ...(userId ? [eq(runs.user_id, userId)] : []),
+      ),
     )
     .orderBy(desc(runs.created_at))
     .limit(limit);
@@ -326,7 +350,13 @@ export const getClusterRuns = async ({
   return result;
 };
 
-export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+export const getRunDetails = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
   const [[run], agentMessage, tags] = await Promise.all([
     db
       .select({
@@ -370,7 +400,13 @@ export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; r
   };
 };
 
-export const getRunResult = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+export const getRunResult = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
   const lastMessage = await lastAgentMessage({ clusterId, runId });
 
   if (lastMessage?.type !== "agent") {
@@ -385,7 +421,9 @@ export const assertEphemeralClusterLimitations = async (clusterId: string) => {
     const count = await getMessageCountForCluster(clusterId);
 
     if (count > 30) {
-      throw new PaymentRequiredError("Ephemeral cluster has reached the message limit");
+      throw new PaymentRequiredError(
+        "Ephemeral cluster has reached the message limit",
+      );
     }
   }
 };
@@ -538,7 +576,13 @@ export const getClusterBackgroundRun = (clusterId: string) => {
   return `${clusterId}BACKGROUND`;
 };
 
-export const assertableRun = async ({ runId, clusterId }: { runId: string; clusterId: string }) => {
+export const assertableRun = async ({
+  runId,
+  clusterId,
+}: {
+  runId: string;
+  clusterId: string;
+}) => {
   const [run] = await db
     .select({
       status: runs.status,
@@ -550,7 +594,10 @@ export const assertableRun = async ({ runId, clusterId }: { runId: string; clust
   return run;
 };
 
-export const assertRunReady = async (input: { clusterId: string; runId: string }) => {
+export const assertRunReady = async (input: {
+  clusterId: string;
+  runId: string;
+}) => {
   const run = await assertableRun(input);
 
   if (!run) {
@@ -563,7 +610,9 @@ export const assertRunReady = async (input: { clusterId: string; runId: string }
   });
 
   if (!run.interactive) {
-    throw new BadRequestError("Run is not interactive and cannot accept new messages.");
+    throw new BadRequestError(
+      "Run is not interactive and cannot accept new messages.",
+    );
   }
 
   const acceptedStatuses = ["done", "failed", "pending", "paused"];
@@ -597,7 +646,9 @@ export const assertRunReady = async (input: { clusterId: string; runId: string }
     id: input.runId,
   });
 
-  throw new RunBusyError("Run is not ready for new messages: Unprocessed messages");
+  throw new RunBusyError(
+    "Run is not ready for new messages: Unprocessed messages",
+  );
 };
 
 export const getWaitingJobIds = async ({
@@ -618,15 +669,21 @@ export const getWaitingJobIds = async ({
         eq(jobs.cluster_id, clusterId),
         or(
           inArray(jobs.status, ["pending", "running"]),
-          and(eq(jobs.approval_requested, true), isNull(jobs.approved))
-        )
-      )
+          and(eq(jobs.approval_requested, true), isNull(jobs.approved)),
+        ),
+      ),
     );
 
-  return waitingJobs.map(job => job.id);
+  return waitingJobs.map((job) => job.id);
 };
 
-export const createRetry = async ({ clusterId, runId }: { clusterId: string; runId: string }) => {
+export const createRetry = async ({
+  clusterId,
+  runId,
+}: {
+  clusterId: string;
+  runId: string;
+}) => {
   await db
     .update(runs)
     .set({
@@ -641,9 +698,17 @@ export const createRetry = async ({ clusterId, runId }: { clusterId: string; run
   });
 };
 
-export const validateSchema = ({ schema, name }: { schema: any; name: string }) => {
+export const validateSchema = ({
+  schema,
+  name,
+}: {
+  schema: any;
+  name: string;
+}) => {
   try {
-    const resultSchemaErrors = validateFunctionSchema(schema as JsonSchemaInput);
+    const resultSchemaErrors = validateFunctionSchema(
+      schema as JsonSchemaInput,
+    );
 
     if (resultSchemaErrors.length > 0) {
       return {

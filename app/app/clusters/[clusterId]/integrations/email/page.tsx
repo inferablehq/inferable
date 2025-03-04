@@ -2,7 +2,13 @@
 
 import { client } from "@/client/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -88,10 +94,13 @@ export default function EmailIntegration({
 
     setLoading(false);
 
-    if (integrationsResponse.status === 200 && integrationsResponse.body?.email) {
+    if (
+      integrationsResponse.status === 200 &&
+      integrationsResponse.body?.email
+    ) {
       form.setValue(
         "validateSPFandDKIM",
-        integrationsResponse.body.email.validateSPFandDKIM ?? false
+        integrationsResponse.body.email.validateSPFandDKIM ?? false,
       );
       setConnectionId(integrationsResponse.body.email.connectionId || null);
     }
@@ -148,7 +157,9 @@ export default function EmailIntegration({
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        navigator.clipboard.writeText(`${connectionId}@${EMAIL_INGESTION_SUFIX}`);
+                        navigator.clipboard.writeText(
+                          `${connectionId}@${EMAIL_INGESTION_SUFIX}`,
+                        );
                         toast.success("Copied to clipboard");
                       }}
                     >
@@ -166,13 +177,19 @@ export default function EmailIntegration({
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-sm">Validate SPF and DKIM</FormLabel>
+                      <FormLabel className="text-sm">
+                        Validate SPF and DKIM
+                      </FormLabel>
                       <FormDescription>
-                        Validate the sender&apos;s email address using SPF and DKIM
+                        Validate the sender&apos;s email address using SPF and
+                        DKIM
                       </FormDescription>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}

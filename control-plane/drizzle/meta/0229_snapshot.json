@@ -77,13 +77,9 @@
         "agents_cluster_id_clusters_id_fk": {
           "name": "agents_cluster_id_clusters_id_fk",
           "tableFrom": "agents",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -91,10 +87,7 @@
       "compositePrimaryKeys": {
         "prompt_templates_pkey": {
           "name": "prompt_templates_pkey",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -121,9 +114,7 @@
       "compositePrimaryKeys": {
         "analytics_snapshots_pkey": {
           "name": "analytics_snapshots_pkey",
-          "columns": [
-            "timestamp"
-          ]
+          "columns": ["timestamp"]
         }
       },
       "uniqueConstraints": {}
@@ -203,13 +194,9 @@
         "api_keys_cluster_id_clusters_id_fk": {
           "name": "api_keys_cluster_id_clusters_id_fk",
           "tableFrom": "api_keys",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -217,10 +204,7 @@
       "compositePrimaryKeys": {
         "api_keys_cluster_id_id_pk": {
           "name": "api_keys_cluster_id_id_pk",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -296,30 +280,18 @@
         "blobs_cluster_id_job_id_jobs_cluster_id_id_fk": {
           "name": "blobs_cluster_id_job_id_jobs_cluster_id_id_fk",
           "tableFrom": "blobs",
-          "columnsFrom": [
-            "cluster_id",
-            "job_id"
-          ],
+          "columnsFrom": ["cluster_id", "job_id"],
           "tableTo": "jobs",
-          "columnsTo": [
-            "cluster_id",
-            "id"
-          ],
+          "columnsTo": ["cluster_id", "id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "blobs_cluster_id_run_id_runs_cluster_id_id_fk": {
           "name": "blobs_cluster_id_run_id_runs_cluster_id_id_fk",
           "tableFrom": "blobs",
-          "columnsFrom": [
-            "cluster_id",
-            "run_id"
-          ],
+          "columnsFrom": ["cluster_id", "run_id"],
           "tableTo": "runs",
-          "columnsTo": [
-            "cluster_id",
-            "id"
-          ],
+          "columnsTo": ["cluster_id", "id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -327,10 +299,7 @@
       "compositePrimaryKeys": {
         "blobs_cluster_id_id_pk": {
           "name": "blobs_cluster_id_id_pk",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -363,10 +332,7 @@
       "compositePrimaryKeys": {
         "cluster_kv_cluster_id_key_pk": {
           "name": "cluster_kv_cluster_id_key_pk",
-          "columns": [
-            "cluster_id",
-            "key"
-          ]
+          "columns": ["cluster_id", "key"]
         }
       },
       "uniqueConstraints": {}
@@ -615,11 +581,7 @@
       "compositePrimaryKeys": {
         "embeddings_cluster_id_id_type_pk": {
           "name": "embeddings_cluster_id_id_type_pk",
-          "columns": [
-            "cluster_id",
-            "id",
-            "type"
-          ]
+          "columns": ["cluster_id", "id", "type"]
         }
       },
       "uniqueConstraints": {}
@@ -840,17 +802,9 @@
         "external_messages_message_id_run_id_cluster_id_run_messages_id_run_id_cluster_id_fk": {
           "name": "external_messages_message_id_run_id_cluster_id_run_messages_id_run_id_cluster_id_fk",
           "tableFrom": "external_messages",
-          "columnsFrom": [
-            "message_id",
-            "run_id",
-            "cluster_id"
-          ],
+          "columnsFrom": ["message_id", "run_id", "cluster_id"],
           "tableTo": "run_messages",
-          "columnsTo": [
-            "id",
-            "run_id",
-            "cluster_id"
-          ],
+          "columnsTo": ["id", "run_id", "cluster_id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -858,10 +812,7 @@
       "compositePrimaryKeys": {
         "external_messages_pkey": {
           "name": "external_messages_pkey",
-          "columns": [
-            "cluster_id",
-            "external_id"
-          ]
+          "columns": ["cluster_id", "external_id"]
         }
       },
       "uniqueConstraints": {}
@@ -932,13 +883,9 @@
         "integrations_cluster_id_clusters_id_fk": {
           "name": "integrations_cluster_id_clusters_id_fk",
           "tableFrom": "integrations",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -946,9 +893,7 @@
       "compositePrimaryKeys": {
         "integrations_pkey": {
           "name": "integrations_pkey",
-          "columns": [
-            "cluster_id"
-          ]
+          "columns": ["cluster_id"]
         }
       },
       "uniqueConstraints": {}
@@ -1161,18 +1106,13 @@
       "compositePrimaryKeys": {
         "jobs_cluster_id_id": {
           "name": "jobs_cluster_id_id",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {
         "jobs_id_unique": {
           "name": "jobs_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "nullsNotDistinct": false
         }
       }
@@ -1223,10 +1163,7 @@
       "compositePrimaryKeys": {
         "machines_id_cluster_id": {
           "name": "machines_id_cluster_id",
-          "columns": [
-            "id",
-            "cluster_id"
-          ]
+          "columns": ["id", "cluster_id"]
         }
       },
       "uniqueConstraints": {}
@@ -1296,15 +1233,9 @@
         "run_messages_run_id_cluster_id_runs_id_cluster_id_fk": {
           "name": "run_messages_run_id_cluster_id_runs_id_cluster_id_fk",
           "tableFrom": "run_messages",
-          "columnsFrom": [
-            "run_id",
-            "cluster_id"
-          ],
+          "columnsFrom": ["run_id", "cluster_id"],
           "tableTo": "runs",
-          "columnsTo": [
-            "id",
-            "cluster_id"
-          ],
+          "columnsTo": ["id", "cluster_id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1312,11 +1243,7 @@
       "compositePrimaryKeys": {
         "run_messages_cluster_id_run_id_id": {
           "name": "run_messages_cluster_id_run_id_id",
-          "columns": [
-            "cluster_id",
-            "run_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "run_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -1383,15 +1310,9 @@
         "run_tags_run_id_cluster_id_runs_id_cluster_id_fk": {
           "name": "run_tags_run_id_cluster_id_runs_id_cluster_id_fk",
           "tableFrom": "run_tags",
-          "columnsFrom": [
-            "run_id",
-            "cluster_id"
-          ],
+          "columnsFrom": ["run_id", "cluster_id"],
           "tableTo": "runs",
-          "columnsTo": [
-            "id",
-            "cluster_id"
-          ],
+          "columnsTo": ["id", "cluster_id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1399,11 +1320,7 @@
       "compositePrimaryKeys": {
         "run_tags_cluster_id_run_id_key": {
           "name": "run_tags_cluster_id_run_id_key",
-          "columns": [
-            "cluster_id",
-            "run_id",
-            "key"
-          ]
+          "columns": ["cluster_id", "run_id", "key"]
         }
       },
       "uniqueConstraints": {}
@@ -1579,13 +1496,9 @@
         "runs_cluster_id_clusters_id_fk": {
           "name": "runs_cluster_id_clusters_id_fk",
           "tableFrom": "runs",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -1593,10 +1506,7 @@
       "compositePrimaryKeys": {
         "workflows_cluster_id_id": {
           "name": "workflows_cluster_id_id",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}
@@ -1641,13 +1551,9 @@
         "services_cluster_id_clusters_id_fk": {
           "name": "services_cluster_id_clusters_id_fk",
           "tableFrom": "services",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -1655,10 +1561,7 @@
       "compositePrimaryKeys": {
         "services_cluster_id_service": {
           "name": "services_cluster_id_service",
-          "columns": [
-            "cluster_id",
-            "service"
-          ]
+          "columns": ["cluster_id", "service"]
         }
       },
       "uniqueConstraints": {}
@@ -1757,13 +1660,9 @@
         "tools_cluster_id_clusters_id_fk": {
           "name": "tools_cluster_id_clusters_id_fk",
           "tableFrom": "tools",
-          "columnsFrom": [
-            "cluster_id"
-          ],
+          "columnsFrom": ["cluster_id"],
           "tableTo": "clusters",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -1771,10 +1670,7 @@
       "compositePrimaryKeys": {
         "tools_cluster_id_tools": {
           "name": "tools_cluster_id_tools",
-          "columns": [
-            "cluster_id",
-            "name"
-          ]
+          "columns": ["cluster_id", "name"]
         }
       },
       "uniqueConstraints": {}
@@ -1826,12 +1722,7 @@
       "compositePrimaryKeys": {
         "versioned_entities_pkey": {
           "name": "versioned_entities_pkey",
-          "columns": [
-            "cluster_id",
-            "id",
-            "type",
-            "version"
-          ]
+          "columns": ["cluster_id", "id", "type", "version"]
         }
       },
       "uniqueConstraints": {}
@@ -1896,10 +1787,7 @@
       "compositePrimaryKeys": {
         "workflow_executions_pkey": {
           "name": "workflow_executions_pkey",
-          "columns": [
-            "cluster_id",
-            "id"
-          ]
+          "columns": ["cluster_id", "id"]
         }
       },
       "uniqueConstraints": {}

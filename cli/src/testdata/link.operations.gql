@@ -19,7 +19,11 @@ query GetRepositoryAndPullRequests($username: String!, $slug: String!) {
     owner {
       username
     }
-    pullRequests: getPullRequestsByRepository(username: $username, slug: $slug, state: OPEN) {
+    pullRequests: getPullRequestsByRepository(
+      username: $username
+      slug: $slug
+      state: OPEN
+    ) {
       id
       title
       author {

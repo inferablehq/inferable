@@ -4,11 +4,14 @@
 
 # Inferable Node.js Bootstrap
 
-This is a Node.js bootstrap application that demonstrates how to integrate and use our SDK. It serves as a reference implementation and starting point for Node.js developers.
+This is a Node.js bootstrap application that demonstrates how to integrate and
+use our SDK. It serves as a reference implementation and starting point for
+Node.js developers.
 
 ## Docs
 
-To follow along with the docs, go to our [quickstart](https://docs.inferable.ai/pages/quick-start).
+To follow along with the docs, go to our
+[quickstart](https://docs.inferable.ai/pages/quick-start).
 
 ## How to Run
 
@@ -26,13 +29,17 @@ npm run trigger
 
 ## How it works
 
-The worker machine uses the Inferable Node.js SDK to register the `exec` function with Inferable. This function:
-   - Accepts `ls` or `cat` commands with path arguments
-   - Only allows accessing paths that start with "./"
+The worker machine uses the Inferable Node.js SDK to register the `exec`
+function with Inferable. This function:
 
+- Accepts `ls` or `cat` commands with path arguments
+- Only allows accessing paths that start with "./"
 
 ## Security
 
-- The `exec` function is restricted to only allow access to files starting with "./"
-- The agent is designed to be safe and only perform actions that are relevant to the task
-- The constraints are enforced by source code, and cannot be bypassed by the agent
+- The `exec` function is restricted to only allow access to files starting with
+  "./"
+- The agent is designed to be safe and only perform actions that are relevant to
+  the task
+- The constraints are enforced by source code, and cannot be bypassed by the
+  agent

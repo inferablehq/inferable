@@ -19,7 +19,7 @@ const workers: Worker[] = [];
 export const registerCron = async (
   fn: () => Promise<unknown>,
   name: string,
-  { interval }: { interval: number }
+  { interval }: { interval: number },
 ) => {
   const queueName = `cron-queue-${name}`;
 
@@ -37,7 +37,7 @@ export const registerCron = async (
         logger.error("Cron job failed", { name, error: e });
       }
     },
-    { connection: bullmqRedisConnection }
+    { connection: bullmqRedisConnection },
   );
 
   workers.push(worker);
@@ -54,32 +54,37 @@ export const registerCron = async (
         attempts: 3,
         removeOnFail: 1000,
       },
-    }
+    },
   );
 
-  logger.info("Cron job registered with BullMQ Job Scheduler", { name, interval });
+  logger.info("Cron job registered with BullMQ Job Scheduler", {
+    name,
+    interval,
+  });
 };
 
 export const stop = async () => {
   // Close all workers
-  await Promise.all(workers.map(worker => worker.close()));
+  await Promise.all(workers.map((worker) => worker.close()));
 
   // Close all queues and remove job schedulers
   await Promise.all(
-    queues.map(async queue => {
+    queues.map(async (queue) => {
       // Get all job schedulers for this queue
       const schedulers = await queue.getJobSchedulers();
 
       // Remove all job schedulers
       await Promise.all(
         schedulers
-          .filter(scheduler => scheduler.id !== null && scheduler.id !== undefined)
-          .map(scheduler => queue.removeJobScheduler(scheduler.id as string))
+          .filter(
+            (scheduler) => scheduler.id !== null && scheduler.id !== undefined,
+          )
+          .map((scheduler) => queue.removeJobScheduler(scheduler.id as string)),
       );
 
       await queue.obliterate({ force: true });
       await queue.close();
-    })
+    }),
   );
 
   // Clear arrays

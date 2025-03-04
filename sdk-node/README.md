@@ -40,7 +40,7 @@ import { Inferable } from "inferable";
 
 const inferable = new Inferable({
   // Get yours at https://app.inferable.ai
-  apiSecret: ""
+  apiSecret: "",
   // Optional, if self-hosting (https://docs.inferable.ai/pages/self-hosting)
   // baseUrl: "http://localhost:4000",
 });
@@ -48,7 +48,8 @@ const inferable = new Inferable({
 
 ### Register a Tool
 
-Register a [tool](https://docs.inferable.ai/pages/tools) which is available for your agents to use.
+Register a [tool](https://docs.inferable.ai/pages/tools) which is available for
+your agents to use.
 
 > ℹ️ This example demonstrates Node.js. Tools can also be written in Go or .NET.
 
@@ -70,8 +71,8 @@ inferable.tools.listen();
 
 ### Create a Workflow
 
-Workflows are a way to orchestrate agents. They are durable, distributed, and run on the machine that they are registered on.
-
+Workflows are a way to orchestrate agents. They are durable, distributed, and
+run on the machine that they are registered on.
 
 > ℹ️ Workflow definitions can currently only be written in Node.js.
 
@@ -90,7 +91,7 @@ workflow.version(1).define(async (ctx, input) => {
     tools: ["greet"],
     systemPrompt: helpers.structuredPrompt({
       facts: ["You are a friendly greeter"],
-      goals: ["Return a greeting to the user"]
+      goals: ["Return a greeting to the user"],
     }),
     resultSchema: z.object({
       greeting: z.string(),
@@ -100,7 +101,7 @@ workflow.version(1).define(async (ctx, input) => {
   const result = await greetingAgent.trigger({
     data: {
       name: input.userName,
-    }
+    },
   });
 
   console.log(result.result.greeting);
@@ -115,7 +116,7 @@ workflow.listen();
 Tgger the workflow from your application code or via a HTTP request.
 
 ```typescript
-await inferable.workflows.trigger('greeting', {
+await inferable.workflows.trigger("greeting", {
   executionId: `123`,
   userName: "Alice",
 });
@@ -129,12 +130,15 @@ curl -XPOST https://api.inferable.ai/clusters/$CLUSTER_ID/workflows/greeting/exe
 
 ## Documentation
 
-- [Inferable documentation](https://docs.inferable.ai/) contains all the information you need to get started with Inferable.
+- [Inferable documentation](https://docs.inferable.ai/) contains all the
+  information you need to get started with Inferable.
 
 ## Support
 
-For support or questions, please [create an issue in the repository](https://github.com/inferablehq/inferable/issues).
+For support or questions, please
+[create an issue in the repository](https://github.com/inferablehq/inferable/issues).
 
 ## Contributing
 
-Contributions to the Inferable NodeJs Client are welcome. Please ensure that your code adheres to the existing style and includes appropriate tests.
+Contributions to the Inferable NodeJs Client are welcome. Please ensure that
+your code adheres to the existing style and includes appropriate tests.

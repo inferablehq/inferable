@@ -1,7 +1,13 @@
 import { ulid } from "ulid";
 import { packer } from "../packer";
 import { createOwner } from "../test/util";
-import { createJobV2, pollJobsByTools, getJob, requestApproval, submitApproval } from "./jobs";
+import {
+  createJobV2,
+  pollJobsByTools,
+  getJob,
+  requestApproval,
+  submitApproval,
+} from "./jobs";
 import { acknowledgeJob, persistJobResult } from "./job-results";
 import { selfHealJobs } from "./self-heal-jobs";
 import * as redis from "../redis";
@@ -86,7 +92,7 @@ describe("selfHealCalls", () => {
     expect(acknowledged).toBeDefined();
 
     // wait for the job to timeout
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // run the self heal job
     const healedJobs = await selfHealJobs();
@@ -142,7 +148,12 @@ describe("selfHealCalls", () => {
         status: "interrupted",
         updated_at: sql`now() - interval '10 minutes'`,
       })
-      .where(and(eq(data.jobs.id, createJobResult.id), eq(data.jobs.cluster_id, owner.clusterId)))
+      .where(
+        and(
+          eq(data.jobs.id, createJobResult.id),
+          eq(data.jobs.cluster_id, owner.clusterId),
+        ),
+      )
       .returning({
         targetFn: data.jobs.target_fn,
         targetArgs: data.jobs.target_args,
@@ -204,7 +215,12 @@ describe("selfHealCalls", () => {
         status: "interrupted",
         updated_at: sql`now() - interval '2 days'`,
       })
-      .where(and(eq(data.jobs.id, createJobResult.id), eq(data.jobs.cluster_id, owner.clusterId)))
+      .where(
+        and(
+          eq(data.jobs.id, createJobResult.id),
+          eq(data.jobs.cluster_id, owner.clusterId),
+        ),
+      )
       .returning({
         targetFn: data.jobs.target_fn,
         targetArgs: data.jobs.target_args,
@@ -215,7 +231,9 @@ describe("selfHealCalls", () => {
 
     expect(healedJobs.stalledFailedByTimeout).not.toContain(createJobResult.id);
 
-    expect(healedJobs.nonResumedInterruptions).not.toContain(createJobResult.id);
+    expect(healedJobs.nonResumedInterruptions).not.toContain(
+      createJobResult.id,
+    );
     expect(healedJobs.stalledRecovered).not.toContain(createJobResult.id);
 
     const job = await getJob({
@@ -261,7 +279,7 @@ describe("selfHealCalls", () => {
     });
 
     // wait for the job to timeout
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // run the self heal job
     const healedJobs = await selfHealJobs();
@@ -308,7 +326,7 @@ describe("selfHealCalls", () => {
     expect(acknowledged).toBeDefined();
 
     // wait for the job to timeout
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // run the self heal job
     const healedJobs = await selfHealJobs();
@@ -484,7 +502,9 @@ describe("pollJobs", () => {
       ...Array(50)
         .fill(0)
         .map(async () => {
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 10));
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.random() * 10),
+          );
           return poll();
         }),
     ]);

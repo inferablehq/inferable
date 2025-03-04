@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'sdk-*/**'
-      - 'cli/**'
+      - "sdk-*/**"
+      - "cli/**"
 
 jobs:
   check-package-changes:

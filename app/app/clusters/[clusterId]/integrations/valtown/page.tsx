@@ -2,7 +2,13 @@
 
 import { client } from "@/client/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
@@ -34,7 +40,9 @@ export default function ValtownIntegration({
     try {
       const url = new URL(endpoint);
       if (!url.hostname.endsWith("val.run")) {
-        setError("Please enter a valid Val endpoint URL (must end with val.run)");
+        setError(
+          "Please enter a valid Val endpoint URL (must end with val.run)",
+        );
         return;
       }
     } catch {
@@ -63,7 +71,9 @@ export default function ValtownIntegration({
 
     toast.dismiss(loadingToast);
     if (response.status === 200) {
-      toast.success(shouldRegenerateToken ? "Token regenerated" : "Integration updated");
+      toast.success(
+        shouldRegenerateToken ? "Token regenerated" : "Integration updated",
+      );
       await fetchConfig();
       return;
     } else {
@@ -117,9 +127,10 @@ export default function ValtownIntegration({
           </div>
           <CardDescription>
             <p>
-              Connect your Valtown Val endpoint to integrate with your function-as-a-service (FaaS)
-              workflow. Use the `jsr:@inferable/valtown-adapter` package to build your Val. For full
-              documentation, visit{" "}
+              Connect your Valtown Val endpoint to integrate with your
+              function-as-a-service (FaaS) workflow. Use the
+              `jsr:@inferable/valtown-adapter` package to build your Val. For
+              full documentation, visit{" "}
               <a
                 href="https://docs.inferable.ai/pages/valtown"
                 className="text-blue-500 hover:underline"
@@ -135,7 +146,7 @@ export default function ValtownIntegration({
               <label className="text-sm font-medium">Val Endpoint URL</label>
               <Input
                 value={endpoint}
-                onChange={e => setEndpoint(e.target.value)}
+                onChange={(e) => setEndpoint(e.target.value)}
                 placeholder="https://myval.web.val.run"
               />
               <p className="text-sm text-gray-500 mt-1">
@@ -149,13 +160,15 @@ export default function ValtownIntegration({
           {token && (
             <div className="mt-6 space-y-4">
               <div>
-                <label className="text-sm font-medium">Authentication Token</label>
+                <label className="text-sm font-medium">
+                  Authentication Token
+                </label>
                 <pre className="text-sm text-gray-500 mt-1">
                   {`${token.slice(0, 16)}${token.slice(16).replace(/[A-Za-z0-9]/g, "*")}`}
                 </pre>
                 <p className="text-sm text-gray-500 mt-1">
-                  Use this token to authenticate requests from your Val to Inferable. Keep this
-                  token secret and secure.
+                  Use this token to authenticate requests from your Val to
+                  Inferable. Keep this token secret and secure.
                 </p>
               </div>
               <div className="flex items-center gap-2">

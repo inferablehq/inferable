@@ -41,7 +41,7 @@ export const buildTool = ({
     func: async () => undefined,
   });
 
-  tool.func = async input => {
+  tool.func = async (input) => {
     const requestArgs = packer.pack(input);
 
     // This relies on idempotency based on toolCallId, this will be called multiple times:
@@ -125,13 +125,19 @@ const functionSchemaResponse = z.discriminatedUnion("resultType", [
 ]);
 
 export const parseFunctionResponse = (response: string) => {
-  assert(typeof response === "string", `Expected response to be a string, got ${typeof response}`);
+  assert(
+    typeof response === "string",
+    `Expected response to be a string, got ${typeof response}`,
+  );
 
   let parsed = null;
 
   try {
     parsed = JSON.parse(response);
-    parsed.result = typeof parsed.result === "string" ? JSON.parse(parsed.result) : parsed.result;
+    parsed.result =
+      typeof parsed.result === "string"
+        ? JSON.parse(parsed.result)
+        : parsed.result;
   } catch (e) {
     // Allow for non-JSON result
   }

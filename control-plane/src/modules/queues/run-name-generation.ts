@@ -43,5 +43,5 @@ export const runGenerateNameQueue = createQueue<GenerateNameMessage>(
   handleRunNameGeneration,
   {
     concurrency: 5,
-  }
+  },
 );

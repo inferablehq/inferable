@@ -15,9 +15,14 @@ export default function SetupDemoPage() {
   const [clusterId, setClusterId] = useState<string | null>(null);
   const { getToken } = useAuth();
 
-  const [messages, setMessages] = useState<Array<{ text: string; shown: boolean }>>([
+  const [messages, setMessages] = useState<
+    Array<{ text: string; shown: boolean }>
+  >([
     { text: "Hi, welcome to Inferable.", shown: true },
-    { text: "We're going to create an Inferable cluster for you.", shown: false },
+    {
+      text: "We're going to create an Inferable cluster for you.",
+      shown: false,
+    },
     {
       text: "A cluster is a container for your functions (tools) and the agents that use them.",
       shown: false,
@@ -31,24 +36,30 @@ export default function SetupDemoPage() {
     // Show second message after 2 seconds
     timeouts.push(
       setTimeout(() => {
-        setMessages(prev => prev.map((msg, i) => (i === 1 ? { ...msg, shown: true } : msg)));
-      }, 2000)
+        setMessages((prev) =>
+          prev.map((msg, i) => (i === 1 ? { ...msg, shown: true } : msg)),
+        );
+      }, 2000),
     );
 
     // Show third message after 5 seconds
     timeouts.push(
       setTimeout(() => {
-        setMessages(prev => prev.map((msg, i) => (i === 2 ? { ...msg, shown: true } : msg)));
-      }, 5000)
+        setMessages((prev) =>
+          prev.map((msg, i) => (i === 2 ? { ...msg, shown: true } : msg)),
+        );
+      }, 5000),
     );
 
     // Show creating message after 7 seconds
     timeouts.push(
       setTimeout(() => {
-        setMessages(prev => prev.map((msg, i) => (i === 3 ? { ...msg, shown: true } : msg)));
+        setMessages((prev) =>
+          prev.map((msg, i) => (i === 3 ? { ...msg, shown: true } : msg)),
+        );
         // Only start cluster creation after showing the creating message
         createCluster();
-      }, 7000)
+      }, 7000),
     );
 
     return () => timeouts.forEach(clearTimeout);
@@ -56,7 +67,7 @@ export default function SetupDemoPage() {
 
   const createCluster = useCallback(() => {
     // Create the cluster
-    getToken().then(token => {
+    getToken().then((token) => {
       const description = `Created as a demo cluster on ${new Date().toLocaleDateString()}`;
 
       client
@@ -72,7 +83,7 @@ export default function SetupDemoPage() {
         })
         .then(() => {
           // Wait for 2 seconds before checking the cluster
-          return new Promise(resolve => setTimeout(resolve, 2000));
+          return new Promise((resolve) => setTimeout(resolve, 2000));
         })
         .then(() => {
           // Get the latest cluster to get its ID
@@ -82,22 +93,23 @@ export default function SetupDemoPage() {
             },
           });
         })
-        .then(clusters => {
+        .then((clusters) => {
           if (clusters.status === 200) {
             const latestCluster = clusters.body.sort(
               (a: { createdAt: Date }, b: { createdAt: Date }) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime(),
             )[0];
 
             setClusterId(latestCluster.id);
             setIsCreating(false);
           }
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Failed to create demo cluster:", error);
           createErrorToast(
             error,
-            "Failed to create demo cluster. Please refresh the page and try again?"
+            "Failed to create demo cluster. Please refresh the page and try again?",
           );
           router.push("/clusters");
         });
@@ -144,7 +156,7 @@ export default function SetupDemoPage() {
                       </div>
                     )}
                   </div>
-                )
+                ),
             )}
           </div>
 
@@ -158,14 +170,17 @@ export default function SetupDemoPage() {
                     </div>
                     <div>
                       <div className="text-sm font-medium">Inferable</div>
-                      <div className="text-xs text-muted-foreground">just now</div>
+                      <div className="text-xs text-muted-foreground">
+                        just now
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="bg-secondary/10 rounded-lg p-4">
                       <p className="text-sm">
-                        Your cluster has been created successfully! Here are the details:
+                        Your cluster has been created successfully! Here are the
+                        details:
                       </p>
                     </div>
 
@@ -182,7 +197,7 @@ export default function SetupDemoPage() {
                             isDemo: true,
                           },
                           null,
-                          2
+                          2,
                         )}
                       </pre>
                     </div>
@@ -193,7 +208,9 @@ export default function SetupDemoPage() {
               <div className="flex justify-start mt-6">
                 <Button
                   size="sm"
-                  onClick={() => router.push(`/clusters/${clusterId}/runs?onboarding=true`)}
+                  onClick={() =>
+                    router.push(`/clusters/${clusterId}/runs?onboarding=true`)
+                  }
                 >
                   Go to my new cluster
                   <ArrowRight className="ml-2 h-3 w-3" />

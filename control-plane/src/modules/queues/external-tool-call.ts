@@ -13,5 +13,5 @@ export const externalToolCallQueue = createQueue<ExternalToolCallMessage>(
   handleExternalCall,
   {
     concurrency: 5,
-  }
+  },
 );

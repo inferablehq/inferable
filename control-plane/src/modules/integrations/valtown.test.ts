@@ -36,9 +36,11 @@ describe("Val.town Integration", () => {
       server.use(
         http.get("*/meta", ({ request }) => {
           // Verify auth header
-          expect(request.headers.get("Authorization")).toBe(`Bearer ${config.token}`);
+          expect(request.headers.get("Authorization")).toBe(
+            `Bearer ${config.token}`,
+          );
           return HttpResponse.json(mockMeta);
-        })
+        }),
       );
 
       const result = await fetchValTownMeta({
@@ -60,10 +62,12 @@ describe("Val.town Integration", () => {
           expect(body).toEqual({ param: "value" });
 
           // Verify auth header
-          expect(request.headers.get("Authorization")).toBe(`Bearer ${config.token}`);
+          expect(request.headers.get("Authorization")).toBe(
+            `Bearer ${config.token}`,
+          );
 
           return HttpResponse.json(mockResponse);
-        })
+        }),
       );
 
       const result = await executeValTownFunction({

@@ -16,7 +16,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' }}
     outputs:
       sdk_node: ${{ steps.filter.outputs.sdk_node }}
       sdk_react: ${{ steps.filter.outputs.sdk_react }}
@@ -261,7 +262,8 @@ jobs:
           nuget-api-key: ${{ secrets.NUGET_API_KEY }}
           nuget-version: latest
       - name: Publish
-        run: dotnet nuget push output\*.nupkg -s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push output\*.nupkg -s
+          https://api.nuget.org/v3/index.json
       - name: Commit and push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -352,8 +354,8 @@ jobs:
       - name: Commit archives
         uses: EndBug/add-and-commit@v9
         with:
-          add: 'archives/'
-          message: '[skip ci] Update bootstrap project archives'
+          add: "archives/"
+          message: "[skip ci] Update bootstrap project archives"
           default_author: github_actions
           push: true
           github_token: ${{ secrets.GITHUB_TOKEN }}

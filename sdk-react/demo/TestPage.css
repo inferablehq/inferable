@@ -4,7 +4,8 @@
   gap: 20px;
   padding: 20px;
   background-color: hsl(var(--background, 0 0% 100%));
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
 }
 

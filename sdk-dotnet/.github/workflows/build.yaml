@@ -10,25 +10,25 @@ jobs:
     runs-on: windows-latest
 
     env:
-      INFERABLE_API_ENDPOINT: 'https://api.inferable.ai'
+      INFERABLE_API_ENDPOINT: "https://api.inferable.ai"
       INFERABLE_CLUSTER_ID: ${{ vars.INFERABLE_CLUSTER_ID }}
       INFERABLE_MACHINE_SECRET: ${{ secrets.INFERABLE_MACHINE_SECRET }}
       INFERABLE_CONSUME_SECRET: ${{ secrets.INFERABLE_CONSUME_SECRET }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: '8.0'
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: "8.0"
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
 
-    - name: Test
-      run: dotnet test --no-restore
+      - name: Test
+        run: dotnet test --no-restore

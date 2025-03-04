@@ -67,7 +67,11 @@ describe("buildModelSchema", () => {
       additionalProperties: false,
     };
 
-    const schema = buildModelSchema({ state, relevantSchemas, resultSchema }) as any;
+    const schema = buildModelSchema({
+      state,
+      relevantSchemas,
+      resultSchema,
+    }) as any;
 
     expect(schema.type).toBe("object");
     expect(schema.properties).toHaveProperty("result");
@@ -76,7 +80,11 @@ describe("buildModelSchema", () => {
   });
 
   it("includes 'done' and 'issue' fields", () => {
-    const schema = buildModelSchema({ state, relevantSchemas, resultSchema }) as any;
+    const schema = buildModelSchema({
+      state,
+      relevantSchemas,
+      resultSchema,
+    }) as any;
 
     expect(schema.properties).toHaveProperty("done");
     expect(schema.properties).toHaveProperty("issue");

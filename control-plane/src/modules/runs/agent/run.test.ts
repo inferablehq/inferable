@@ -101,7 +101,12 @@ describe("processRun", () => {
     const onStatusChangeJob = await db
       .select()
       .from(jobs)
-      .where(and(eq(jobs.cluster_id, run.clusterId), eq(jobs.target_fn, "someOtherFunction")));
+      .where(
+        and(
+          eq(jobs.cluster_id, run.clusterId),
+          eq(jobs.target_fn, "someOtherFunction"),
+        ),
+      );
 
     expect(onStatusChangeJob.length).toBe(1);
   });
@@ -156,8 +161,8 @@ describe("findRelevantTools", () => {
       allAvailableTools: [],
     });
 
-    expect(tools.map(tool => tool.name)).toContain("someFunction");
-    expect(tools.map(tool => tool.name)).not.toContain("someOtherFunction");
+    expect(tools.map((tool) => tool.name)).toContain("someFunction");
+    expect(tools.map((tool) => tool.name)).not.toContain("someOtherFunction");
   });
 });
 
@@ -225,7 +230,7 @@ describe("formatJobsContext", () => {
           result: JSON.stringify([4, 5, 6]),
         },
       ],
-      "success"
+      "success",
     );
     expect(result).toContain(`<input>[\"<number>\"]</input>`);
     expect(result).toContain(`<output>[\"<number>\"]</output>`);
@@ -247,14 +252,14 @@ describe("formatJobsContext", () => {
           result: "456",
         },
       ],
-      "failed"
+      "failed",
     );
     expect(result).toBe(
       `<previous_jobs status="failed">
 <input>"<string>"</input><output>"<string>"</output>
 <input>"<string>"</input><output>"<string>"</output>
 <input>"<number>"</input><output>"<number>"</output>
-</previous_jobs>`
+</previous_jobs>`,
     );
   });
 });

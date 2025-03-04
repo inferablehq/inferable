@@ -20,13 +20,20 @@ interface ToolContextButtonProps {
   tool: ClusterState["tools"][number];
 }
 
-const ToolContextButton: React.FC<ToolContextButtonProps> = ({ clusterId, tool }) => {
+const ToolContextButton: React.FC<ToolContextButtonProps> = ({
+  clusterId,
+  tool,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button size="sm" variant="secondary" className="text-xs text-muted-foreground">
+        <Button
+          size="sm"
+          variant="secondary"
+          className="text-xs text-muted-foreground"
+        >
           Definition →
         </Button>
       </SheetTrigger>
@@ -84,8 +91,8 @@ const ToolContextButton: React.FC<ToolContextButtonProps> = ({ clusterId, tool }
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="text-sm">Function Not Found</AlertTitle>
               <AlertDescription className="text-xs text-muted-foreground">
-                The specified function could not be found. It may have been removed or is not
-                available in this service.
+                The specified function could not be found. It may have been
+                removed or is not available in this service.
               </AlertDescription>
             </Alert>
           )}

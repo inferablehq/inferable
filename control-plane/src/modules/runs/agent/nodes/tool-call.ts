@@ -1,5 +1,8 @@
 import { ulid } from "ulid";
-import { AgentError, InvalidJobArgumentsError } from "../../../../utilities/errors";
+import {
+  AgentError,
+  InvalidJobArgumentsError,
+} from "../../../../utilities/errors";
 import * as events from "../../../observability/events";
 import { logger } from "../../../observability/logger";
 import { addAttributes, withSpan } from "../../../observability/tracer";
@@ -18,7 +21,7 @@ export const handleToolCalls = (state: RunGraphState, getTool: ToolFetcher) =>
 
 const _handleToolCalls = async (
   state: RunGraphState,
-  getTool: ToolFetcher
+  getTool: ToolFetcher,
 ): Promise<Partial<RunGraphState>> => {
   // When we recieve parallel tool calls, we will receive a number of ToolMessage's
   // after the last AIMessage (The actual function call).
@@ -28,9 +31,12 @@ const _handleToolCalls = async (
 
   const resolvedToolsCalls = new Set<string>();
   while (lastMessage.type === "invocation-result") {
-    logger.info("Found invocation-result message, finding last non-invocation message", {
-      toolCallId: lastMessage.data.id,
-    });
+    logger.info(
+      "Found invocation-result message, finding last non-invocation message",
+      {
+        toolCallId: lastMessage.data.id,
+      },
+    );
 
     // Keep track of the tool calls which have already resolved
     resolvedToolsCalls.add(lastMessage.data.id);
@@ -48,7 +54,10 @@ const _handleToolCalls = async (
 
   const agentMessage = assertMessageOfType("agent", lastMessage);
 
-  if (!agentMessage.data.invocations || agentMessage.data.invocations.length === 0) {
+  if (
+    !agentMessage.data.invocations ||
+    agentMessage.data.invocations.length === 0
+  ) {
     logger.error("Expected a tool call", { lastMessage });
     throw new AgentError("Expected a tool call");
   }
@@ -56,8 +65,8 @@ const _handleToolCalls = async (
   const toolResults = await Promise.all(
     agentMessage.data.invocations
       // Filter out any tool_calls which have already resolvedd
-      .filter(toolCall => !resolvedToolsCalls.has(toolCall.id ?? ""))
-      .map(toolCall => handleToolCall(toolCall, state.run, getTool))
+      .filter((toolCall) => !resolvedToolsCalls.has(toolCall.id ?? ""))
+      .map((toolCall) => handleToolCall(toolCall, state.run, getTool)),
   );
 
   return toolResults.reduce(
@@ -66,10 +75,13 @@ const _handleToolCalls = async (
       if (result.waitingJobs) acc.waitingJobs!.push(...result.waitingJobs);
       if (result.result) {
         if (!!acc.result && !!result.result && result.result !== acc.result) {
-          logger.error("Multiple tools returned different results. Last one will be used.", {
-            result,
-            accResult: acc.result,
-          });
+          logger.error(
+            "Multiple tools returned different results. Last one will be used.",
+            {
+              result,
+              accResult: acc.result,
+            },
+          );
         }
 
         acc.result = result.result;
@@ -82,7 +94,7 @@ const _handleToolCalls = async (
       waitingJobs: [],
       status: "running",
       result: undefined,
-    }
+    },
   );
 };
 
@@ -95,7 +107,7 @@ const handleToolCall = (
     resultSchema: unknown | null;
     debug: boolean;
   },
-  getTool: ToolFetcher
+  getTool: ToolFetcher,
 ) =>
   withSpan("run.toolCall", () => _handleToolCall(toolCall, run, getTool), {
     attributes: {
@@ -113,7 +125,7 @@ const _handleToolCall = async (
     resultSchema: unknown | null;
     debug: boolean;
   },
-  getTool: ToolFetcher
+  getTool: ToolFetcher,
 ): Promise<Partial<RunGraphState>> => {
   logger.info("Executing tool call");
 
@@ -247,7 +259,6 @@ const _handleToolCall = async (
     }
 
     if (response.resultType === "resolution") {
-
       events.write({
         type: "toolInvocationResulted",
         clusterId: run.clusterId,

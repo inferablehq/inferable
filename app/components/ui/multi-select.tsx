@@ -19,7 +19,7 @@ export function MultiSelect({ value, onChange, options }: MultiSelectProps) {
   const filteredOptions = options.filter(
     (option) =>
       !value.includes(option.value) &&
-      option.label.toLowerCase().includes(search.toLowerCase())
+      option.label.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -52,7 +52,7 @@ export function MultiSelect({ value, onChange, options }: MultiSelectProps) {
                 key={option.value}
                 className={cn(
                   "w-full text-left px-2 py-1 text-xs hover:bg-secondary/40",
-                  "focus:bg-secondary/40 focus:outline-none"
+                  "focus:bg-secondary/40 focus:outline-none",
                 )}
                 onClick={() => {
                   onChange([...value, option.value]);

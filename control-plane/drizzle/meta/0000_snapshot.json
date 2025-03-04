@@ -30,13 +30,9 @@
         "environments_user_id_users_id_fk": {
           "name": "environments_user_id_users_id_fk",
           "tableFrom": "environments",
-          "columnsFrom": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -110,13 +106,9 @@
         "jobs_environment_id_environments_id_fk": {
           "name": "jobs_environment_id_environments_id_fk",
           "tableFrom": "jobs",
-          "columnsFrom": [
-            "environment_id"
-          ],
+          "columnsFrom": ["environment_id"],
           "tableTo": "environments",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -152,13 +144,9 @@
         "machine_callable_targets_machine_id_machines_id_fk": {
           "name": "machine_callable_targets_machine_id_machines_id_fk",
           "tableFrom": "machine_callable_targets",
-          "columnsFrom": [
-            "machine_id"
-          ],
+          "columnsFrom": ["machine_id"],
           "tableTo": "machines",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }
@@ -206,13 +194,9 @@
         "machines_environment_id_environments_id_fk": {
           "name": "machines_environment_id_environments_id_fk",
           "tableFrom": "machines",
-          "columnsFrom": [
-            "environment_id"
-          ],
+          "columnsFrom": ["environment_id"],
           "tableTo": "environments",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }

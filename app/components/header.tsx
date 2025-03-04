@@ -25,7 +25,13 @@ export function Header() {
           className="flex items-center space-x-4 transition-transform duration-200 hover:scale-[1.02]"
         >
           <div className="flex items-center space-x-2 -ml-2">
-            <Image src={logo} width={40} height={40} alt={"logo"} className="rounded-lg" />
+            <Image
+              src={logo}
+              width={40}
+              height={40}
+              alt={"logo"}
+              className="rounded-lg"
+            />
             <h1 className="text-2xl font-semibold bg-gradient-to-r from-gray-600 via-gray-800 to-gray-600 bg-clip-text text-transparent tracking-tight">
               Inferable
             </h1>

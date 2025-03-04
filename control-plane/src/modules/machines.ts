@@ -19,7 +19,7 @@ export async function upsertMachine({
   ip?: string;
 }) {
   if (xForwardedFor && xForwardedFor.split(",").length > 0) {
-    const hops = xForwardedFor.split(",").map(ip => ip.trim());
+    const hops = xForwardedFor.split(",").map((ip) => ip.trim());
 
     if (hops.length > 0 && hops[0]) {
       ip = hops[0];
@@ -61,6 +61,9 @@ export async function upsertMachine({
         last_ping_at: sql`excluded.last_ping_at`,
         ip: sql`excluded.ip`,
       },
-      where: and(eq(data.machines.cluster_id, clusterId), eq(data.machines.id, machineId)),
+      where: and(
+        eq(data.machines.cluster_id, clusterId),
+        eq(data.machines.id, machineId),
+      ),
     });
 }

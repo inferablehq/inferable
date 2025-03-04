@@ -55,13 +55,9 @@
         "clusters_owner_id_users_id_fk": {
           "name": "clusters_owner_id_users_id_fk",
           "tableFrom": "clusters",
-          "columnsFrom": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
           "tableTo": "users",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "no action"
         }

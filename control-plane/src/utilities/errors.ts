@@ -25,12 +25,17 @@ const retryableErrorMessages = [
 export const isRetryableError = (error: unknown) => {
   if (
     error instanceof Error &&
-    retryableErrorMessages.find(message => error.message.toLowerCase().includes(message))
+    retryableErrorMessages.find((message) =>
+      error.message.toLowerCase().includes(message),
+    )
   ) {
     return true;
   }
 
-  if (error instanceof Error && retryableErrors.find(type => error instanceof type)) {
+  if (
+    error instanceof Error &&
+    retryableErrors.find((type) => error instanceof type)
+  ) {
     return true;
   }
 
@@ -50,7 +55,10 @@ export class DocumentedError extends Error {
 export class AuthenticationError extends DocumentedError {
   statusCode = 401;
 
-  constructor(message: string, docsLink: string = "https://docs.inferable.ai/pages/auth") {
+  constructor(
+    message: string,
+    docsLink: string = "https://docs.inferable.ai/pages/auth",
+  ) {
     super(message, docsLink);
     this.name = "AuthenticationError";
   }
@@ -97,7 +105,7 @@ export class InvalidServiceRegistrationError extends DocumentedError {
 
   constructor(
     message: string,
-    docsLink: string = "https://docs.inferable.ai/pages/functions#options"
+    docsLink: string = "https://docs.inferable.ai/pages/functions#options",
   ) {
     super(message, docsLink);
     this.name = "InvalidServiceRegistrationError";
@@ -109,7 +117,7 @@ export class InvalidJobArgumentsError extends DocumentedError {
 
   constructor(
     message: string,
-    docsLink: string = "https://docs.inferable.ai/pages/functions#options"
+    docsLink: string = "https://docs.inferable.ai/pages/functions#options",
   ) {
     super(message, docsLink);
     this.name = "InvalidArgumentsError";
@@ -128,7 +136,7 @@ export class RunBusyError extends DocumentedError {
 
   constructor(
     message: string = "Run is still processing, please try again later.",
-    docsLink: string = "https://docs.inferable.ai/pages/runs#lifecycle"
+    docsLink: string = "https://docs.inferable.ai/pages/runs#lifecycle",
   ) {
     super(message, docsLink);
     this.name = "RunBusyError";

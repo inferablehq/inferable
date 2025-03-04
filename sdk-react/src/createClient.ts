@@ -16,11 +16,13 @@ export const createApiClient = ({
   return initClient(contract, {
     baseUrl: baseUrl ?? "https://api.inferable.ai",
     baseHeaders: { Authorization: authHeader },
-    api: async args => {
+    api: async (args) => {
       try {
         return await tsRestFetchApi({
           ...args,
-          ...(clientAbortController ? { signal: clientAbortController.signal } : {}),
+          ...(clientAbortController
+            ? { signal: clientAbortController.signal }
+            : {}),
         });
       } catch (e) {
         return {

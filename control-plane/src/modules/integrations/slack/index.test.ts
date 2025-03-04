@@ -7,13 +7,12 @@ jest.mock("../nango", () => ({
   nango: {
     deleteConnection: jest.fn(),
   },
-}))
-
+}));
 
 describe("cleanupConflictingIntegrations", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  })
+  });
 
   it("should cleanup duplicate integrations for team ID", async () => {
     const owner1 = await createOwner();
@@ -26,19 +25,21 @@ describe("cleanupConflictingIntegrations", () => {
           teamId: "team1",
           nangoConnectionId: "connection1",
           botUserId: "bot1",
-        }
-      }
-    })
+        },
+      },
+    });
 
     await cleanupConflictingIntegrations(owner2.clusterId, {
       slack: {
         teamId: "team1",
         nangoConnectionId: "connection1",
         botUserId: "bot1",
-      }
-    })
+      },
+    });
 
-    const owner1Integrations = await getIntegrations({ clusterId: owner1.clusterId });
+    const owner1Integrations = await getIntegrations({
+      clusterId: owner1.clusterId,
+    });
     expect(owner1Integrations.slack).toBeNull();
     expect((nango as any).deleteConnection).toHaveBeenCalledTimes(1);
   });
@@ -54,20 +55,21 @@ describe("cleanupConflictingIntegrations", () => {
           teamId: "team1",
           nangoConnectionId: "connection1",
           botUserId: "bot1",
-        }
-      }
-    })
-
+        },
+      },
+    });
 
     await cleanupConflictingIntegrations(owner2.clusterId, {
       slack: {
         teamId: "team2",
         nangoConnectionId: "connection2",
         botUserId: "bot2",
-      }
-    })
+      },
+    });
 
-    const owner1Integrations = await getIntegrations({ clusterId: owner1.clusterId });
+    const owner1Integrations = await getIntegrations({
+      clusterId: owner1.clusterId,
+    });
     expect(owner1Integrations.slack).not.toBeNull();
     expect((nango as any).deleteConnection).not.toHaveBeenCalled();
   });
