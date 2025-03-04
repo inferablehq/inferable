@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Inferable</PackageId>
-    <Version>0.0.26</Version>
+    <Version>0.0.27</Version>
     <Authors>Inferable</Authors>
     <Company>Inferable</Company>
     <Description>Client library for interacting with the Inferable API</Description>
