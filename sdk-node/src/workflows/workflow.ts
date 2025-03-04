@@ -91,15 +91,37 @@ type ReactAgentConfig<TResult> = {
 type WorkflowContext<TInput> = {
   /**
    * Core LLM functionality for the workflow.
+   *
+   * @example
+   * ```typescript
+   * const result = await ctx.llm.generateText({
+   *   input: "Good morning Vietnam!",
+   *   schema: z.object({
+   *     country: z.string(),
+   *   }),
+   * });
+   * ```
    */
   llm: L1M;
   /**
    * Result caching for the workflow.
+   * @deprecated Use `memo` instead
    */
   result: <TResult>(
     name: string,
     fn: () => Promise<TResult>,
   ) => Promise<TResult>;
+  /**
+   * Result caching for the workflow.
+   *
+   * @example
+   * ```typescript
+   * const result = await ctx.memo("my-result", async () => {
+   *   return "my-result";
+   * });
+   * ```
+   */
+  memo: <TResult>(name: string, fn: () => Promise<TResult>) => Promise<TResult>;
   /**
    * @deprecated Use `agents.react` instead
    * Agent functionality for the workflow.
@@ -128,6 +150,22 @@ type WorkflowContext<TInput> = {
   agents: {
     /**
      * Default inferable agent functionality for the workflow. Muti-step.
+     *
+     * @example
+     * ```typescript
+     * const result = await ctx.agents.react({
+     *   name: "userSearchAgent",
+     *   instructions: "Call the userSearch iteratively until the user is found",
+     *   input: "Hello, my name is John Smith and my address is 123 Main St, Anytown, USA. I want to find my user record.",
+     *   schema: z.object({
+     *     user: z.object({
+     *       id: z.string(),
+     *       name: z.string(),
+     *     }),
+     *   }),
+     *   tools: ["userSearch"],
+     * });
+     * ```
      */
     react: <TAgentResult = unknown>(
       config: ReactAgentConfig<TAgentResult>,
@@ -252,186 +290,189 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       },
     });
 
-    return {
-      ...jobCtx,
-      llm: l1m,
-      result: async <TResult>(
-        name: string,
-        fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,
-      ): Promise<TResult> => {
-        const ctx = this.createWorkflowContext(
-          version,
+    const memo = async <TResult>(
+      name: string,
+      fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,
+    ): Promise<TResult> => {
+      const ctx = this.createWorkflowContext(
+        version,
+        executionId,
+        input,
+        jobCtx,
+        clusterId,
+      );
+
+      const serialize = (value: unknown) => JSON.stringify({ value });
+      const deserialize = (value: string) => {
+        try {
+          return JSON.parse(value).value;
+        } catch {
+          return null;
+        }
+      };
+
+      const existingValue = await this.client.getClusterKV({
+        params: {
+          clusterId: await this.getClusterId(),
+          key: `${executionId}_memo_${name}`,
+        },
+      });
+
+      if (existingValue.status === 200) {
+        const existingValueParsed = deserialize(existingValue.body.value);
+
+        if (existingValueParsed) {
+          return existingValueParsed;
+        }
+      }
+
+      const result = await fn(ctx);
+
+      // TODO: async/retry
+      const setResult = await this.client.setClusterKV({
+        params: {
+          clusterId: await this.getClusterId(),
+          key: `${executionId}_memo_${name}`,
+        },
+        body: {
+          value: serialize(result),
+          onConflict: "doNothing",
+        },
+      });
+
+      if (setResult.status !== 200) {
+        this.logger?.error("Failed to set result", {
+          name,
           executionId,
-          input,
-          jobCtx,
-          clusterId,
-        );
-
-        const serialize = (value: unknown) => JSON.stringify({ value });
-        const deserialize = (value: string) => {
-          try {
-            return JSON.parse(value).value;
-          } catch {
-            return null;
-          }
-        };
-
-        const existingValue = await this.client.getClusterKV({
-          params: {
-            clusterId: await this.getClusterId(),
-            key: `${executionId}_result_${name}`,
-          },
+          status: setResult.status,
         });
 
-        if (existingValue.status === 200) {
-          const existingValueParsed = deserialize(existingValue.body.value);
+        throw new Error("Failed to set result");
+      }
 
-          if (existingValueParsed) {
-            return existingValueParsed;
-          }
-        }
+      return deserialize(setResult.body.value);
+    };
 
-        const result = await fn(ctx);
+    const agents = {
+      react: async <TAgentResult = unknown>(
+        config: ReactAgentConfig<TAgentResult>,
+      ) => {
+        this.logger?.info("Running agent in workflow", {
+          version,
+          name: this.name,
+          executionId,
+          agentName: config.name,
+        });
 
-        // TODO: async/retry
-        const setResult = await this.client.setClusterKV({
+        const resultSchema = config.schema
+          ? zodToJsonSchema(config.schema)
+          : undefined;
+
+        const runId = `${executionId}_${config.name}_${cyrb53(
+          JSON.stringify(
+            [
+              config.instructions,
+              executionId,
+              resultSchema,
+              this.name,
+              version,
+              config.input,
+            ].join("."),
+          ),
+        )}`;
+
+        const result = await this.client.createRun({
           params: {
             clusterId: await this.getClusterId(),
-            key: `${executionId}_result_${name}`,
           },
           body: {
-            value: serialize(result),
-            onConflict: "doNothing",
+            name: `${this.name}_${config.name}`,
+            id: runId,
+            systemPrompt: config.instructions,
+            resultSchema,
+            tools: config.tools.map((t) => `tool_${this.name}_${t}`),
+            onStatusChange: {
+              type: "workflow",
+              statuses: ["failed", "done"],
+              workflow: {
+                executionId: executionId,
+              },
+            },
+            tags: {
+              "workflow.name": this.name,
+              "workflow.version": version.toString(),
+              "workflow.executionId": executionId,
+            },
+            initialPrompt: config.input,
+            interactive: true,
           },
         });
 
-        if (setResult.status !== 200) {
-          this.logger?.error("Failed to set result", {
-            name,
-            executionId,
-            status: setResult.status,
-          });
+        this.logger?.info("Agent run created", {
+          version,
+          name: this.name,
+          executionId,
+          agentName: config.name,
+          runId,
+          status: result.status,
+          result: result.body,
+        });
 
-          throw new Error("Failed to set result");
+        if (result.status !== 201) {
+          // TODO: Add better error handling
+          throw new InferableAPIError(
+            `Failed to create run: ${result.status}`,
+            result,
+          );
         }
 
-        return deserialize(setResult.body.value);
-      },
-      agents: {
-        react: async <TAgentResult = unknown>(
-          config: ReactAgentConfig<TAgentResult>,
-        ) => {
-          this.logger?.info("Running agent in workflow", {
-            version,
-            name: this.name,
-            executionId,
-            agentName: config.name,
-          });
-
-          const resultSchema = config.schema
-            ? zodToJsonSchema(config.schema)
-            : undefined;
-
-          const runId = `${executionId}_${config.name}_${cyrb53(
-            JSON.stringify(
-              [
-                config.instructions,
-                executionId,
-                resultSchema,
-                this.name,
-                version,
-                config.input,
-              ].join("."),
-            ),
-          )}`;
-
-          const result = await this.client.createRun({
-            params: {
-              clusterId: await this.getClusterId(),
-            },
-            body: {
-              name: `${this.name}_${config.name}`,
-              id: runId,
-              systemPrompt: config.instructions,
-              resultSchema,
-              tools: config.tools.map((t) => `tool_${this.name}_${t}`),
-              onStatusChange: {
-                type: "workflow",
-                statuses: ["failed", "done"],
-                workflow: {
-                  executionId: executionId,
-                },
-              },
-              tags: {
-                "workflow.name": this.name,
-                "workflow.version": version.toString(),
-                "workflow.executionId": executionId,
-              },
-              initialPrompt: config.input,
-              interactive: true,
-            },
-          });
-
-          this.logger?.info("Agent run created", {
-            version,
-            name: this.name,
-            executionId,
-            agentName: config.name,
-            runId,
-            status: result.status,
-            result: result.body,
-          });
-
-          if (result.status !== 201) {
-            // TODO: Add better error handling
-            throw new InferableAPIError(
-              `Failed to create run: ${result.status}`,
-              result,
-            );
+        if (result.body.status === "done") {
+          if (!config.onBeforeReturn) {
+            return result.body.result as TAgentResult;
           }
 
-          if (result.body.status === "done") {
-            if (!config.onBeforeReturn) {
-              return result.body.result as TAgentResult;
-            }
+          let shouldReturn = true;
 
-            let shouldReturn = true;
+          await config.onBeforeReturn(result.body.result as TAgentResult, {
+            sendMessage: async (message: string) => {
+              await this.client.createMessage({
+                params: {
+                  clusterId: await this.getClusterId(),
+                  runId,
+                },
+                body: {
+                  message,
+                  type: "human",
+                },
+              });
 
-            await config.onBeforeReturn(result.body.result as TAgentResult, {
-              sendMessage: async (message: string) => {
-                await this.client.createMessage({
-                  params: {
-                    clusterId: await this.getClusterId(),
-                    runId,
-                  },
-                  body: {
-                    message,
-                    type: "human",
-                  },
-                });
+              shouldReturn = false;
+            },
+          });
 
-                shouldReturn = false;
-              },
-            });
-
-            if (shouldReturn) {
-              return result.body.result as TAgentResult;
-            } else {
-              throw new WorkflowPausableError(
-                `Agent ${config.name} is not done.`,
-              );
-            }
-          } else if (result.body.status === "failed") {
-            throw new WorkflowTerminableError(
-              `Agent ${config.name} failed. As a result, we've failed the entire workflow (executionId: ${executionId}). Please refer to run failure details for more information.`,
-            );
+          if (shouldReturn) {
+            return result.body.result as TAgentResult;
           } else {
             throw new WorkflowPausableError(
               `Agent ${config.name} is not done.`,
             );
           }
-        },
+        } else if (result.body.status === "failed") {
+          throw new WorkflowTerminableError(
+            `Agent ${config.name} failed. As a result, we've failed the entire workflow (executionId: ${executionId}). Please refer to run failure details for more information.`,
+          );
+        } else {
+          throw new WorkflowPausableError(`Agent ${config.name} is not done.`);
+        }
       },
+    };
+
+    return {
+      ...jobCtx,
+      llm: l1m,
+      result: memo,
+      memo,
+      agents,
       /**
        * @deprecated Use `agents` instead
        */
