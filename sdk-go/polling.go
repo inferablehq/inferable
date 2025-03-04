@@ -222,7 +222,7 @@ func (s *pollingAgent) poll() error {
 	}
 
 	options := client.FetchDataOptions{
-		Path:    fmt.Sprintf("/clusters/%s/jobs?acknowledge=true&tools=%s&status=pending&limit=10", clusterId, toolList),
+		Path:    fmt.Sprintf("/clusters/%s/jobs?acknowledge=true&tools=%s&status=pending&limit=10&waitTime=20", clusterId, toolList),
 		Method:  "GET",
 		Headers: headers,
 	}
