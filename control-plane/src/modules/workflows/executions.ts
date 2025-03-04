@@ -55,7 +55,7 @@ export const getWorkflowExecutionTimeline = async ({
       ),
     getWorkflowRuns({ clusterId, executionId, workflowName }),
     getEventsForJobId({ jobId: executionId, clusterId }),
-    kv.getAllByPrefix(clusterId, `${executionId}_result_`),
+    kv.getAllByPrefix(clusterId, `${executionId}_memo_`),
     kv.getAllByPrefix(clusterId, `${executionId}_structured_`),
   ]);
 

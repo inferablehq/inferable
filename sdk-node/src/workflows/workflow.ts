@@ -314,7 +314,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       const existingValue = await this.client.getClusterKV({
         params: {
           clusterId: await this.getClusterId(),
-          key: `${executionId}_result_${name}`,
+          key: `${executionId}_memo_${name}`,
         },
       });
 
@@ -332,7 +332,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       const setResult = await this.client.setClusterKV({
         params: {
           clusterId: await this.getClusterId(),
-          key: `${executionId}_result_${name}`,
+          key: `${executionId}_memo_${name}`,
         },
         body: {
           value: serialize(result),
