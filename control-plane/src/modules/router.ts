@@ -795,7 +795,7 @@ export const router = initServer().router(contract, {
   },
   listJobs: async request => {
     const { clusterId } = request.params;
-    const { limit, acknowledge, status } = request.query;
+    const { limit, acknowledge, status, waitTime } = request.query;
     const tools = request.query.tools?.split(",").map(t => t.trim());
 
     if (acknowledge && status !== "pending") {
@@ -831,6 +831,7 @@ export const router = initServer().router(contract, {
         }),
       tools &&
         jobs.pollJobsByTools({
+          timeout: waitTime * 1000,
           clusterId,
           machineId,
           tools,

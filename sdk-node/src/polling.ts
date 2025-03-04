@@ -105,6 +105,7 @@ export class PollingAgent {
         status: "pending",
         acknowledge: true,
         limit: 10,
+        waitTime: 20,
       },
     });
 
