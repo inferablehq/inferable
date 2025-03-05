@@ -5,7 +5,7 @@ import { InferableAPIError, InferableError } from "./errors";
 import { serializeError } from "./serialize-error";
 import { executeFn, Result } from "./execute-fn";
 import { ToolRegistrationInput } from "./types";
-import { extractBlobs, isZodType, validateFunctionArgs } from "./util";
+import { isZodType, validateFunctionArgs } from "./util";
 import zodToJsonSchema from "zod-to-json-schema";
 
 const DEFAULT_RETRY_AFTER_SECONDS = 10;
@@ -162,15 +162,14 @@ export class PollingAgent {
         functionExecutionTime: result.functionExecutionTime,
       });
 
-      const contentAndBlobs = extractBlobs(result.content);
 
-      const persistResult = this.client
+      await this.client
         .createJobResult({
           headers: {
             "x-sentinel-unmask-keys": "resultType,functionExecutionTime",
           },
           body: {
-            result: contentAndBlobs.content,
+            result: result.content,
             resultType: result.type,
             meta: {
               functionExecutionTime: result.functionExecutionTime,
@@ -191,33 +190,6 @@ export class PollingAgent {
             });
           }
         });
-
-      const persistBlobs = contentAndBlobs.blobs.map((blob) =>
-        this.client
-          .createJobBlob({
-            headers: {
-              "x-sentinel-no-mask": "1",
-            },
-            params: {
-              jobId: call.id,
-              clusterId: this.clusterId!,
-            },
-            body: blob,
-          })
-          .then(async (res) => {
-            if (res.status === 201) {
-              log("Uploaded blob", call.id, call.function);
-            } else {
-              throw new InferableError(`Failed to upload blob: ${res.status}`, {
-                jobId: call.id,
-                blobName: blob.name,
-                body: JSON.stringify(res.body),
-              });
-            }
-          }),
-      );
-
-      await Promise.all([persistResult, ...persistBlobs]);
     };
 
     const args = call.input;

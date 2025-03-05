@@ -41,17 +41,6 @@ export const interruptSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const blobSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(["application/json", "image/png", "image/jpeg"]),
-  encoding: z.enum(["base64"]),
-  size: z.number(),
-  createdAt: z.date(),
-  jobId: z.string().nullable(),
-  runId: z.string().nullable(),
-});
-
 export const VersionedTextsSchema = z.object({
   current: z.object({
     version: z.string(),
@@ -400,7 +389,6 @@ export const definition = {
         result: z.string().nullable(),
         resultType: z.string().nullable(),
         createdAt: z.date(),
-        blobs: z.array(blobSchema),
         approved: z.boolean().nullable(),
         approvalRequested: z.boolean().nullable(),
       }),
@@ -535,36 +523,6 @@ export const definition = {
     body: z.object({
       approved: z.boolean(),
     }),
-  },
-  createJobBlob: {
-    method: "POST",
-    path: "/clusters/:clusterId/jobs/:jobId/blobs",
-    headers: z.object({
-      authorization: z.string(),
-      "x-machine-id": z.string(),
-      "x-machine-sdk-version": z.string(),
-      "x-machine-sdk-language": z.string(),
-      "x-forwarded-for": z.string().optional(),
-      "x-sentinel-no-mask": z.string().optional(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      jobId: z.string(),
-    }),
-    responses: {
-      201: z.object({
-        id: z.string(),
-      }),
-      401: z.undefined(),
-      404: z.object({
-        message: z.string(),
-      }),
-    },
-    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, runId: true }).and(
-      z.object({
-        data: z.string(),
-      })
-    ),
   },
 
   createMachine: {
@@ -1160,21 +1118,7 @@ export const definition = {
           workflowVersion: z.number().nullable(),
           workflowName: z.string().nullable(),
         }),
-        blobs: z.array(blobSchema),
       }),
-    },
-  },
-  getBlobData: {
-    method: "GET",
-    path: "/clusters/:clusterId/blobs/:blobId/data",
-    headers: z.object({ authorization: z.string() }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      blobId: z.string(),
-    }),
-    responses: {
-      200: z.any(),
-      404: z.undefined(),
     },
   },
 

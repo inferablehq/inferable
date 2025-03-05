@@ -1,7 +1,6 @@
 import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { env } from "../../utilities/env";
 import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
-import { getBlobsForJobs } from "../blobs";
 import * as cron from "../cron";
 import * as data from "../data";
 import * as events from "../observability/events";
@@ -67,8 +66,7 @@ export const getJobStatusSync = async ({
 };
 
 export const getJob = async ({ clusterId, jobId }: { clusterId: string; jobId: string }) => {
-  const [[job], blobs] = await Promise.all([
-    data.db
+  const [job] = await data.db
       .select({
         id: data.jobs.id,
         clusterId: data.jobs.cluster_id,
@@ -86,9 +84,8 @@ export const getJob = async ({ clusterId, jobId }: { clusterId: string; jobId: s
         approved: data.jobs.approved,
       })
       .from(data.jobs)
-      .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId))),
-    getBlobsForJobs({ clusterId, jobIds: [jobId] }),
-  ]);
+      .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId))
+    );
 
   if (!job) {
     return undefined;
@@ -96,7 +93,6 @@ export const getJob = async ({ clusterId, jobId }: { clusterId: string; jobId: s
 
   return {
     ...job,
-    blobs,
   };
 };
 
