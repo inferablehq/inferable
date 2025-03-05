@@ -337,11 +337,6 @@ const RunSchema = z.object({
     .optional(),
   context: anyObject.optional().describe("Additional context to propogate to all Jobs in the Run"),
   reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
-  callSummarization: z
-    .boolean()
-    .default(false)
-    .optional()
-    .describe("Enable summarization of oversized call results"),
   interactive: z
     .boolean()
     .default(true)
