@@ -11,11 +11,23 @@ import {
   getSortedRowModel,
 } from "@tanstack/react-table";
 import Link from "next/link";
-import { Eye, Trash2, Settings, Play, ArrowUpDown, Brain, ArrowRight } from "lucide-react";
+import {
+  Eye,
+  Trash2,
+  Settings,
+  Play,
+  ArrowUpDown,
+  Brain,
+  ArrowRight,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { CreateClusterButton } from "./create-cluster-button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export type ClusterData = {
   id: string;
@@ -47,9 +59,15 @@ const columns: ColumnDef<ClusterData>[] = [
         >
           {row.getValue("name")}
         </Link>
-        <div className="text-sm text-gray-500 truncate mt-1" title={row.original.description || ""}>
+        <div
+          className="text-sm text-gray-500 truncate mt-1"
+          title={row.original.description || ""}
+        >
           {row.original.description || "No description"}
-          <div className="text-xs font-mono text-gray-400 mt-1" title={row.original.id}>
+          <div
+            className="text-xs font-mono text-gray-400 mt-1"
+            title={row.original.id}
+          >
             ID: {row.original.id}
           </div>
         </div>
@@ -73,7 +91,10 @@ const columns: ColumnDef<ClusterData>[] = [
     cell: ({ row }) => {
       const date = new Date(row.getValue("createdAt"));
       return (
-        <span title={date.toLocaleString()} className="text-gray-600 whitespace-nowrap">
+        <span
+          title={date.toLocaleString()}
+          className="text-gray-600 whitespace-nowrap"
+        >
           {formatDistanceToNow(date, { addSuffix: true })}
         </span>
       );
@@ -141,40 +162,6 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
   ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  if (clusters.length === 0) {
-    return (
-      <div className="text-center py-12 bg-gray-50 rounded-lg">
-        <h3 className="text-lg font-medium text-gray-900">
-          <Brain className="w-4 h-4 inline-block mr-2" />
-          Create your first cluster
-        </h3>
-        <p className="mt-2 text-sm text-gray-500 max-w-md mx-auto">
-          Get started by creating your first cluster to organize your functions and runs.
-        </p>
-        <div className="mt-6 flex gap-4 justify-center">
-          <Popover defaultOpen>
-            <PopoverTrigger asChild>
-              <Button asChild variant="default">
-                <Link href="/setup-demo">
-                  Quick Start <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95">
-              <div className="text-sm font-medium">
-                👋 New to Inferable?
-                <p className="font-normal text-muted-foreground mt-1">
-                  We strongly recommend starting with our demo cluster!
-                </p>
-              </div>
-            </PopoverContent>
-          </Popover>
-          <CreateClusterButton label="Create empty cluster" variant="outline" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="mb-4 flex justify-between items-center">
@@ -191,26 +178,6 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
           }
           className="max-w-sm"
         />
-        <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button asChild variant="outline">
-                <Link href="/setup-demo">
-                  Quick Start <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95">
-              <div className="text-sm font-medium">
-                👋 New to Inferable?
-                <p className="font-normal text-muted-foreground mt-1">
-                  We strongly recommend starting with our demo cluster!
-                </p>
-              </div>
-            </PopoverContent>
-          </Popover>
-          <CreateClusterButton label="Create Cluster" variant="default" />
-        </div>
       </div>
       <DataTable
         columns={columns}
