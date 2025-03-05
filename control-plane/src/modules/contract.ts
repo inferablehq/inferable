@@ -313,10 +313,6 @@ const RunSchema = z.object({
   initialPrompt: z.string().optional().describe("An initial 'human' message to trigger the run"),
   systemPrompt: z.string().optional().describe("A system prompt for the run."),
   name: z.string().optional().describe("The name of the run, if not provided it will be generated"),
-  model: z
-    .enum(["claude-3-5-sonnet", "claude-3-haiku"])
-    .optional()
-    .describe("The model identifier for the run"),
   resultSchema: anyObject
     .optional()
     .describe(
@@ -346,7 +342,6 @@ const RunSchema = z.object({
     .default(false)
     .optional()
     .describe("Enable summarization of oversized call results"),
-  type: z.enum(["single-step", "multi-step"]).optional().default("multi-step"),
   interactive: z
     .boolean()
     .default(true)
@@ -855,6 +850,17 @@ export const definition = {
     path: "/clusters/:clusterId/runs",
     headers: z.object({
       authorization: z.string(),
+      "x-provider-key": z.string().optional(),
+      "x-provider-model": z.enum([
+        "claude-3-7-sonnet-20250219",
+        "claude-3-7-sonnet-latest",
+        "claude-3-5-sonnet-20241022",
+        "claude-3-5-sonnet-latest",
+        "claude-3-5-sonnet-20240620",
+        "claude-3-5-haiku-20241022",
+        "claude-3-5-haiku-latest"
+      ]).optional(),
+      "x-provider-url": z.literal("https://api.anthropic.com").default("https://api.anthropic.com"),
     }),
     body: RunSchema,
     responses: {
@@ -1310,7 +1316,6 @@ export const definition = {
               status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
               failureReason: z.string().nullable(),
               type: z.enum(["single-step", "multi-step"]).nullable(),
-              modelIdentifier: z.string().nullable(),
             })
           ),
         })
@@ -1354,7 +1359,6 @@ export const definition = {
             createdAt: z.date(),
             type: z.enum(["single-step", "multi-step"]),
             status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
-            modelIdentifier: z.string().nullable(),
           })
         ),
         execution: z.object({
@@ -1469,9 +1473,9 @@ export const definition = {
     }),
     headers: z.object({
       authorization: z.string(),
-      "x-provider-model": z.string(),
-      "x-provider-url": z.string(),
-      "x-provider-key": z.string(),
+      "x-provider-model": z.string().optional(),
+      "x-provider-url": z.string().optional(),
+      "x-provider-key": z.string().optional(),
       "x-max-attempts": z.string().optional().default("3"),
       "x-cache-ttl": z.string().optional(),
       "x-workflow-execution-id": z.string().optional(),

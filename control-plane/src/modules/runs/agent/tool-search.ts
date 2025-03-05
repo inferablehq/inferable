@@ -1,7 +1,6 @@
 import { ulid } from "ulid";
 import { getLatestJobsResultedByFunctionName } from "../../jobs/jobs";
 import { buildModel } from "../../models";
-import { ChatIdentifiers } from "../../models/routing";
 import { events } from "../../observability/events";
 import { logger } from "../../observability/logger";
 import { toAnthropicMessage } from "../messages";
@@ -121,7 +120,6 @@ async function findRelatedFunctionTools(
   run: {
     id: string;
     clusterId: string;
-    modelIdentifier: ChatIdentifiers | null;
     resultSchema: unknown | null;
     debug: boolean;
   },

@@ -6,7 +6,6 @@ import { PostStepSave, postModelEdge, postStartEdge, postToolEdge } from "./node
 import { AgentMessage } from "../messages";
 import { buildMockModel, buildModel } from "../../models";
 import { AgentTool } from "./tool";
-import { ChatIdentifiers } from "../../models/routing";
 
 export type ReleventToolLookup = (state: RunGraphState) => Promise<AgentTool[]>;
 
@@ -26,7 +25,6 @@ export const createRunGraph = async ({
   run: {
     id: string;
     clusterId: string;
-    modelIdentifier: ChatIdentifiers | null;
     resultSchema: unknown | null;
     debug: boolean;
     attachedFunctions: string[] | null;
@@ -36,6 +34,9 @@ export const createRunGraph = async ({
     test: boolean;
     reasoningTraces: boolean;
     enableResultGrounding: boolean;
+    providerUrl?: string | null;
+    providerModel?: string | null;
+    providerKey?: string | null;
   };
   additionalContext?: string;
   allAvailableTools?: string[];
@@ -44,6 +45,19 @@ export const createRunGraph = async ({
   getTool: ToolFetcher;
   mockModelResponses?: string[];
 }) => {
+  let provider: {
+    key: string;
+    model: string;
+    url: string;
+  } | undefined;
+  if (run.providerUrl && run.providerModel && run.providerKey) {
+    provider = {
+      key: run.providerKey,
+      model: run.providerModel,
+      url: run.providerUrl
+    }
+  }
+
   const graph = new StateGraph<RunGraphState>({
     channels: createStateGraphChannels({
       run,
@@ -62,12 +76,13 @@ export const createRunGraph = async ({
             })
           : // Otherwise, use the real model
             buildModel({
-              identifier: run.modelIdentifier ?? "claude-3-5-sonnet",
+              identifier: "claude-3-5-sonnet",
               purpose: "agent_loop.reasoning",
               trackingOptions: {
                 clusterId: state.run.clusterId,
                 runId: state.run.id,
               },
+              provider,
             }),
         findRelevantTools
       )

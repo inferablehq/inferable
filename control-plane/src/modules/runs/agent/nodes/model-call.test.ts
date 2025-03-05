@@ -11,7 +11,6 @@ describe("handleModelCall", () => {
   const run = {
     id: "test-run",
     clusterId: "test-cluster",
-    modelIdentifier: null,
     resultSchema: null,
     debug: false,
     attachedFunctions: null,

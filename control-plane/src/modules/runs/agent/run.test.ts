@@ -28,7 +28,6 @@ describe("processRun", () => {
       status: "running" as const,
       type: "multi-step" as const,
       attachedFunctions: ["someFunction"],
-      modelIdentifier: null,
       onStatusChange: {
         type: "function" as const,
         statuses: ["running", "pending", "paused", "done", "failed"] as any,
@@ -128,7 +127,6 @@ describe("findRelevantTools", () => {
       clusterId: owner.clusterId,
       status: "running" as const,
       attachedFunctions: ["someFunction"],
-      modelIdentifier: null,
       resultSchema: null,
       debug: false,
       systemPrompt: null,

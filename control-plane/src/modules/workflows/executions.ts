@@ -172,7 +172,6 @@ export const listWorkflowExecutions = async ({
         status: r.runsStatus,
         failureReason: r.runsFailureReason,
         type: r.runsType || "multi-step",
-        modelIdentifier: r.runsModelIdentifier,
       })),
     };
   });
@@ -323,7 +322,6 @@ export const getWorkflowRuns = async ({
       status: data.runs.status,
       failureReason: data.runs.failure_reason,
       type: data.runs.type,
-      modelIdentifier: data.runs.model_identifier,
     })
     .from(data.runs)
     .where(
