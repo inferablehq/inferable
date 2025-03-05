@@ -15,16 +15,7 @@ The managed LLM-engineering platform for production-ready AI applications.
 
 Inferable is a fully managed platform that handles state, reliability, and orchestration of custom LLM-based applications. It's developer-first and API-driven, providing production-ready LLM primitives for building sophisticated LLM-based applications.
 
-At a high level, Inferable allows you to:
-
-- Build with **Production-ready LLM Primitives** including structured outputs, agents, and durable workflows
-- Create **Autonomous Agents** that can use tools to perform multi-step reasoning and take actions
-- Implement **Human-in-the-Loop** capabilities with approval flows and seamless integration
-- Define **Durable Workflows** as code that run on your infrastructure with fault-tolerance and state preservation
-
-<p align="center">
-<img src="./assets/deployment.png" alt="Inferable Deployment" width="800" />
-</p>
+![Timeline View](./assets/workflow-list.png)
 
 ## 👉 Key Features
 
@@ -136,13 +127,11 @@ For more details, see our [Quickstart](https://docs.inferable.ai/pages/quick-sta
 
 ## 📚 Language Support
 
-| Language             | Source                                | Package                                                                            |
-| -------------------- | ------------------------------------- | ---------------------------------------------------------------------------------- |
-| Node.js / TypeScript | [Quick start](./sdk-node/README.md)   | [NPM](https://www.npmjs.com/package/inferable)                                     |
-| Go                   | [Quick start](./sdk-go/README.md)     | [Go](https://pkg.go.dev/github.com/inferablehq/inferable/sdk-go)                   |
-| .NET                 | [Quick start](./sdk-dotnet/README.md) | [NuGet](https://www.nuget.org/packages/Inferable)                                  |
-| React (Chat-only)    | [Quick start](./sdk-react/README.md)  | [NPM](https://www.npmjs.com/package/@inferable/react)                              |
-| Bash                 | [Quick start](./sdk-bash/README.md)   | [Source](https://github.com/inferablehq/inferable/blob/main/sdk-bash/inferable.sh) |
+| Language             | Source                                | Package                                                          |
+| -------------------- | ------------------------------------- | ---------------------------------------------------------------- |
+| Node.js / TypeScript | [Quick start](./sdk-node/README.md)   | [NPM](https://www.npmjs.com/package/inferable)                   |
+| Go                   | [Quick start](./sdk-go/README.md)     | [Go](https://pkg.go.dev/github.com/inferablehq/inferable/sdk-go) |
+| .NET                 | [Quick start](./sdk-dotnet/README.md) | [NuGet](https://www.nuget.org/packages/Inferable)                |
 
 ## 🚀 Open Source
 
@@ -157,6 +146,8 @@ This repository contains the Inferable control-plane, as well as SDKs for variou
 **SDKs:**
 
 - `/sdk-node` - Node.js/TypeScript SDK
+- `/sdk-go` - Go SDK
+- `/sdk-dotnet` - .NET SDK
 
 ## 💾 Self Hosting
 
