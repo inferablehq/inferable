@@ -9,7 +9,6 @@ import {
   RunBusyError,
 } from "../../utilities/errors";
 import { clusters, db, jobs, RunMessageMetadata, runs, runTags } from "../data";
-import { ChatIdentifiers } from "../models/routing";
 import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
 import { runGenerateNameQueue } from "../queues/run-name-generation";
@@ -32,7 +31,6 @@ export const createRun = async ({
   userId,
   clusterId,
   name,
-  runType: type,
   test,
   testMocks,
   systemPrompt,
@@ -42,20 +40,20 @@ export const createRun = async ({
   attachedFunctions,
   interactive,
   reasoningTraces,
-  enableSummarization,
-  modelIdentifier,
   authContext,
   context,
   enableResultGrounding,
   workflowExecutionId,
   workflowVersion,
   workflowName,
+  providerUrl,
+  providerModel,
+  providerKey,
 }: {
   id?: string;
   userId?: string;
   clusterId: string;
   name?: string;
-  runType?: "single-step" | "multi-step";
   systemPrompt?: string;
   test?: boolean;
   testMocks?: Record<
@@ -70,14 +68,15 @@ export const createRun = async ({
   attachedFunctions?: string[];
   interactive?: boolean;
   reasoningTraces?: boolean;
-  enableSummarization?: boolean;
-  modelIdentifier?: ChatIdentifiers;
   authContext?: Record<string, unknown>;
   context?: unknown;
   enableResultGrounding?: boolean;
   workflowExecutionId?: string;
   workflowVersion?: number;
   workflowName?: string;
+  providerUrl?: string;
+  providerModel?: string;
+  providerKey?: string;
 }) => {
   const resultSet = {
     id: runs.id,
@@ -88,7 +87,6 @@ export const createRun = async ({
     debug: runs.debug,
     test: runs.test,
     attachedFunctions: runs.attached_functions,
-    modelIdentifier: runs.model_identifier,
     authContext: runs.auth_context,
     context: runs.context,
     interactive: runs.interactive,
@@ -102,7 +100,6 @@ export const createRun = async ({
       id: id ?? ulid(),
       cluster_id: clusterId,
       status: "pending",
-      type,
       user_id: userId ?? "SYSTEM",
       ...(name ? { name } : {}),
       debug: sql<boolean>`(SELECT debug FROM ${clusters} WHERE id = ${clusterId})`,
@@ -111,11 +108,9 @@ export const createRun = async ({
       test_mocks: testMocks,
       reasoning_traces: reasoningTraces,
       interactive: interactive,
-      enable_summarization: enableSummarization,
       on_status_change: onStatusChangeHandler,
       result_schema: resultSchema,
       attached_functions: attachedFunctions,
-      model_identifier: modelIdentifier,
       auth_context: {
         ...authContext,
         userId,
@@ -127,6 +122,9 @@ export const createRun = async ({
       workflow_version:
         (workflowVersion ?? tags?.["workflow.version"]) ? Number(tags?.["workflow.version"]) : null,
       workflow_name: workflowName ?? tags?.["workflow.name"],
+      provider_key: providerKey,
+      provider_url: providerUrl,
+      provider_model: providerModel,
     })
     .onConflictDoNothing()
     .returning(resultSet);
@@ -263,11 +261,12 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
       attachedFunctions: runs.attached_functions,
       reasoningTraces: runs.reasoning_traces,
       interactive: runs.interactive,
-      enableSummarization: runs.enable_summarization,
-      modelIdentifier: runs.model_identifier,
       authContext: runs.auth_context,
       context: runs.context,
       enableResultGrounding: runs.enable_result_grounding,
+      providerKey: runs.provider_key,
+      providerUrl: runs.provider_url,
+      providerModel: runs.provider_model,
     })
     .from(runs)
     .where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId)));
@@ -302,7 +301,6 @@ export const getClusterRuns = async ({
       type: runs.type,
       test: runs.test,
       feedbackScore: runs.feedback_score,
-      modelIdentifier: runs.model_identifier,
       authContext: runs.auth_context,
       context: runs.context,
       enableResultGrounding: runs.enable_result_grounding,
@@ -343,7 +341,6 @@ export const getRunDetails = async ({ clusterId, runId }: { clusterId: string; r
         feedbackComment: runs.feedback_comment,
         feedbackScore: runs.feedback_score,
         attachedFunctions: runs.attached_functions,
-        modelIdentifier: runs.model_identifier,
         authContext: runs.auth_context,
         context: runs.context,
         enableResultGrounding: runs.enable_result_grounding,
@@ -487,8 +484,6 @@ export const createRunWithMessage = async ({
   attachedFunctions,
   reasoningTraces,
   interactive,
-  enableSummarization,
-  modelIdentifier,
   onStatusChangeHandler,
   authContext,
   context,
@@ -508,8 +503,6 @@ export const createRunWithMessage = async ({
     tags,
     reasoningTraces,
     interactive,
-    enableSummarization,
-    modelIdentifier,
     authContext,
     context,
     enableResultGrounding,
@@ -674,12 +667,8 @@ export type RunOptions = {
   attachedFunctions?: string[];
   resultSchema?: unknown;
 
-  type: "single-step" | "multi-step";
-
   interactive?: boolean;
   reasoningTraces?: boolean;
-  callSummarization?: boolean;
-  modelIdentifier?: ChatIdentifiers;
   enableResultGrounding?: boolean;
 
   input?: Record<string, unknown>;

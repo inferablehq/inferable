@@ -30,7 +30,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { WorkflowTriggerModal } from "@/components/workflow-trigger-modal";
 
-type ExecutionStatus = "pending" | "running" | "success" | "failure" | "stalled" | "interrupted";
+type ExecutionStatus =
+  | "pending"
+  | "running"
+  | "success"
+  | "failure"
+  | "stalled"
+  | "interrupted";
 
 const statusToCircle: {
   [key in ExecutionStatus]: React.ReactNode;
@@ -55,18 +61,29 @@ const runStatusToCircle: {
   failed: <SmallDeadRedCircle />,
 };
 
-type WorkflowExecution = ClientInferResponseBody<typeof contract.listWorkflowExecutions, 200>[0];
+type WorkflowExecution = ClientInferResponseBody<
+  typeof contract.listWorkflowExecutions,
+  200
+>[0];
 
-export default function WorkflowsPage({ params }: { params: { clusterId: string } }) {
+export default function WorkflowsPage({
+  params,
+}: {
+  params: { clusterId: string };
+}) {
   const router = useRouter();
   const { getToken } = useAuth();
   const user = useUser();
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [nameFilter, setNameFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ExecutionStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<ExecutionStatus | "all">(
+    "all",
+  );
   const [appliedNameFilter, setAppliedNameFilter] = useState("");
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState<ExecutionStatus | "all">("all");
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState<
+    ExecutionStatus | "all"
+  >("all");
 
   const fetchExecutions = useCallback(async () => {
     if (!params.clusterId || !user.isLoaded) {
@@ -84,7 +101,8 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
         },
         query: {
           workflowName: appliedNameFilter || undefined,
-          workflowExecutionStatus: appliedStatusFilter === "all" ? undefined : appliedStatusFilter,
+          workflowExecutionStatus:
+            appliedStatusFilter === "all" ? undefined : appliedStatusFilter,
         },
       });
 
@@ -98,7 +116,13 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
     } finally {
       setIsLoading(false);
     }
-  }, [params.clusterId, getToken, user.isLoaded, appliedNameFilter, appliedStatusFilter]);
+  }, [
+    params.clusterId,
+    getToken,
+    user.isLoaded,
+    appliedNameFilter,
+    appliedStatusFilter,
+  ]);
 
   useEffect(() => {
     fetchExecutions();
@@ -119,7 +143,7 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
   function ExecutionRow({ execution, job, runs }: WorkflowExecution) {
     const handleClick = () => {
       router.push(
-        `/clusters/${params.clusterId}/workflows/${execution.workflowName}/executions/${execution.id}`
+        `/clusters/${params.clusterId}/workflows/${execution.workflowName}/executions/${execution.id}`,
       );
     };
 
@@ -130,9 +154,8 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
         }
         return acc;
       },
-      {} as Record<RunStatus, number>
+      {} as Record<RunStatus, number>,
     );
-
 
     const status = job.resultType === "rejection" ? "failure" : job.status;
 
@@ -146,11 +169,15 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
         }`}
       >
         <td className="px-6 py-4 whitespace-nowrap">
-          <span className="text-xs text-slate-500 font-mono">{execution.id.slice(0, 8)}</span>
+          <span className="text-xs text-slate-500 font-mono">
+            {execution.id.slice(0, 8)}
+          </span>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="flex items-center space-x-3">
-            <span className="text-sm font-medium">{execution.workflowName}</span>
+            <span className="text-sm font-medium">
+              {execution.workflowName}
+            </span>
             {job.approvalRequested && !job.approved && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
                 Needs Approval
@@ -191,7 +218,10 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
         <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
           <span>
             {new Date(execution.createdAt).toISOString()} (
-            {formatDistance(execution.createdAt, new Date(), { addSuffix: true })})
+            {formatDistance(execution.createdAt, new Date(), {
+              addSuffix: true,
+            })}
+            )
           </span>
         </td>
       </tr>
@@ -219,8 +249,9 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
             <div className="mb-8">
               <h1 className="text-2xl font-semibold mb-2">Workflows</h1>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                Workflows provide a powerful &ldquo;Workflow as Code&rdquo; approach to
-                orchestrating complex, multi-step AI agent interactions.
+                Workflows provide a powerful &ldquo;Workflow as Code&rdquo;
+                approach to orchestrating complex, multi-step AI agent
+                interactions.
                 <span className="block mt-2">
                   Learn more in our{" "}
                   <Link
@@ -246,7 +277,9 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
             <div className="space-y-4">
               <h2 className="text-sm font-semibold">Filters</h2>
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Workflow Name</label>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Workflow Name
+                </label>
                 <Input
                   placeholder="Filter by name..."
                   value={nameFilter}
@@ -255,10 +288,14 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
                 />
               </div>
               <div>
-                <label className="text-sm text-muted-foreground mb-2 block">Status</label>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Status
+                </label>
                 <Select
                   value={statusFilter}
-                  onValueChange={value => setStatusFilter(value as ExecutionStatus | "all")}
+                  onValueChange={value =>
+                    setStatusFilter(value as ExecutionStatus | "all")
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Filter by status" />
@@ -279,7 +316,11 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
                   Apply Filters
                 </Button>
                 {(appliedNameFilter || appliedStatusFilter !== "all") && (
-                  <Button onClick={handleClearFilters} variant="outline" className="w-full">
+                  <Button
+                    onClick={handleClearFilters}
+                    variant="outline"
+                    className="w-full"
+                  >
                     Clear Filters
                   </Button>
                 )}
@@ -288,20 +329,25 @@ export default function WorkflowsPage({ params }: { params: { clusterId: string 
           </CardContent>
         </Card>
 
-        <div className="mt-4">
-          <WorkflowTriggerModal
-            clusterId={params.clusterId}
-            onTrigger={fetchExecutions}
-          />
-        </div>
+        {executions.length > 0 && (
+          <div className="mt-4">
+            <WorkflowTriggerModal
+              clusterId={params.clusterId}
+              onTrigger={fetchExecutions}
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex-1 min-w-0">
         {!isLoading && executions.length === 0 ? (
           <div className="text-center py-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No workflows found</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No workflows found
+            </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Get started by creating your first workflow using our quick start guide.
+              Get started by creating your first workflow using our quick start
+              guide.
             </p>
             <Link
               href="https://docs.inferable.ai/pages/quick-start"

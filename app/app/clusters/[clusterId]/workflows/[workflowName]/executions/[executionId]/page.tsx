@@ -239,11 +239,11 @@ const runToNode = (
   };
 };
 
-const resultToNode = (
+const memoToResult = (
   result: ClientInferResponseBody<
     typeof contract.getWorkflowExecutionTimeline,
     200
-  >["results"][number]
+  >["memos"][number]
 ): Node => {
   let parsedValue;
   try {
@@ -254,7 +254,7 @@ const resultToNode = (
 
   return {
     id: result.key,
-    title: `Memoized Result`,
+    title: `Memo Result`,
     label: `${result.key.split("_").pop()}`,
     time: new Date(result.createdAt),
     color: "text-emerald-700",
@@ -269,7 +269,7 @@ const structuredToNode = (
   result: ClientInferResponseBody<
     typeof contract.getWorkflowExecutionTimeline,
     200
-  >["results"][number]
+  >["structured"][number]
 ): Node => {
   let parsedValue;
   try {
@@ -554,7 +554,7 @@ export default function WorkflowExecutionDetailsPage({
           },
         ]
       : []),
-    ...(timeline?.results.map(resultToNode) || []),
+    ...(timeline?.memos.map(memoToResult) || []),
     ...(timeline?.structured.map(structuredToNode) || []),
   ].filter(Boolean) as Node[];
 

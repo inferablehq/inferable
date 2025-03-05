@@ -11,8 +11,7 @@ import { env } from "../utilities/env";
 import { AuthenticationError, BadRequestError, NotFoundError } from "../utilities/errors";
 import { safeParse } from "../utilities/safe-parse";
 import { unqualifiedEntityId } from "./auth/auth";
-import { createApiKey, listApiKeys, revokeApiKey, verify } from "./auth/cluster";
-import { createBlob, getBlobData, getBlobsForJobs } from "./blobs";
+import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
 import { getClusterDetails } from "./cluster";
 import { contract, interruptSchema } from "./contract";
 import * as data from "./data";
@@ -172,6 +171,16 @@ export const router = initServer().router(contract, {
 
     const id = body.id || body.runId || ulid();
 
+    let provider;
+
+    if (request.headers["x-provider-key"] && request.headers["x-provider-model"] && request.headers["x-provider-url"]) {
+      provider = {
+        key: request.headers["x-provider-key"],
+        model: request.headers["x-provider-model"],
+        url: request.headers["x-provider-url"]
+      };
+    }
+
     if (body.runId) {
       logger.warn("Using deprecated runId field");
     }
@@ -196,18 +205,6 @@ export const router = initServer().router(contract, {
 
     if (body.attachedFunctions) {
       logger.warn("Using deprecated attachedFunctions field");
-    }
-
-    if (body.type === "single-step") {
-      if (body.attachedFunctions || body.tools) {
-        throw new BadRequestError("Single Step runs cannot have attached tools");
-      }
-      if (body.reasoningTraces) {
-        throw new BadRequestError("Single step runs cannot have reasoning traces");
-      }
-      if (body.enableResultGrounding) {
-        throw new BadRequestError("Single step runs cannot have result grounding");
-      }
     }
 
     if (body.resultSchema) {
@@ -241,13 +238,10 @@ export const router = initServer().router(contract, {
       initialPrompt: body.initialPrompt,
       systemPrompt: body.systemPrompt,
       attachedFunctions,
-      type: body.type,
       resultSchema: body.resultSchema
         ? (dereferenceSync(body.resultSchema) as JsonSchemaInput)
         : undefined,
       interactive: body.interactive,
-      modelIdentifier: body.model,
-      callSummarization: body.callSummarization,
       reasoningTraces: body.reasoningTraces,
       enableResultGrounding: body.enableResultGrounding,
 
@@ -268,8 +262,6 @@ export const router = initServer().router(contract, {
       name: body.name,
       tags: body.tags,
 
-      runType: runOptions.type,
-
       // Customer Auth context (In the future all auth types should inject context into the run)
       authContext: customAuth?.context,
 
@@ -279,13 +271,14 @@ export const router = initServer().router(contract, {
 
       // Merged Options
       resultSchema: runOptions.resultSchema,
-      enableSummarization: runOptions.callSummarization,
-      modelIdentifier: runOptions.modelIdentifier,
       interactive: runOptions.interactive,
       systemPrompt: runOptions.systemPrompt,
       attachedFunctions: runOptions.attachedFunctions,
       reasoningTraces: runOptions.reasoningTraces,
       enableResultGrounding: runOptions.enableResultGrounding,
+      providerKey: provider?.key,
+      providerUrl: provider?.url,
+      providerModel: provider?.model,
     });
 
     // This run.created is a bit of a hack to allow us to create a run with an existing ID
@@ -487,11 +480,6 @@ export const router = initServer().router(contract, {
       };
     }
 
-    const blobs = await getBlobsForJobs({
-      clusterId,
-      jobIds: jobs.map(job => job.id),
-    });
-
     return {
       status: 200,
       body: {
@@ -503,7 +491,6 @@ export const router = initServer().router(contract, {
           attachedFunctions: undefined,
           tools: run.attachedFunctions,
         },
-        blobs,
       },
     };
   },
@@ -734,7 +721,7 @@ export const router = initServer().router(contract, {
       // Max result size 500kb
       const data = Buffer.from(JSON.stringify(result));
       if (Buffer.byteLength(data) > 500 * 1024) {
-        logger.info("Job result too large, persisting as blob", {
+        logger.info("Job result too large, rejecting", {
           jobId,
         });
 
@@ -744,19 +731,9 @@ export const router = initServer().router(contract, {
           throw new NotFoundError("Job not found");
         }
 
-        await createBlob({
-          data: data.toString("base64"),
-          size: Buffer.byteLength(data),
-          encoding: "base64",
-          type: "application/json",
-          name: "Oversize Job result",
-          clusterId,
-          runId: job.runId ?? undefined,
-          jobId: job.id ?? undefined,
-        });
 
         result = {
-          message: "The result was too large and was returned to the user directly",
+          message: "The result was too large.",
         };
 
         resultType = "rejection";
@@ -863,36 +840,6 @@ export const router = initServer().router(contract, {
           runContext: job.runContext,
           approved: job.approved,
         })) ?? [],
-    };
-  },
-  createJobBlob: async request => {
-    const { jobId, clusterId } = request.params;
-    const body = request.body;
-
-    const machine = request.request.getAuth().isMachine();
-    machine.canManage({ job: { clusterId, jobId } });
-
-    const job = await jobs.getJob({ clusterId, jobId });
-
-    if (!job) {
-      return {
-        status: 404,
-        body: {
-          message: "Job not found",
-        },
-      };
-    }
-
-    const blob = await createBlob({
-      ...body,
-      clusterId,
-      runId: job.runId ?? undefined,
-      jobId: jobId ?? undefined,
-    });
-
-    return {
-      status: 201,
-      body: blob,
     };
   },
   getJob: async request => {
@@ -1408,31 +1355,6 @@ export const router = initServer().router(contract, {
       body: machines,
     };
   },
-  getBlobData: async request => {
-    const { clusterId, blobId } = request.params;
-
-    const user = request.request.getAuth();
-    await user.canAccess({ cluster: { clusterId } });
-
-    const blob = await getBlobData({ clusterId, blobId });
-
-    if (blob.runId) {
-      await user.canAccess({
-        run: { clusterId, runId: blob.runId },
-      });
-    }
-
-    if (!blob) {
-      return {
-        status: 404,
-      };
-    }
-
-    return {
-      status: 200,
-      body: blob.data,
-    };
-  },
 
   listWorkflows: async request => {
     const { clusterId } = request.params;
@@ -1594,8 +1516,8 @@ export const router = initServer().router(contract, {
     const hash = crypto.createHash("sha256");
     hash.update(input);
     hash.update(JSON.stringify(schema));
-    hash.update(providerModel);
-    hash.update(providerKey);
+    providerModel && hash.update(providerModel);
+    providerKey && hash.update(providerKey);
     hash.update(executionId);
     instructions && hash.update(instructions);
 
@@ -1633,24 +1555,11 @@ export const router = initServer().router(contract, {
       };
     }
 
-    let provider: Parameters<typeof structured>[0]["provider"] = {
-      url: providerUrl,
-      key: providerKey,
-      model: providerModel,
-    };
+    let provider: Parameters<typeof structured>[0]["provider"] | undefined;
 
-    if (providerUrl.includes("inferable") || providerUrl === "") {
-      if (!["claude-3-5-sonnet", "claude-3-haiku"].includes(providerModel)) {
-        return {
-          status: 400,
-          body: {
-            message: `Unsupported model: ${providerModel}`,
-          },
-        };
-      }
-
+    if (!providerModel || !providerKey || !providerUrl) {
       const model = buildModel({
-        identifier: providerModel as any,
+        identifier: "claude-3-5-sonnet",
         trackingOptions: {
           clusterId: clusterId,
         },
@@ -1705,6 +1614,12 @@ export const router = initServer().router(contract, {
         } else {
           throw new Error("Anthropic API returned invalid response");
         }
+      };
+    } else {
+      provider = {
+        key: providerKey,
+        model: providerModel,
+        url: providerUrl,
       };
     }
 

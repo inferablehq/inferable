@@ -17,6 +17,7 @@ jest.mock("./routing", () => ({
         create: mockCreate,
       },
     })),
+    modelId: "modelId",
   })),
   isChatIdentifier: jest.fn(() => true),
   isEmbeddingIdentifier: jest.fn(() => false),

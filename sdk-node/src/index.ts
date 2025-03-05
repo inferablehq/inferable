@@ -29,7 +29,6 @@ export {
 } from "./types";
 
 export {
-  blob,
   Interrupt
 } from "./util";
 

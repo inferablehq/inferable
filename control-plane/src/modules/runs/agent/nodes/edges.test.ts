@@ -10,7 +10,6 @@ describe("postStartEdge", () => {
     run: {
       id: "test",
       clusterId: "test",
-      modelIdentifier: null,
       resultSchema: null,
       debug: false,
       attachedFunctions: null,
@@ -246,7 +245,6 @@ describe("postModelEdge", () => {
     run: {
       id: "test",
       clusterId: "test",
-      modelIdentifier: null,
       resultSchema: null,
       debug: false,
       attachedFunctions: null,

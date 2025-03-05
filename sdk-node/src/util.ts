@@ -3,7 +3,7 @@ import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import { z } from "zod";
 import { JsonSchemaInput, JsonSchema } from "./types";
-import { blobSchema, interruptSchema } from "./contract";
+import { interruptSchema } from "./contract";
 
 type ValidationError = {
   path: string;
@@ -188,94 +188,6 @@ export const isZodType = (input: any): input is z.ZodTypeAny => {
   return input?._def?.typeName;
 };
 
-export const BLOB_DATA_KEY = "__inferable_blob_data";
-
-export const extractBlobs = (
-  content: unknown,
-): { content: unknown; blobs: z.infer<typeof blobExtractionSchema>[] } => {
-  if (!content || typeof content !== "object") {
-    return {
-      blobs: [],
-      content,
-    };
-  }
-
-  const keys = Object.keys(content);
-
-  if (keys.length === 0) {
-    return {
-      blobs: [],
-      content,
-    };
-  }
-
-  const blobs: Record<string, z.infer<typeof blobExtractionSchema>> = {};
-
-  for (const key of keys) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const value = (content as any)[key];
-
-    if (value && typeof value === "object" && BLOB_DATA_KEY in value) {
-      const parsedBlob = blobExtractionSchema.safeParse(value[BLOB_DATA_KEY]);
-
-      if (!parsedBlob.success) {
-        console.error(parsedBlob.error);
-        throw new InferableError("Found invalid Blob data");
-      }
-
-      blobs[key] = parsedBlob.data;
-    }
-  }
-
-  return {
-    blobs: Object.values(blobs),
-    content: Object.fromEntries(
-      Object.entries(content).filter(([key]) => !blobs[key]),
-    ),
-  };
-};
-
-const blobExtractionSchema = blobSchema
-  .omit({
-    id: true,
-    createdAt: true,
-    runId: true,
-    jobId: true,
-  })
-  .and(
-    z.object({
-      data: z.string(),
-    }),
-  );
-
-type BlobType = "application/json" | "image/png" | "image/jpeg";
-export const blob = ({
-  name,
-  data,
-  type,
-}: {
-  name: string;
-  type: BlobType;
-  data: Buffer | object;
-}) => {
-  if (!(data instanceof Buffer)) {
-    if (type !== "application/json") {
-      throw new InferableError("Object type must be application/json");
-    }
-    data = Buffer.from(JSON.stringify(data));
-  }
-  const encoded = data.toString("base64");
-
-  return {
-    [BLOB_DATA_KEY]: {
-      name,
-      type,
-      encoding: "base64",
-      data: encoded,
-      size: Buffer.from(encoded).byteLength,
-    },
-  };
-};
 
 export const INTERRUPT_KEY = "__inferable_interrupt";
 type VALID_INTERRUPT_TYPES = "approval" | "general";

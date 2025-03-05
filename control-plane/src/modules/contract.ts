@@ -41,17 +41,6 @@ export const interruptSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const blobSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.enum(["application/json", "image/png", "image/jpeg"]),
-  encoding: z.enum(["base64"]),
-  size: z.number(),
-  createdAt: z.date(),
-  jobId: z.string().nullable(),
-  runId: z.string().nullable(),
-});
-
 export const VersionedTextsSchema = z.object({
   current: z.object({
     version: z.string(),
@@ -313,10 +302,6 @@ const RunSchema = z.object({
   initialPrompt: z.string().optional().describe("An initial 'human' message to trigger the run"),
   systemPrompt: z.string().optional().describe("A system prompt for the run."),
   name: z.string().optional().describe("The name of the run, if not provided it will be generated"),
-  model: z
-    .enum(["claude-3-5-sonnet", "claude-3-haiku"])
-    .optional()
-    .describe("The model identifier for the run"),
   resultSchema: anyObject
     .optional()
     .describe(
@@ -341,12 +326,6 @@ const RunSchema = z.object({
     .optional(),
   context: anyObject.optional().describe("Additional context to propogate to all Jobs in the Run"),
   reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
-  callSummarization: z
-    .boolean()
-    .default(false)
-    .optional()
-    .describe("Enable summarization of oversized call results"),
-  type: z.enum(["single-step", "multi-step"]).optional().default("multi-step"),
   interactive: z
     .boolean()
     .default(true)
@@ -405,7 +384,6 @@ export const definition = {
         result: z.string().nullable(),
         resultType: z.string().nullable(),
         createdAt: z.date(),
-        blobs: z.array(blobSchema),
         approved: z.boolean().nullable(),
         approvalRequested: z.boolean().nullable(),
       }),
@@ -540,36 +518,6 @@ export const definition = {
     body: z.object({
       approved: z.boolean(),
     }),
-  },
-  createJobBlob: {
-    method: "POST",
-    path: "/clusters/:clusterId/jobs/:jobId/blobs",
-    headers: z.object({
-      authorization: z.string(),
-      "x-machine-id": z.string(),
-      "x-machine-sdk-version": z.string(),
-      "x-machine-sdk-language": z.string(),
-      "x-forwarded-for": z.string().optional(),
-      "x-sentinel-no-mask": z.string().optional(),
-    }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      jobId: z.string(),
-    }),
-    responses: {
-      201: z.object({
-        id: z.string(),
-      }),
-      401: z.undefined(),
-      404: z.object({
-        message: z.string(),
-      }),
-    },
-    body: blobSchema.omit({ id: true, createdAt: true, jobId: true, runId: true }).and(
-      z.object({
-        data: z.string(),
-      })
-    ),
   },
 
   createMachine: {
@@ -855,6 +803,17 @@ export const definition = {
     path: "/clusters/:clusterId/runs",
     headers: z.object({
       authorization: z.string(),
+      "x-provider-key": z.string().optional(),
+      "x-provider-model": z.enum([
+        "claude-3-7-sonnet-20250219",
+        "claude-3-7-sonnet-latest",
+        "claude-3-5-sonnet-20241022",
+        "claude-3-5-sonnet-latest",
+        "claude-3-5-sonnet-20240620",
+        "claude-3-5-haiku-20241022",
+        "claude-3-5-haiku-latest"
+      ]).optional(),
+      "x-provider-url": z.literal("https://api.anthropic.com").default("https://api.anthropic.com"),
     }),
     body: RunSchema,
     responses: {
@@ -1154,21 +1113,7 @@ export const definition = {
           workflowVersion: z.number().nullable(),
           workflowName: z.string().nullable(),
         }),
-        blobs: z.array(blobSchema),
       }),
-    },
-  },
-  getBlobData: {
-    method: "GET",
-    path: "/clusters/:clusterId/blobs/:blobId/data",
-    headers: z.object({ authorization: z.string() }),
-    pathParams: z.object({
-      clusterId: z.string(),
-      blobId: z.string(),
-    }),
-    responses: {
-      200: z.any(),
-      404: z.undefined(),
     },
   },
 
@@ -1310,7 +1255,6 @@ export const definition = {
               status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
               failureReason: z.string().nullable(),
               type: z.enum(["single-step", "multi-step"]).nullable(),
-              modelIdentifier: z.string().nullable(),
             })
           ),
         })
@@ -1354,7 +1298,6 @@ export const definition = {
             createdAt: z.date(),
             type: z.enum(["single-step", "multi-step"]),
             status: z.enum(["pending", "running", "paused", "done", "failed"]).nullable(),
-            modelIdentifier: z.string().nullable(),
           })
         ),
         execution: z.object({
@@ -1375,7 +1318,7 @@ export const definition = {
             approvalRequested: z.boolean().nullable(),
           }),
         }),
-        results: z.array(
+        memos: z.array(
           z.object({
             key: z.string(),
             value: z.string(),
@@ -1469,9 +1412,9 @@ export const definition = {
     }),
     headers: z.object({
       authorization: z.string(),
-      "x-provider-model": z.string(),
-      "x-provider-url": z.string(),
-      "x-provider-key": z.string(),
+      "x-provider-model": z.string().optional(),
+      "x-provider-url": z.string().optional(),
+      "x-provider-key": z.string().optional(),
       "x-max-attempts": z.string().optional().default("3"),
       "x-cache-ttl": z.string().optional(),
       "x-workflow-execution-id": z.string().optional(),

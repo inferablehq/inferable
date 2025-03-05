@@ -2,7 +2,6 @@ import { StateGraphArgs } from "@langchain/langgraph";
 import { InferSelectModel } from "drizzle-orm";
 import { UnifiedMessage } from "../../contract";
 import { RunMessageMetadata, runs } from "../../data";
-import { ChatIdentifiers } from "../../models/routing";
 
 export type RunGraphStateMessage = UnifiedMessage & {
   persisted?: true;
@@ -18,7 +17,6 @@ export type RunGraphState = {
   run: {
     id: string;
     clusterId: string;
-    modelIdentifier: ChatIdentifiers | null;
     resultSchema: unknown | null;
     debug: boolean;
     attachedFunctions: string[] | null;
@@ -28,6 +26,9 @@ export type RunGraphState = {
     test: boolean;
     reasoningTraces: boolean;
     enableResultGrounding: boolean;
+    providerUrl?: string | null;
+    providerModel?: string | null;
+    providerKey?: string | null;
   };
   waitingJobs: string[];
   allAvailableTools: string[];
@@ -43,7 +44,6 @@ export const createStateGraphChannels = ({
   run: {
     id: string;
     clusterId: string;
-    modelIdentifier: ChatIdentifiers | null;
     resultSchema: unknown | null;
     debug: boolean;
     attachedFunctions: string[] | null;
@@ -53,6 +53,9 @@ export const createStateGraphChannels = ({
     test: boolean;
     reasoningTraces: boolean;
     enableResultGrounding: boolean;
+    providerUrl?: string | null;
+    providerModel?: string | null;
+    providerKey?: string | null;
   };
   allAvailableTools: string[];
   additionalContext?: string;

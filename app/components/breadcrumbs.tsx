@@ -30,16 +30,19 @@ interface ClusterBreadcrumbsProps {
 const linkStyles =
   "flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-slate-50 rounded-sm transition-all gap-2 border border-transparent hover:border-gray-100";
 
-const activeLinkStyles =
-  "bg-slate-100 text-gray-900 border-gray-200";
+const activeLinkStyles = "bg-slate-100 text-gray-900 border-gray-200";
 
-function BreadcrumbLinks({ clusterId, clusterName, isDemo }: ClusterBreadcrumbsProps) {
+function BreadcrumbLinks({
+  clusterId,
+  clusterName,
+  isDemo,
+}: ClusterBreadcrumbsProps) {
   const pathname = usePathname();
 
   const isCurrentPath = (path: string) => {
     // Special case for clusters page to avoid matching all paths
-    if (path === '/clusters') {
-      return pathname === '/clusters';
+    if (path === "/clusters") {
+      return pathname === "/clusters";
     }
     return pathname?.startsWith(path) ?? false;
   };
@@ -55,7 +58,7 @@ function BreadcrumbLinks({ clusterId, clusterName, isDemo }: ClusterBreadcrumbsP
           href={`/clusters/${clusterId}/workflows`}
           className="text-lg text-gray-400 tracking-tight hover:text-gray-600"
         >
-          {clusterName}
+          {clusterName || "..."}
         </Link>
         {isDemo && <Badge variant="secondary">Demo</Badge>}
       </div>
@@ -64,12 +67,6 @@ function BreadcrumbLinks({ clusterId, clusterName, isDemo }: ClusterBreadcrumbsP
         className={getLinkStyles(`/clusters/${clusterId}/workflows`)}
       >
         <WorkflowIcon className="h-4 w-4" /> Workflows
-      </Link>
-      <Link
-        href={`/clusters/${clusterId}/runs`}
-        className={getLinkStyles(`/clusters/${clusterId}/runs`)}
-      >
-        <PlayCircle className="h-4 w-4" /> Playground
       </Link>
       <Link
         href={`/clusters/${clusterId}/integrations`}
@@ -89,7 +86,11 @@ function BreadcrumbLinks({ clusterId, clusterName, isDemo }: ClusterBreadcrumbsP
       >
         <Settings className="h-4 w-4" /> Settings
       </Link>
-      <Link href={`https://docs.inferable.ai`} target="_blank" className={linkStyles}>
+      <Link
+        href={`https://docs.inferable.ai`}
+        target="_blank"
+        className={linkStyles}
+      >
         <ExternalLink className="h-4 w-4" /> Docs
       </Link>
       <div className="ml-auto">
@@ -101,7 +102,10 @@ function BreadcrumbLinks({ clusterId, clusterName, isDemo }: ClusterBreadcrumbsP
 
 export function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps) {
   const { getToken } = useAuth();
-  const [clusterDetails, setClusterDetails] = useState<ClientInferResponseBody<typeof contract.getCluster, 200> | null>(null);
+  const [clusterDetails, setClusterDetails] = useState<ClientInferResponseBody<
+    typeof contract.getCluster,
+    200
+  > | null>(null);
   const [error, setError] = useState<any>(null);
 
   useEffect(() => {
@@ -149,8 +153,8 @@ export function GlobalBreadcrumbs() {
 
   const isCurrentPath = (path: string) => {
     // Special case for clusters page to avoid matching all paths
-    if (path === '/clusters') {
-      return pathname === '/clusters';
+    if (path === "/clusters") {
+      return pathname === "/clusters";
     }
     return pathname?.startsWith(path) ?? false;
   };
@@ -161,10 +165,14 @@ export function GlobalBreadcrumbs() {
 
   return (
     <div className="px-6 py-2 flex gap-2 border-b bg-white">
-      <Link href={`/clusters`} className={getLinkStyles('/clusters')}>
+      <Link href={`/clusters`} className={getLinkStyles("/clusters")}>
         <Network className="h-4 w-4" /> Clusters
       </Link>
-      <Link href={`https://docs.inferable.ai`} target="_blank" className={linkStyles}>
+      <Link
+        href={`https://docs.inferable.ai`}
+        target="_blank"
+        className={linkStyles}
+      >
         <ExternalLink className="h-4 w-4" /> Docs
       </Link>
       <div className="ml-auto">

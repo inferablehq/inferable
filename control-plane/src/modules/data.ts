@@ -382,6 +382,9 @@ export const runs = pgTable(
     workflow_execution_id: varchar("workflow_execution_id", { length: 1024 }),
     workflow_version: integer("workflow_version"),
     workflow_name: varchar("workflow_name", { length: 1024 }),
+    provider_model: text("provider_model"),
+    provider_url: text("provider_url"),
+    provider_key: text("provider_key"),
   },
   table => ({
     pk: primaryKey({

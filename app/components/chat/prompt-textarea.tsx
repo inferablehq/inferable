@@ -11,7 +11,13 @@ import { isFeatureEnabled } from "@/lib/features";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
 import { ClientInferRequest } from "@ts-rest/core";
-import { Blocks, ChevronDown, ChevronRight, PlusCircleIcon, Settings2Icon } from "lucide-react";
+import {
+  Blocks,
+  ChevronDown,
+  ChevronRight,
+  PlusCircleIcon,
+  Settings2Icon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { QuickStartDemo } from "../quick-start-demo";
@@ -143,7 +149,7 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
 
       router.push(`/clusters/${clusterId}/runs/${result.body.id}`);
     },
-    [clusterId, getToken, router]
+    [clusterId, getToken, router],
   );
 
   const submit = () => {
@@ -164,7 +170,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
     }
   };
 
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => ({
+  const [collapsedSections, setCollapsedSections] = useState<
+    Record<string, boolean>
+  >(() => ({
     functions: true,
     schema: true,
     context: true,
@@ -202,7 +210,8 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
               1
             </div>
             <p className="text-base font-semibold text-gray-800">
-              Great! You&apos;ve connected a couple of services. They are ready to use.
+              Great! You&apos;ve connected a couple of services. They are ready
+              to use.
             </p>
           </div>
           <div className="rounded-xl p-5 shadow-sm border border-green-100 bg-green-50/30 transition-all duration-200">
@@ -273,7 +282,10 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                 >
                   <span className="font-medium">{demoPrompt.text}</span>
                   {demoPrompt.description.map((description, index) => (
-                    <span key={index} className="text-xs text-muted-foreground mt-1">
+                    <span
+                      key={index}
+                      className="text-xs text-muted-foreground mt-1"
+                    >
                       {index + 1}. {description}
                     </span>
                   ))}
@@ -284,25 +296,22 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
         </>
       )}
 
-      {noServicesAndMachines && !isLoading && (
-        <div className="flex-grow-0">
-          <QuickStartDemo clusterId={clusterId} />
-        </div>
-      )}
-
       <div className="space-y-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <PlusCircleIcon className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold text-gray-800">Chat with your tools</h2>
+              <h2 className="text-lg font-semibold text-gray-800">
+                Chat with your tools
+              </h2>
             </div>
             <div className="flex items-center px-2 py-0.5 rounded-md bg-gray-100">
               <span className="text-xs text-gray-600">⌘ + Enter to send</span>
             </div>
           </div>
           <p className="text-sm text-gray-600 leading-relaxed">
-            Chat with your tools in natural language. Use the playground to test out agent behavior.
+            Chat with your tools in natural language. Use the playground to test
+            out agent behavior.
           </p>
         </div>
         <div className="space-y-2">
@@ -323,16 +332,19 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
       <div
         className={cn(
           "space-y-3 border rounded-lg bg-gray-50/50 shadow-sm",
-          noServicesAndMachines && "hidden"
+          noServicesAndMachines && "hidden",
         )}
       >
         <div className="p-4">
           <div className="flex items-center gap-2 text-xs w-full mb-2">
             <Settings2Icon className="h-3.5 w-3.5 text-primary" />
-            <span className="font-semibold uppercase tracking-wide text-gray-700">Configuration</span>
+            <span className="font-semibold uppercase tracking-wide text-gray-700">
+              Configuration
+            </span>
           </div>
           <p className="text-sm text-gray-600">
-            Optional configurations to customize how Inferable will process your request and interact with available tools.
+            Optional configurations to customize how Inferable will process your
+            request and interact with available tools.
           </p>
         </div>
 
@@ -352,8 +364,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             </span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Select tools and APIs that the AI can use to help complete your request. The agent will
-            automatically determine when to use these functions.
+            Select tools and APIs that the AI can use to help complete your
+            request. The agent will automatically determine when to use these
+            functions.
           </p>
           <div className={cn("mt-2", collapsedSections.functions && "hidden")}>
             <MultiSelect
@@ -386,8 +399,8 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             <span className="font-medium">Result Schema</span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Define a JSON schema to get structured output from the AI. The agent will format its
-            response to match your specified schema. See the{" "}
+            Define a JSON schema to get structured output from the AI. The agent
+            will format its response to match your specified schema. See the{" "}
             <a
               className="text-xs text-primary hover:text-primary/90 hover:underline"
               href="https://docs.inferable.ai/pages/runs#resultschema"
@@ -397,7 +410,12 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             </a>{" "}
             for details.
           </p>
-          <div className={cn("mt-2 space-y-2", collapsedSections.schema && "hidden")}>
+          <div
+            className={cn(
+              "mt-2 space-y-2",
+              collapsedSections.schema && "hidden",
+            )}
+          >
             <Textarea
               value={options.resultSchema || ""}
               onChange={e =>
@@ -442,8 +460,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             <span className="font-medium">Run Context</span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Provide additional context as JSON that will be passed into all function calls. It is{" "}
-            <span className="font-bold">not</span> visible to the agent. See the{" "}
+            Provide additional context as JSON that will be passed into all
+            function calls. It is <span className="font-bold">not</span> visible
+            to the agent. See the{" "}
             <a
               className="text-xs text-primary hover:text-primary/90 hover:underline"
               href="https://docs.inferable.ai/pages/runs#context"
@@ -453,7 +472,12 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             </a>{" "}
             for details.
           </p>
-          <div className={cn("mt-2 space-y-2", collapsedSections.context && "hidden")}>
+          <div
+            className={cn(
+              "mt-2 space-y-2",
+              collapsedSections.context && "hidden",
+            )}
+          >
             <Textarea
               value={options.runContext || ""}
               onChange={e =>
@@ -498,9 +522,15 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
             <span className="font-medium">Options</span>
           </button>
           <p className="text-xs text-muted-foreground mt-1 mb-2">
-            Configure how the AI agent processes your request and interacts with available tools.
+            Configure how the AI agent processes your request and interacts with
+            available tools.
           </p>
-          <div className={cn("mt-2 space-y-4", collapsedSections.options && "hidden")}>
+          <div
+            className={cn(
+              "mt-2 space-y-4",
+              collapsedSections.options && "hidden",
+            )}
+          >
             <div className="flex items-center space-x-2">
               <Switch
                 checked={options.reasoningTraces}
@@ -512,7 +542,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                 }
                 className="scale-75 data-[state=checked]:bg-primary"
               />
-              <label className="text-xs text-muted-foreground">Enable reasoning traces</label>
+              <label className="text-xs text-muted-foreground">
+                Enable reasoning traces
+              </label>
             </div>
             {isFeatureEnabled("feature.result_grounding") && (
               <div className={"flex items-center space-x-2"}>
@@ -526,7 +558,9 @@ export function PromptTextarea({ clusterId }: { clusterId: string }) {
                   }
                   className="scale-75 data-[state=checked]:bg-primary"
                 />
-                <label className="text-xs text-muted-foreground">Enable result grounding</label>
+                <label className="text-xs text-muted-foreground">
+                  Enable result grounding
+                </label>
               </div>
             )}
           </div>

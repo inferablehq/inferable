@@ -19,7 +19,7 @@ export const getWorkflowExecutionTimeline = async ({
   workflowName: string;
   clusterId: string;
 }) => {
-  const [[execution], runs, events, results, structured] = await Promise.all([
+  const [[execution], runs, events, memos, structured] = await Promise.all([
     data.db
       .select({
         id: data.workflowExecutions.id,
@@ -63,7 +63,7 @@ export const getWorkflowExecutionTimeline = async ({
     execution,
     runs,
     events,
-    results,
+    memos,
     structured,
   };
 };
@@ -172,7 +172,6 @@ export const listWorkflowExecutions = async ({
         status: r.runsStatus,
         failureReason: r.runsFailureReason,
         type: r.runsType || "multi-step",
-        modelIdentifier: r.runsModelIdentifier,
       })),
     };
   });
@@ -323,7 +322,6 @@ export const getWorkflowRuns = async ({
       status: data.runs.status,
       failureReason: data.runs.failure_reason,
       type: data.runs.type,
-      modelIdentifier: data.runs.model_identifier,
     })
     .from(data.runs)
     .where(

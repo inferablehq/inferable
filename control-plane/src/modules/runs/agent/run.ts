@@ -24,7 +24,6 @@ export const processAgentRun = async (
   run: {
     id: string;
     clusterId: string;
-    modelIdentifier: ChatIdentifiers | null;
     resultSchema: unknown | null;
     debug: boolean;
     attachedFunctions: string[] | null;
@@ -38,6 +37,9 @@ export const processAgentRun = async (
     onStatusChange: z.infer<typeof onStatusChangeSchema> | null;
     authContext: unknown | null;
     context: unknown | null;
+    providerUrl?: string | null;
+    providerModel?: string | null;
+    providerKey?: string | null;
   },
   tags?: Record<string, string>,
   mockModelResponses?: string[]
@@ -92,7 +94,7 @@ export const processAgentRun = async (
   }
 
   const app = await createRunGraph({
-    run: run,
+    run,
     mockModelResponses,
     allAvailableTools,
     additionalContext,
