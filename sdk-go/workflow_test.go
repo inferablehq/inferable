@@ -20,7 +20,7 @@ func TestWorkflow(t *testing.T) {
 		APIEndpoint: getEnvOrSkip(t, "INFERABLE_TEST_API_ENDPOINT"),
 	})
 	if err != nil {
-		t.Fatalf("Failed to create Inferable instance: %v", err)
+		t.Fatalf("Failed to create Inferable instances: %v", err)
 	}
 
 	// Create a unique workflow name to prevent conflicts with other tests
@@ -81,7 +81,7 @@ func TestWorkflow(t *testing.T) {
 
 		// Log a message
 		ctx.Log("info", map[string]interface{}{
-			"message": "Starting workflow",
+			"message": "Starting workflows",
 		})
 
 		// Use the agent to find the needle

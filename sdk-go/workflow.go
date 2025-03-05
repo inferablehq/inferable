@@ -38,9 +38,9 @@ type WorkflowContext struct {
 	// LLM functionality for the workflow
 	LLM *LLM
 	// Memo caches results for the workflow
-	Memo func(name string, fn func() (interface{}, error)) (interface{}, error) `json:"-" jsonschema:"-"`
+	Memo func(name string, fn func() (interface{}, error)) (interface{}, error)
 	// Log logs information for the workflow
-	Log func(status string, meta map[string]interface{}) error `json:"-" jsonschema:"-"`
+	Log func(status string, meta map[string]interface{}) error
 	// Agents provides agent functionality for the workflow
 	Agents *Agents
 }
@@ -373,17 +373,91 @@ func (b *WorkflowVersionBuilder) Define(handler interface{}) {
 				Approved: contextInput.Approved,
 				// Set up Log function
 				Log: func(status string, meta map[string]interface{}) error {
-					// In a real implementation, this would log to the workflow log
+					// Log to the workflow logger if available
 					if b.workflow.logger != nil {
 						b.workflow.logger.Info(fmt.Sprintf("Workflow log: %s", status), meta)
 					}
-					return nil
+
+					// Create a workflow log entry in the cluster
+					body, err := json.Marshal(map[string]interface{}{
+						"status": status,
+						"data":   meta,
+					})
+					if err != nil {
+						return err
+					}
+
+					path := fmt.Sprintf("/clusters/%s/workflow-executions/%s/logs", clusterId, executionId)
+					_, _, err, _ = b.workflow.inferable.client.FetchData(client.FetchDataOptions{
+						Path:   path,
+						Method: "POST",
+						Body:   string(body),
+					})
+
+					return err
 				},
 				// Set up Memo function for caching results
 				Memo: func(name string, fn func() (interface{}, error)) (interface{}, error) {
-					// In a real implementation, this would check for cached results
-					// and store new results
-					return fn()
+					// Create a key for the memo cache
+					key := fmt.Sprintf("%s_memo_%s", executionId, name)
+
+					// Try to get existing value from cluster KV store
+					path := fmt.Sprintf("/clusters/%s/keys/%s/value", clusterId, key)
+					respBody, _, err, statusCode := b.workflow.inferable.client.FetchData(client.FetchDataOptions{
+						Path:   path,
+						Method: "GET",
+					})
+
+					// If we successfully retrieved a value, deserialize and return it
+					if err == nil && statusCode == 200 && respBody != "" {
+						var kvResponse struct {
+							Value string `json:"value"`
+						}
+
+						if err := json.Unmarshal([]byte(respBody), &kvResponse); err == nil && kvResponse.Value != "" {
+							var result struct {
+								Value interface{} `json:"value"`
+							}
+
+							if err := json.Unmarshal([]byte(kvResponse.Value), &result); err == nil && result.Value != nil {
+								return result.Value, nil
+							}
+						}
+					}
+
+					// If no cached value exists or there was an error, execute the function
+					result, err := fn()
+					if err != nil {
+						return nil, err
+					}
+
+					// Serialize the result
+					serialized, err := json.Marshal(struct {
+						Value interface{} `json:"value"`
+					}{
+						Value: result,
+					})
+					if err != nil {
+						return result, err
+					}
+
+					// Store the result in the cluster KV store
+					body, err := json.Marshal(map[string]interface{}{
+						"value":      string(serialized),
+						"onConflict": "doNothing",
+					})
+					if err != nil {
+						return result, err
+					}
+
+					path = fmt.Sprintf("/clusters/%s/keys/%s", clusterId, key)
+					_, _, err, _ = b.workflow.inferable.client.FetchData(client.FetchDataOptions{
+						Path:   path,
+						Method: "PUT",
+						Body:   string(body),
+					})
+
+					return result, err
 				},
 				// Set up LLM for structured generation
 				LLM: &LLM{
