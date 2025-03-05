@@ -25,6 +25,7 @@ type Inferable struct {
 	machineID   string
 	clusterID   string
 	Tools       *pollingAgent
+	Workflows   *Workflows
 	// Convenience reference to a service with the name 'default'.
 	//
 	// Returns:
@@ -102,6 +103,11 @@ func New(options InferableOptions) (*Inferable, error) {
 	inferable.Tools, err = inferable.createPollingAgent()
 	if err != nil {
 		return nil, fmt.Errorf("error creating polling agent: %v", err)
+	}
+
+	// Initialize the Workflows field
+	inferable.Workflows = &Workflows{
+		inferable: inferable,
 	}
 
 	return inferable, nil
