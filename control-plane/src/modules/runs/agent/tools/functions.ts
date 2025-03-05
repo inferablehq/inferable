@@ -29,7 +29,6 @@ export const buildTool = ({
   run: {
     clusterId: string;
     id: string;
-    enableSummarization?: boolean;
     authContext?: unknown;
     context?: unknown;
   };

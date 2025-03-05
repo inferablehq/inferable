@@ -40,7 +40,6 @@ export const createRun = async ({
   attachedFunctions,
   interactive,
   reasoningTraces,
-  enableSummarization,
   authContext,
   context,
   enableResultGrounding,
@@ -69,7 +68,6 @@ export const createRun = async ({
   attachedFunctions?: string[];
   interactive?: boolean;
   reasoningTraces?: boolean;
-  enableSummarization?: boolean;
   authContext?: Record<string, unknown>;
   context?: unknown;
   enableResultGrounding?: boolean;
@@ -110,7 +108,6 @@ export const createRun = async ({
       test_mocks: testMocks,
       reasoning_traces: reasoningTraces,
       interactive: interactive,
-      enable_summarization: enableSummarization,
       on_status_change: onStatusChangeHandler,
       result_schema: resultSchema,
       attached_functions: attachedFunctions,
@@ -264,7 +261,6 @@ export const getRun = async ({ clusterId, runId }: { clusterId: string; runId: s
       attachedFunctions: runs.attached_functions,
       reasoningTraces: runs.reasoning_traces,
       interactive: runs.interactive,
-      enableSummarization: runs.enable_summarization,
       authContext: runs.auth_context,
       context: runs.context,
       enableResultGrounding: runs.enable_result_grounding,
@@ -488,7 +484,6 @@ export const createRunWithMessage = async ({
   attachedFunctions,
   reasoningTraces,
   interactive,
-  enableSummarization,
   onStatusChangeHandler,
   authContext,
   context,
@@ -508,7 +503,6 @@ export const createRunWithMessage = async ({
     tags,
     reasoningTraces,
     interactive,
-    enableSummarization,
     authContext,
     context,
     enableResultGrounding,
@@ -675,7 +669,6 @@ export type RunOptions = {
 
   interactive?: boolean;
   reasoningTraces?: boolean;
-  callSummarization?: boolean;
   enableResultGrounding?: boolean;
 
   input?: Record<string, unknown>;

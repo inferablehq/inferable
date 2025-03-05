@@ -243,7 +243,6 @@ export const router = initServer().router(contract, {
         ? (dereferenceSync(body.resultSchema) as JsonSchemaInput)
         : undefined,
       interactive: body.interactive,
-      callSummarization: body.callSummarization,
       reasoningTraces: body.reasoningTraces,
       enableResultGrounding: body.enableResultGrounding,
 
@@ -273,7 +272,6 @@ export const router = initServer().router(contract, {
 
       // Merged Options
       resultSchema: runOptions.resultSchema,
-      enableSummarization: runOptions.callSummarization,
       interactive: runOptions.interactive,
       systemPrompt: runOptions.systemPrompt,
       attachedFunctions: runOptions.attachedFunctions,
