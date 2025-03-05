@@ -28,11 +28,6 @@ jobs:
       - uses: grafana/setup-k6-action@v1
       - uses: grafana/run-k6-action@v1
         with:
-          path: ./load-tests/run.js
-          fail-fast: true
-          flags: --throw
-      - uses: grafana/run-k6-action@v1
-        with:
           path: ./load-tests/workflow.js
           fail-fast: true
           flags: --throw

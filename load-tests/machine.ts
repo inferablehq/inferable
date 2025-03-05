@@ -36,7 +36,7 @@ workflow.version(1).define(async (ctx, input) => {
   const result = ctx.agents.react({
     name: "searchHaystack",
     instructions: 'Get the special word from the `searchHaystack` function',
-    input: "   ",
+    input: " ",
     schema: z.object({
       word: z.string(),
     }),
