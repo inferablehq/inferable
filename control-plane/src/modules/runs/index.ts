@@ -11,7 +11,6 @@ import {
 import { clusters, db, jobs, RunMessageMetadata, runs, runTags } from "../data";
 import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
-import { runGenerateNameQueue } from "../queues/run-name-generation";
 import { runProcessQueue } from "../queues/run-process";
 import { trackCustomerTelemetry } from "../track-customer-telemetry";
 import {
@@ -422,17 +421,11 @@ export const addMessageAndResume = async ({
     metadata,
   });
 
-  await Promise.all([
-    resumeRun({
-      id: runId,
-      clusterId,
-    }),
-    runGenerateNameQueue.send({
-      runId,
-      clusterId,
-      content: message,
-    }),
-  ]);
+
+  await resumeRun({
+    id: runId,
+    clusterId,
+  });
 };
 
 export const resumeRun = async (input: { id: string; clusterId: string }) => {

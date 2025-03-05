@@ -7,7 +7,6 @@ import * as auth from "./modules/auth/auth";
 import { pg } from "./modules/data";
 import { flagsmith } from "./modules/flagsmith";
 import * as slack from "./modules/integrations/slack";
-import * as thirdPartyIntegrations from "./modules/integrations/third-party-integrations";
 import * as jobs from "./modules/jobs/jobs";
 import * as models from "./modules/models/routing";
 import * as events from "./modules/observability/events";
@@ -175,7 +174,6 @@ const startTime = Date.now();
     queues.start(),
     flagsmith?.getEnvironmentFlags(),
     analytics.start(),
-    thirdPartyIntegrations.start(),
     clusters.start(),
   ])
     .then(() => {
@@ -223,7 +221,6 @@ process.on("SIGTERM", async () => {
     hdx?.shutdown(),
     queues.stop(),
     slack.stop(),
-    thirdPartyIntegrations.stop(),
     cron.stop(),
   ]);
 
