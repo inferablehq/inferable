@@ -10,26 +10,36 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-// WorkflowInput is the base input type for all workflows
+// WorkflowInput is the base input type for all workflows.
+// It contains the execution ID which uniquely identifies a workflow execution.
 type WorkflowInput struct {
 	ExecutionID string `json:"executionId"`
 }
 
-// Logger interface for workflow logging
+// Logger interface for workflow logging.
+// Implementations of this interface can be used to log workflow events.
 type Logger interface {
+	// Info logs an informational message with associated metadata.
 	Info(message string, meta map[string]interface{})
+	// Error logs an error message with associated metadata.
 	Error(message string, meta map[string]interface{})
 }
 
-// WorkflowConfig holds the configuration for a workflow
+// WorkflowConfig holds the configuration for a workflow.
+// It defines the workflow's name, description, input schema, and logger.
 type WorkflowConfig struct {
-	Name        string
+	// Name is the unique identifier for the workflow.
+	Name string
+	// Description provides a human-readable explanation of the workflow's purpose.
 	Description string
+	// InputSchema defines the expected structure of the workflow input.
 	InputSchema interface{}
-	Logger      Logger
+	// Logger is used for logging workflow events.
+	Logger Logger
 }
 
-// WorkflowContext provides context for workflow execution
+// WorkflowContext provides context for workflow execution.
+// It contains all the necessary information and functionality for a workflow to execute.
 type WorkflowContext struct {
 	// Input for the workflow
 	Input interface{}
@@ -37,15 +47,25 @@ type WorkflowContext struct {
 	Approved bool
 	// LLM functionality for the workflow
 	LLM *LLM
-	// Memo caches results for the workflow
+	// Memo caches results for the workflow. It provides a way to store and retrieve
+	// computation results across workflow executions. The function takes a name to
+	// identify the cached result and a function that computes the result if not cached.
+	// If a result with the given name exists in the cache, it is returned without
+	// executing the function. Otherwise, the function is executed and its result is
+	// stored in the cache before being returned.
 	Memo func(name string, fn func() (interface{}, error)) (interface{}, error)
-	// Log logs information for the workflow
+	// Log logs information for the workflow. It records a status message and associated
+	// metadata for the current workflow execution. This information can be used for
+	// monitoring, debugging, and auditing workflow executions. The status parameter
+	// indicates the current state or event being logged, and the meta parameter provides
+	// additional context or data related to the status.
 	Log func(status string, meta map[string]interface{}) error
 	// Agents provides agent functionality for the workflow
 	Agents *Agents
 }
 
-// LLM provides LLM functionality for workflows
+// LLM provides LLM (Large Language Model) functionality for workflows.
+// It enables workflows to interact with language models for text generation and processing.
 type LLM struct {
 	client      *client.Client
 	apiSecret   string
@@ -53,13 +73,30 @@ type LLM struct {
 	executionId string
 }
 
-// StructuredInput defines the input for structured LLM calls
+// StructuredInput represents input for structured LLM generation.
+// It includes the input text and a schema defining the expected output structure.
 type StructuredInput struct {
-	Input  string      `json:"input"`
+	// Input is the text prompt for the LLM.
+	Input string `json:"input"`
+	// Schema defines the expected structure of the LLM output.
 	Schema interface{} `json:"schema"`
 }
 
-// Structured generates structured output from an LLM
+// Structured generates structured output from the LLM based on the provided input.
+// It sends the input to the LLM and returns the structured response according to the schema.
+//
+//	result, err := ctx.LLM.Structured(StructuredInput{
+//		Input: "Hello, how are you?",
+//		Schema: struct {
+//			Result string `json:"result"`
+//		}{},
+//	})
+//
+//	if err != nil {
+//		// Handle error
+//	}
+//
+//	return result, nil
 func (l *LLM) Structured(input StructuredInput) (interface{}, error) {
 	// Convert schema to JSON schema if needed
 	if input.Schema != nil {
@@ -110,7 +147,8 @@ func (l *LLM) Structured(input StructuredInput) (interface{}, error) {
 	return response["data"], nil
 }
 
-// Agents provides agent functionality for workflows
+// Agents provides functionality for creating and managing AI agents within workflows.
+// It enables workflows to create agents that can perform tasks and interact with users.
 type Agents struct {
 	client       *client.Client
 	apiSecret    string
@@ -120,7 +158,8 @@ type Agents struct {
 	executionId  string
 }
 
-// ReactAgentConfig defines the configuration for a react agent
+// ReactAgentConfig holds the configuration for a React agent.
+// It defines the agent's name, instructions, input, schema, and available tools.
 type ReactAgentConfig struct {
 	// Name of the agent
 	Name string
@@ -134,7 +173,8 @@ type ReactAgentConfig struct {
 	Tools []string
 }
 
-// Agent represents an agent instance
+// Agent represents an AI agent that can interact with users and perform tasks.
+// It provides methods for sending messages and receiving responses.
 type Agent struct {
 	client    *client.Client
 	apiSecret string
@@ -142,7 +182,8 @@ type Agent struct {
 	runId     string
 }
 
-// SendMessage sends a message to the agent
+// SendMessage sends a message to the agent and waits for a response.
+// It enables bidirectional communication with the agent.
 func (a *Agent) SendMessage(message string) error {
 	payload := map[string]interface{}{
 		"message": message,
@@ -178,7 +219,28 @@ func (a *Agent) SendMessage(message string) error {
 	return nil
 }
 
-// React creates a react agent
+// React creates a React agent with the provided configuration.
+// It initializes the agent and returns its result along with any interrupts.
+// If interrupt is not nil, you must return it as the result of the workflow handler.
+//
+//	result, interrupt, err := ctx.Agents.React(ReactAgentConfig{
+//		Name: "my-agent",
+//		Instructions: "You are a helpful assistant",
+//		Input: "Hello, how are you?",
+//		Schema: struct {
+//			Result string `json:"result"`
+//		}{},
+//	})
+//
+//	if err != nil {
+//		// Handle error
+//	}
+//
+//	if interrupt != nil {
+//	  return interrupt, nil
+//	}
+//
+// return result, nil
 func (a *Agents) React(config ReactAgentConfig) (interface{}, *Interrupt, error) {
 	// Convert schema to JSON schema if needed
 	var resultSchema interface{}
@@ -266,7 +328,8 @@ func (a *Agents) React(config ReactAgentConfig) (interface{}, *Interrupt, error)
 	}
 }
 
-// Workflow represents a workflow
+// Workflow represents a workflow in the Inferable system.
+// It contains the workflow's configuration, handlers, and tools.
 type Workflow struct {
 	name            string
 	description     string
@@ -278,16 +341,23 @@ type Workflow struct {
 	Tools           *WorkflowTools
 }
 
-// WorkflowTool represents a tool for a workflow
+// WorkflowTool represents a tool that can be used within a workflow.
+// Tools provide additional functionality that can be invoked during workflow execution.
 type WorkflowTool struct {
-	Name        string
+	// Name is the unique identifier for the tool.
+	Name string
+	// Description provides a human-readable explanation of the tool's purpose.
 	Description string
+	// InputSchema defines the expected structure of the tool input.
 	InputSchema interface{}
-	Func        interface{}
-	Config      interface{}
+	// Func is the function that implements the tool's functionality.
+	Func interface{}
+	// Config provides additional configuration for the tool.
+	Config interface{}
 }
 
-// prefixToolNames prefixes tool names with the workflow name
+// prefixToolNames prefixes tool names with the workflow name.
+// This ensures that tool names are unique across different workflows.
 func prefixToolNames(tools []string, workflowName string) []string {
 	result := make([]string, len(tools))
 	for i, tool := range tools {
@@ -296,7 +366,8 @@ func prefixToolNames(tools []string, workflowName string) []string {
 	return result
 }
 
-// Version sets the version for the workflow
+// Version sets the version for the workflow.
+// It returns a WorkflowVersionBuilder that can be used to define the handler for this version.
 func (w *Workflow) Version(version int) *WorkflowVersionBuilder {
 	return &WorkflowVersionBuilder{
 		workflow: w,
@@ -304,13 +375,15 @@ func (w *Workflow) Version(version int) *WorkflowVersionBuilder {
 	}
 }
 
-// WorkflowVersionBuilder builds a workflow version
+// WorkflowVersionBuilder builds a workflow version.
+// It provides methods for defining the handler for a specific workflow version.
 type WorkflowVersionBuilder struct {
 	workflow *Workflow
 	version  int
 }
 
-// Define defines the handler for the workflow version
+// Define defines the handler for the workflow version.
+// The handler is a function that will be called when the workflow is executed.
 func (b *WorkflowVersionBuilder) Define(handler interface{}) {
 	if b.workflow.logger != nil {
 		b.workflow.logger.Info("Defining workflow handler", map[string]interface{}{
@@ -372,6 +445,10 @@ func (b *WorkflowVersionBuilder) Define(handler interface{}) {
 				Input:    input.Interface(),
 				Approved: contextInput.Approved,
 				// Set up Log function
+				//
+				//	ctx.Log("info", map[string]interface{}{
+				//		"message": "Starting workflow",
+				//	})
 				Log: func(status string, meta map[string]interface{}) error {
 					// Log to the workflow logger if available
 					if b.workflow.logger != nil {
@@ -397,6 +474,14 @@ func (b *WorkflowVersionBuilder) Define(handler interface{}) {
 					return err
 				},
 				// Set up Memo function for caching results
+				//
+				//	result, err := ctx.Memo("unique-cache-key", func() (interface{}, error) {
+				//		// This expensive operation will only be executed once for the given key
+				//		// Subsequent calls with the same key will return the cached result
+				//		return map[string]interface{}{
+				//			"data": "Expensive computation result",
+				//		}, nil
+				//	})
 				Memo: func(name string, fn func() (interface{}, error)) (interface{}, error) {
 					// Create a key for the memo cache
 					key := fmt.Sprintf("%s_memo_%s", executionId, name)
@@ -488,12 +573,14 @@ func (b *WorkflowVersionBuilder) Define(handler interface{}) {
 	b.workflow.versionHandlers[b.version] = wrapperFunc.Interface()
 }
 
-// Tools provides tool registration for the workflow
+// WorkflowTools provides tool registration functionality for workflows.
+// It allows registering custom tools that can be used within a workflow.
 type WorkflowTools struct {
 	workflow *Workflow
 }
 
-// Register registers a tool for the workflow
+// Register registers a tool for the workflow.
+// The tool will be available for use within the workflow execution.
 func (t *WorkflowTools) Register(tool WorkflowTool) {
 	if t.workflow.logger != nil {
 		t.workflow.logger.Info("Registering tool", map[string]interface{}{
@@ -512,7 +599,9 @@ func (t *WorkflowTools) Register(tool WorkflowTool) {
 	})
 }
 
-// Listen starts listening for workflow executions
+// Listen starts listening for workflow executions.
+// It registers the workflow and its tools with the Inferable service and begins
+// processing incoming workflow execution requests.
 func (w *Workflow) Listen() error {
 	if w.inferable == nil {
 		return fmt.Errorf("inferable instance is required")
@@ -574,7 +663,9 @@ func (w *Workflow) Listen() error {
 	return nil
 }
 
-// Unlisten stops listening for workflow executions
+// Unlisten stops listening for workflow executions.
+// It unregisters the workflow from the Inferable service and stops processing
+// incoming workflow execution requests.
 func (w *Workflow) Unlisten() error {
 	if w.logger != nil {
 		w.logger.Info("Stopping workflow listeners", map[string]interface{}{
@@ -593,12 +684,15 @@ func (w *Workflow) Unlisten() error {
 	return nil
 }
 
-// Workflows provides workflow functionality
+// Workflows provides workflow management functionality.
+// It allows creating and triggering workflows.
 type Workflows struct {
 	inferable *Inferable
 }
 
-// Create creates a new workflow
+// Create creates a new workflow with the provided configuration.
+// It initializes the workflow with the given name, description, input schema, and logger.
+// Returns a new Workflow instance that can be further configured.
 func (w *Workflows) Create(config WorkflowConfig) *Workflow {
 	// Validate that the InputSchema contains an ExecutionId field
 	if config.InputSchema != nil {
@@ -637,7 +731,9 @@ func (w *Workflows) Create(config WorkflowConfig) *Workflow {
 	return workflow
 }
 
-// Trigger triggers a workflow execution
+// Trigger triggers a workflow execution with the provided input.
+// It sends a request to the Inferable service to start a new execution of the specified workflow.
+// The executionId uniquely identifies this execution instance.
 func (w *Workflows) Trigger(workflowName string, executionId string, input interface{}) error {
 	clusterId, err := w.inferable.getClusterId()
 	if err != nil {

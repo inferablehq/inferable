@@ -9,7 +9,7 @@
 [![Documentation](https://img.shields.io/badge/docs-inferable.ai-brightgreen)](https://docs.inferable.ai/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/inferablehq/inferable/sdk-go)](https://goreportcard.com/report/github.com/inferablehq/inferable/sdk-go)
 
-Inferable Go Client is a Go package that provides a client for interacting with the Inferable API. It allows you to register your go functions against the Inferable control plane.
+Inferable Go Client is a Go package that provides a client for interacting with the Inferable API. It allows you to register your go functions against the Inferable control plane and create powerful LLM-powered workflows with structured outputs, agents, and tools.
 
 ## Installation
 
@@ -58,6 +58,181 @@ err := client.Tools.Register(inferable.Tool{
 if err != nil {
     // Handle error
 }
+```
+
+### Creating a Workflow
+
+Workflows are a way to define a sequence of actions to be executed. They run on your own compute and can be triggered from anywhere via the API.
+
+```go
+import (
+    "fmt"
+    "github.com/inferablehq/inferable/sdk-go/inferable"
+)
+
+// Create a workflow
+workflow := client.Workflows.Create(inferable.WorkflowConfig{
+    Name: "simple-workflow",
+    InputSchema: struct {
+        ExecutionId string `json:"executionId"`
+        Text        string `json:"text"`
+    }{},
+})
+
+// Define the workflow handler
+workflow.Version(1).Define(func(ctx inferable.WorkflowContext, input struct {
+    ExecutionId string `json:"executionId"`
+    Text        string `json:"text"`
+}) (interface{}, error) {
+    // Log a message
+    ctx.Log("info", map[string]interface{}{
+        "message": "Starting workflow",
+    })
+
+    // Use the LLM to generate structured output
+    result, err := ctx.LLM.Structured(inferable.StructuredInput{
+        Input: input.Text,
+        Schema: struct {
+            Summary string `json:"summary"`
+            Topics  []string `json:"topics"`
+        }{},
+    })
+
+    if err != nil {
+        return nil, err
+    }
+
+    return result, nil
+})
+
+// Start listening for workflow executions
+err = workflow.Listen()
+if err != nil {
+    // Handle error
+}
+defer workflow.Unlisten()
+```
+
+### Triggering a Workflow
+
+You can trigger a workflow from your application code:
+
+```go
+executionId := "unique-execution-id"
+
+err = client.Workflows.Trigger("simple-workflow", executionId, map[string]interface{}{
+    "text": "Inferable is a platform for building LLM-powered applications.",
+})
+if err != nil {
+    // Handle error
+}
+```
+
+## Agents and Tool Use
+
+You can define tools and agents that can be used within your workflows. For more information on tools and agents, see the [Inferable documentation](https://docs.inferable.ai/pages/agents).
+
+### Adding Tools to Workflows
+
+You can register tools that can be used within your workflows:
+
+```go
+// Register a tool for the workflow
+workflow.Tools.Register(inferable.WorkflowTool{
+    Name: "searchDatabase",
+    InputSchema: struct {
+        SearchQuery string `json:"searchQuery"`
+    }{},
+    Func: func(input struct {
+        SearchQuery string `json:"searchQuery"`
+    }, ctx inferable.ContextInput) (struct {
+        Result string `json:"result"`
+    }, error) {
+        // Implement your tool logic here
+        result := struct {
+            Result string `json:"result"`
+        }{
+            Result: "Found data for: " + input.SearchQuery,
+        }
+        return result, nil
+    },
+})
+```
+
+### Using Agents in Workflows
+
+Agents are autonomous LLM-based reasoning engines that can use tools to achieve pre-defined goals:
+
+```go
+// Use the agent to search
+result, interrupt, err := ctx.Agents.React(inferable.ReactAgentConfig{
+    Name: "search",
+    Instructions: inferable.Helpers.StructuredPrompt(struct {
+        Facts []string
+        Goals []string
+    }{
+        Facts: []string{"You are a search assistant"},
+        Goals: []string{"Find information based on the user's query"},
+    }),
+    Schema: struct {
+        Result string `json:"result"`
+    }{},
+    Tools: []string{"searchDatabase"},
+    Input: "What information can you find about machine learning?",
+})
+
+if err != nil {
+    // Handle error
+}
+
+if interrupt != nil {
+    // Handle interrupt (e.g., human-in-the-loop)
+    return interrupt, nil
+}
+
+// Process the agent result
+fmt.Printf("Agent result: %v\n", result)
+```
+
+IMPORTANT: The `ctx.Agents.React` will return an interrupt if the workflow needs to pause and resume. Therefore, you should `return` the interrupt as the result of the workflow handler, when present.
+
+```go
+if interrupt != nil {
+    return interrupt, nil
+}
+```
+
+### Caching Results with Memo
+
+You can cache expensive operations using the `Memo` function to avoid redundant computations:
+
+```go
+// Cache a result with a unique key
+cachedResult, err := ctx.Memo("unique-cache-key", func() (interface{}, error) {
+    // This expensive operation will only be executed once for the given key
+    // Subsequent calls with the same key will return the cached result
+    return map[string]interface{}{
+        "data": "Expensive computation result",
+    }, nil
+})
+
+if err != nil {
+    // Handle error
+}
+
+// Use the cached result
+fmt.Printf("Cached result: %v\n", cachedResult)
+```
+
+### Logging and Observability
+
+The Inferable Go Client provides a `ctx.Log` function that can be used to log messages and errors:
+
+```go
+// Log a message
+ctx.Log("info", map[string]interface{}{
+    "message": "Starting workflow",
+})
 ```
 
 <details>
