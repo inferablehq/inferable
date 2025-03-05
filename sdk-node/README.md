@@ -33,98 +33,97 @@ pnpm add inferable
 
 ## ⚡️ Quick Start
 
-### Initialize Client
+This guide will help you quickly set up and run your first Inferable workflow with structured outputs.
+
+### 1. Create a demo cluster
+
+A cluster is a logical grouping of tools, agents and workflows that work together.
+
+```bash
+mkdir inferable-demo
+cd inferable-demo
+curl -XPOST https://api.inferable.ai/ephemeral-setup > cluster.json
+```
+
+### 2. Install dependencies
+
+```bash
+npm init -y
+npm install inferable tsx
+```
+
+### 3. Create a workflow with structured outputs
+
+Workflows are a way to define a sequence of actions to be executed. They run on your own compute and can be triggered from anywhere via the API.
 
 ```typescript
+// simple-workflow.ts
 import { Inferable } from "inferable";
+import { z } from "zod";
 
 const inferable = new Inferable({
-  // Get yours at https://app.inferable.ai
-  apiSecret: ""
-  // Optional, if self-hosting (https://docs.inferable.ai/pages/self-hosting)
-  // baseUrl: "http://localhost:4000",
-});
-```
-
-### Register a Tool
-
-Register a [tool](https://docs.inferable.ai/pages/tools) which is available for your agents to use.
-
-> ℹ️ This example demonstrates Node.js. Tools can also be written in Go or .NET.
-
-```typescript
-inferable.tools.register({
-  name: "greet",
-  func: async (input) => {
-    return `Hello, ${input.name}! My name is ${os.hostname()}.`;
-  },
-  schema: {
-    input: z.object({
-      name: z.string(),
-    }),
-  },
+  apiSecret: require("./cluster.json").apiKey,
 });
 
-inferable.tools.listen();
-```
-
-### Create a Workflow
-
-Workflows are a way to orchestrate agents. They are durable, distributed, and run on the machine that they are registered on.
-
-
-> ℹ️ Workflow definitions can currently only be written in Node.js.
-
-```typescript
 const workflow = inferable.workflows.create({
-  name: "greeting",
+  name: "simple",
   inputSchema: z.object({
     executionId: z.string(),
-    userName: z.string(),
+    url: z.string(),
   }),
 });
 
 workflow.version(1).define(async (ctx, input) => {
-  const greetingAgent = ctx.agent({
-    name: "greeter",
-    tools: ["greet"],
-    systemPrompt: helpers.structuredPrompt({
-      facts: ["You are a friendly greeter"],
-      goals: ["Return a greeting to the user"]
-    }),
-    resultSchema: z.object({
-      greeting: z.string(),
+  const text = await fetch(input.url).then((res) => res.text());
+
+  const { menuItems, hours } = ctx.llm.structured({
+    input: text,
+    schema: z.object({
+      menuItems: z.array(
+        z.object({
+          name: z.string(),
+          price: z.number(),
+        }),
+      ),
+      hours: z.object({
+        saturday: z.string(),
+        sunday: z.string(),
+      }),
     }),
   });
 
-  const result = await greetingAgent.trigger({
-    data: {
-      name: input.userName,
-    }
-  });
-
-  console.log(result.result.greeting);
-  // ... or chain this to anther ctx.agent()
+  return { menuItems, hours };
 });
 
-workflow.listen();
-```
-
-### Trigger the Workflow
-
-Tgger the workflow from your application code or via a HTTP request.
-
-```typescript
-await inferable.workflows.trigger('greeting', {
-  executionId: `123`,
-  userName: "Alice",
+// This will register the workflow with the Inferable control-plane at api.inferable.ai
+workflow.listen().then(() => {
+  console.log("Workflow listening");
 });
 ```
+
+### 4. Run the workflow
+
+Workflows can be triggered from anywhere.
 
 ```bash
-curl -XPOST https://api.inferable.ai/clusters/$CLUSTER_ID/workflows/greeting/executions \
-  -d '{"executionId": "123", "userName": "Alice"}' \
+# Get your cluster details
+CLUSTER_ID=$(cat cluster.json | jq -r .id)
+API_SECRET=$(cat cluster.json | jq -r .apiKey)
+
+# Run the workflow
+curl -XPOST https://api.inferable.ai/clusters/$CLUSTER_ID/workflows/simple/executions \
+  -d '{"executionId": "123", "url": "https://a.inferable.ai/menu.txt"}' \
   -H "Authorization: Bearer $API_SECRET"
+```
+
+You can also trigger the workflow from your application code:
+
+```typescript
+// From your application code
+await inferable.workflows.trigger("simple", {
+  executionId: "123",
+  url: "https://a.inferable.ai/menu.txt",
+});
 ```
 
 ## Documentation

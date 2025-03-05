@@ -4,7 +4,7 @@
 
 # Inferable
 
-Build production-ready AI Agents with Durable Execution.
+The managed LLM-engineering platform for production-ready AI applications.
 
 ![NPM Version](https://img.shields.io/npm/v/inferable?color=32CD32&style=for-the-badge) ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/inferablehq/inferable?filename=sdk-go%2Fgo.mod&color=32CD32&style=for-the-badge) ![NuGet Version](https://img.shields.io/nuget/v/inferable?color=32CD32&style=for-the-badge)
 ![License](https://img.shields.io/github/license/inferablehq/inferable?color=32CD32&style=for-the-badge)
@@ -13,145 +13,136 @@ Build production-ready AI Agents with Durable Execution.
 
 ## What is Inferable?
 
-Inferable is a platform for building production-ready AI Agents. At a high level, it allows you to:
+Inferable is a fully managed platform that handles state, reliability, and orchestration of custom LLM-based applications. It's developer-first and API-driven, providing production-ready LLM primitives for building sophisticated LLM-based applications.
 
-- Register **Tools** from your new or existing distributed systems.
-- Define **Agents** that can use these tools to perform multi-step reasoning and take actions.
-- Create **Durable Workflows** that compose agent intractions with "workflow as code".
+At a high level, Inferable allows you to:
+
+- Build with **Production-ready LLM Primitives** including structured outputs, agents, and durable workflows
+- Create **Autonomous Agents** that can use tools to perform multi-step reasoning and take actions
+- Implement **Human-in-the-Loop** capabilities with approval flows and seamless integration
+- Define **Durable Workflows** as code that run on your infrastructure with fault-tolerance and state preservation
 
 <p align="center">
 <img src="./assets/deployment.png" alt="Inferable Deployment" width="800" />
 </p>
 
-## 👉 High-level Features
+## 👉 Key Features
 
-### 🧰 Tools
-- Wrap your existing code as [tools](https://docs.inferable.ai/pages/tools), and let agents trigger them with our SDKs.
-- Tools run on your [own infrastructure](https://docs.inferable.ai/pages/enterprise#on-premise-tool-execution-and-data-localization), Inferable takes care of the orchestration.
-- Built-in [retry, caching](https://docs.inferable.ai/pages/tool-configuration), and [failover](https://docs.inferable.ai/pages/tool-failures) support for tools.
-
-### 🤖 Agents
-- [Multi-step reasoning agents](https://docs.inferable.ai/pages/agents) who can iteratively design their own execution plan.
-- Context-aware [tool selection](https://docs.inferable.ai/pages/agent-tools) and built-in Service Discovery for tools.
-- [Composable agents](https://docs.inferable.ai/pages/multiple-agents) with structured outputs.
-
-### 📜 Workflows
-- Define "[workflow as code](https://docs.inferable.ai/pages/workflows)" to orchestrate agents and tools.
-- Mix agent reasoning with deterministic code execution to build [complex workflows](https://docs.inferable.ai/pages/multiple-agents).
-- All workflows are [durable](https://docs.inferable.ai/pages/workflow-durability), and run on your own infrastructure.
-
-**...with minimal adoption curve**
-- [No network ingress](https://docs.inferable.ai/pages/enterprise#private-networking) needed. Everything works via long-polling HTTP endpoints.
-- [Trigger workflows](https://docs.inferable.ai/pages/your-first-workflow#triggering-workflows) from external events, or from other workflows. It's just HTTP.
-- Fully [open-source](https://github.com/inferablehq/inferable) and self-hostable.
+- 🧠 **Structured Outputs from any LLM** - Extract typed, schema-conforming data with automatic parsing, validation, and retries
+- 🤖 **Agents with Tool Use** - Autonomous LLM-based reasoning engines that can use tools to achieve pre-defined goals
+- 🔄 **Durable Workflows as Code** - Stateful orchestration with fault-tolerance, checkpointing, and version control
+- 👥 **Human-in-the-Loop** - Seamlessly integrate human approval and intervention with full context preservation
+- 📊 **Comprehensive Observability** - End-to-end visibility with timeline views
+- 🏠 **On-premise Execution** - Your workflows run on your own infrastructure with no deployment step required
+- 🔒 **No Inbound Network Access** - Long polling SDKs with outbound-only connections to your infrastructure
+- 👨‍💻 **Developer-friendly SDKs** - Multiple language support with a "Workflow as Code" approach
 
 ## ⚡️ Quick Start
 
-### Initialize Client
+This guide will help you quickly set up and run your first Inferable workflow with structured outputs.
+
+### 1. Create a demo cluster
+
+A cluster is a logical grouping of tools, agents and workflows that work together.
+
+```bash
+mkdir inferable-demo
+cd inferable-demo
+curl -XPOST https://api.inferable.ai/ephemeral-setup > cluster.json
+```
+
+### 2. Install dependencies
+
+```bash
+npm init -y
+npm install inferable tsx
+```
+
+### 3. Create a workflow with structured outputs
+
+Workflows are a way to define a sequence of actions to be executed. They run on your own compute and can be triggered from anywhere via the API.
 
 ```typescript
+// simple-workflow.ts
 import { Inferable } from "inferable";
+import { z } from "zod";
 
 const inferable = new Inferable({
-  // Get yours at https://app.inferable.ai
-  apiSecret: ""
-  // Optional, if self-hosting (https://docs.inferable.ai/pages/self-hosting)
-  // baseUrl: "http://localhost:4000",
-});
-```
-
-### Register a Tool
-
-Register a [tool](https://docs.inferable.ai/pages/tools) which is available for your agents to use.
-
-> ℹ️ This example demonstrates Node.js. Tools can also be written in Go or .NET.
-
-```typescript
-inferable.tools.register({
-  name: "greet",
-  func: async (input) => {
-    return `Hello, ${input.name}! My name is ${os.hostname()}.`;
-  },
-  schema: {
-    input: z.object({
-      name: z.string(),
-    }),
-  },
+  apiSecret: require("./cluster.json").apiKey,
 });
 
-inferable.tools.listen();
-```
-
-### Create a Workflow
-
-Workflows are a way to orchestrate agents. They are durable, distributed, and run on the machine that they are registered on.
-
-
-> ℹ️ Workflow definitions can currently only be written in Node.js.
-
-```typescript
 const workflow = inferable.workflows.create({
-  name: "greeting",
+  name: "simple",
   inputSchema: z.object({
     executionId: z.string(),
-    userName: z.string(),
+    url: z.string(),
   }),
 });
 
 workflow.version(1).define(async (ctx, input) => {
-  const greetingAgent = ctx.agent({
-    name: "greeter",
-    tools: ["greet"],
-    systemPrompt: helpers.structuredPrompt({
-      facts: ["You are a friendly greeter"],
-      goals: ["Return a greeting to the user"]
-    }),
-    resultSchema: z.object({
-      greeting: z.string(),
+  const text = await fetch(input.url).then(res => res.text());
+
+  const { menuItems, hours } = ctx.llm.structured({
+    input: text,
+    schema: z.object({
+      menuItems: z.array(
+        z.object({
+          name: z.string(),
+          price: z.number(),
+        })
+      ),
+      hours: z.object({
+        saturday: z.string(),
+        sunday: z.string(),
+      }),
     }),
   });
 
-  const result = await greetingAgent.trigger({
-    data: {
-      name: input.userName,
-    }
-  });
-
-  console.log(result.result.greeting);
-  // ... or chain this to anther ctx.agent()
+  return { menuItems, hours };
 });
 
-workflow.listen();
-```
-
-### Trigger the Workflow
-
-Tgger the workflow from your application code or via a HTTP request.
-
-```typescript
-await inferable.workflows.trigger('greeting', {
-  executionId: `123`,
-  userName: "Alice",
+// This will register the workflow with the Inferable control-plane at api.inferable.ai
+workflow.listen().then(() => {
+  console.log("Workflow listening");
 });
 ```
+
+### 4. Run the workflow
+
+Workflows can be triggered from anywhere.
 
 ```bash
-curl -XPOST https://api.inferable.ai/clusters/$CLUSTER_ID/workflows/greeting/executions \
-  -d '{"executionId": "123", "userName": "Alice"}' \
+# Get your cluster details
+CLUSTER_ID=$(cat cluster.json | jq -r .id)
+API_SECRET=$(cat cluster.json | jq -r .apiKey)
+
+# Run the workflow
+curl -XPOST https://api.inferable.ai/clusters/$CLUSTER_ID/workflows/simple/executions \
+  -d '{"executionId": "123", "url": "https://a.inferable.ai/menu.txt"}' \
   -H "Authorization: Bearer $API_SECRET"
+```
+
+You can also trigger the workflow from your application code:
+
+```typescript
+// From your application code
+await inferable.workflows.trigger("simple", {
+  executionId: "123",
+  url: "https://a.inferable.ai/menu.txt",
+});
 ```
 
 For more details, see our [Quickstart](https://docs.inferable.ai/pages/quick-start).
 
 ## 📚 Language Support
 
-| Language | Source | Package |
-| -------- | -------- | -------- |
-| Node.js / TypeScript | [Quick start](./sdk-node/README.md) | [NPM](https://www.npmjs.com/package/inferable) |
-| Go | [Quick start](./sdk-go/README.md) | [Go](https://pkg.go.dev/github.com/inferablehq/inferable/sdk-go) |
-| .NET | [Quick start](./sdk-dotnet/README.md) | [NuGet](https://www.nuget.org/packages/Inferable) |
-| React (Chat-only) | [Quick start](./sdk-react/README.md) | [NPM](https://www.npmjs.com/package/@inferable/react) |
-| Bash | [Quick start](./sdk-bash/README.md) | [Source](https://github.com/inferablehq/inferable/blob/main/sdk-bash/inferable.sh) |
+| Language             | Source                                | Package                                                                            |
+| -------------------- | ------------------------------------- | ---------------------------------------------------------------------------------- |
+| Node.js / TypeScript | [Quick start](./sdk-node/README.md)   | [NPM](https://www.npmjs.com/package/inferable)                                     |
+| Go                   | [Quick start](./sdk-go/README.md)     | [Go](https://pkg.go.dev/github.com/inferablehq/inferable/sdk-go)                   |
+| .NET                 | [Quick start](./sdk-dotnet/README.md) | [NuGet](https://www.nuget.org/packages/Inferable)                                  |
+| React (Chat-only)    | [Quick start](./sdk-react/README.md)  | [NPM](https://www.npmjs.com/package/@inferable/react)                              |
+| Bash                 | [Quick start](./sdk-bash/README.md)   | [Source](https://github.com/inferablehq/inferable/blob/main/sdk-bash/inferable.sh) |
 
 ## 🚀 Open Source
 
@@ -166,13 +157,17 @@ This repository contains the Inferable control-plane, as well as SDKs for variou
 **SDKs:**
 
 - `/sdk-node` - Node.js/TypeScript SDK
-- `/sdk-go` - Go SDK
-- `/sdk-dotnet` - .NET SDK
-- `/sdk-react` - React SDK
 
 ## 💾 Self Hosting
 
-Inferable is 100% open-source and self-hostable. See our [self hosting guide](https://docs.inferable.ai/pages/self-hosting) for more details.
+Inferable is completely open source and can be self-hosted on your own infrastructure for complete control over your data and compute. This gives you:
+
+- Full control over your data and models
+- No vendor lock-in
+- Enhanced security with your own infrastructure
+- Customization options to fit your specific needs
+
+See our [self hosting guide](https://docs.inferable.ai/pages/self-hosting) for more details.
 
 ## 🤝 Contributing
 
