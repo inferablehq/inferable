@@ -7,32 +7,31 @@ import { JsonSchemaInput } from "inferable/bin/types";
 import path from "path";
 import { ulid } from "ulid";
 import util from "util";
-import { env } from "../utilities/env";
+import { env } from "../../utilities/env";
 import {
   AuthenticationError,
   BadRequestError,
   NotFoundError,
-} from "../utilities/errors";
-import { safeParse } from "../utilities/safe-parse";
-import { unqualifiedEntityId } from "./auth/auth";
-import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
-import { getClusterDetails } from "./cluster";
-import { contract, interruptSchema } from "./contract";
-import * as data from "./data";
+} from "../../utilities/errors";
+import { safeParse } from "../../utilities/safe-parse";
+import { unqualifiedEntityId } from "../auth/auth";
+import { createApiKey, listApiKeys, revokeApiKey } from "../auth/cluster";
+import { getClusterDetails } from "../clusters";
+import { contract, interruptSchema } from "../contract";
+import * as data from "../data";
 import {
   getIntegrations,
   upsertIntegrations,
-} from "./integrations/integrations";
-import { getSession, nango, webhookSchema } from "./integrations/nango";
-import { validateConfig } from "./integrations/toolhouse";
-import * as jobs from "./jobs/jobs";
-import { kv } from "./kv";
-import { upsertMachine } from "./machines";
-import * as management from "./management";
-import * as events from "./observability/events";
-import { logger } from "./observability/logger";
-import { packer } from "./packer";
-import { posthog } from "./posthog";
+} from "../integrations/integrations";
+import { getSession, nango, webhookSchema } from "../integrations/nango";
+import * as jobs from "../jobs/jobs";
+import { kv } from "../kv";
+import { upsertMachine } from "../machines";
+import * as management from "../clusters/management";
+import * as events from "../observability/events";
+import { logger } from "../observability/logger";
+import { packer } from "../../utilities/packer";
+import { posthog } from "../dependencies/posthog";
 import {
   addMessageAndResume,
   createRun,
@@ -44,30 +43,30 @@ import {
   RunOptions,
   updateRunFeedback,
   validateSchema,
-} from "./runs";
-import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
-import { getRunsByTag } from "./runs/tags";
-import { timeline } from "./timeline";
+} from "../runs";
+import { getRunMessagesForDisplayWithPolling } from "../runs/messages";
+import { getRunsByTag } from "../runs/tags";
+import { timeline } from "../timeline";
 import {
   getWorkflowTools,
   listTools,
   recordPoll,
   upsertToolDefinition,
-} from "./tools";
-import { persistJobInterrupt } from "./jobs/job-results";
+} from "../tools";
+import { persistJobInterrupt } from "../jobs/job-results";
 import {
   createWorkflowExecution,
   listWorkflowExecutions,
   getWorkflowExecutionTimeline,
-} from "./workflows/executions";
-import { createWorkflowLog } from "./workflows/logs";
+} from "../workflows/executions";
+import { createWorkflowLog } from "../workflows/logs";
 import {
   inferType,
   structured,
   validateJsonSchema,
   validTypes,
 } from "@l1m/core";
-import { buildModel } from "./models";
+import { buildModel } from "../models";
 import Anthropic from "@anthropic-ai/sdk";
 
 const readFile = util.promisify(fs.readFile);
@@ -942,19 +941,6 @@ export const router = initServer().router(contract, {
       throw new BadRequestError("Email integration is not supported");
     }
 
-    if (request.body.toolhouse) {
-      try {
-        await validateConfig(request.body);
-      } catch (error) {
-        return {
-          status: 400,
-          body: {
-            message: `Failed to validate ToolHouse config: ${error}`,
-          },
-        };
-      }
-    }
-
     await upsertIntegrations({
       clusterId,
       config: request.body,
@@ -1198,7 +1184,6 @@ export const router = initServer().router(contract, {
     const {
       description,
       name,
-      additionalContext,
       debug,
       enableCustomAuth,
       handleCustomAuthFunction,
@@ -1210,7 +1195,6 @@ export const router = initServer().router(contract, {
       organizationId: auth.organizationId,
       clusterId,
       description,
-      additionalContext,
       debug,
       enableCustomAuth,
       handleCustomAuthFunction,
@@ -1366,7 +1350,7 @@ export const router = initServer().router(contract, {
         info: {
           title: "Inferable API",
           // eslint-disable-next-line @typescript-eslint/no-var-requires
-          version: require("../../package.json").version,
+          version: require("../../../package.json").version,
         },
       },
       { setOperationId: true },

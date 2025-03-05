@@ -10,22 +10,6 @@ const client = new Inferable({
   machineId,
 })
 
-client.tools.register({
-  func: (_, context) => {
-    console.log("Handling request", context)
-    return {
-      word: "needle"
-    }
-  },
-  name: "searchHaystack",
-})
-
-client.tools.listen().then(() => {
-  console.log("Tool registered", {
-    machineId
-  })
-})
-
 const workflow = client.workflows.create({
   name: "searchHaystack",
   config: {
@@ -37,17 +21,29 @@ const workflow = client.workflows.create({
   }),
 })
 
-workflow.version(1).define(async (input, ctx) => {
-  const agent = ctx.agent({
+
+workflow.tools.register({
+  func: async (_, context) => {
+    console.log("Handling request", context)
+    return {
+      word: "needle"
+    }
+  },
+  name: "searchHaystack",
+})
+
+workflow.version(1).define(async (ctx, input) => {
+  const result = ctx.agents.react({
     name: "searchHaystack",
-    systemPrompt: 'Get the special word from the `searchHaystack` function',
-    resultSchema: z.object({
+    instructions: "",
+    input: "Get the special word from the `searchHaystack` function",
+    schema: z.object({
       word: z.string(),
     }),
+    tools: ["searchHaystack"],
   });
 
-  const result = await agent.trigger({ data: {} });
-  return result.result;
+  return result;
 })
 
 

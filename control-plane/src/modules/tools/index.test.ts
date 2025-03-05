@@ -1,4 +1,4 @@
-import { createCluster } from "../management";
+import { createCluster } from "../clusters/management";
 import { upsertToolDefinition, getWorkflowTools } from "./";
 
 const schema = "{\"type\":\"object\",\"properties\":{\"foo\":{\"type\":\"string\"}},\"required\":[\"foo\"]}";

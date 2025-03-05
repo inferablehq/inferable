@@ -12,7 +12,7 @@ import { db, integrations, runMessages } from "../../data";
 import { nango } from "../nango";
 import { InstallableIntegration } from "../types";
 import { z } from "zod";
-import { getUserForCluster } from "../../clerk";
+import { getUserForCluster } from "../../dependencies/clerk";
 import { submitApproval } from "../../jobs/jobs";
 import { integrationSchema, notificationSchema, unifiedMessageSchema } from "../../contract";
 import { createExternalMessage } from "../../runs/external-messages";

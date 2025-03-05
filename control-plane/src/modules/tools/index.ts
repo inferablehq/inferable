@@ -11,7 +11,7 @@ import { logger } from "../observability/logger";
 import { validateToolName, validateToolDescription, validateToolSchema } from "./validations";
 import { Validator } from "jsonschema";
 import { InvalidJobArgumentsError } from "../../utilities/errors";
-import { packer } from "../packer";
+import { packer } from "../../utilities/packer";
 
 // The time without a ping before a tool is considered expired
 const TOOL_LIVE_THRESHOLD_MS = 60 * 1000; // 1 minute

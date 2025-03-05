@@ -4,7 +4,7 @@ import { SpecialResultTypes } from "../tools/functions";
 import { NotFoundError } from "../../../../utilities/errors";
 import { ulid } from "ulid";
 import { RunGraphState } from "../state";
-import { redisClient } from "../../../redis";
+import { redisClient } from "../../../dependencies/redis";
 import { AgentTool } from "../tool";
 import { assertMessageOfType } from "../../messages";
 

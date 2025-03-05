@@ -3,7 +3,7 @@ import addFormats from "ajv-formats";
 import { JSONSchema4Type } from "json-schema";
 import { z } from "zod";
 import { JsonSchema7Type } from "zod-to-json-schema";
-import { BadRequestError } from "../utilities/errors";
+import { BadRequestError } from "./errors";
 
 export type JsonSchema = JSONSchema4Type | JsonSchema7Type;
 

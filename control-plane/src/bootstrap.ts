@@ -5,9 +5,8 @@ import process from "process";
 import * as analytics from "./modules/analytics";
 import * as auth from "./modules/auth/auth";
 import { pg } from "./modules/data";
-import { flagsmith } from "./modules/flagsmith";
+import { flagsmith } from "./modules/dependencies/flagsmith";
 import * as slack from "./modules/integrations/slack";
-import * as thirdPartyIntegrations from "./modules/integrations/third-party-integrations";
 import * as jobs from "./modules/jobs/jobs";
 import * as models from "./modules/models/routing";
 import * as events from "./modules/observability/events";
@@ -15,13 +14,13 @@ import { hdx } from "./modules/observability/hyperdx";
 import { logContext, logger } from "./modules/observability/logger";
 import { addAttributes } from "./modules/observability/tracer";
 import * as queues from "./modules/queues/index";
-import * as clusters from "./modules/cluster";
-import * as redis from "./modules/redis";
-import * as router from "./modules/router";
+import * as clusters from "./modules/clusters";
+import * as redis from "./modules/dependencies/redis";
 import * as tools from "./modules/tools";
 import * as cron from "./modules/cron";
 import { env } from "./utilities/env";
 import { runMigrations } from "./utilities/migrate";
+import { router } from "./modules/router";
 
 let totalRequestRewrites = 0;
 
@@ -51,7 +50,7 @@ const app = fastify({
 
 app.register(auth.plugin);
 
-app.register(initServer().plugin(router.router), parent => {
+app.register(initServer().plugin(router), parent => {
   return parent;
 });
 
@@ -175,7 +174,6 @@ const startTime = Date.now();
     queues.start(),
     flagsmith?.getEnvironmentFlags(),
     analytics.start(),
-    thirdPartyIntegrations.start(),
     clusters.start(),
   ])
     .then(() => {
@@ -223,7 +221,6 @@ process.on("SIGTERM", async () => {
     hdx?.shutdown(),
     queues.stop(),
     slack.stop(),
-    thirdPartyIntegrations.stop(),
     cron.stop(),
   ]);
 

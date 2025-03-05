@@ -601,9 +601,6 @@ export const definition = {
     body: z.object({
       name: z.string().optional(),
       description: z.string().optional(),
-      additionalContext: VersionedTextsSchema.optional().describe(
-        "Additional cluster context which is included in all runs"
-      ),
       debug: z
         .boolean()
         .optional()
@@ -626,7 +623,6 @@ export const definition = {
         id: z.string(),
         name: z.string(),
         description: z.string().nullable(),
-        additionalContext: VersionedTextsSchema.nullable(),
         createdAt: z.number(),
         debug: z.boolean(),
         enableCustomAuth: z.boolean(),

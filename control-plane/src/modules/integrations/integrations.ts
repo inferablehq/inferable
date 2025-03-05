@@ -2,22 +2,13 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, integrations } from "../data";
 import {
-  tavilyIntegration,
-  valtownIntegration,
-  toolhouseIntegration,
   slackIntegration,
 } from "./constants";
-import { tavily } from "./tavily";
-import { toolhouse } from "./toolhouse";
-import { valtown } from "./valtown";
 import { slack } from "./slack";
 import { InstallableIntegration } from "./types";
 import { integrationSchema } from "../contract";
 
 const installables: Record<string, InstallableIntegration> = {
-  [toolhouseIntegration]: toolhouse,
-  [tavilyIntegration]: tavily,
-  [valtownIntegration]: valtown,
   [slackIntegration]: slack,
 };
 
@@ -36,24 +27,16 @@ export const getIntegrations = async ({
 }): Promise<z.infer<typeof integrationSchema>> => {
   return db
     .select({
-      toolhouse: integrations.toolhouse,
       langfuse: integrations.langfuse,
-      tavily: integrations.tavily,
-      valtown: integrations.valtown,
       slack: integrations.slack,
-      email: integrations.email,
     })
     .from(integrations)
     .where(eq(integrations.cluster_id, clusterId))
     .then(
       ([integration]) =>
         integration ?? {
-          toolhouse: null,
           langfuse: null,
-          tavily: null,
-          valtown: null,
           slack: null,
-          email: null,
         }
     );
 };

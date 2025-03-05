@@ -4,13 +4,8 @@ import {
   runFeedbackEventSchema,
   toolCallEventSchema,
 } from "../integrations/integration-events";
-import {
-  flushCluster,
-  processModelCall,
-  processRunFeedback,
-  processToolCall,
-} from "../integrations/langfuse";
 import { logger } from "../observability/logger";
+import { BaseMessage } from "../queues/observability";
 
 const eventSchema = z.discriminatedUnion("type", [
   modelCallEventSchema,
@@ -18,37 +13,32 @@ const eventSchema = z.discriminatedUnion("type", [
   toolCallEventSchema,
 ]);
 
-export async function handleCustomerTelemetry(message: unknown) {
-  const zodResult = eventSchema.safeParse(message);
+export type CustomerTelemetryMessage = BaseMessage & z.infer<typeof eventSchema>;
+
+export class CustomerTelemetryListeners {
+  private static listeners: ((data: CustomerTelemetryMessage) => Promise<void>)[] = [];
+
+  public static addListener(listener: (data: CustomerTelemetryMessage) => Promise<void>) {
+    this.listeners.push(listener);
+  }
+
+  public static notify(data: CustomerTelemetryMessage) {
+    for (const listener of this.listeners) {
+      listener(data);
+    }
+  }
+}
+
+export const handleCustomerTelemetry = async (data: unknown): Promise<void> => {
+  const zodResult = eventSchema.safeParse(data);
 
   if (!zodResult.success) {
-    logger.error("Message does not conform to customer telemetry schema", {
-      error: zodResult.error,
-      body: message,
+    logger.error("Received customer telemetry message that does not conform to expected schema", {
+      message: data,
     });
+
     return;
   }
 
-  const event = zodResult.data;
-
-  try {
-    switch (event.type) {
-      case "modelCall":
-        await processModelCall(event);
-        break;
-      case "runFeedback":
-        await processRunFeedback(event);
-        break;
-      case "toolCall":
-        await processToolCall(event);
-        break;
-    }
-
-    await flushCluster(event.clusterId);
-  } catch (error) {
-    logger.error("Error processing customer telemetry event", {
-      error,
-      event,
-    });
-  }
-}
+  CustomerTelemetryListeners.notify(zodResult.data);
+};

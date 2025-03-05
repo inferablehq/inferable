@@ -1,7 +1,7 @@
 import { initServer } from "@ts-rest/fastify";
 import fastify from "fastify";
-import * as auth from "./auth/auth";
-import { router } from "./router";
+import * as auth from "../auth/auth";
+import { router } from ".";
 
 describe("router", () => {
   const port = Math.floor(Math.random() * 1000) + 3000;

@@ -13,8 +13,8 @@ import { Schema, Validator } from "jsonschema";
 import { buildModelSchema, ModelOutput } from "./model-output";
 import { FINAL_RESULT_SCHEMA_TAG_NAME, getSystemPrompt } from "./system-prompt";
 import { handleContextWindowOverflow } from "../overflow";
-import { JsonSchemaInput } from "../../../json-schema";
-import { validateFunctionSchema } from "../../../json-schema";
+import { validateFunctionSchema } from "inferable";
+import { JsonSchemaInput } from "inferable/bin/types";
 
 type RunStateUpdate = Partial<RunGraphState>;
 

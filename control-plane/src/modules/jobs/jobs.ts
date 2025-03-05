@@ -4,7 +4,7 @@ import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
 import * as cron from "../cron";
 import * as data from "../data";
 import * as events from "../observability/events";
-import { packer } from "../packer";
+import { packer } from "../../utilities/packer";
 import { resumeRun } from "../runs";
 import { notifyApprovalRequest } from "../runs/notify";
 import { selfHealJobs } from "./self-heal-jobs";

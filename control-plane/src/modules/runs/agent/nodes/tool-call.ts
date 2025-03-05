@@ -3,12 +3,12 @@ import { AgentError, InvalidJobArgumentsError } from "../../../../utilities/erro
 import * as events from "../../../observability/events";
 import { logger } from "../../../observability/logger";
 import { addAttributes, withSpan } from "../../../observability/tracer";
-import { trackCustomerTelemetry } from "../../../track-customer-telemetry";
 import { AgentMessage, assertMessageOfType } from "../../messages";
 import { ToolFetcher } from "../agent";
 import { RunGraphState } from "../state";
 import { SpecialResultTypes, parseFunctionResponse } from "../tools/functions";
 import { AgentTool, AgentToolInputError } from "../tool";
+import { trackCustomerTelemetry } from "../../../customer-telemetry/track";
 
 export const TOOL_CALL_NODE_NAME = "action";
 
