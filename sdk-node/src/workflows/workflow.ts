@@ -68,8 +68,9 @@ type ReactAgentConfig<TResult> = {
    */
   tools: string[];
   /**
+  /**
    * Anthropic API key and model to use for the agent run.
-   * Inferable only supports Anthropic for the built-in react agent.
+   *
    */
   provider?: {
     key: string;
@@ -116,23 +117,7 @@ type WorkflowContext<TInput> = {
    * });
    * ```
    */
-  llm: {
-    structured: <T extends z.ZodObject<any>, TOutput = z.infer<T>>({
-      input,
-      schema,
-      instructions,
-      provider,
-    }: {
-      input: string;
-      schema: T;
-      instructions?: string;
-      provider?: {
-        key: string;
-        model: string;
-        url: string;
-      };
-    }) => Promise<TOutput>;
-  };
+  llm: L1M;
   /**
    * Result caching for the workflow.
    * @deprecated Use `memo` instead
@@ -305,6 +290,19 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       version,
       name: this.name,
       executionId,
+    });
+
+    const l1m = new L1M({
+      baseUrl: `${this.endpoint}/clusters/${clusterId}/l1m`,
+      additionalHeaders: {
+        "x-workflow-execution-id": executionId,
+        Authorization: `Bearer ${this.apiSecret}`,
+      },
+      provider: {
+        model: "claude-3-5-sonnet",
+        key: "",
+        url: "",
+      },
     });
 
     const memo = async <TResult>(
@@ -488,39 +486,9 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       },
     };
 
-    const llm = {
-      structured: <T extends z.ZodObject<any>, TOutput = z.infer<T>>({
-        input,
-        schema,
-        instructions,
-        provider,
-      }: {
-        input: string;
-        schema: T;
-        instructions?: string;
-        provider?: {
-          key: string;
-          model: string;
-          url: string;
-        };
-      }): Promise<TOutput> => {
-        return new L1M({
-          baseUrl: `${this.endpoint}/clusters/${clusterId}/l1m`,
-          additionalHeaders: {
-            Authorization: `Bearer ${this.apiSecret}`,
-          },
-          provider: provider ?? {
-            key: "",
-            model: "claude-3-5-sonnet",
-            url: "",
-          },
-        }).structured({ input, schema, instructions });
-      },
-    };
-
     return {
       ...jobCtx,
-      llm,
+      llm: l1m,
       result: memo,
       memo,
       agents,
