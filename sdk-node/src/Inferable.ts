@@ -118,68 +118,12 @@ export class Inferable {
 
     this.machineId = options?.machineId || machineId();
 
-
     this.client = createApiClient({
       baseUrl: this.endpoint,
       machineId: this.machineId,
       apiSecret: this.apiSecret,
     });
   }
-
-  public tools = {
-    /**
-     * Registers a tool with Inferable.
-     * @param input The tool definition.
-     * @example
-     * ```ts
-     * const client = new Inferable({apiSecret: "API_SECRET"});
-     *
-     * client.tools.register("hello", z.object({name: z.string()}), async ({name}: {name: string}) => {
-     *   return `Hello ${name}`;
-     * });
-     *
-     * // start the service
-     * await client.tools.listen();
-     *
-     * // stop the service on shutdown
-     * process.on("beforeExit", async () => {
-     *   await client.tools.stop();
-     * });
-     * ```
-     */
-    register: <T extends z.ZodTypeAny | JsonSchemaInput>(
-      input: ToolRegistrationInput<T>,
-    ) => {
-      this.registerTool({
-        name: input.name,
-        description: input.description,
-        func: input.func,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        inputSchema: input.schema?.input ?? (z.object({}).passthrough() as any),
-        config: input.config,
-      });
-    },
-    listen: async () => {
-      if (this.pollingAgents.length > 0) {
-        throw new InferableError("Tools already listening");
-      }
-
-      // TODO: Create one polling agent per 10 tools
-      const agent = new PollingAgent({
-        endpoint: this.endpoint,
-        machineId: this.machineId,
-        apiSecret: this.apiSecret,
-        clusterId: await this.getClusterId(),
-        tools: Object.values(this.toolsRegistry),
-      });
-
-      this.pollingAgents.push(agent);
-      await agent.start();
-    },
-    unlisten: async () => {
-      Promise.all(this.pollingAgents.map((agent) => agent.stop()));
-    },
-  };
 
   private registerTool<T extends z.ZodTypeAny | JsonSchemaInput>({
     name,
