@@ -1,4 +1,4 @@
-import { redisClient } from "./redis";
+import { redisClient } from "../modules/dependencies/redis";
 
 const consumeTokens = async (
   shard: string,

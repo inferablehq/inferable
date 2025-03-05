@@ -1,6 +1,6 @@
-import {cleanupMarkedClusters } from "./cluster";
+import {cleanupMarkedClusters } from ".";
 import { createCluster } from "./management";
-import * as data from "./data";
+import * as data from "../data";
 import { count, eq, or } from "drizzle-orm";
 
 describe("clusters", () => {

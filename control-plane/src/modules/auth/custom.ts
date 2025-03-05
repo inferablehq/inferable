@@ -1,9 +1,9 @@
 import { AuthenticationError, JobPollTimeoutError } from "../../utilities/errors";
-import { packer } from "../packer";
+import { packer } from "../../utilities/packer";
 import * as jobs from "../jobs/jobs";
 import { getJobStatusSync } from "../jobs/jobs";
 import { createCache, hashFromSecret } from "../../utilities/cache";
-import { getClusterDetails } from "../management";
+import { getClusterDetails } from "../clusters/management";
 import { getClusterBackgroundRun } from "../runs";
 import { z } from "zod";
 import { getToolDefinition } from "../tools";

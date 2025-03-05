@@ -12,7 +12,6 @@ import { clusters, db, jobs, RunMessageMetadata, runs, runTags } from "../data";
 import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
 import { runProcessQueue } from "../queues/run-process";
-import { trackCustomerTelemetry } from "../track-customer-telemetry";
 import {
   getMessageCountForCluster,
   getRunMessages,
@@ -23,7 +22,8 @@ import {
 import { getRunTags } from "./tags";
 import { onStatusChangeSchema } from "../contract";
 import { z } from "zod";
-import { JsonSchemaInput, validateFunctionSchema } from "../json-schema";
+import { JsonSchemaInput, validateFunctionSchema } from "../../utilities/json-schema";
+import { trackCustomerTelemetry } from "../customer-telemetry/track";
 
 export const createRun = async ({
   id,

@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import NodeCache from "node-cache";
-import { redisClient } from "../modules/redis";
+import { redisClient } from "../modules/dependencies/redis";
 import { logger } from "../modules/observability/logger";
 
 export const createCache = <T>(namespace: symbol) => {

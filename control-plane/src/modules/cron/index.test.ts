@@ -1,4 +1,4 @@
-import { registerCron, stop } from "./cron";
+import { registerCron, stop } from ".";
 
 describe("cron", () => {
   // Increase timeout for all tests in this suite to account for BullMQ initialization

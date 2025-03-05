@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
-import * as data from "./data";
-import { logger } from "./observability/logger";
-import { events } from "./observability/events";
+import * as data from "../data";
+import { logger } from "../observability/logger";
+import { events } from "../observability/events";
 
 export async function upsertMachine({
   clusterId,

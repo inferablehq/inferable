@@ -1,8 +1,8 @@
 import { AuthenticationError } from "../../utilities/errors";
 import { pollJobsByTools } from "../jobs/jobs";
 import { acknowledgeJob, persistJobResult } from "../jobs/job-results";
-import { editClusterDetails } from "../management";
-import { packer } from "../packer";
+import { editClusterDetails } from "../clusters/management";
+import { packer } from "../../utilities/packer";
 import { createOwner } from "../test/util";
 import { verify } from "./custom";
 import { upsertToolDefinition } from "../tools";

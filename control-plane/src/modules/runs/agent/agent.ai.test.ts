@@ -1,6 +1,6 @@
 import { createRunGraph } from "./agent";
 import { z } from "zod";
-import { redisClient } from "../../redis";
+import { redisClient } from "../../dependencies/redis";
 import { AgentTool } from "./tool";
 import { assertMessageOfType } from "../messages";
 

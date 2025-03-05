@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 import { fastifyPlugin } from "fastify-plugin";
 import { AuthenticationError } from "../../utilities/errors";
-import { clusterExists, getClusterDetails } from "../cluster";
+import { clusterExists, getClusterDetails } from "../clusters";
 import * as clusterAuth from "./cluster";
 import * as clerkAuth from "./clerk";
 import * as customAuth from "./custom";
@@ -508,4 +508,3 @@ export const unqualifiedEntityId = (id: string) => {
   }
   return id;
 }
-

@@ -4,9 +4,9 @@ import { InvalidJobArgumentsError, NotFoundError } from "../../utilities/errors"
 import * as data from "../data";
 import * as events from "../observability/events";
 import { parseJobArgs } from "../tools";
-import { extractWithJsonPath } from "../util";
 import { jobDefaults } from "../data";
 import { getToolDefinition, ToolConfig } from "../tools";
+import { extractWithJsonPath } from "../../utilities/json-path";
 
 type CreateJobParams = {
   jobId: string;

@@ -1,5 +1,5 @@
 import { rateLimiter } from "./rate-limiter";
-import { redisClient } from "./redis";
+import { redisClient } from "../modules/dependencies/redis";
 
 describe("rateLimiter", () => {
   beforeAll(async () => {

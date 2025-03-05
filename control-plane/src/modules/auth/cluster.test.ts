@@ -1,4 +1,4 @@
-import { redisClient } from "../redis";
+import { redisClient } from "../dependencies/redis";
 import { createOwner } from "../test/util";
 import * as clusterAuth from "./cluster";
 
