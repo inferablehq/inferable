@@ -41,7 +41,6 @@ type WorkflowConfig<TInput extends WorkflowInput, name extends string> = {
 type AgentConfig<TResult> = {
   name: string;
   systemPrompt?: string;
-  type?: "single-step" | "multi-step";
   tools?: string[];
   resultSchema?: z.ZodType<TResult>;
   runId?: string;
@@ -68,6 +67,21 @@ type ReactAgentConfig<TResult> = {
    * The tools for the agent.
    */
   tools: string[];
+  /**
+  /**
+   * Anthropic API key and model to use for the agent run.
+   *
+   */
+  provider?: {
+    key: string;
+    model: "claude-3-7-sonnet-20250219" |
+    "claude-3-7-sonnet-latest" |
+    "claude-3-5-sonnet-20241022" |
+    "claude-3-5-sonnet-latest" |
+    "claude-3-5-sonnet-20240620" |
+    "claude-3-5-haiku-20241022" |
+    "claude-3-5-haiku-latest"
+  }
   /**
    * A function that is called before the agent returns its result.
    */
@@ -287,7 +301,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         model: "claude-3-5-sonnet",
         key: "",
         url: "",
-      },
+      }
     });
 
     const memo = async <TResult>(
@@ -384,6 +398,10 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         const result = await this.client.createRun({
           params: {
             clusterId: await this.getClusterId(),
+          },
+          headers: {
+            "x-provider-key": config.provider?.key,
+            "x-provider-model": config.provider?.model,
           },
           body: {
             name: `${this.name}_${config.name}`,
@@ -510,7 +528,6 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
               body: {
                 name: `${this.name}_${config.name}`,
                 id: runId,
-                type: config.type || "multi-step",
                 systemPrompt: config.systemPrompt,
                 resultSchema,
                 tools: config.tools,

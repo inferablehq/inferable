@@ -9,7 +9,6 @@ import { ToolFetcher } from "../agent";
 import { RunGraphState } from "../state";
 import { SpecialResultTypes, parseFunctionResponse } from "../tools/functions";
 import { AgentTool, AgentToolInputError } from "../tool";
-import { ChatIdentifiers } from "../../../models/routing";
 
 export const TOOL_CALL_NODE_NAME = "action";
 
@@ -91,7 +90,6 @@ const handleToolCall = (
   run: {
     id: string;
     clusterId: string;
-    modelIdentifier: ChatIdentifiers | null;
     resultSchema: unknown | null;
     debug: boolean;
   },
@@ -109,7 +107,6 @@ const _handleToolCall = async (
   run: {
     id: string;
     clusterId: string;
-    modelIdentifier: ChatIdentifiers | null;
     resultSchema: unknown | null;
     debug: boolean;
   },

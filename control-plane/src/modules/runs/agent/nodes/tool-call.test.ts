@@ -12,7 +12,6 @@ describe("handleToolCalls", () => {
   const run = {
     id: "test",
     clusterId: "test",
-    modelIdentifier: null,
     resultSchema: null,
     debug: false,
     attachedFunctions: null,

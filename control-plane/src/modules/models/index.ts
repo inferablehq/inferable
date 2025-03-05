@@ -17,6 +17,7 @@ import * as events from "../observability/events";
 import { rateLimiter } from "../rate-limiter";
 import { addAttributes } from "../observability/tracer";
 import { trackCustomerTelemetry } from "../track-customer-telemetry";
+import AnthropicBedrock from "@anthropic-ai/bedrock-sdk";
 
 type CallInput = {
   system?: string | undefined;
@@ -55,6 +56,7 @@ export const buildModel = ({
   trackingOptions,
   modelOptions,
   purpose,
+  provider,
 }: {
   identifier: ChatIdentifiers | EmbeddingIdentifiers;
   trackingOptions?: {
@@ -65,6 +67,11 @@ export const buildModel = ({
     temperature?: number;
   };
   purpose?: string;
+  provider?: {
+    url?: string;
+    model?: string;
+    key?: string;
+  }
 }): Model => {
   const temperature = modelOptions?.temperature ?? 0.5;
 
@@ -92,10 +99,27 @@ export const buildModel = ({
       }
       const response = await AsyncRetry(
         async (bail, attempt) => {
-          const routing = getRouting({
+
+          let model: Anthropic | AnthropicBedrock = new Anthropic({
+            apiKey: provider?.key,
+            baseURL: provider?.url
+          });
+          let modelId = provider?.model
+
+          const demoRouting = getRouting({
             identifier,
             index: attempt - 1,
-          });
+          })
+
+          if (!provider) {
+            model = demoRouting?.buildClient();
+            modelId = demoRouting?.modelId
+          }
+
+          if (!model || !modelId) {
+            bail(new Error("Could not get model routing"));
+            return
+          }
 
           if (trackingOptions?.clusterId) {
             const clusterId = trackingOptions.clusterId;
@@ -108,23 +132,19 @@ export const buildModel = ({
 
             if (!allowed.every(Boolean)) {
               logger.warn("Rate limit exceeded. (Just logged, not preventing request)", {
-                modelId: routing.modelId,
+                modelId: identifier,
                 clusterId,
                 allowed,
               });
             }
           }
 
-          if (!routing) {
-            bail(new Error("Could not get model routing"));
-          }
-
           const tools = options.tools ?? [];
 
           try {
             const startedAt = Date.now();
-            const response = await routing.buildClient().messages.create({
-              model: routing.modelId,
+            const response = await model.messages.create({
+              model: modelId,
               temperature,
               stream: false,
               max_tokens: options.maxTokens ?? 2048,
@@ -137,7 +157,7 @@ export const buildModel = ({
             trackModelUsage({
               clusterId: trackingOptions?.clusterId,
               runId: trackingOptions?.runId,
-              modelId: routing.modelId,
+              modelId,
               systemPrompt: options.system,
               tools,
               inputTokens: response.usage.input_tokens,
@@ -154,7 +174,7 @@ export const buildModel = ({
             await handleErrror({
               bail,
               error,
-              modelId: routing.modelId,
+              modelId: identifier,
               attempt,
             });
           }
@@ -179,21 +199,34 @@ export const buildModel = ({
 
       const response = await AsyncRetry(
         async (bail, attempt) => {
-          const routing = getRouting({
+
+          let model: Anthropic | AnthropicBedrock = new Anthropic({
+            apiKey: provider?.key,
+            baseURL: provider?.url
+          });
+          let modelId = provider?.model
+
+          const demoRouting = getRouting({
             identifier,
             index: attempt - 1,
-          });
+          })
 
-          if (!routing) {
+          if (!provider) {
+            model = demoRouting?.buildClient();
+            modelId = demoRouting?.modelId
+          }
+
+          if (!model || !modelId) {
             bail(new Error("Could not get model routing"));
+            return
           }
 
           const tools = options.tools ?? [];
 
           try {
             const startedAt = Date.now();
-            const response = await routing.buildClient().messages.create({
-              model: routing.modelId,
+            const response = await model.messages.create({
+              model: modelId,
               temperature,
               stream: false,
               max_tokens: options.maxTokens ?? 2048,
@@ -215,7 +248,7 @@ export const buildModel = ({
 
             trackModelUsage({
               ...trackingOptions,
-              modelId: routing.modelId,
+              modelId,
               inputTokens: response.usage.input_tokens,
               outputTokens: response.usage.output_tokens,
               temperature,
@@ -231,7 +264,7 @@ export const buildModel = ({
             await handleErrror({
               bail,
               error,
-              modelId: routing.modelId,
+              modelId,
               attempt,
             });
           }

@@ -11,7 +11,7 @@ import { env } from "../utilities/env";
 import { AuthenticationError, BadRequestError, NotFoundError } from "../utilities/errors";
 import { safeParse } from "../utilities/safe-parse";
 import { unqualifiedEntityId } from "./auth/auth";
-import { createApiKey, listApiKeys, revokeApiKey, verify } from "./auth/cluster";
+import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
 import { createBlob, getBlobData, getBlobsForJobs } from "./blobs";
 import { getClusterDetails } from "./cluster";
 import { contract, interruptSchema } from "./contract";
@@ -172,6 +172,16 @@ export const router = initServer().router(contract, {
 
     const id = body.id || body.runId || ulid();
 
+    let provider;
+
+    if (request.headers["x-provider-key"] && request.headers["x-provider-model"] && request.headers["x-provider-url"]) {
+      provider = {
+        key: request.headers["x-provider-key"],
+        model: request.headers["x-provider-model"],
+        url: request.headers["x-provider-url"]
+      };
+    }
+
     if (body.runId) {
       logger.warn("Using deprecated runId field");
     }
@@ -196,18 +206,6 @@ export const router = initServer().router(contract, {
 
     if (body.attachedFunctions) {
       logger.warn("Using deprecated attachedFunctions field");
-    }
-
-    if (body.type === "single-step") {
-      if (body.attachedFunctions || body.tools) {
-        throw new BadRequestError("Single Step runs cannot have attached tools");
-      }
-      if (body.reasoningTraces) {
-        throw new BadRequestError("Single step runs cannot have reasoning traces");
-      }
-      if (body.enableResultGrounding) {
-        throw new BadRequestError("Single step runs cannot have result grounding");
-      }
     }
 
     if (body.resultSchema) {
@@ -241,12 +239,10 @@ export const router = initServer().router(contract, {
       initialPrompt: body.initialPrompt,
       systemPrompt: body.systemPrompt,
       attachedFunctions,
-      type: body.type,
       resultSchema: body.resultSchema
         ? (dereferenceSync(body.resultSchema) as JsonSchemaInput)
         : undefined,
       interactive: body.interactive,
-      modelIdentifier: body.model,
       callSummarization: body.callSummarization,
       reasoningTraces: body.reasoningTraces,
       enableResultGrounding: body.enableResultGrounding,
@@ -268,8 +264,6 @@ export const router = initServer().router(contract, {
       name: body.name,
       tags: body.tags,
 
-      runType: runOptions.type,
-
       // Customer Auth context (In the future all auth types should inject context into the run)
       authContext: customAuth?.context,
 
@@ -280,12 +274,14 @@ export const router = initServer().router(contract, {
       // Merged Options
       resultSchema: runOptions.resultSchema,
       enableSummarization: runOptions.callSummarization,
-      modelIdentifier: runOptions.modelIdentifier,
       interactive: runOptions.interactive,
       systemPrompt: runOptions.systemPrompt,
       attachedFunctions: runOptions.attachedFunctions,
       reasoningTraces: runOptions.reasoningTraces,
       enableResultGrounding: runOptions.enableResultGrounding,
+      providerKey: provider?.key,
+      providerUrl: provider?.url,
+      providerModel: provider?.model,
     });
 
     // This run.created is a bit of a hack to allow us to create a run with an existing ID
@@ -1594,8 +1590,8 @@ export const router = initServer().router(contract, {
     const hash = crypto.createHash("sha256");
     hash.update(input);
     hash.update(JSON.stringify(schema));
-    hash.update(providerModel);
-    hash.update(providerKey);
+    providerModel && hash.update(providerModel);
+    providerKey && hash.update(providerKey);
     hash.update(executionId);
     instructions && hash.update(instructions);
 
@@ -1633,24 +1629,11 @@ export const router = initServer().router(contract, {
       };
     }
 
-    let provider: Parameters<typeof structured>[0]["provider"] = {
-      url: providerUrl,
-      key: providerKey,
-      model: providerModel,
-    };
+    let provider: Parameters<typeof structured>[0]["provider"] | undefined;
 
-    if (providerUrl.includes("inferable") || providerUrl === "") {
-      if (!["claude-3-5-sonnet", "claude-3-haiku"].includes(providerModel)) {
-        return {
-          status: 400,
-          body: {
-            message: `Unsupported model: ${providerModel}`,
-          },
-        };
-      }
-
+    if (!providerModel || !providerKey || !providerUrl) {
       const model = buildModel({
-        identifier: providerModel as any,
+        identifier: "claude-3-5-sonnet",
         trackingOptions: {
           clusterId: clusterId,
         },
@@ -1705,6 +1688,12 @@ export const router = initServer().router(contract, {
         } else {
           throw new Error("Anthropic API returned invalid response");
         }
+      };
+    } else {
+      provider = {
+        key: providerKey,
+        model: providerModel,
+        url: providerUrl,
       };
     }
 
