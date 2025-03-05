@@ -68,20 +68,20 @@ type ReactAgentConfig<TResult> = {
    */
   tools: string[];
   /**
-  /**
    * Anthropic API key and model to use for the agent run.
-   *
+   * Inferable only supports Anthropic for the built-in react agent.
    */
   provider?: {
     key: string;
-    model: "claude-3-7-sonnet-20250219" |
-    "claude-3-7-sonnet-latest" |
-    "claude-3-5-sonnet-20241022" |
-    "claude-3-5-sonnet-latest" |
-    "claude-3-5-sonnet-20240620" |
-    "claude-3-5-haiku-20241022" |
-    "claude-3-5-haiku-latest"
-  }
+    model:
+      | "claude-3-7-sonnet-20250219"
+      | "claude-3-7-sonnet-latest"
+      | "claude-3-5-sonnet-20241022"
+      | "claude-3-5-sonnet-latest"
+      | "claude-3-5-sonnet-20240620"
+      | "claude-3-5-haiku-20241022"
+      | "claude-3-5-haiku-latest";
+  };
   /**
    * A function that is called before the agent returns its result.
    */
@@ -108,7 +108,7 @@ type WorkflowContext<TInput> = {
    *
    * @example
    * ```typescript
-   * const result = await ctx.llm.generateText({
+   * const result = await ctx.llm.structured({
    *   input: "Good morning Vietnam!",
    *   schema: z.object({
    *     country: z.string(),
@@ -116,7 +116,23 @@ type WorkflowContext<TInput> = {
    * });
    * ```
    */
-  llm: L1M;
+  llm: {
+    structured: <T extends z.ZodObject<any>, TOutput = z.infer<T>>({
+      input,
+      schema,
+      instructions,
+      provider,
+    }: {
+      input: string;
+      schema: T;
+      instructions?: string;
+      provider?: {
+        key: string;
+        model: string;
+        url: string;
+      };
+    }) => Promise<TOutput>;
+  };
   /**
    * Result caching for the workflow.
    * @deprecated Use `memo` instead
@@ -289,19 +305,6 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       version,
       name: this.name,
       executionId,
-    });
-
-    const l1m = new L1M({
-      baseUrl: `${this.endpoint}/clusters/${clusterId}/l1m`,
-      additionalHeaders: {
-        "x-workflow-execution-id": executionId,
-        Authorization: `Bearer ${this.apiSecret}`,
-      },
-      provider: {
-        model: "claude-3-5-sonnet",
-        key: "",
-        url: "",
-      }
     });
 
     const memo = async <TResult>(
@@ -485,9 +488,39 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       },
     };
 
+    const llm = {
+      structured: <T extends z.ZodObject<any>, TOutput = z.infer<T>>({
+        input,
+        schema,
+        instructions,
+        provider,
+      }: {
+        input: string;
+        schema: T;
+        instructions?: string;
+        provider?: {
+          key: string;
+          model: string;
+          url: string;
+        };
+      }): Promise<TOutput> => {
+        return new L1M({
+          baseUrl: `${this.endpoint}/clusters/${clusterId}/l1m`,
+          additionalHeaders: {
+            Authorization: `Bearer ${this.apiSecret}`,
+          },
+          provider: provider ?? {
+            key: "",
+            model: "claude-3-5-sonnet",
+            url: "",
+          },
+        }).structured({ input, schema, instructions });
+      },
+    };
+
     return {
       ...jobCtx,
-      llm: l1m,
+      llm,
       result: memo,
       memo,
       agents,

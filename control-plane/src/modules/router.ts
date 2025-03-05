@@ -8,14 +8,21 @@ import path from "path";
 import { ulid } from "ulid";
 import util from "util";
 import { env } from "../utilities/env";
-import { AuthenticationError, BadRequestError, NotFoundError } from "../utilities/errors";
+import {
+  AuthenticationError,
+  BadRequestError,
+  NotFoundError,
+} from "../utilities/errors";
 import { safeParse } from "../utilities/safe-parse";
 import { unqualifiedEntityId } from "./auth/auth";
 import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
 import { getClusterDetails } from "./cluster";
 import { contract, interruptSchema } from "./contract";
 import * as data from "./data";
-import { getIntegrations, upsertIntegrations } from "./integrations/integrations";
+import {
+  getIntegrations,
+  upsertIntegrations,
+} from "./integrations/integrations";
 import { getSession, nango, webhookSchema } from "./integrations/nango";
 import { validateConfig } from "./integrations/toolhouse";
 import * as jobs from "./jobs/jobs";
@@ -41,7 +48,12 @@ import {
 import { getRunMessagesForDisplayWithPolling } from "./runs/messages";
 import { getRunsByTag } from "./runs/tags";
 import { timeline } from "./timeline";
-import { getWorkflowTools, listTools, recordPoll, upsertToolDefinition } from "./tools";
+import {
+  getWorkflowTools,
+  listTools,
+  recordPoll,
+  upsertToolDefinition,
+} from "./tools";
 import { persistJobInterrupt } from "./jobs/job-results";
 import {
   createWorkflowExecution,
@@ -49,7 +61,12 @@ import {
   getWorkflowExecutionTimeline,
 } from "./workflows/executions";
 import { createWorkflowLog } from "./workflows/logs";
-import { inferType, structured, validateJsonSchema, validTypes } from "@l1m/core";
+import {
+  inferType,
+  structured,
+  validateJsonSchema,
+  validTypes,
+} from "@l1m/core";
 import { buildModel } from "./models";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -75,7 +92,9 @@ export const router = initServer().router(contract, {
     }
 
     const derefedFns = tools?.map(fn => {
-      const schema = fn.schema ? safeParse(fn.schema) : { success: true, data: undefined };
+      const schema = fn.schema
+        ? safeParse(fn.schema)
+        : { success: true, data: undefined };
 
       if (!schema.success) {
         throw new BadRequestError(`Function ${fn.name} has an invalid schema.`);
@@ -85,7 +104,9 @@ export const router = initServer().router(contract, {
         clusterId: machine.clusterId,
         name: fn.name,
         description: fn.description,
-        schema: schema.data ? JSON.stringify(dereferenceSync(schema.data)) : undefined,
+        schema: schema.data
+          ? JSON.stringify(dereferenceSync(schema.data))
+          : undefined,
         config: fn.config,
       };
     });
@@ -108,8 +129,8 @@ export const router = initServer().router(contract, {
               description: fn.description,
               schema: fn.schema,
               config: fn.config,
-            })
-          )
+            }),
+          ),
         ),
     ]);
 
@@ -173,11 +194,15 @@ export const router = initServer().router(contract, {
 
     let provider;
 
-    if (request.headers["x-provider-key"] && request.headers["x-provider-model"] && request.headers["x-provider-url"]) {
+    if (
+      request.headers["x-provider-key"] &&
+      request.headers["x-provider-model"] &&
+      request.headers["x-provider-url"]
+    ) {
       provider = {
         key: request.headers["x-provider-key"],
         model: request.headers["x-provider-model"],
-        url: request.headers["x-provider-url"]
+        url: request.headers["x-provider-url"],
       };
     }
 
@@ -231,7 +256,10 @@ export const router = initServer().router(contract, {
     }
 
     const attachedFunctions =
-      body.tools ?? body.attachedFunctions?.map(f => (typeof f === "string" ? f : f.function));
+      body.tools ??
+      body.attachedFunctions?.map(f =>
+        typeof f === "string" ? f : f.function,
+      );
 
     const runOptions: RunOptions = {
       id,
@@ -314,7 +342,10 @@ export const router = initServer().router(contract, {
       },
     });
 
-    const result = run.status === "done" ? await getRunResult({ clusterId, runId: run.id }) : null;
+    const result =
+      run.status === "done"
+        ? await getRunResult({ clusterId, runId: run.id })
+        : null;
 
     return {
       status: 201,
@@ -731,7 +762,6 @@ export const router = initServer().router(contract, {
           throw new NotFoundError("Job not found");
         }
 
-
         result = {
           message: "The result was too large.",
         };
@@ -989,7 +1019,10 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: {
-        token: await getSession({ clusterId, integrationId: env.NANGO_SLACK_INTEGRATION_ID }),
+        token: await getSession({
+          clusterId,
+          integrationId: env.NANGO_SLACK_INTEGRATION_ID,
+        }),
       },
     };
   },
@@ -1025,7 +1058,7 @@ export const router = initServer().router(contract, {
     ) {
       const connection = await nango.getConnection(
         webhook.data.providerConfigKey,
-        webhook.data.connectionId
+        webhook.data.connectionId,
       );
 
       logger.info("New Slack connection registered", {
@@ -1068,7 +1101,7 @@ export const router = initServer().router(contract, {
   },
   createEphemeralSetup: async request => {
     const result = await management.createEphemeralSetup(
-      (request.headers["x-forwarded-for"] as string) ?? "unknown"
+      (request.headers["x-forwarded-for"] as string) ?? "unknown",
     );
 
     return {
@@ -1080,9 +1113,12 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: {
-        contract: await readFile(path.join(__dirname, "..", "..", "src", "./modules/contract.ts"), {
-          encoding: "utf-8",
-        }),
+        contract: await readFile(
+          path.join(__dirname, "..", "..", "src", "./modules/contract.ts"),
+          {
+            encoding: "utf-8",
+          },
+        ),
       },
     };
   },
@@ -1333,7 +1369,7 @@ export const router = initServer().router(contract, {
           version: require("../../package.json").version,
         },
       },
-      { setOperationId: true }
+      { setOperationId: true },
     );
 
     return {
@@ -1377,7 +1413,11 @@ export const router = initServer().router(contract, {
     machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
-    const result = await createWorkflowExecution(clusterId, workflowName, request.body);
+    const result = await createWorkflowExecution(
+      clusterId,
+      workflowName,
+      request.body,
+    );
 
     return {
       status: 201,
@@ -1407,8 +1447,12 @@ export const router = initServer().router(contract, {
 
   listWorkflowExecutions: async request => {
     const { clusterId } = request.params;
-    const { workflowName, workflowExecutionStatus, workflowExecutionId, workflowVersion } =
-      request.query;
+    const {
+      workflowName,
+      workflowExecutionStatus,
+      workflowExecutionId,
+      workflowVersion,
+    } = request.query;
 
     const auth = request.request.getAuth();
     auth.canAccess({ cluster: { clusterId } });
@@ -1432,7 +1476,11 @@ export const router = initServer().router(contract, {
   getWorkflowExecutionTimeline: async request => {
     const { clusterId, workflowName, executionId } = request.params;
 
-    const result = await getWorkflowExecutionTimeline({ clusterId, workflowName, executionId });
+    const result = await getWorkflowExecutionTimeline({
+      clusterId,
+      workflowName,
+      executionId,
+    });
 
     return {
       status: 200,
@@ -1464,7 +1512,8 @@ export const router = initServer().router(contract, {
     machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
-    const setter = onConflict === "replace" ? kv.setOrReplace : kv.setIfNotExists;
+    const setter =
+      onConflict === "replace" ? kv.setOrReplace : kv.setIfNotExists;
 
     const result = await setter(clusterId, key, value);
 
@@ -1504,21 +1553,12 @@ export const router = initServer().router(contract, {
     const executionId = request.headers["x-workflow-execution-id"];
     const maxAttempts = request.headers["x-max-attempts"];
 
-    if (!executionId) {
-      return {
-        status: 400,
-        body: {
-          message: "Missing x-workflow-execution-id header",
-        },
-      };
-    }
-
     const hash = crypto.createHash("sha256");
     hash.update(input);
     hash.update(JSON.stringify(schema));
     providerModel && hash.update(providerModel);
     providerKey && hash.update(providerKey);
-    hash.update(executionId);
+    executionId && hash.update(executionId);
     instructions && hash.update(instructions);
 
     const messageKey = `${executionId}_structured_${hash.digest("hex")}`;
