@@ -18,6 +18,18 @@ hdx?.init({
   instrumentations: {
     "@opentelemetry/instrumentation-http": {
       enabled: true,
+      ignoreIncomingRequestHook: req => {
+        if (req.method === "GET" && req.headers["x-machine-id"]) {
+          // Trace 10% of machine requests
+          return Math.random() > 0.1;
+        }
+
+        if (req.url?.endsWith("/live")) {
+          return true;
+        }
+
+        return false;
+      },
     },
     "@opentelemetry/instrumentation-pg": {
       enabled: true,
