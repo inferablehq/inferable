@@ -74,14 +74,15 @@ type ReactAgentConfig<TResult> = {
    */
   provider?: {
     key: string;
-    model: "claude-3-7-sonnet-20250219" |
-    "claude-3-7-sonnet-latest" |
-    "claude-3-5-sonnet-20241022" |
-    "claude-3-5-sonnet-latest" |
-    "claude-3-5-sonnet-20240620" |
-    "claude-3-5-haiku-20241022" |
-    "claude-3-5-haiku-latest"
-  }
+    model:
+      | "claude-3-7-sonnet-20250219"
+      | "claude-3-7-sonnet-latest"
+      | "claude-3-5-sonnet-20241022"
+      | "claude-3-5-sonnet-latest"
+      | "claude-3-5-sonnet-20240620"
+      | "claude-3-5-haiku-20241022"
+      | "claude-3-5-haiku-latest";
+  };
   /**
    * A function that is called before the agent returns its result.
    */
@@ -108,7 +109,7 @@ type WorkflowContext<TInput> = {
    *
    * @example
    * ```typescript
-   * const result = await ctx.llm.generateText({
+   * const result = await ctx.llm.structured({
    *   input: "Good morning Vietnam!",
    *   schema: z.object({
    *     country: z.string(),
@@ -301,7 +302,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         model: "claude-3-5-sonnet",
         key: "",
         url: "",
-      }
+      },
     });
 
     const memo = async <TResult>(

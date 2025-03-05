@@ -100,7 +100,10 @@ describe("Agent", () => {
 
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
     });
 
@@ -141,8 +144,14 @@ describe("Agent", () => {
       expect(outputState.messages).toHaveLength(5);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
-      expect(outputState.messages[3]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
+      expect(outputState.messages[3]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[4]).toHaveProperty("type", "agent");
     });
 
@@ -182,10 +191,16 @@ describe("Agent", () => {
       expect(outputState.messages).toHaveLength(4);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
 
-      const resultMessage = assertMessageOfType("invocation-result", outputState.messages[2]);
+      const resultMessage = assertMessageOfType(
+        "invocation-result",
+        outputState.messages[2],
+      );
       const topLevelResult = resultMessage.data.result;
       Object.keys(topLevelResult).forEach(key => {
         expect(topLevelResult[key]).toEqual({
@@ -237,7 +252,10 @@ describe("Agent", () => {
       expect(outputState.messages).toHaveLength(2);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[1].data.result).toHaveProperty("word", "hello");
+      expect(outputState.messages[1].data.result).toHaveProperty(
+        "word",
+        "hello",
+      );
 
       expect(outputState.result).toEqual({
         word: "hello",
@@ -309,9 +327,15 @@ describe("Agent", () => {
 
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
-      expect(outputState.messages[4]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[4]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[5]).toHaveProperty("type", "agent");
     });
 
@@ -395,9 +419,15 @@ describe("Agent", () => {
 
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
-      expect(outputState.messages[4]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[4]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[5]).toHaveProperty("type", "agent");
     });
 
@@ -426,7 +456,8 @@ describe("Agent", () => {
           },
         },
         getAttachedTools: async () => tools,
-        getTool: async input => tools.find(tool => tool.name === input.toolName)!,
+        getTool: async input =>
+          tools.find(tool => tool.name === input.toolName)!,
         postStepSave: async () => {},
         mockModelResponses: [
           JSON.stringify({
@@ -454,7 +485,7 @@ describe("Agent", () => {
           }),
           resultType: "resolution",
           status: "success",
-        })
+        }),
       );
 
       const outputState = await app.invoke({
@@ -473,7 +504,10 @@ describe("Agent", () => {
       expect(outputState.messages).toHaveLength(4);
       expect(outputState.messages[0]).toHaveProperty("type", "human");
       expect(outputState.messages[1]).toHaveProperty("type", "agent");
-      expect(outputState.messages[2]).toHaveProperty("type", "invocation-result");
+      expect(outputState.messages[2]).toHaveProperty(
+        "type",
+        "invocation-result",
+      );
       expect(outputState.messages[3]).toHaveProperty("type", "agent");
       expect(outputState.messages[3].data).toHaveProperty("result", {
         word: "needle",

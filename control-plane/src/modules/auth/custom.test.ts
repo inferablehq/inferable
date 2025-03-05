@@ -42,7 +42,7 @@ describe("custom auth verification", () => {
       const nextJobId = await pollJobsByTools({
         clusterId: owner.clusterId,
         machineId: "test-machine",
-        tools: ['verifyAuth'],
+        tools: ["verifyAuth"],
         limit: 10,
       });
 
@@ -65,7 +65,7 @@ describe("custom auth verification", () => {
               jobId: job.id,
             });
           }
-        })
+        }),
       );
     }, 500);
   });
@@ -104,7 +104,7 @@ describe("custom auth verification", () => {
       verify({
         token: "invalid-token",
         clusterId: owner.clusterId,
-      })
+      }),
     ).rejects.toThrow(AuthenticationError);
   });
 
@@ -113,7 +113,7 @@ describe("custom auth verification", () => {
       verify({
         token: "invalid-token",
         clusterId: owner.clusterId,
-      })
+      }),
     ).rejects.toThrow(AuthenticationError);
   });
 });

@@ -35,7 +35,9 @@ describe("machines", () => {
       expect(machines).toHaveLength(1);
       expect(machines[0].id).toBe(machineId);
       expect(machines[0].lastPingAt).toBeInstanceOf(Date);
-      expect(machines[0].lastPingAt?.getTime()).toBeGreaterThanOrEqual(timeBeforePing);
+      expect(machines[0].lastPingAt?.getTime()).toBeGreaterThanOrEqual(
+        timeBeforePing,
+      );
     });
   });
 });

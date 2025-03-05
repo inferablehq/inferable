@@ -15,6 +15,7 @@ import {
 } from "./types";
 import { helpers, Workflow } from "./workflows/workflow";
 import { ToolConfigSchema } from "./contract";
+import L1M from "l1m";
 
 // Custom json formatter
 debug.formatters.J = (json) => {
@@ -118,7 +119,6 @@ export class Inferable {
 
     this.machineId = options?.machineId || machineId();
 
-
     this.client = createApiClient({
       baseUrl: this.endpoint,
       machineId: this.machineId,
@@ -178,6 +178,33 @@ export class Inferable {
     },
     unlisten: async () => {
       Promise.all(this.pollingAgents.map((agent) => agent.stop()));
+    },
+  };
+
+  public llm = {
+    structured: async <T extends z.ZodObject<any>, TOutput = z.infer<T>>(
+      {
+        input,
+        schema,
+        instructions,
+      }: {
+        input: string;
+        schema: T;
+        instructions?: string;
+      },
+      options?: Parameters<L1M["structured"]>[1],
+    ): Promise<TOutput> => {
+      return new L1M({
+        baseUrl: `${this.endpoint}/clusters/${await this.getClusterId()}/l1m`,
+        additionalHeaders: {
+          Authorization: `Bearer ${this.apiSecret}`,
+        },
+        provider: {
+          key: "",
+          model: "claude-3-5-sonnet",
+          url: "",
+        },
+      }).structured({ input, schema, instructions }, options);
     },
   };
 

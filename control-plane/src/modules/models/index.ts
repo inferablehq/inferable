@@ -40,7 +40,9 @@ type StructuredCallOutput = CallOutput & {
 
 export type Model = {
   call: (options: CallInput) => Promise<CallOutput>;
-  structured: <T extends StructuredCallInput>(options: T) => Promise<StructuredCallOutput>;
+  structured: <T extends StructuredCallInput>(
+    options: T,
+  ) => Promise<StructuredCallOutput>;
   identifier: ChatIdentifiers | EmbeddingIdentifiers;
   contextWindow?: number;
   embedQuery: (input: string) => Promise<number[]>;
@@ -71,7 +73,7 @@ export const buildModel = ({
     url?: string;
     model?: string;
     key?: string;
-  }
+  };
 }): Model => {
   const temperature = modelOptions?.temperature ?? 0.5;
 
@@ -99,26 +101,25 @@ export const buildModel = ({
       }
       const response = await AsyncRetry(
         async (bail, attempt) => {
-
           let model: Anthropic | AnthropicBedrock = new Anthropic({
             apiKey: provider?.key,
-            baseURL: provider?.url
+            baseURL: provider?.url,
           });
-          let modelId = provider?.model
+          let modelId = provider?.model;
 
           const demoRouting = getRouting({
             identifier,
             index: attempt - 1,
-          })
+          });
 
           if (!provider) {
             model = demoRouting?.buildClient();
-            modelId = demoRouting?.modelId
+            modelId = demoRouting?.modelId;
           }
 
           if (!model || !modelId) {
             bail(new Error("Could not get model routing"));
-            return
+            return;
           }
 
           if (trackingOptions?.clusterId) {
@@ -126,16 +127,22 @@ export const buildModel = ({
 
             const allowed = await Promise.all(
               perClusterRateLimiters.map(r =>
-                r.allowed(clusterId, Buffer.byteLength(JSON.stringify(options.messages)))
-              )
+                r.allowed(
+                  clusterId,
+                  Buffer.byteLength(JSON.stringify(options.messages)),
+                ),
+              ),
             );
 
             if (!allowed.every(Boolean)) {
-              logger.warn("Rate limit exceeded. (Just logged, not preventing request)", {
-                modelId: identifier,
-                clusterId,
-                allowed,
-              });
+              logger.warn(
+                "Rate limit exceeded. (Just logged, not preventing request)",
+                {
+                  modelId: identifier,
+                  clusterId,
+                  allowed,
+                },
+              );
             }
           }
 
@@ -181,7 +188,7 @@ export const buildModel = ({
         },
         {
           retries: 5,
-        }
+        },
       );
 
       if (!response) {
@@ -199,26 +206,25 @@ export const buildModel = ({
 
       const response = await AsyncRetry(
         async (bail, attempt) => {
-
           let model: Anthropic | AnthropicBedrock = new Anthropic({
             apiKey: provider?.key,
-            baseURL: provider?.url
+            baseURL: provider?.url,
           });
-          let modelId = provider?.model
+          let modelId = provider?.model;
 
           const demoRouting = getRouting({
             identifier,
             index: attempt - 1,
-          })
+          });
 
           if (!provider) {
             model = demoRouting?.buildClient();
-            modelId = demoRouting?.modelId
+            modelId = demoRouting?.modelId;
           }
 
           if (!model || !modelId) {
             bail(new Error("Could not get model routing"));
-            return
+            return;
           }
 
           const tools = options.tools ?? [];
@@ -271,7 +277,7 @@ export const buildModel = ({
         },
         {
           retries: 5,
-        }
+        },
       );
 
       if (!response) {
@@ -322,7 +328,7 @@ const parseStructuredResponse = ({
   const toolCalls = response.content.filter(m => m.type === "tool_use");
 
   const extractResult = toolCalls.find(
-    m => m.type === "tool_use" && m.name === "extract"
+    m => m.type === "tool_use" && m.name === "extract",
   ) as ToolUseBlock;
   if (!extractResult) {
     throw new Error("Model did not return structured output");
@@ -358,7 +364,9 @@ export const buildMockModel = ({
       const data = JSON.parse(mockResponses[responseCount]);
 
       // Sleep for between 500 and 1500 ms
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+      await new Promise(resolve =>
+        setTimeout(resolve, Math.random() * 1000 + 500),
+      );
 
       return {
         raw: { content: [] } as unknown as Anthropic.Message,

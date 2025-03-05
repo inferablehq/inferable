@@ -12,7 +12,7 @@ describe("router", () => {
   const app = fastify();
   const s = initServer();
   app.register(auth.plugin);
-  app.register(s.plugin(router), (parent) => parent);
+  app.register(s.plugin(router), parent => parent);
 
   beforeAll(async () => {
     await app.listen({ port, host: "0.0.0.0" });

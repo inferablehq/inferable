@@ -1,4 +1,10 @@
-import { App, BlockAction, KnownEventFromType, SlackAction, webApi } from "@slack/bolt";
+import {
+  App,
+  BlockAction,
+  KnownEventFromType,
+  SlackAction,
+  webApi,
+} from "@slack/bolt";
 import { FastifySlackReceiver } from "./receiver";
 import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
@@ -14,7 +20,11 @@ import { InstallableIntegration } from "../types";
 import { z } from "zod";
 import { getUserForCluster } from "../../dependencies/clerk";
 import { submitApproval } from "../../jobs/jobs";
-import { integrationSchema, notificationSchema, unifiedMessageSchema } from "../../contract";
+import {
+  integrationSchema,
+  notificationSchema,
+  unifiedMessageSchema,
+} from "../../contract";
 import { createExternalMessage } from "../../runs/external-messages";
 
 export const THREAD_META_KEY = "slackThreadTs";
@@ -43,7 +53,7 @@ export const slack: InstallableIntegration = {
   onDeactivate: async (
     clusterId: string,
     _: z.infer<typeof integrationSchema>,
-    prevConfig: z.infer<typeof integrationSchema>
+    prevConfig: z.infer<typeof integrationSchema>,
   ) => {
     logger.info("Deactivating Slack integration", {
       clusterId,
@@ -59,7 +69,7 @@ export const slack: InstallableIntegration = {
   onActivate: async (
     clusterId: string,
     config: z.infer<typeof integrationSchema>,
-    prevConfig: z.infer<typeof integrationSchema>
+    prevConfig: z.infer<typeof integrationSchema>,
   ) => {
     logger.info("Activating Slack integration", {
       clusterId,
@@ -78,10 +88,13 @@ export const slack: InstallableIntegration = {
       config.slack &&
       prevConfig.slack.nangoConnectionId !== config.slack.nangoConnectionId
     ) {
-      logger.warn("Slack integration has been overridden. Cleaning up previous Nango connection", {
-        prevNangoConnectionId: prevConfig.slack.nangoConnectionId,
-        nangoConnectionId: config.slack.nangoConnectionId,
-      });
+      logger.warn(
+        "Slack integration has been overridden. Cleaning up previous Nango connection",
+        {
+          prevNangoConnectionId: prevConfig.slack.nangoConnectionId,
+          nangoConnectionId: config.slack.nangoConnectionId,
+        },
+      );
 
       await deleteNangoConnection(prevConfig.slack.nangoConnectionId);
     }
@@ -107,7 +120,7 @@ export const notifyNewRunMessage = async ({
   };
   destination: {
     channelId: string;
-    threadId?: string
+    threadId?: string;
   };
 }) => {
   if (message.type !== "agent") {
@@ -116,13 +129,15 @@ export const notifyNewRunMessage = async ({
 
   const integration = await integrationByCluster(message.clusterId);
   if (!integration || !integration.slack) {
-    throw new Error(`Could not find Slack integration for cluster: ${message.clusterId}`);
+    throw new Error(
+      `Could not find Slack integration for cluster: ${message.clusterId}`,
+    );
   }
 
   const token = await getAccessToken(integration.slack.nangoConnectionId);
   if (!token) {
     throw new Error(
-      `Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`
+      `Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`,
     );
   }
 
@@ -174,20 +189,21 @@ export const notifyApprovalRequest = async ({
   targetFn: string;
   notification?: z.infer<typeof notificationSchema>;
 }) => {
-
   if (notification?.destination?.type !== "slack") {
     return;
   }
 
   const integration = await integrationByCluster(clusterId);
   if (!integration || !integration.slack) {
-    throw new Error(`Could not find Slack integration for cluster: ${clusterId}`);
+    throw new Error(
+      `Could not find Slack integration for cluster: ${clusterId}`,
+    );
   }
 
   const token = await getAccessToken(integration.slack.nangoConnectionId);
   if (!token) {
     throw new Error(
-      `Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`
+      `Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`,
     );
   }
 
@@ -200,28 +216,26 @@ export const notifyApprovalRequest = async ({
   const threadId = notification?.destination?.threadId;
 
   if (!channelId && !threadId && email) {
-    logger.info("Finding Slack userId from email")
+    logger.info("Finding Slack userId from email");
 
     // Find user's email
     const user = await client.users.lookupByEmail({
-      email: email
+      email: email,
     });
 
     // Check if the user was found successfully
     if (!user.ok || !user.user?.id) {
-      throw new Error(
-        `Failed to find Slack user with email: ${user.error}`,
-      );
+      throw new Error(`Failed to find Slack user with email: ${user.error}`);
     }
 
     userId = user.user?.id;
   }
 
   if (!channelId && !threadId && userId) {
-    logger.info("Finding Slack channel with userId")
+    logger.info("Finding Slack channel with userId");
 
     const conversations = await client.conversations.open({
-      users: userId
+      users: userId,
     });
 
     // Check if the conversation was opened successfully
@@ -238,7 +252,8 @@ export const notifyApprovalRequest = async ({
     throw new Error("Could not determine Slack channel for notification");
   }
 
-  const text = notification?.message ?? `I need your approval to call \`${targetFn}\`.`;
+  const text =
+    notification?.message ?? `I need your approval to call \`${targetFn}\`.`;
 
   await client?.chat.postMessage({
     thread_ts: threadId,
@@ -284,7 +299,9 @@ export const start = async (fastify: FastifyInstance) => {
   const SLACK_SIGNING_SECRET = env.SLACK_SIGNING_SECRET;
 
   if (!SLACK_SIGNING_SECRET) {
-    logger.info("Missing Slack environment variables. Skipping Slack integration.");
+    logger.info(
+      "Missing Slack environment variables. Skipping Slack integration.",
+    );
     return;
   }
 
@@ -306,7 +323,7 @@ export const start = async (fastify: FastifyInstance) => {
       const token = await getAccessToken(integration.slack.nangoConnectionId);
       if (!token) {
         throw new Error(
-          `Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`
+          `Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`,
         );
       }
 
@@ -325,10 +342,10 @@ export const start = async (fastify: FastifyInstance) => {
   });
 
   app.action(CALL_APPROVE_ACTION_ID, async params =>
-    handleCallApprovalAction({ ...params, actionId: CALL_APPROVE_ACTION_ID })
+    handleCallApprovalAction({ ...params, actionId: CALL_APPROVE_ACTION_ID }),
   );
   app.action(CALL_DENY_ACTION_ID, async params =>
-    handleCallApprovalAction({ ...params, actionId: CALL_DENY_ACTION_ID })
+    handleCallApprovalAction({ ...params, actionId: CALL_DENY_ACTION_ID }),
   );
 
   // Event listener for mentions
@@ -474,7 +491,10 @@ const getAccessToken = async (connectionId: string) => {
     throw new Error("Nango is not configured");
   }
 
-  const result = await nango.getToken(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
+  const result = await nango.getToken(
+    env.NANGO_SLACK_INTEGRATION_ID,
+    connectionId,
+  );
   if (typeof result !== "string") {
     return null;
   }
@@ -484,7 +504,7 @@ const getAccessToken = async (connectionId: string) => {
 
 export const cleanupConflictingIntegrations = async (
   clusterId: string,
-  config: z.infer<typeof integrationSchema>
+  config: z.infer<typeof integrationSchema>,
 ) => {
   if (!config.slack) {
     return;
@@ -497,7 +517,10 @@ export const cleanupConflictingIntegrations = async (
     })
     .from(integrations)
     .where(
-      and(sql`slack->>'teamId' = ${config.slack.teamId}`, ne(integrations.cluster_id, clusterId))
+      and(
+        sql`slack->>'teamId' = ${config.slack.teamId}`,
+        ne(integrations.cluster_id, clusterId),
+      ),
     );
 
   if (conflicts.length) {
@@ -511,14 +534,17 @@ export const cleanupConflictingIntegrations = async (
         if (conflict.slack) {
           await deleteNangoConnection(conflict.slack.nangoConnectionId);
         }
-      })
+      }),
     );
 
     // Cleanup Slack integrations from DB
     await db
       .delete(integrations)
       .where(
-        and(sql`slack->>'teamId' = ${config.slack.teamId}`, ne(integrations.cluster_id, clusterId))
+        and(
+          sql`slack->>'teamId' = ${config.slack.teamId}`,
+          ne(integrations.cluster_id, clusterId),
+        ),
       );
   }
 };
@@ -531,7 +557,12 @@ const deleteNangoConnection = async (connectionId: string) => {
   await nango.deleteConnection(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
 };
 
-const handleNewThread = async ({ event, client, clusterId, user }: MessageEvent) => {
+const handleNewThread = async ({
+  event,
+  client,
+  clusterId,
+  user,
+}: MessageEvent) => {
   let thread = event.ts;
   // If this message is part of a thread, associate the run with the thread rather than the message
   if (hasThread(event)) {
@@ -572,7 +603,12 @@ const handleNewThread = async ({ event, client, clusterId, user }: MessageEvent)
   throw new Error("Event had no text");
 };
 
-const handleExistingThread = async ({ event, client, clusterId, user }: MessageEvent) => {
+const handleExistingThread = async ({
+  event,
+  client,
+  clusterId,
+  user,
+}: MessageEvent) => {
   if ("text" in event && event.text) {
     if (!hasThread(event)) {
       throw new Error("Event had no thread_ts");
@@ -620,10 +656,12 @@ const handleExistingThread = async ({ event, client, clusterId, user }: MessageE
 const authenticateUser = async (
   userId: string,
   client: webApi.WebClient,
-  integration: { cluster_id: string }
+  integration: { cluster_id: string },
 ) => {
   if (!env.CLERK_SECRET_KEY) {
-    logger.info("Missing CLERK_SECRET_KEY. Skipping Slack user authentication.");
+    logger.info(
+      "Missing CLERK_SECRET_KEY. Skipping Slack user authentication.",
+    );
     return;
   }
 
