@@ -12,7 +12,7 @@ import (
 )
 
 // Version of the inferable package
-const Version = "0.1.43"
+const Version = "0.1.44"
 
 const (
 	// DefaultAPIEndpoint is the default endpoint for the Inferable API.
