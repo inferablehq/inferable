@@ -17,7 +17,6 @@ import { contract, interruptSchema } from "./contract";
 import * as data from "./data";
 import { getIntegrations, upsertIntegrations } from "./integrations/integrations";
 import { getSession, nango, webhookSchema } from "./integrations/nango";
-import { validateConfig } from "./integrations/toolhouse";
 import * as jobs from "./jobs/jobs";
 import { kv } from "./kv";
 import { upsertMachine } from "./machines";
@@ -910,19 +909,6 @@ export const router = initServer().router(contract, {
 
     if (request.body.email) {
       throw new BadRequestError("Email integration is not supported");
-    }
-
-    if (request.body.toolhouse) {
-      try {
-        await validateConfig(request.body);
-      } catch (error) {
-        return {
-          status: 400,
-          body: {
-            message: `Failed to validate ToolHouse config: ${error}`,
-          },
-        };
-      }
     }
 
     await upsertIntegrations({
