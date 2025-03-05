@@ -15,10 +15,8 @@ export type ToolFetcher = (
 
 export const createRunGraph = async ({
   run,
-  additionalContext,
-  allAvailableTools = [],
   postStepSave,
-  findRelevantTools,
+  getAttachedTools: findRelevantTools,
   getTool,
   mockModelResponses,
 }: {
@@ -38,10 +36,8 @@ export const createRunGraph = async ({
     providerModel?: string | null;
     providerKey?: string | null;
   };
-  additionalContext?: string;
-  allAvailableTools?: string[];
   postStepSave: PostStepSave;
-  findRelevantTools: ReleventToolLookup;
+  getAttachedTools: ReleventToolLookup;
   getTool: ToolFetcher;
   mockModelResponses?: string[];
 }) => {
@@ -61,8 +57,6 @@ export const createRunGraph = async ({
   const graph = new StateGraph<RunGraphState>({
     channels: createStateGraphChannels({
       run,
-      allAvailableTools,
-      additionalContext,
     }),
   })
     .addNode(MODEL_CALL_NODE_NAME, state =>

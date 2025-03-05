@@ -137,23 +137,6 @@ export const clusterExists = async ({
   return exists;
 };
 
-export const getClusterContextText = async (clusterId: string) => {
-  const [cluster] = await data.db
-    .select({
-      additionalContext: data.clusters.additional_context,
-    })
-    .from(data.clusters)
-    .where(eq(data.clusters.id, clusterId));
-
-  // backwards compatibility
-  const html =
-    typeof cluster.additionalContext === "string"
-      ? cluster.additionalContext
-      : (getLatestVersionedText(cluster.additionalContext)?.content ?? "");
-
-  return toModelInput(html);
-};
-
 export const start = async () => {
   cron.registerCron(markEphemeralClustersForDeletion, "mark-ephemeral-clusters", {
     interval: 1000 * 60 * 15,

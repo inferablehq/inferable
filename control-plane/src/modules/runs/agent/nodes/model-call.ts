@@ -15,7 +15,6 @@ import { FINAL_RESULT_SCHEMA_TAG_NAME, getSystemPrompt } from "./system-prompt";
 import { handleContextWindowOverflow } from "../overflow";
 import { JsonSchemaInput } from "../../../json-schema";
 import { validateFunctionSchema } from "../../../json-schema";
-import { z } from "zod";
 
 type RunStateUpdate = Partial<RunGraphState>;
 
@@ -66,7 +65,6 @@ const _handleModelCall = async (
 
   addAttributes({
     "model.relevant_tools": relevantTools.map(tool => tool.name),
-    "model.available_tools": state.allAvailableTools,
     "model.identifier": model.identifier,
   });
 

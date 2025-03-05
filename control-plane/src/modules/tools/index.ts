@@ -3,12 +3,11 @@ import * as crypto from "crypto";
 import * as data from "../data";
 import { ToolConfigSchema } from "../contract";
 import { z } from "zod";
-import { and, desc, cosineDistance, eq, inArray, lte, sql, like, or } from "drizzle-orm";
+import { and, eq, inArray, lte, like } from "drizzle-orm";
 import { buildModel } from "../models";
 import { InvalidServiceRegistrationError as InvalidToolRegistrationError } from "../../utilities/errors";
 import jsonpath from "jsonpath";
 import { logger } from "../observability/logger";
-import { embedSearchQuery } from "../embeddings/embeddings";
 import { validateToolName, validateToolDescription, validateToolSchema } from "./validations";
 import { Validator } from "jsonschema";
 import { InvalidJobArgumentsError } from "../../utilities/errors";
@@ -169,35 +168,6 @@ export const getToolDefinition = async ({
     .where(and(eq(data.tools.name, name), eq(data.tools.cluster_id, clusterId)));
 
   return tool;
-};
-
-export const searchTools = async ({
-  query,
-  clusterId,
-  limit = 10,
-}: {
-  query: string;
-  clusterId: string;
-  limit?: number;
-}) => {
-  const embedding = await embedSearchQuery(query);
-
-  const similarity = sql<number>`1 - (${cosineDistance(data.tools.embedding_1024, embedding)})`;
-
-  const results = await data.db
-    .select({
-      name: data.tools.name,
-      description: data.tools.description,
-      schema: data.tools.schema,
-      config: data.tools.config,
-      similarity,
-    })
-    .from(data.tools)
-    .where(and(eq(data.tools.cluster_id, clusterId)))
-    .orderBy(t => desc(t.similarity))
-    .limit(limit);
-
-  return results;
 };
 
 export async function recordPoll({ clusterId, tools }: { clusterId: string; tools: string[] }) {
