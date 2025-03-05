@@ -1314,7 +1314,7 @@ export const router = initServer().router(contract, {
         info: {
           title: "Inferable API",
           // eslint-disable-next-line @typescript-eslint/no-var-requires
-          version: require("../../package.json").version,
+          version: require("../../../package.json").version,
         },
       },
       { setOperationId: true }
