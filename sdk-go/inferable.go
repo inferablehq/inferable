@@ -15,16 +15,23 @@ import (
 const Version = "0.1.43"
 
 const (
+	// DefaultAPIEndpoint is the default endpoint for the Inferable API.
 	DefaultAPIEndpoint = "https://api.inferable.ai"
 )
 
+// Inferable is the main client for interacting with the Inferable platform.
+// It provides access to tools, workflows, and other Inferable services.
+// Use the New function to create a new instance of Inferable.
 type Inferable struct {
 	client      *client.Client
 	apiEndpoint string
 	apiSecret   string
 	machineID   string
 	clusterID   string
-	Tools       *pollingAgent
+	// Tools provides access to tool registration and management.
+	Tools *pollingAgent
+	// Workflows provides access to workflow creation and management.
+	Workflows *Workflows
 	// Convenience reference to a service with the name 'default'.
 	//
 	// Returns:
@@ -102,6 +109,11 @@ func New(options InferableOptions) (*Inferable, error) {
 	inferable.Tools, err = inferable.createPollingAgent()
 	if err != nil {
 		return nil, fmt.Errorf("error creating polling agent: %v", err)
+	}
+
+	// Initialize the Workflows field
+	inferable.Workflows = &Workflows{
+		inferable: inferable,
 	}
 
 	return inferable, nil

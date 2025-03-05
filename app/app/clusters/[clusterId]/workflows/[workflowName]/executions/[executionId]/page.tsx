@@ -362,10 +362,10 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
           {node.icon}
         </div>
         <div className="flex-1 min-w-0 pt-0.5">
-          <div className="flex items-baseline gap-2 flex-wrap">
+          <div className="flex items-baseline gap-2 flex-wrap mb-1">
             <span className="text-sm font-semibold">{node.title}</span>
             {node.label && (
-              <code className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">{node.label}</code>
+              <code className="px-1.5 py-1 bg-muted rounded text-xs font-mono">{node.label}</code>
             )}
             {node.interactive && (
               <span className="text-xs text-muted-foreground/80 flex items-center gap-1 group-hover:text-primary transition-colors">
@@ -393,7 +393,7 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
             </Collapsible>
           )}
           {node.result && JSON.stringify(node.result).length <= 5000 && (
-            <div className="bg-muted rounded-lg p-4">
+            <div className="bg-muted rounded-lg p-4 mt-2">
               {typeof node.result === "object" ? (
                 <ReadOnlyJSON json={node.result} />
               ) : (
