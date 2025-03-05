@@ -326,11 +326,6 @@ const RunSchema = z.object({
     .optional(),
   context: anyObject.optional().describe("Additional context to propogate to all Jobs in the Run"),
   reasoningTraces: z.boolean().default(true).optional().describe("Enable reasoning traces"),
-  callSummarization: z
-    .boolean()
-    .default(false)
-    .optional()
-    .describe("Enable summarization of oversized call results"),
   interactive: z
     .boolean()
     .default(true)
@@ -1323,7 +1318,7 @@ export const definition = {
             approvalRequested: z.boolean().nullable(),
           }),
         }),
-        results: z.array(
+        memos: z.array(
           z.object({
             key: z.string(),
             value: z.string(),
