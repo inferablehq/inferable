@@ -182,32 +182,29 @@ export class Inferable {
   };
 
   public llm = {
-    structured: async <T extends z.ZodObject<any>, TOutput = z.infer<T>>({
-      input,
-      schema,
-      instructions,
-      provider,
-    }: {
-      input: string;
-      schema: T;
-      instructions?: string;
-      provider?: {
-        key: string;
-        model: string;
-        url: string;
-      };
-    }): Promise<TOutput> => {
+    structured: async <T extends z.ZodObject<any>, TOutput = z.infer<T>>(
+      {
+        input,
+        schema,
+        instructions,
+      }: {
+        input: string;
+        schema: T;
+        instructions?: string;
+      },
+      options?: Parameters<L1M["structured"]>[1],
+    ): Promise<TOutput> => {
       return new L1M({
         baseUrl: `${this.endpoint}/clusters/${await this.getClusterId()}/l1m`,
         additionalHeaders: {
           Authorization: `Bearer ${this.apiSecret}`,
         },
-        provider: provider ?? {
+        provider: {
           key: "",
           model: "claude-3-5-sonnet",
           url: "",
         },
-      }).structured({ input, schema, instructions });
+      }).structured({ input, schema, instructions }, options);
     },
   };
 

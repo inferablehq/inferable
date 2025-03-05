@@ -189,17 +189,21 @@ describe("LLM", () => {
   it("should be able to use a custom provider", async () => {
     const client = inferableInstance();
 
-    const result = await client.llm.structured({
-      input: "Good morning Vietnam!",
-      schema: z.object({
-        country: z.string(),
-      }),
-      provider: {
-        model: "gemini-2.0-flash",
-        key: process.env.INFERABLE_TEST_GEMINI_API_KEY!,
-        url: "https://generativelanguage.googleapis.com/v1beta",
+    const result = await client.llm.structured(
+      {
+        input: "Good morning Vietnam!",
+        schema: z.object({
+          country: z.string(),
+        }),
       },
-    });
+      {
+        provider: {
+          model: "gemini-2.0-flash",
+          key: process.env.INFERABLE_TEST_GEMINI_API_KEY!,
+          url: "https://generativelanguage.googleapis.com/v1beta",
+        },
+      },
+    );
 
     expect(result).toEqual({ country: "Vietnam" });
   });
