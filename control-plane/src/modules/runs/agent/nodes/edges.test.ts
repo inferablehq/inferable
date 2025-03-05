@@ -23,7 +23,6 @@ describe("postStartEdge", () => {
     status: "running",
     messages: [],
     waitingJobs: [],
-    allAvailableTools: [],
   };
 
   it("should return END when there are waiting jobs", async () => {
@@ -258,7 +257,6 @@ describe("postModelEdge", () => {
     status: "running",
     messages: [],
     waitingJobs: [],
-    allAvailableTools: [],
   };
 
   it("should return end when status is not running", async () => {

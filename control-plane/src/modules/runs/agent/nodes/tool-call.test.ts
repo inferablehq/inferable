@@ -60,7 +60,6 @@ describe("handleToolCalls", () => {
     messages,
     run: run,
     status: "running",
-    allAvailableTools: [],
     waitingJobs: [],
   };
 

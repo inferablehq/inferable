@@ -23,7 +23,6 @@ describe("buildModelSchema", () => {
         },
       ],
       waitingJobs: [],
-      allAvailableTools: [],
       run: {
         id: "test-run",
         clusterId: "test-cluster",
@@ -37,7 +36,6 @@ describe("buildModelSchema", () => {
         reasoningTraces: false,
         enableResultGrounding: false,
       },
-      additionalContext: "",
       status: "running",
     };
     (relevantSchemas = [

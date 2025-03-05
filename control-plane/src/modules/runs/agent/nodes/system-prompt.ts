@@ -39,11 +39,6 @@ export const getSystemPrompt = (
     );
   }
 
-  // Add additional context if present
-  if (state.additionalContext) {
-    basePrompt.push(state.additionalContext);
-  }
-
   // Add tool schemas
   basePrompt.push("<TOOLS_SCHEMAS>");
   basePrompt.push(
@@ -52,11 +47,6 @@ export const getSystemPrompt = (
     })
   );
   basePrompt.push("</TOOLS_SCHEMAS>");
-
-  // Add other available tools
-  basePrompt.push("<OTHER_AVAILABLE_TOOLS>");
-  basePrompt.push(...state.allAvailableTools.filter(t => !tools.find(s => s.name === t)));
-  basePrompt.push("</OTHER_AVAILABLE_TOOLS>");
 
   return basePrompt.map(p => p.trim()).join("\n");
 };

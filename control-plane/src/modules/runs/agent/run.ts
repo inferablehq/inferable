@@ -2,20 +2,18 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getWaitingJobIds } from "../";
 import { env } from "../../../utilities/env";
-import { AgentError } from "../../../utilities/errors";
-import { getClusterContextText } from "../../cluster";
+import { AgentError, NotFoundError } from "../../../utilities/errors";
 import { onStatusChangeSchema } from "../../contract";
 import { db, runs } from "../../data";
-import { embedSearchQuery } from "../../embeddings/embeddings";
-import { ChatIdentifiers } from "../../models/routing";
 import { logger } from "../../observability/logger";
 import { getRunMessages, insertRunMessage } from "../messages";
 import { notifyNewRunMessage, notifyStatusChange } from "../notify";
 import { generateTitle } from "../summarization";
 import { createRunGraph } from "./agent";
-import { findRelevantTools } from "./tool-search";
 import { buildTool } from "./tools/functions";
-import { availableTools, getToolDefinition } from "../../tools";
+import { getToolDefinition } from "../../tools";
+import { RunGraphState } from "./state";
+import { AgentTool } from "./tool";
 
 /**
  * Run a Run from the most recent saved state
@@ -49,24 +47,7 @@ export const processAgentRun = async (
     type: run.type,
   });
 
-  // Parallelize fetching additional context and service definitions
-  const [
-    additionalContext,
-    toolNames,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _updateResult,
-  ] = await Promise.all([
-    buildAdditionalContext(run),
-    availableTools({ clusterId: run.clusterId }),
-    db.update(runs).set({ status: "running", failure_reason: "" }).where(eq(runs.id, run.id)),
-  ]);
-
-  const allAvailableTools: string[] = [];
-  const attachedFunctions = run.attachedFunctions ?? [];
-
-  allAvailableTools.push(...attachedFunctions);
-
-  allAvailableTools.push(...toolNames);
+  await db.update(runs).set({ status: "running", failure_reason: "" }).where(eq(runs.id, run.id));
 
   if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
     //https://github.com/inferablehq/inferable/blob/main/load-tests/script.js
@@ -96,8 +77,6 @@ export const processAgentRun = async (
   const app = await createRunGraph({
     run,
     mockModelResponses,
-    allAvailableTools,
-    additionalContext,
     getTool: async toolCall => {
       if (!toolCall.id) {
         throw new Error("Can not return tool without call ID");
@@ -108,7 +87,7 @@ export const processAgentRun = async (
         clusterId: run.clusterId,
       });
 
-      if (!tool) {
+      if (!tool || run.attachedFunctions?.includes(toolCall.toolName) === false) {
         throw new AgentError(`Definition for tool not found: ${toolCall.toolName}`);
       }
 
@@ -120,18 +99,12 @@ export const processAgentRun = async (
         description: tool.description ?? undefined,
       });
     },
-    findRelevantTools: state => findRelevantTools(state),
+    getAttachedTools: state => getAttachedTools(state),
     postStepSave: async state => {
       logger.debug("Saving run state", {
         runId: run.id,
         clusterId: run.clusterId,
       });
-
-      if (attachedFunctions.length == 0) {
-        // optimistically embed the next search query
-        // this is not critical to the Run, so we can do it in the background
-        embedSearchQuery(state.messages.map(m => JSON.stringify(m.data)).join(" "));
-      }
 
       // Insert messages in a loop to ensure they are created with differing timestamps
       for (const message of state.messages.filter(m => !m.persisted)) {
@@ -230,66 +203,33 @@ export const processAgentRun = async (
   }
 };
 
-function anonymize<T>(value: T): T {
-  if (typeof value === "string") {
-    return "<string>" as T;
-  } else if (value === null) {
-    return "<null>" as T;
-  } else if (typeof value === "number") {
-    return "<number>" as T;
-  } else if (typeof value === "boolean") {
-    return "<boolean>" as T;
-  } else if (Array.isArray(value)) {
-    return [anonymize(value[0])] as T;
-  } else if (typeof value === "object") {
-    const result = {} as T;
-    for (const key in value) {
-      result[key] = anonymize(value[key]);
+const getAttachedTools = async (state: RunGraphState) => {
+  const run = state.run;
+
+  const tools: AgentTool[] = [];
+  const attachedFunctions = run.attachedFunctions ?? [];
+
+  for (const tool of attachedFunctions) {
+    const definition = await getToolDefinition({
+      name: tool,
+      clusterId: run.clusterId,
+    });
+
+    if (!definition) {
+      throw new NotFoundError(`Tool ${tool} not found in cluster ${run.clusterId}`);
     }
-    return result;
+
+    tools.push(
+      new AgentTool({
+        name: definition.name,
+        description: (definition.description ?? `${definition.name} function`).substring(0, 1024),
+        schema: definition.schema ?? undefined,
+        func: async () => undefined,
+      })
+    );
   }
 
-  return value;
-}
-
-const safeParse = (value: string | null) => {
-  if (value === null) return null;
-
-  try {
-    return JSON.parse(value);
-  } catch (error) {
-    return value;
-  }
-};
-
-export const formatJobsContext = (
-  jobs: { targetArgs: string | null; result: string | null }[],
-  status: "success" | "failed"
-) => {
-  if (jobs.length === 0) return "";
-
-  const jobEntries = jobs
-    .map(
-      job =>
-        `<input>${JSON.stringify(anonymize(safeParse(job.targetArgs)))}</input><output>${JSON.stringify(anonymize(safeParse(job.result)))}</output>`
-    )
-    .join("\n");
-
-  return `<previous_jobs status="${status}">\n${jobEntries}\n</previous_jobs>`;
-};
-
-const buildAdditionalContext = async (run: {
-  id: string;
-  clusterId: string;
-  systemPrompt: string | null;
-}) => {
-  let context = "";
-
-  context += await getClusterContextText(run.clusterId);
-  context += `\nCurrent Run URL: ${env.APP_ORIGIN}/clusters/${run.clusterId}/runs/${run.id}`;
-  run.systemPrompt && (context += `\n${run.systemPrompt}`);
-
-  return context;
+  return tools;
 };
 
 export const generateRunName = async ({

@@ -13,7 +13,6 @@ export type RunGraphStateMessage = UnifiedMessage & {
 export type RunGraphState = {
   status: InferSelectModel<typeof runs>["status"];
   messages: RunGraphStateMessage[];
-  additionalContext?: string;
   run: {
     id: string;
     clusterId: string;
@@ -31,15 +30,12 @@ export type RunGraphState = {
     providerKey?: string | null;
   };
   waitingJobs: string[];
-  allAvailableTools: string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   result?: any;
 };
 
 export const createStateGraphChannels = ({
   run,
-  additionalContext,
-  allAvailableTools,
 }: {
   run: {
     id: string;
@@ -57,8 +53,6 @@ export const createStateGraphChannels = ({
     providerModel?: string | null;
     providerKey?: string | null;
   };
-  allAvailableTools: string[];
-  additionalContext?: string;
 }): StateGraphArgs<RunGraphState>["channels"] => {
   return {
     // Accumulate messages
@@ -89,18 +83,6 @@ export const createStateGraphChannels = ({
         return [...a, ...b];
       },
       default: () => [],
-    },
-
-    // Additional context is immutable
-    additionalContext: {
-      reducer: () => additionalContext,
-      default: () => additionalContext,
-    },
-
-    // All available tool names. immutable.
-    allAvailableTools: {
-      reducer: () => allAvailableTools,
-      default: () => allAvailableTools,
     },
 
     // Accumulate results

@@ -34,9 +34,7 @@ describe("handleModelCall", () => {
       },
     ],
     waitingJobs: [],
-    allAvailableTools: [],
     run: run,
-    additionalContext: "",
     status: "running",
   };
 

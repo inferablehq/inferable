@@ -28,7 +28,7 @@ export const buildModelSchema = ({
   resultSchema?: InferSelectModel<typeof runs>["result_schema"];
 }) => {
   // Build the toolName enum
-  const toolNameEnum = [...relevantSchemas.map(tool => tool.name), ...state.allAvailableTools];
+  const toolNameEnum = [...relevantSchemas.map(tool => tool.name)];
 
   const schema: JsonSchema7ObjectType = {
     type: "object",

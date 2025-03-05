@@ -63,7 +63,7 @@ describe("Agent", () => {
     it("should call a tool and exit", async () => {
       const app = await createRunGraph({
         run: run,
-        findRelevantTools: async () => tools,
+        getAttachedTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
       });
@@ -107,7 +107,7 @@ describe("Agent", () => {
     it("should call a tool multiple times and exit", async () => {
       const app = await createRunGraph({
         run: run,
-        findRelevantTools: async () => tools,
+        getAttachedTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
       });
@@ -149,7 +149,7 @@ describe("Agent", () => {
     it("should present tool failure to agent", async () => {
       const app = await createRunGraph({
         run: run,
-        findRelevantTools: async () => tools,
+        getAttachedTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
       });
@@ -213,7 +213,7 @@ describe("Agent", () => {
             },
           },
         },
-        findRelevantTools: async () => tools,
+        getAttachedTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
       });
@@ -281,7 +281,7 @@ describe("Agent", () => {
 
       const app = await createRunGraph({
         run: run,
-        findRelevantTools: async () => tools,
+        getAttachedTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
       });
@@ -367,7 +367,7 @@ describe("Agent", () => {
 
       const app = await createRunGraph({
         run,
-        findRelevantTools: async () => tools,
+        getAttachedTools: async () => tools,
         getTool: async () => tools[0],
         postStepSave: async () => {},
       });
@@ -425,8 +425,7 @@ describe("Agent", () => {
             },
           },
         },
-        allAvailableTools: ["searchHaystack"],
-        findRelevantTools: async () => tools,
+        getAttachedTools: async () => tools,
         getTool: async input => tools.find(tool => tool.name === input.toolName)!,
         postStepSave: async () => {},
         mockModelResponses: [
