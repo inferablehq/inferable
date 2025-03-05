@@ -1,20 +1,13 @@
 import debug from "debug";
 import path from "path";
 import { z } from "zod";
+import { ToolConfigSchema } from "./contract";
 import { createApiClient } from "./create-client";
 import { InferableAPIError, InferableError } from "./errors";
 import * as links from "./links";
 import { machineId } from "./machine-id";
-import { PollingAgent, registerMachine } from "./polling";
-import {
-  JobContext,
-  ToolConfig,
-  ToolInput,
-  ToolRegistrationInput,
-  JsonSchemaInput,
-} from "./types";
+import { registerMachine } from "./polling";
 import { helpers, Workflow } from "./workflows/workflow";
-import { ToolConfigSchema } from "./contract";
 
 // Custom json formatter
 debug.formatters.J = (json) => {
@@ -60,10 +53,6 @@ export class Inferable {
   private machineId: string;
 
   private client: ReturnType<typeof createApiClient>;
-
-  private pollingAgents: PollingAgent[] = [];
-
-  private toolsRegistry: { [key: string]: ToolRegistrationInput<any> } = {};
 
   /**
    * Initializes a new Inferable instance.
@@ -123,55 +112,6 @@ export class Inferable {
       machineId: this.machineId,
       apiSecret: this.apiSecret,
     });
-  }
-
-  private registerTool<T extends z.ZodTypeAny | JsonSchemaInput>({
-    name,
-    func,
-    inputSchema,
-    config,
-    description,
-  }: {
-    name: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    func: (input: ToolInput<T>, context: JobContext) => any;
-    inputSchema: T;
-    config?: ToolConfig;
-    description?: string;
-  }) {
-    if (this.toolsRegistry[name]) {
-      throw new InferableError(`Tool name '${name}' is already registered.`);
-    }
-
-    const registration: ToolRegistrationInput<T> = {
-      name,
-      func,
-      schema: {
-        input: inputSchema,
-      },
-      config,
-      description,
-    };
-
-    const existing = this.pollingAgents.length > 0;
-
-    if (existing) {
-      throw new InferableError(
-        `Tools must be registered before starting the listener. Please see ${links.DOCS_FUNCTIONS}`,
-      );
-    }
-
-    if (typeof registration.func !== "function") {
-      throw new InferableError(
-        `func must be a function. Please see ${links.DOCS_FUNCTIONS}`,
-      );
-    }
-
-    log(`Registering tool`, {
-      name: registration.name,
-    });
-
-    this.toolsRegistry[registration.name] = registration;
   }
 
   private async getClusterId() {
