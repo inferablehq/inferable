@@ -1318,7 +1318,7 @@ export const definition = {
             approvalRequested: z.boolean().nullable(),
           }),
         }),
-        results: z.array(
+        memos: z.array(
           z.object({
             key: z.string(),
             value: z.string(),

@@ -19,7 +19,7 @@ export const getWorkflowExecutionTimeline = async ({
   workflowName: string;
   clusterId: string;
 }) => {
-  const [[execution], runs, events, results, structured] = await Promise.all([
+  const [[execution], runs, events, memos, structured] = await Promise.all([
     data.db
       .select({
         id: data.workflowExecutions.id,
@@ -63,7 +63,7 @@ export const getWorkflowExecutionTimeline = async ({
     execution,
     runs,
     events,
-    results,
+    memos,
     structured,
   };
 };
