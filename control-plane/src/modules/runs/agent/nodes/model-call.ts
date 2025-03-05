@@ -24,8 +24,11 @@ const validator = new Validator();
 export const handleModelCall = (
   state: RunGraphState,
   model: Model,
-  findRelevantTools: ReleventToolLookup
-) => withSpan("run.modelCall", () => _handleModelCall(state, model, findRelevantTools));
+  findRelevantTools: ReleventToolLookup,
+) =>
+  withSpan("run.modelCall", () =>
+    _handleModelCall(state, model, findRelevantTools),
+  );
 
 /**
  * Attempts to rescue a structured result that is a string by parsing it as JSON.
@@ -44,10 +47,13 @@ function attemptRescueStringifiedStructuredResult(response: unknown) {
         current: s.result,
       });
     } catch (e) {
-      logger.warn("Detected structured result is a string, trying to parse as JSON but failed", {
-        error: e,
-        structured: s,
-      });
+      logger.warn(
+        "Detected structured result is a string, trying to parse as JSON but failed",
+        {
+          error: e,
+          structured: s,
+        },
+      );
     }
   }
 
@@ -57,7 +63,7 @@ function attemptRescueStringifiedStructuredResult(response: unknown) {
 const _handleModelCall = async (
   state: RunGraphState,
   model: Model,
-  findRelevantTools: ReleventToolLookup
+  findRelevantTools: ReleventToolLookup,
 ): Promise<RunStateUpdate> => {
   detectCycle(state.messages);
 
@@ -69,7 +75,9 @@ const _handleModelCall = async (
   });
 
   if (!!state.run.resultSchema) {
-    const resultSchemaErrors = validateFunctionSchema(state.run.resultSchema as JsonSchemaInput);
+    const resultSchemaErrors = validateFunctionSchema(
+      state.run.resultSchema as JsonSchemaInput,
+    );
     if (resultSchemaErrors.length > 0) {
       throw new AgentError("Result schema is not invalid JSONSchema");
     }
@@ -81,7 +89,11 @@ const _handleModelCall = async (
     resultSchema: state.run.resultSchema as JsonSchemaInput,
   });
 
-  const systemPrompt = getSystemPrompt(state, relevantTools, !!state.run.resultSchema);
+  const systemPrompt = getSystemPrompt(
+    state,
+    relevantTools,
+    !!state.run.resultSchema,
+  );
 
   const consolidatedSystemPrompt = [
     `<directives>`,
@@ -108,7 +120,7 @@ const _handleModelCall = async (
         truncatedMessages.map(m => ({
           id: m.id,
           type: m.type,
-        }))
+        })),
       ),
     });
   }
@@ -174,7 +186,9 @@ const _handleModelCall = async (
     const invocations = toolCalls
       .map(call => {
         return {
-          ...(state.run.reasoningTraces ? { reasoning: "Extracted from tool calls" } : {}),
+          ...(state.run.reasoningTraces
+            ? { reasoning: "Extracted from tool calls" }
+            : {}),
           toolName: call.name,
           input: call.input,
           // This throws away the tool call id. This should be ok.
@@ -190,7 +204,7 @@ const _handleModelCall = async (
       // Add them to the invocation array to be handled as if they were provided correctly
       data.invocations.push(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(invocations as any)
+        ...(invocations as any),
       );
 
       logger.info("Structured output attempted to call additional tools", {
@@ -209,7 +223,9 @@ const _handleModelCall = async (
 
   if (state.run.debug && hasInvocations) {
     addAttributes({
-      "model.invocations": data.invocations?.map(invoc => JSON.stringify(invoc)),
+      "model.invocations": data.invocations?.map(invoc =>
+        JSON.stringify(invoc),
+      ),
     });
   }
 
@@ -245,7 +261,8 @@ const _handleModelCall = async (
           id: ulid(),
           type: "supervisor",
           data: {
-            message: "If you are not done, please provide an invocation, otherwise return done.",
+            message:
+              "If you are not done, please provide an invocation, otherwise return done.",
           },
           runId: state.run.id,
           clusterId: state.run.clusterId,
@@ -322,7 +339,11 @@ const detectCycle = (messages: RunGraphStateMessage[]) => {
   // If the last 10 messages don't include a call, result or human message, assume it's a cycle
   if (messages.length >= 10) {
     const lastMessages = messages.slice(-10);
-    if (!lastMessages.some(m => m.type === "invocation-result" || m.type === "human")) {
+    if (
+      !lastMessages.some(
+        m => m.type === "invocation-result" || m.type === "human",
+      )
+    ) {
       throw new AgentError("Detected cycle in Run.");
     }
   }

@@ -50,8 +50,8 @@ export const getWorkflowExecutionTimeline = async ({
         and(
           eq(data.workflowExecutions.workflow_name, workflowName),
           eq(data.workflowExecutions.cluster_id, clusterId),
-          eq(data.workflowExecutions.id, executionId)
-        )
+          eq(data.workflowExecutions.id, executionId),
+        ),
       ),
     getWorkflowRuns({ clusterId, executionId, workflowName }),
     getEventsForJobId({ jobId: executionId, clusterId }),
@@ -83,7 +83,14 @@ export const listWorkflowExecutions = async ({
   limit?: number;
 }) => {
   const status = z
-    .enum(["pending", "running", "success", "failure", "stalled", "interrupted"])
+    .enum([
+      "pending",
+      "running",
+      "success",
+      "failure",
+      "stalled",
+      "interrupted",
+    ])
     .optional()
     .parse(filters?.workflowExecutionStatus);
 
@@ -115,21 +122,27 @@ export const listWorkflowExecutions = async ({
     })
     .from(data.workflowExecutions)
     .leftJoin(data.jobs, eq(data.workflowExecutions.job_id, data.jobs.id))
-    .leftJoin(data.runs, eq(data.workflowExecutions.id, data.runs.workflow_execution_id))
+    .leftJoin(
+      data.runs,
+      eq(data.workflowExecutions.id, data.runs.workflow_execution_id),
+    )
     .where(
       and(
         filters?.workflowName
           ? eq(data.workflowExecutions.workflow_name, filters.workflowName)
           : undefined,
         filters?.workflowVersion
-          ? eq(data.workflowExecutions.workflow_version, Number(filters.workflowVersion))
+          ? eq(
+              data.workflowExecutions.workflow_version,
+              Number(filters.workflowVersion),
+            )
           : undefined,
         filters?.workflowExecutionId
           ? eq(data.workflowExecutions.id, filters.workflowExecutionId)
           : undefined,
         status ? eq(data.jobs.status, status) : undefined,
-        eq(data.workflowExecutions.cluster_id, clusterId)
-      )
+        eq(data.workflowExecutions.cluster_id, clusterId),
+      ),
     )
     .limit(limit)
     .orderBy(desc(data.workflowExecutions.created_at));
@@ -145,7 +158,9 @@ export const listWorkflowExecutions = async ({
     }, [] as string[]);
 
   return uniqueExecutionIds.map(executionId => {
-    const related = executions.filter(execution => execution.id === executionId);
+    const related = executions.filter(
+      execution => execution.id === executionId,
+    );
 
     const job = related.find(r => r.jobId);
 
@@ -180,7 +195,7 @@ export const listWorkflowExecutions = async ({
 export const createWorkflowExecution = async (
   clusterId: string,
   workflowName: string,
-  input: unknown
+  input: unknown,
 ) => {
   const parsed = z
     .object({
@@ -197,7 +212,7 @@ export const createWorkflowExecution = async (
 
   if (tools.length === 0) {
     throw new BadRequestError(
-      `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`
+      `No workflow registration for ${workflowName}. You might want to make the workflow listen first.`,
     );
   }
 
@@ -255,11 +270,14 @@ export const resumeWorkflowExecution = async ({
       data.jobs,
       and(
         eq(data.workflowExecutions.job_id, data.jobs.id),
-        eq(data.workflowExecutions.cluster_id, data.jobs.cluster_id)
-      )
+        eq(data.workflowExecutions.cluster_id, data.jobs.cluster_id),
+      ),
     )
     .where(
-      and(eq(data.workflowExecutions.cluster_id, clusterId), eq(data.workflowExecutions.id, id))
+      and(
+        eq(data.workflowExecutions.cluster_id, clusterId),
+        eq(data.workflowExecutions.id, id),
+      ),
     );
 
   const execution = existing?.workflow_executions;
@@ -270,14 +288,19 @@ export const resumeWorkflowExecution = async ({
   }
 
   if (!job) {
-    throw new NotFoundError(`Job not found while resuming workflow execution ${id}`);
+    throw new NotFoundError(
+      `Job not found while resuming workflow execution ${id}`,
+    );
   }
 
   if (job.approval_requested && !job.approved) {
-    logger.warn("Workflow execution is not approved yet. Waiting for approval before resuming", {
-      clusterId,
-      workflowExecutionId: id,
-    });
+    logger.warn(
+      "Workflow execution is not approved yet. Waiting for approval before resuming",
+      {
+        clusterId,
+        workflowExecutionId: id,
+      },
+    );
   }
 
   // Move the job back to pending to allow it to be resumed
@@ -293,8 +316,8 @@ export const resumeWorkflowExecution = async ({
       and(
         eq(data.jobs.id, job.id),
         eq(data.jobs.cluster_id, clusterId),
-        eq(data.jobs.status, "interrupted")
-      )
+        eq(data.jobs.status, "interrupted"),
+      ),
     )
     .returning({
       id: data.jobs.id,
@@ -328,8 +351,8 @@ export const getWorkflowRuns = async ({
       and(
         eq(data.runs.cluster_id, clusterId),
         eq(data.runs.workflow_execution_id, executionId),
-        eq(data.runs.workflow_name, workflowName)
-      )
+        eq(data.runs.workflow_name, workflowName),
+      ),
     );
 
   return runs;

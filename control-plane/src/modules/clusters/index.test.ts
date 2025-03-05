@@ -1,4 +1,4 @@
-import {cleanupMarkedClusters } from ".";
+import { cleanupMarkedClusters } from ".";
 import { createCluster } from "./management";
 import * as data from "../data";
 import { count, eq, or } from "drizzle-orm";
@@ -70,7 +70,10 @@ describe("clusters", () => {
           deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 24),
         })
         .where(
-          or(eq(data.clusters.id, markedCluster1.id), eq(data.clusters.id, markedCluster2.id))
+          or(
+            eq(data.clusters.id, markedCluster1.id),
+            eq(data.clusters.id, markedCluster2.id),
+          ),
         );
 
       await cleanupMarkedClusters();
@@ -79,7 +82,10 @@ describe("clusters", () => {
         .select({ count: count(data.clusters.id) })
         .from(data.clusters)
         .where(
-          or(eq(data.clusters.id, markedCluster1.id), eq(data.clusters.id, markedCluster2.id))
+          or(
+            eq(data.clusters.id, markedCluster1.id),
+            eq(data.clusters.id, markedCluster2.id),
+          ),
         );
 
       expect(exists.count).toBe(0);

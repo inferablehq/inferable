@@ -19,7 +19,7 @@ describe("cron", () => {
         executionCount++;
       },
       "test-cron",
-      { interval: 1000 } // 1 second interval
+      { interval: 1000 }, // 1 second interval
     );
 
     // Wait for 5 seconds to allow the cron to fire multiple times

@@ -61,6 +61,9 @@ export async function upsertMachine({
         last_ping_at: sql`excluded.last_ping_at`,
         ip: sql`excluded.ip`,
       },
-      where: and(eq(data.machines.cluster_id, clusterId), eq(data.machines.id, machineId)),
+      where: and(
+        eq(data.machines.cluster_id, clusterId),
+        eq(data.machines.id, machineId),
+      ),
     });
 }

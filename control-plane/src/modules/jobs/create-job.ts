@@ -1,6 +1,9 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { ulid } from "ulid";
-import { InvalidJobArgumentsError, NotFoundError } from "../../utilities/errors";
+import {
+  InvalidJobArgumentsError,
+  NotFoundError,
+} from "../../utilities/errors";
 import * as data from "../data";
 import * as events from "../observability/events";
 import { parseJobArgs } from "../tools";
@@ -28,7 +31,7 @@ const extractCacheKeyFromJsonPath = (path: string, args: unknown) => {
     if (error instanceof NotFoundError) {
       throw new InvalidJobArgumentsError(
         `Failed to extract cache key from arguments: ${error.message}`,
-        "https://docs.inferable.ai/pages/functions#config-cache"
+        "https://docs.inferable.ai/pages/functions#config-cache",
       );
     }
     throw error;
@@ -69,7 +72,8 @@ export const createJobV2 = async (params: {
       // retry
       return createJobV2({
         ...params,
-        schemaUnavailableRetryCount: (params.schemaUnavailableRetryCount ?? 0) + 1,
+        schemaUnavailableRetryCount:
+          (params.schemaUnavailableRetryCount ?? 0) + 1,
       });
     } else {
       throw new NotFoundError("Tool not found");
@@ -84,7 +88,8 @@ export const createJobV2 = async (params: {
   const jobId = params.jobId ?? ulid();
 
   const jobConfig = {
-    timeoutIntervalSeconds: config?.timeoutSeconds ?? jobDefaults.timeoutIntervalSeconds,
+    timeoutIntervalSeconds:
+      config?.timeoutSeconds ?? jobDefaults.timeoutIntervalSeconds,
     maxAttempts: config?.retryCountOnStall
       ? config?.retryCountOnStall + 1
       : jobDefaults.maxAttempts,
@@ -172,8 +177,11 @@ const createJobStrategies = {
           eq(data.jobs.target_fn, targetFn),
           eq(data.jobs.status, "success"),
           eq(data.jobs.result_type, "resolution"),
-          gte(data.jobs.resulted_at, new Date(Date.now() - cacheTTLSeconds * 1000))
-        )
+          gte(
+            data.jobs.resulted_at,
+            new Date(Date.now() - cacheTTLSeconds * 1000),
+          ),
+        ),
       )
       .orderBy(desc(data.jobs.resulted_at))
       .limit(1);

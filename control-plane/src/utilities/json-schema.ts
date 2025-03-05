@@ -41,7 +41,9 @@ export const validateFunctionArgs = (schema: any, args: unknown) => {
 
 export const validateFunctionName = (name: string) => {
   if (!ALLOWED_NAME_CHARACTERS.test(name)) {
-    throw new BadRequestError(`Function name must only contain letters and numbers. Got: ${name}`);
+    throw new BadRequestError(
+      `Function name must only contain letters and numbers. Got: ${name}`,
+    );
   }
 };
 
@@ -49,7 +51,7 @@ export const validatePropertyName = (name: string) => {
   const ALLOWED_PROPERTY_NAME_CHARACTERS = /^[a-zA-Z0-9_]+$/;
   if (!ALLOWED_PROPERTY_NAME_CHARACTERS.test(name)) {
     throw new BadRequestError(
-      `Property name must only contain letters, numbers and underscore '_'. Got: ${name}`
+      `Property name must only contain letters, numbers and underscore '_'. Got: ${name}`,
     );
   }
 };
@@ -64,7 +66,7 @@ export const validateDescription = (description?: string) => {
  * Validate a function schema.
  */
 export const validateFunctionSchema = (
-  input: JsonSchemaInput
+  input: JsonSchemaInput,
 ): { path: string; error: string }[] => {
   delete input.properties?.undefined;
 
@@ -94,7 +96,9 @@ export const validateFunctionSchema = (
     if (error instanceof Error) {
       return ajvErrorToFailures(error);
     }
-    throw new BadRequestError(`Unknown JSON schema compilation error: ${JSON.stringify(error)}`);
+    throw new BadRequestError(
+      `Unknown JSON schema compilation error: ${JSON.stringify(error)}`,
+    );
   }
 
   return [];
@@ -103,7 +107,10 @@ export const validateFunctionSchema = (
 /**
  * Recursively validate $.properties
  */
-const validateProperty = (key: string, value: JsonSchema): ValidationError[] => {
+const validateProperty = (
+  key: string,
+  value: JsonSchema,
+): ValidationError[] => {
   let errors: ValidationError[] = [];
   try {
     validatePropertyName(key);
@@ -125,7 +132,7 @@ const validateProperty = (key: string, value: JsonSchema): ValidationError[] => 
         .map(key => {
           return validateProperty(key, properties[key]);
         })
-        .flat()
+        .flat(),
     );
   }
 
@@ -135,7 +142,9 @@ const validateProperty = (key: string, value: JsonSchema): ValidationError[] => 
 /*
  * Accepts an AJV compilation error and extracts the error details from the message.
  */
-export const ajvErrorToFailures = (error: Error): { path: string; error: string }[] => {
+export const ajvErrorToFailures = (
+  error: Error,
+): { path: string; error: string }[] => {
   // example: /data/properties/name some error message
   if (error.message.startsWith("schema is invalid:")) {
     return error.message
@@ -146,7 +155,9 @@ export const ajvErrorToFailures = (error: Error): { path: string; error: string 
         const firstSpace = s.indexOf(" ");
 
         if (firstSpace === -1) {
-          throw new BadRequestError("Could not extract failures from AJV error");
+          throw new BadRequestError(
+            "Could not extract failures from AJV error",
+          );
         }
 
         return {

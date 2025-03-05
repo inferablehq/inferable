@@ -13,12 +13,17 @@ const eventSchema = z.discriminatedUnion("type", [
   toolCallEventSchema,
 ]);
 
-export type CustomerTelemetryMessage = BaseMessage & z.infer<typeof eventSchema>;
+export type CustomerTelemetryMessage = BaseMessage &
+  z.infer<typeof eventSchema>;
 
 export class CustomerTelemetryListeners {
-  private static listeners: ((data: CustomerTelemetryMessage) => Promise<void>)[] = [];
+  private static listeners: ((
+    data: CustomerTelemetryMessage,
+  ) => Promise<void>)[] = [];
 
-  public static addListener(listener: (data: CustomerTelemetryMessage) => Promise<void>) {
+  public static addListener(
+    listener: (data: CustomerTelemetryMessage) => Promise<void>,
+  ) {
     this.listeners.push(listener);
   }
 
@@ -33,9 +38,12 @@ export const handleCustomerTelemetry = async (data: unknown): Promise<void> => {
   const zodResult = eventSchema.safeParse(data);
 
   if (!zodResult.success) {
-    logger.error("Received customer telemetry message that does not conform to expected schema", {
-      message: data,
-    });
+    logger.error(
+      "Received customer telemetry message that does not conform to expected schema",
+      {
+        message: data,
+      },
+    );
 
     return;
   }

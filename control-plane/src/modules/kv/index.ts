@@ -20,7 +20,12 @@ export const kv = {
         createdAt: clusterKV.created_at,
       })
       .from(clusterKV)
-      .where(and(eq(clusterKV.cluster_id, clusterId), like(clusterKV.key, `${prefix}%`)));
+      .where(
+        and(
+          eq(clusterKV.cluster_id, clusterId),
+          like(clusterKV.key, `${prefix}%`),
+        ),
+      );
 
     return result.map(r => ({
       value: r.value,

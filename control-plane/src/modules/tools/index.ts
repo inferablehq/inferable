@@ -8,7 +8,11 @@ import { buildModel } from "../models";
 import { InvalidServiceRegistrationError as InvalidToolRegistrationError } from "../../utilities/errors";
 import jsonpath from "jsonpath";
 import { logger } from "../observability/logger";
-import { validateToolName, validateToolDescription, validateToolSchema } from "./validations";
+import {
+  validateToolName,
+  validateToolDescription,
+  validateToolSchema,
+} from "./validations";
 import { Validator } from "jsonschema";
 import { InvalidJobArgumentsError } from "../../utilities/errors";
 import { packer } from "../../utilities/packer";
@@ -63,10 +67,10 @@ export const parseJobArgs = async ({
 
 export const getWorkflowTools = async ({
   clusterId,
-  workflowName
+  workflowName,
 }: {
   clusterId: string;
-  workflowName?: string
+  workflowName?: string;
 }) => {
   return data.db
     .select({
@@ -78,33 +82,38 @@ export const getWorkflowTools = async ({
     .where(
       and(
         eq(data.tools.cluster_id, clusterId),
-        like(data.tools.name, workflowName ? `workflows_${workflowName}_%` : `workflows_%`),
-      )
+        like(
+          data.tools.name,
+          workflowName ? `workflows_${workflowName}_%` : `workflows_%`,
+        ),
+      ),
     )
     .then(r =>
       r
-      .filter(r => r.name.split("_").length >= 3)
-      .map(r => {
-        const components = r.name.split("_").slice(1);
+        .filter(r => r.name.split("_").length >= 3)
+        .map(r => {
+          const components = r.name.split("_").slice(1);
 
-        const version = components.pop();
-        const name = components.join("_");
+          const version = components.pop();
+          const name = components.join("_");
 
-        const parsed = z.string().regex(/^\d+$/).safeParse(version);
+          const parsed = z.string().regex(/^\d+$/).safeParse(version);
 
-        if (!parsed.success) {
-          throw new Error(`Invalid version ${version} for workflow ${r.name}`);
-        }
+          if (!parsed.success) {
+            throw new Error(
+              `Invalid version ${version} for workflow ${r.name}`,
+            );
+          }
 
-        return {
-          name,
-          toolName: r.name,
-          version: parseInt(parsed.data),
-          description: r.description,
-          schema: r.schema
-        };
-      })
-      .filter(t => workflowName === undefined || t.name == workflowName)
+          return {
+            name,
+            toolName: r.name,
+            version: parseInt(parsed.data),
+            description: r.description,
+            schema: r.schema,
+          };
+        })
+        .filter(t => workflowName === undefined || t.name == workflowName),
     );
 };
 
@@ -119,7 +128,11 @@ export async function availableTools({ clusterId }: { clusterId: string }) {
   return results.map(r => r.name);
 }
 
-export const getToolDefinitions = async ({ clusterId }: { clusterId: string }) => {
+export const getToolDefinitions = async ({
+  clusterId,
+}: {
+  clusterId: string;
+}) => {
   const results = await data.db
     .select({
       name: data.tools.name,
@@ -165,18 +178,31 @@ export const getToolDefinition = async ({
       config: data.tools.config,
     })
     .from(data.tools)
-    .where(and(eq(data.tools.name, name), eq(data.tools.cluster_id, clusterId)));
+    .where(
+      and(eq(data.tools.name, name), eq(data.tools.cluster_id, clusterId)),
+    );
 
   return tool;
 };
 
-export async function recordPoll({ clusterId, tools }: { clusterId: string; tools: string[] }) {
+export async function recordPoll({
+  clusterId,
+  tools,
+}: {
+  clusterId: string;
+  tools: string[];
+}) {
   const result = await data.db
     .update(data.tools)
     .set({
       last_ping_at: new Date(),
     })
-    .where(and(eq(data.tools.cluster_id, clusterId), inArray(data.tools.name, tools)))
+    .where(
+      and(
+        eq(data.tools.cluster_id, clusterId),
+        inArray(data.tools.name, tools),
+      ),
+    )
     .returning({
       tool: data.tools.name,
     });
@@ -194,7 +220,9 @@ export async function deleteToolDefinition({
 }) {
   await data.db
     .delete(data.tools)
-    .where(and(eq(data.tools.name, name), eq(data.tools.cluster_id, clusterId)));
+    .where(
+      and(eq(data.tools.name, name), eq(data.tools.cluster_id, clusterId)),
+    );
 }
 
 export async function deleteToolDefinitionByPrefix({
@@ -206,7 +234,12 @@ export async function deleteToolDefinitionByPrefix({
 }) {
   await data.db
     .delete(data.tools)
-    .where(and(like(data.tools.name, `${prefix}%`), eq(data.tools.cluster_id, clusterId)));
+    .where(
+      and(
+        like(data.tools.name, `${prefix}%`),
+        eq(data.tools.cluster_id, clusterId),
+      ),
+    );
 }
 
 export async function upsertToolDefinition({
@@ -233,7 +266,9 @@ export async function upsertToolDefinition({
 
   const errors = validateToolSchema(JSON.parse(schema));
   if (errors.length > 0) {
-    throw new InvalidToolRegistrationError(`${name} schema invalid: ${JSON.stringify(errors)}`);
+    throw new InvalidToolRegistrationError(
+      `${name} schema invalid: ${JSON.stringify(errors)}`,
+    );
   }
 
   if (config?.cache) {
@@ -242,7 +277,7 @@ export async function upsertToolDefinition({
     } catch {
       throw new InvalidToolRegistrationError(
         `${name} cache.keyPath is invalid`,
-        "https://docs.inferable.ai/pages/functions#config-cache"
+        "https://docs.inferable.ai/pages/functions#config-cache",
       );
     }
   }
@@ -255,7 +290,7 @@ export async function upsertToolDefinition({
         description,
         schema,
         config,
-      })
+      }),
     )
     .digest("hex");
 
@@ -267,20 +302,22 @@ export async function upsertToolDefinition({
       and(
         eq(data.tools.cluster_id, clusterId),
         eq(data.tools.name, name),
-        eq(data.tools.hash, hash)
-      )
+        eq(data.tools.hash, hash),
+      ),
     );
 
   if (existing) {
     return;
   }
 
-  const embedding = await buildModel({ identifier: "embed-english-v3" }).embedQuery(
+  const embedding = await buildModel({
+    identifier: "embed-english-v3",
+  }).embedQuery(
     JSON.stringify({
       name,
       description,
       schema,
-    })
+    }),
   );
 
   await data.db
@@ -314,8 +351,11 @@ export const cleanExpiredToolDefinitions = async (): Promise<void> => {
     .where(
       and(
         eq(data.tools.should_expire, true),
-        lte(data.tools.last_ping_at, new Date(Date.now() - TOOL_LIVE_THRESHOLD_MS))
-      )
+        lte(
+          data.tools.last_ping_at,
+          new Date(Date.now() - TOOL_LIVE_THRESHOLD_MS),
+        ),
+      ),
     )
     .returning({
       clusterId: data.tools.cluster_id,

@@ -29,7 +29,13 @@ export const getJobStatusSync = async ({
 }) => {
   let jobResult:
     | {
-        status: "pending" | "running" | "success" | "failure" | "stalled" | "interrupted";
+        status:
+          | "pending"
+          | "running"
+          | "success"
+          | "failure"
+          | "stalled"
+          | "interrupted";
         result: string | null;
         resultType: ResultType | null;
       }
@@ -45,7 +51,9 @@ export const getJobStatusSync = async ({
         resultType: data.jobs.result_type,
       })
       .from(data.jobs)
-      .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, owner.clusterId)));
+      .where(
+        and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, owner.clusterId)),
+      );
 
     if (!job) {
       throw new NotFoundError(`Job ${jobId} not found`);
@@ -65,27 +73,32 @@ export const getJobStatusSync = async ({
   return jobResult;
 };
 
-export const getJob = async ({ clusterId, jobId }: { clusterId: string; jobId: string }) => {
+export const getJob = async ({
+  clusterId,
+  jobId,
+}: {
+  clusterId: string;
+  jobId: string;
+}) => {
   const [job] = await data.db
-      .select({
-        id: data.jobs.id,
-        clusterId: data.jobs.cluster_id,
-        status: data.jobs.status,
-        targetFn: data.jobs.target_fn,
-        executingMachineId: data.jobs.executing_machine_id,
-        targetArgs: data.jobs.target_args,
-        result: data.jobs.result,
-        resultType: data.jobs.result_type,
-        createdAt: data.jobs.created_at,
-        runId: data.jobs.run_id,
-        runContext: data.jobs.run_context,
-        authContext: data.jobs.auth_context,
-        approvalRequested: data.jobs.approval_requested,
-        approved: data.jobs.approved,
-      })
-      .from(data.jobs)
-      .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId))
-    );
+    .select({
+      id: data.jobs.id,
+      clusterId: data.jobs.cluster_id,
+      status: data.jobs.status,
+      targetFn: data.jobs.target_fn,
+      executingMachineId: data.jobs.executing_machine_id,
+      targetArgs: data.jobs.target_args,
+      result: data.jobs.result,
+      resultType: data.jobs.result_type,
+      createdAt: data.jobs.created_at,
+      runId: data.jobs.run_id,
+      runContext: data.jobs.run_context,
+      authContext: data.jobs.auth_context,
+      approvalRequested: data.jobs.approval_requested,
+      approved: data.jobs.approved,
+    })
+    .from(data.jobs)
+    .where(and(eq(data.jobs.id, jobId), eq(data.jobs.cluster_id, clusterId)));
 
   if (!job) {
     return undefined;
@@ -118,8 +131,8 @@ export const getLatestJobsResultedByFunctionName = async ({
       and(
         eq(data.jobs.cluster_id, clusterId),
         eq(data.jobs.target_fn, functionName),
-        eq(data.jobs.result_type, resultType)
-      )
+        eq(data.jobs.result_type, resultType),
+      ),
     )
     .orderBy(desc(data.jobs.created_at))
     .limit(limit);
@@ -146,7 +159,11 @@ export const getJobsForRun = async ({
     })
     .from(data.jobs)
     .where(
-      and(eq(data.jobs.cluster_id, clusterId), eq(data.jobs.run_id, runId), gt(data.jobs.id, after))
+      and(
+        eq(data.jobs.cluster_id, clusterId),
+        eq(data.jobs.run_id, runId),
+        gt(data.jobs.id, after),
+      ),
     );
 };
 
@@ -168,8 +185,8 @@ const waitForPendingJobsByTools = async ({
       and(
         eq(data.jobs.status, "pending"),
         eq(data.jobs.cluster_id, clusterId),
-        inArray(data.jobs.target_fn, tools)
-      )
+        inArray(data.jobs.target_fn, tools),
+      ),
     )
     .limit(1)
     .then(r => Number(r[0]?.count || 0) > 0);
@@ -204,7 +221,12 @@ export const pollJobsByTools = async ({
     return [];
   }
 
-  await waitForPendingJobsByTools({ clusterId, timeout, start: Date.now(), tools });
+  await waitForPendingJobsByTools({
+    clusterId,
+    timeout,
+    start: Date.now(),
+    tools,
+  });
 
   type Result = {
     id: string;
@@ -267,25 +289,22 @@ export const pollJobsByTools = async ({
   return jobs;
 };
 
-export async function requestApproval(
-  {
-    jobId,
-    clusterId,
-    notification,
-    machineId
-  }:
-  {
-    jobId: string;
-    clusterId: string,
-    machineId: string
-    notification?: z.infer<typeof notificationSchema>;
-  }
-) {
+export async function requestApproval({
+  jobId,
+  clusterId,
+  notification,
+  machineId,
+}: {
+  jobId: string;
+  clusterId: string;
+  machineId: string;
+  notification?: z.infer<typeof notificationSchema>;
+}) {
   const updated = await persistJobInterrupt({
     jobId,
     clusterId,
     machineId,
-    approvalRequested: true
+    approvalRequested: true,
   });
 
   if (updated) {
@@ -296,10 +315,9 @@ export async function requestApproval(
       runId: updated.runId,
       targetFn: updated.targetFn,
       meta: {
-        notification
-      }
+        notification,
+      },
     });
-
 
     if (updated.runId || notification) {
       try {
@@ -309,7 +327,7 @@ export async function requestApproval(
           jobId: updated.jobId,
           targetFn: updated.targetFn,
           runId: updated.runId,
-          notification
+          notification,
         });
       } catch (e) {
         logger.warn("Failed to notify approval request", {
@@ -323,15 +341,20 @@ export async function requestApproval(
           runId: updated.runId,
           meta: {
             error: e,
-          }
+          },
         });
       }
     }
-
   }
 }
 
-export async function cancelJob({ jobId, clusterId }: { jobId: string; clusterId: string }) {
+export async function cancelJob({
+  jobId,
+  clusterId,
+}: {
+  jobId: string;
+  clusterId: string;
+}) {
   await data.db
     .update(data.jobs)
     .set({
@@ -369,8 +392,8 @@ export async function submitApproval({
           eq(data.jobs.cluster_id, clusterId),
           // Do not allow denying a job that has already been approved
           isNull(data.jobs.approved),
-          eq(data.jobs.approval_requested, true)
-        )
+          eq(data.jobs.approval_requested, true),
+        ),
       )
       .returning({
         runId: data.jobs.run_id,
@@ -408,8 +431,8 @@ export async function submitApproval({
           eq(data.jobs.cluster_id, clusterId),
           // Do not allow denying a job that has already been approved
           isNull(data.jobs.approved),
-          eq(data.jobs.approval_requested, true)
-        )
+          eq(data.jobs.approval_requested, true),
+        ),
       );
 
     if (updated) {

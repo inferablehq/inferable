@@ -1,9 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, integrations } from "../data";
-import {
-  slackIntegration,
-} from "./constants";
+import { slackIntegration } from "./constants";
 import { slack } from "./slack";
 import { InstallableIntegration } from "./types";
 import { integrationSchema } from "../contract";
@@ -37,7 +35,7 @@ export const getIntegrations = async ({
         integration ?? {
           langfuse: null,
           slack: null,
-        }
+        },
     );
 };
 
@@ -71,10 +69,18 @@ export const upsertIntegrations = async ({
       .filter(([key]) => installables[key as keyof typeof installables])
       .map(([key, value]) => {
         if (value) {
-          return getInstallables(key)?.onActivate?.(clusterId, config, existing);
+          return getInstallables(key)?.onActivate?.(
+            clusterId,
+            config,
+            existing,
+          );
         } else if (value === null) {
-          return getInstallables(key)?.onDeactivate?.(clusterId, config, existing);
+          return getInstallables(key)?.onDeactivate?.(
+            clusterId,
+            config,
+            existing,
+          );
         }
-      })
+      }),
   );
 };

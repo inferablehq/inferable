@@ -132,7 +132,7 @@ app.addHook("onRequest", (request, _reply, done) => {
         method: request.method,
       },
     },
-    done
+    done,
   );
 });
 
