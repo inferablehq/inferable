@@ -5,7 +5,7 @@ import * as customAuth from "./custom";
 import * as clusterAuth from "./cluster";
 import * as clerkAuth from "./clerk";
 import { Auth, extractAuthState, extractCustomAuthState } from "./auth";
-import { redisClient } from "../redis";
+import { redisClient } from "../dependencies/redis";
 
 jest.mock("../../utilities/env");
 

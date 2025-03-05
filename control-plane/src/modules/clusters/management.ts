@@ -1,13 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import uniqBy from "lodash/uniqBy";
-import { createCache } from "../utilities/cache";
-import * as errors from "../utilities/errors";
-import * as data from "./data";
-import { randomName } from "./names";
-import { VersionedTexts } from "./versioned-text";
-import { createApiKey } from "./auth/cluster";
-import { rateLimiter } from "./rate-limiter";
+import { createCache } from "../../utilities/cache";
+import * as errors from "../../utilities/errors";
+import * as data from "../data";
+import { randomName } from "../../utilities/names";
+import { createApiKey } from "../auth/cluster";
+import { rateLimiter } from "../../utilities/rate-limiter";
 
 const clusterDetailsCache = createCache<
   Awaited<ReturnType<typeof getClusterDetails>>
@@ -151,7 +150,6 @@ export const editClusterDetails = async ({
   clusterId,
   name,
   description,
-  additionalContext,
   debug,
   enableCustomAuth,
   handleCustomAuthFunction,
@@ -161,7 +159,6 @@ export const editClusterDetails = async ({
   clusterId: string;
   name?: string;
   description?: string;
-  additionalContext?: VersionedTexts;
   debug?: boolean;
   enableCustomAuth?: boolean;
   handleCustomAuthFunction?: string;
@@ -172,7 +169,6 @@ export const editClusterDetails = async ({
     .set({
       description,
       name,
-      additional_context: additionalContext,
       debug,
       enable_custom_auth: enableCustomAuth,
       handle_custom_auth_function: handleCustomAuthFunction,
@@ -207,7 +203,6 @@ export const getClusterDetails = async ({
   isDemo: boolean;
   handleCustomAuthFunction: string | null;
   enableCustomAuth: boolean;
-  additionalContext: VersionedTexts | null;
   machines: Array<{
     id: string;
     lastPingAt: number | null;

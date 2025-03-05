@@ -1,7 +1,7 @@
 import { createClerkClient } from '@clerk/backend'
-import { env } from '../utilities/env'
-import { logger } from './observability/logger'
-import { clusters, db } from './data';
+import { env } from '../../utilities/env'
+import { logger } from '../observability/logger'
+import { clusters, db } from '../data';
 import { eq } from 'drizzle-orm';
 
 const getOrgIdForClusterId = async (cluserId: string) => {

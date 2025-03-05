@@ -1,8 +1,8 @@
 // Cron implementation using BullMQ Job Schedulers
 
 import { Queue, Worker } from "bullmq";
-import { logger } from "./observability/logger";
-import { bullmqRedisConnection } from "./queues/core";
+import { logger } from "../observability/logger";
+import { bullmqRedisConnection } from "../queues/core";
 
 // Store queues and workers for cleanup
 const queues: Queue[] = [];

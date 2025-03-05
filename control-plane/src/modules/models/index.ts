@@ -14,10 +14,10 @@ import {
 import { isRetryableError } from "../../utilities/errors";
 import { logger } from "../observability/logger";
 import * as events from "../observability/events";
-import { rateLimiter } from "../rate-limiter";
 import { addAttributes } from "../observability/tracer";
-import { trackCustomerTelemetry } from "../track-customer-telemetry";
 import AnthropicBedrock from "@anthropic-ai/bedrock-sdk";
+import { rateLimiter } from "../../utilities/rate-limiter";
+import { trackCustomerTelemetry } from "../customer-telemetry/track";
 
 type CallInput = {
   system?: string | undefined;

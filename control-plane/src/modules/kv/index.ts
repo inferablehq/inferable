@@ -1,5 +1,5 @@
 import { and, eq, like } from "drizzle-orm";
-import { clusterKV, db } from "./data";
+import { clusterKV, db } from "../data";
 
 export const kv = {
   get: async (clusterId: string, key: string) => {

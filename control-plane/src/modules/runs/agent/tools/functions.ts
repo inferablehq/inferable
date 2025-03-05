@@ -3,7 +3,7 @@ import { z } from "zod";
 import { AgentError, NotFoundError } from "../../../../utilities/errors";
 import * as jobs from "../../../jobs/jobs";
 import { logger } from "../../../observability/logger";
-import { packer } from "../../../packer";
+import { packer } from "../../../../utilities/packer";
 import { AgentTool } from "../tool";
 
 export const SpecialResultTypes = {

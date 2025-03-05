@@ -1,7 +1,7 @@
 import { createOwner } from "../test/util";
 import { createJobV2, getJobStatusSync, persistJobResult } from "./jobs";
 import { acknowledgeJob } from "./job-results";
-import * as redis from "../redis";
+import * as redis from "../dependencies/redis";
 import { getClusterBackgroundRun } from "../runs";
 import { upsertToolDefinition } from "../tools";
 

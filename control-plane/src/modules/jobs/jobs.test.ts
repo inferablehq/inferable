@@ -1,10 +1,10 @@
 import { ulid } from "ulid";
-import { packer } from "../packer";
+import { packer } from "../../utilities/packer";
 import { createOwner } from "../test/util";
 import { createJobV2, pollJobsByTools, getJob, requestApproval, submitApproval } from "./jobs";
 import { acknowledgeJob, persistJobResult } from "./job-results";
 import { selfHealJobs } from "./self-heal-jobs";
-import * as redis from "../redis";
+import * as redis from "../dependencies/redis";
 import { getClusterBackgroundRun } from "../runs";
 import { upsertToolDefinition } from "../tools";
 import { sql, and, eq } from "drizzle-orm";

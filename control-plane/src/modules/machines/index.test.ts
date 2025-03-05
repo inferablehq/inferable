@@ -1,6 +1,6 @@
-import { upsertMachine } from "./machines";
-import { createCluster, getClusterMachines } from "./management";
-import * as redis from "./redis";
+import { upsertMachine } from ".";
+import { createCluster, getClusterMachines } from "../clusters/management";
+import * as redis from "../dependencies/redis";
 
 describe("machines", () => {
   beforeAll(async () => {

@@ -1,12 +1,8 @@
 import { z } from "zod";
-import {
-  modelCallEventSchema,
-  runFeedbackEventSchema,
-  toolCallEventSchema,
-} from "./integrations/integration-events";
-import { logger } from "./observability/logger";
-import { withSpan } from "./observability/tracer";
-import { customerTelemetryQueue } from "./queues/customer-telemetry";
+import { modelCallEventSchema, runFeedbackEventSchema, toolCallEventSchema } from "../integrations/integration-events";
+import { logger } from "../observability/logger";
+import { withSpan } from "../observability/tracer";
+import { customerTelemetryQueue } from "../queues/customer-telemetry";
 
 type ObservabilityEvent = z.infer<
   typeof modelCallEventSchema | typeof runFeedbackEventSchema | typeof toolCallEventSchema
