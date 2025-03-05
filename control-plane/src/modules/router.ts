@@ -12,7 +12,6 @@ import { AuthenticationError, BadRequestError, NotFoundError } from "../utilitie
 import { safeParse } from "../utilities/safe-parse";
 import { unqualifiedEntityId } from "./auth/auth";
 import { createApiKey, listApiKeys, revokeApiKey } from "./auth/cluster";
-import { createBlob, getBlobData, getBlobsForJobs } from "./blobs";
 import { getClusterDetails } from "./cluster";
 import { contract, interruptSchema } from "./contract";
 import * as data from "./data";
@@ -481,11 +480,6 @@ export const router = initServer().router(contract, {
       };
     }
 
-    const blobs = await getBlobsForJobs({
-      clusterId,
-      jobIds: jobs.map(job => job.id),
-    });
-
     return {
       status: 200,
       body: {
@@ -497,7 +491,6 @@ export const router = initServer().router(contract, {
           attachedFunctions: undefined,
           tools: run.attachedFunctions,
         },
-        blobs,
       },
     };
   },
@@ -728,7 +721,7 @@ export const router = initServer().router(contract, {
       // Max result size 500kb
       const data = Buffer.from(JSON.stringify(result));
       if (Buffer.byteLength(data) > 500 * 1024) {
-        logger.info("Job result too large, persisting as blob", {
+        logger.info("Job result too large, rejecting", {
           jobId,
         });
 
@@ -738,19 +731,9 @@ export const router = initServer().router(contract, {
           throw new NotFoundError("Job not found");
         }
 
-        await createBlob({
-          data: data.toString("base64"),
-          size: Buffer.byteLength(data),
-          encoding: "base64",
-          type: "application/json",
-          name: "Oversize Job result",
-          clusterId,
-          runId: job.runId ?? undefined,
-          jobId: job.id ?? undefined,
-        });
 
         result = {
-          message: "The result was too large and was returned to the user directly",
+          message: "The result was too large.",
         };
 
         resultType = "rejection";
@@ -857,36 +840,6 @@ export const router = initServer().router(contract, {
           runContext: job.runContext,
           approved: job.approved,
         })) ?? [],
-    };
-  },
-  createJobBlob: async request => {
-    const { jobId, clusterId } = request.params;
-    const body = request.body;
-
-    const machine = request.request.getAuth().isMachine();
-    machine.canManage({ job: { clusterId, jobId } });
-
-    const job = await jobs.getJob({ clusterId, jobId });
-
-    if (!job) {
-      return {
-        status: 404,
-        body: {
-          message: "Job not found",
-        },
-      };
-    }
-
-    const blob = await createBlob({
-      ...body,
-      clusterId,
-      runId: job.runId ?? undefined,
-      jobId: jobId ?? undefined,
-    });
-
-    return {
-      status: 201,
-      body: blob,
     };
   },
   getJob: async request => {
@@ -1400,31 +1353,6 @@ export const router = initServer().router(contract, {
     return {
       status: 200,
       body: machines,
-    };
-  },
-  getBlobData: async request => {
-    const { clusterId, blobId } = request.params;
-
-    const user = request.request.getAuth();
-    await user.canAccess({ cluster: { clusterId } });
-
-    const blob = await getBlobData({ clusterId, blobId });
-
-    if (blob.runId) {
-      await user.canAccess({
-        run: { clusterId, runId: blob.runId },
-      });
-    }
-
-    if (!blob) {
-      return {
-        status: 404,
-      };
-    }
-
-    return {
-      status: 200,
-      body: blob.data,
     };
   },
 

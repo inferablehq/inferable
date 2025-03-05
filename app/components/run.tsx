@@ -20,7 +20,6 @@ import { DebugEvent } from "./debug-event";
 
 import { SendButton } from "@/components/ui/send-button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Blob } from "./chat/blob";
 
 const messageSkeleton = (
   <div className="flex flex-col items-start space-y-4 p-4" key="skeleton-0">
@@ -130,7 +129,6 @@ export function Run({
         setRunTimeline(t => {
           const newTimeline = {
             ...t,
-            blobs: uniqueBy(result.body.blobs.concat(t?.blobs ?? []), "id"),
             messages: uniqueBy(result.body.messages.concat(t?.messages ?? []), "id"),
             activity: uniqueBy(result.body.activity.concat(t?.activity ?? []), "id"),
             jobs: uniqueBy(result.body.jobs.concat(t?.jobs ?? []), "id"),
@@ -321,16 +319,6 @@ export function Run({
           timestamp: m.createdAt ? new Date(m.createdAt).getTime() : 0,
         })) || [];
 
-    const blobElements =
-      runTimeline?.blobs.map(a => ({
-        element: (
-          <ElementWrapper key={a.id}>
-            <Blob blob={a} clusterId={clusterId} key={a.id} />
-          </ElementWrapper>
-        ),
-        timestamp: new Date(a.createdAt).getTime(),
-      })) || [];
-
     const activityElements =
       runTimeline?.activity
         .sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1))
@@ -502,7 +490,6 @@ export function Run({
       ...eventElements,
       ...activityElements,
       ...pendingMessage,
-      ...blobElements,
     ]
       .filter(Boolean)
       .sort((a, b) => (a!.timestamp > b!.timestamp ? 1 : -1))

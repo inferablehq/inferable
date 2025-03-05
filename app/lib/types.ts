@@ -11,8 +11,3 @@ export type RunJob = ClientInferResponses<
 export type ClusterDetails = ClientInferResponses<typeof contract.getCluster, 200>["body"];
 
 export type Cluster = ClientInferResponses<typeof contract.listClusters, 200>["body"][number];
-
-export type BlobDetails = ClientInferResponses<
-  typeof contract.getRunTimeline,
-  200
->["body"]["blobs"][number];

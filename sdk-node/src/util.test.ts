@@ -1,7 +1,5 @@
 import {
   ajvErrorToFailures,
-  blob,
-  extractBlobs,
   extractInterrupt,
   Interrupt,
   validateFunctionSchema,
@@ -78,61 +76,4 @@ describe("extractInterrupt", () => {
     const interrupt = extractInterrupt({ foo: "bar" });
     expect(interrupt).toBeUndefined();
   })
-
-});
-
-describe("extractBlobs", () => {
-  it("should extract blobs from content", () => {
-    const initialContent = {
-      foo: "bar",
-      bar: "foo",
-      somethingElse: blob({
-        name: "some blob object",
-        type: "application/json",
-        data: {
-          test: "123",
-        },
-      }),
-      anotherSomethingElse: blob({
-        name: "another blob object",
-        type: "application/json",
-        data: {
-          anotherTest: "456",
-        },
-      }),
-    };
-
-    const transformedContent = extractBlobs(initialContent);
-
-    expect(transformedContent).toEqual({
-      content: {
-        foo: "bar",
-        bar: "foo",
-      },
-      blobs: [
-        {
-          name: "some blob object",
-          type: "application/json",
-          encoding: "base64",
-          size: 20,
-          data: Buffer.from(
-            JSON.stringify({
-              test: "123",
-            }),
-          ).toString("base64"),
-        },
-        {
-          name: "another blob object",
-          type: "application/json",
-          encoding: "base64",
-          size: 28,
-          data: Buffer.from(
-            JSON.stringify({
-              anotherTest: "456",
-            }),
-          ).toString("base64"),
-        },
-      ],
-    });
-  });
 });
