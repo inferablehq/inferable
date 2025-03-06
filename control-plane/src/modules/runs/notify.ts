@@ -4,8 +4,9 @@ import { logger } from "../observability/logger";
 import { packer } from "../../utilities/packer";
 import { getRunTags } from "./tags";
 import { getClusterBackgroundRun } from "./";
-import { runMessages, runs } from "../data";
+import { runs } from "../data";
 import * as slack from "../integrations/slack";
+import * as email from "../email";
 import AsyncRetry from "async-retry";
 import { onStatusChangeSchema } from "../contract";
 import { z } from "zod";
@@ -26,37 +27,6 @@ export const notifyApprovalRequest = async ({
   runId?: string;
   notification?: z.infer<typeof notificationSchema>;
 }) => {
-  // If the approval's Job is within a Run, check if the Run is associated with a Slack thread.
-  if (runId) {
-    const tags = await getRunTags({ clusterId, runId });
-    if (tags?.[slack.THREAD_META_KEY] && tags?.[slack.CHANNEL_META_KEY]) {
-      const notification = {
-        destination: {
-          type: "slack" as const,
-          channelId: tags[slack.CHANNEL_META_KEY],
-          threadId: tags[slack.THREAD_META_KEY],
-        },
-      };
-
-      await slack.notifyApprovalRequest({
-        jobId,
-        clusterId,
-        targetFn,
-        notification,
-      });
-
-      events.write({
-        type: "notificationSent",
-        jobId,
-        clusterId,
-        runId,
-        meta: {
-          notification,
-        },
-      });
-    }
-  }
-
   // An approval may have an explcit `notification` object.
   if (notification && notification.destination?.type === "slack") {
     await slack.notifyApprovalRequest({
@@ -76,7 +46,27 @@ export const notifyApprovalRequest = async ({
       },
     });
   }
+
+  if (notification && notification.destination?.type === "email") {
+    await email.notifyApprovalRequest({
+      jobId,
+      clusterId,
+      targetFn,
+      notification,
+    });
+
+    events.write({
+      type: "notificationSent",
+      jobId,
+      clusterId,
+      runId,
+      meta: {
+        notification,
+      },
+    });
+  }
 };
+
 
 export const notifyStatusChange = async ({
   run,
