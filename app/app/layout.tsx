@@ -14,6 +14,7 @@ import "./globals.css";
 import { PHProvider } from "./providers";
 import "@/lib/hyperdx";
 import { HelpCircle, SlackIcon } from "lucide-react";
+import { MobileBlockScreen } from "@/components/mobile-block-screen";
 
 const PostHogPageView = dynamic(() => import("@/components/posthog-pageview"), {
   ssr: false,
@@ -56,12 +57,19 @@ export default function RootLayout({
       <RollbarProvider config={rollbarConfig}>
         <html lang="en">
           <body
-            className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}
+            className={cn(
+              "min-h-screen bg-background font-sans antialiased",
+              fontSans.variable,
+            )}
           >
-            <Toaster position="top-center" toastOptions={{ className: "text-sm" }} />
+            <Toaster
+              position="top-center"
+              toastOptions={{ className: "text-sm" }}
+            />
             <PHProvider>
               <PostHogUser />
               <PostHogPageView />
+              <MobileBlockScreen />
               {children}
               <a
                 href="https://go.inferable.ai/slack"
