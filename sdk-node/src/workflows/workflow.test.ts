@@ -46,8 +46,9 @@ describe("workflow", () => {
       onStart(input);
       ctx.log("info", { message: "Starting workflow" });
 
-      await ctx.memo("emptyMemo", async () => {
+      await ctx.memo("testMemo", async () => {
         onMemo();
+        return "memo";
       });
 
       const { word } = await ctx.agents.react({
