@@ -336,9 +336,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       if (existingValue.status === 200) {
         const existingValueParsed = deserialize(existingValue.body.value);
 
-        if (existingValueParsed) {
-          return existingValueParsed;
-        }
+        return existingValueParsed;
       }
 
       const result = await fn(ctx);
