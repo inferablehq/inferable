@@ -7,7 +7,7 @@ import { onStatusChangeSchema } from "../../contract";
 import { db, runs } from "../../data";
 import { logger } from "../../observability/logger";
 import { getRunMessages, insertRunMessage } from "../messages";
-import { notifyNewRunMessage, notifyStatusChange } from "../notify";
+import { notifyStatusChange } from "../notify";
 import { generateTitle } from "../summarization";
 import { createRunGraph } from "./agent";
 import { buildTool } from "./tools/functions";
@@ -108,7 +108,7 @@ export const processAgentRun = async (
 
       // Insert messages in a loop to ensure they are created with differing timestamps
       for (const message of state.messages.filter(m => !m.persisted)) {
-        await Promise.allSettled([insertRunMessage(message), notifyNewRunMessage({ message, tags })]);
+        await insertRunMessage(message);
         message.persisted = true;
       }
     },

@@ -63,6 +63,8 @@ const envSchema = z
 
     INFERABLE_EMAIL_DOMAIN: z.string().default("run.inferable.ai"),
 
+    SES_EMAIL_IDENTITY: z.string().optional(),
+
     // Observability
     HYPERDX_API_KEY: z.string().optional(),
     ROLLBAR_ACCESS_TOKEN: z.string().optional(),
@@ -71,7 +73,6 @@ const envSchema = z
     // Analytics
     POSTHOG_API_KEY: z.string().optional(),
     POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
-    ANALYTICS_BUCKET_NAME: z.string().optional(),
 
     // Sandboxes
     E2B_ACCESS_TOKEN: z.string().optional(),
@@ -102,6 +103,7 @@ const envSchema = z
     const EE_REQUIRED = [
       "APP_ORIGIN",
       "JWKS_URL",
+      "SES_EMAIL_IDENTITY",
       "CLERK_SECRET_KEY",
       "HYPERDX_API_KEY",
       "ROLLBAR_ACCESS_TOKEN",

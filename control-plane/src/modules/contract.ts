@@ -29,6 +29,10 @@ export const notificationSchema = z.object({
         userId: z.string().optional(),
         email: z.string().optional(),
       }),
+      z.object({
+        type: z.literal("email"),
+        email: z.string(),
+      }),
     ])
     .optional(),
   message: z.string().optional(),
