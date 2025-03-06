@@ -12,7 +12,6 @@ describe("workflow", () => {
     const onAgentResult = jest.fn();
     const onSimpleResult = jest.fn();
     const toolCall = jest.fn();
-    const onMemo = jest.fn();
 
     // Generate a unique workflow name to prevent conflicts with other tests
     const workflowName = `haystack-search-${Math.random().toString(36).substring(2, 15)}`;
@@ -45,12 +44,6 @@ describe("workflow", () => {
     workflow.version(1).define(async (ctx, input) => {
       onStart(input);
       ctx.log("info", { message: "Starting workflow" });
-
-      await ctx.memo("testMemo", async () => {
-        onMemo();
-        return "memo";
-      });
-
       const { word } = await ctx.agents.react({
         name: "search",
         instructions: helpers.structuredPrompt({
@@ -73,7 +66,7 @@ describe("workflow", () => {
 
       assert(word === "needle", `Expected word to be "needle", got ${word}`);
 
-      const cachedResult = await ctx.memo("testResultCall", async () => {
+      const cachedResult = await ctx.result("testResultCall", async () => {
         return {
           word: "needle",
         };
@@ -143,7 +136,5 @@ describe("workflow", () => {
 
     expect(onSimpleResult).toHaveBeenCalledWith("needle");
     expect(onSimpleResult).toHaveBeenCalledTimes(1);
-
-    expect(onMemo).toHaveBeenCalledTimes(1);
   });
 });

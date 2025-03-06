@@ -120,6 +120,14 @@ type WorkflowContext<TInput> = {
   llm: L1M;
   /**
    * Result caching for the workflow.
+   * @deprecated Use `memo` instead
+   */
+  result: <TResult>(
+    name: string,
+    fn: () => Promise<TResult>,
+  ) => Promise<TResult>;
+  /**
+   * Result caching for the workflow.
    *
    * @example
    * ```typescript
@@ -128,10 +136,7 @@ type WorkflowContext<TInput> = {
    * });
    * ```
    */
-  memo: <TResult extends NonNullable<unknown>>(
-    name: string,
-    fn: () => Promise<TResult>,
-  ) => Promise<TResult>;
+  memo: <TResult>(name: string, fn: () => Promise<TResult>) => Promise<TResult>;
   /**
    * @deprecated Use `agents.react` instead
    * Agent functionality for the workflow.
@@ -300,7 +305,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       },
     });
 
-    const memo = async <TResult extends NonNullable<unknown>>(
+    const memo = async <TResult>(
       name: string,
       fn: (ctx: WorkflowContext<TInput>) => Promise<TResult>,
     ): Promise<TResult> => {
@@ -337,9 +342,6 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       }
 
       const result = await fn(ctx);
-      if (!result) {
-        throw new Error("Memo fn must return a value");
-      }
 
       // TODO: async/retry
       const setResult = await this.client.setClusterKV({
@@ -354,13 +356,13 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
       });
 
       if (setResult.status !== 200) {
-        this.logger?.error("Failed to set memo result", {
+        this.logger?.error("Failed to set result", {
           name,
           executionId,
           status: setResult.status,
         });
 
-        throw new Error("Failed to set memo result");
+        throw new Error("Failed to set result");
       }
 
       return deserialize(setResult.body.value);
@@ -487,6 +489,7 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
     return {
       ...jobCtx,
       llm: l1m,
+      result: memo,
       memo,
       agents,
       /**
