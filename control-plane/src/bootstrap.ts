@@ -2,7 +2,6 @@ import cors from "@fastify/cors";
 import { initServer } from "@ts-rest/fastify";
 import fastify from "fastify";
 import process from "process";
-import * as analytics from "./modules/analytics";
 import * as auth from "./modules/auth/auth";
 import { pg } from "./modules/data";
 import { flagsmith } from "./modules/dependencies/flagsmith";
@@ -173,7 +172,6 @@ const startTime = Date.now();
     slack.start(app),
     queues.start(),
     flagsmith?.getEnvironmentFlags(),
-    analytics.start(),
     clusters.start(),
   ])
     .then(() => {

@@ -23,6 +23,7 @@
     "@anthropic-ai/bedrock-sdk": "^0.10.0",
     "@anthropic-ai/sdk": "^0.36.3",
     "@aws-sdk/client-s3": "^3.685.0",
+    "@aws-sdk/client-ses": "^3.758.0",
     "@clerk/backend": "^1.21.4",
     "@e2b/code-interpreter": "^1.0.4",
     "@fastify/cors": "^8.5.0",

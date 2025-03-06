@@ -63,6 +63,8 @@ const envSchema = z
 
     INFERABLE_EMAIL_DOMAIN: z.string().default("run.inferable.ai"),
 
+    SES_EMAIL_IDENTITY: z.string().optional(),
+
     // Observability
     HYPERDX_API_KEY: z.string().optional(),
     ROLLBAR_ACCESS_TOKEN: z.string().optional(),
@@ -71,7 +73,6 @@ const envSchema = z
     // Analytics
     POSTHOG_API_KEY: z.string().optional(),
     POSTHOG_HOST: z.string().default("https://us.i.posthog.com"),
-    ANALYTICS_BUCKET_NAME: z.string().optional(),
 
     // Sandboxes
     E2B_ACCESS_TOKEN: z.string().optional(),
@@ -90,7 +91,8 @@ const envSchema = z
       if (value.JWKS_URL) {
         return ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "MANAGEMENT_API_SECRET can not be set with JWKS_URL (Headless mode only)",
+          message:
+            "MANAGEMENT_API_SECRET can not be set with JWKS_URL (Headless mode only)",
           path: ["MANAGEMENT_API_SECRET"],
         });
       }
@@ -102,6 +104,7 @@ const envSchema = z
     const EE_REQUIRED = [
       "APP_ORIGIN",
       "JWKS_URL",
+      "SES_EMAIL_IDENTITY",
       "CLERK_SECRET_KEY",
       "HYPERDX_API_KEY",
       "ROLLBAR_ACCESS_TOKEN",
@@ -112,7 +115,7 @@ const envSchema = z
       "NANGO_SECRET_KEY",
       "SLACK_SIGNING_SECRET",
       "E2B_ACCESS_TOKEN",
-      "FIRECRAWL_API_KEY"
+      "FIRECRAWL_API_KEY",
     ];
 
     for (const key of EE_REQUIRED) {

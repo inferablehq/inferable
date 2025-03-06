@@ -1,31 +1,16 @@
-import {
-  App,
-  BlockAction,
-  KnownEventFromType,
-  SlackAction,
-  webApi,
-} from "@slack/bolt";
-import { FastifySlackReceiver } from "./receiver";
+import { App, BlockAction, SlackAction, webApi } from "@slack/bolt";
 import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
 import { logger } from "../../observability/logger";
-import { getRunsByTag } from "../../runs/tags";
-import { addMessageAndResume, createRunWithMessage } from "../../runs";
 import { AuthenticationError } from "../../../utilities/errors";
-import { ulid } from "ulid";
-import { and, eq, InferSelectModel, ne, sql } from "drizzle-orm";
-import { db, integrations, runMessages } from "../../data";
+import { and, eq, ne, sql } from "drizzle-orm";
+import { db, integrations } from "../../data";
 import { nango } from "../nango";
 import { InstallableIntegration } from "../types";
 import { z } from "zod";
 import { getUserForCluster } from "../../dependencies/clerk";
 import { submitApproval } from "../../jobs/jobs";
-import {
-  integrationSchema,
-  notificationSchema,
-  unifiedMessageSchema,
-} from "../../contract";
-import { createExternalMessage } from "../../runs/external-messages";
+import { integrationSchema, notificationSchema } from "../../contract";
 
 export const THREAD_META_KEY = "slackThreadTs";
 export const CHANNEL_META_KEY = "slackChannel";
@@ -34,19 +19,6 @@ const CALL_APPROVE_ACTION_ID = "call_approve";
 const CALL_DENY_ACTION_ID = "call_deny";
 
 let app: App | undefined;
-
-type MessageEvent = {
-  event: KnownEventFromType<"message">;
-  client: webApi.WebClient;
-  clusterId: string;
-  user?: {
-    userId: string;
-    slack: {
-      id: string;
-      email: string;
-    };
-  };
-};
 
 export const slack: InstallableIntegration = {
   name: "slack",
@@ -105,77 +77,6 @@ export const slack: InstallableIntegration = {
   handleCall: async () => {
     logger.warn("Slack integration does not support calls");
   },
-};
-
-export const notifyNewRunMessage = async ({
-  message,
-  destination,
-}: {
-  message: {
-    id: string;
-    clusterId: string;
-    runId: string;
-    type: InferSelectModel<typeof runMessages>["type"];
-    data: InferSelectModel<typeof runMessages>["data"];
-  };
-  destination: {
-    channelId: string;
-    threadId?: string;
-  };
-}) => {
-  if (message.type !== "agent") {
-    return;
-  }
-
-  const integration = await integrationByCluster(message.clusterId);
-  if (!integration || !integration.slack) {
-    throw new Error(
-      `Could not find Slack integration for cluster: ${message.clusterId}`,
-    );
-  }
-
-  const token = await getAccessToken(integration.slack.nangoConnectionId);
-  if (!token) {
-    throw new Error(
-      `Could not fetch access token for Slack integration: ${integration.slack.nangoConnectionId}`,
-    );
-  }
-
-  const client = new webApi.WebClient(token);
-
-  const messageData = unifiedMessageSchema.parse(message).data;
-
-  let messageBody = "";
-  if ("message" in messageData && messageData.message) {
-    messageBody = messageData.message;
-  }
-
-  if ("result" in messageData && messageData.result) {
-    messageBody += `\n\n \`\`\`${JSON.stringify(messageData.result, null, 2)}\`\`\``;
-  }
-
-  if (!messageBody) {
-    logger.warn("Slack thread message does not have content");
-  }
-
-  const result = await client?.chat.postMessage({
-    thread_ts: destination.threadId,
-    channel: destination.channelId,
-    mrkdwn: true,
-    text: messageBody,
-  });
-
-  if (!result.ts) {
-    throw new Error("Failed to create Slack message");
-  }
-
-  await createExternalMessage({
-    channel: "slack",
-    externalId: result.ts,
-    messageId: message.id,
-    clusterId: message.clusterId,
-    runId: message.runId,
-  });
 };
 
 export const notifyApprovalRequest = async ({
@@ -334,11 +235,6 @@ export const start = async (fastify: FastifyInstance) => {
         botToken: token,
       };
     },
-    receiver: new FastifySlackReceiver({
-      signingSecret: SLACK_SIGNING_SECRET,
-      path: "/slack/events",
-      fastify,
-    }),
   });
 
   app.action(CALL_APPROVE_ACTION_ID, async params =>
@@ -347,89 +243,6 @@ export const start = async (fastify: FastifyInstance) => {
   app.action(CALL_DENY_ACTION_ID, async params =>
     handleCallApprovalAction({ ...params, actionId: CALL_DENY_ACTION_ID }),
   );
-
-  // Event listener for mentions
-  app.event("app_mention", async ({ event, client }) => {
-    logger.info("Received mention event. Responding.", event);
-
-    await client.chat.postMessage({
-      thread_ts: event.ts,
-      channel: event.channel,
-      mrkdwn: true,
-      text: "Hey! Currently, I can only respond to direct messages.",
-    });
-  });
-
-  // Event listener for direct messages
-  app.event("message", async ({ event, client, context }) => {
-    logger.info("Received message event. Responding.", event);
-
-    if (event.subtype === "message_changed") {
-      logger.info("Received message change event. Ignoring.", event);
-      return;
-    }
-
-    if (isBotMessage(event)) {
-      logger.info("Received message from bot. Ignoring.", event);
-      return;
-    }
-
-    if (!isDirectMessage(event)) {
-      logger.info("Received message from channel. Ignoring.", event);
-      return;
-    }
-
-    const teamId = context.teamId;
-
-    if (!teamId) {
-      logger.warn("Received message without teamId. Ignoring.");
-      return;
-    }
-
-    const integration = await integrationByTeam(teamId);
-    if (!integration) {
-      logger.warn("Could not Slack integration for teamId.", {
-        teamId,
-      });
-      return;
-    }
-
-    try {
-      if (!hasUser(event)) {
-        logger.warn("Slack event has no user.", { event });
-        throw new AuthenticationError("Slack event has no user");
-      }
-
-      const user = await authenticateUser(event.user, client, integration);
-
-      if (hasThread(event)) {
-        await handleExistingThread({
-          user,
-          event,
-          client,
-          clusterId: integration.cluster_id,
-        });
-      } else {
-        await handleNewThread({
-          user,
-          event,
-          client,
-          clusterId: integration.cluster_id,
-        });
-      }
-    } catch (error) {
-      if (error instanceof AuthenticationError) {
-        await client.chat.postMessage({
-          thread_ts: event.ts,
-          channel: event.channel,
-          text: `Sorry, I am having trouble authenticating you.\n\nPlease ensure your Inferable account has access to cluster <${env.APP_ORIGIN}/clusters/${integration.cluster_id}|${integration.cluster_id}>.`,
-        });
-        return;
-      }
-
-      logger.error("Error responding to Direct Message", { error });
-    }
-  });
 
   await app.start();
 };
@@ -441,25 +254,12 @@ const hasThread = (e: any): e is { thread_ts: string } => {
   return typeof e?.thread_ts === "string";
 };
 
-const isDirectMessage = (e: KnownEventFromType<"message">): boolean => {
-  return e.channel_type === "im";
-};
-
-const hasUser = (e: any): e is { user: string } => {
-  return typeof e?.user === "string";
-};
-
 const isBlockAction = (e: SlackAction): e is BlockAction => {
   return typeof e?.type === "string" && e.type === "block_actions";
 };
 
 const hasValue = (e: any): e is { value: string } => {
   return "value" in e && typeof e?.value === "string";
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isBotMessage = (e: any): boolean => {
-  return typeof e?.bot_id === "string";
 };
 
 const integrationByTeam = async (teamId: string) => {
@@ -555,102 +355,6 @@ const deleteNangoConnection = async (connectionId: string) => {
   }
 
   await nango.deleteConnection(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
-};
-
-const handleNewThread = async ({
-  event,
-  client,
-  clusterId,
-  user,
-}: MessageEvent) => {
-  let thread = event.ts;
-  // If this message is part of a thread, associate the run with the thread rather than the message
-  if (hasThread(event)) {
-    thread = event.thread_ts;
-  }
-
-  if ("text" in event && event.text) {
-    const run = await createRunWithMessage({
-      userId: user?.userId,
-      clusterId,
-      message: event.text,
-      type: "human",
-      authContext: {
-        userId: user?.userId,
-        slack: user?.slack,
-      },
-      messageMetadata: {
-        displayable: {
-          via: "slack",
-        },
-      },
-      tags: {
-        [THREAD_META_KEY]: thread,
-        [CHANNEL_META_KEY]: event.channel,
-      },
-    });
-
-    await client.chat.postMessage({
-      thread_ts: thread,
-      channel: event.channel,
-      mrkdwn: true,
-      text: `On it. I will get back to you soon.\nRun ID: <${env.APP_ORIGIN}/clusters/${clusterId}/runs/${run.id}|${run.id}>`,
-    });
-
-    return;
-  }
-
-  throw new Error("Event had no text");
-};
-
-const handleExistingThread = async ({
-  event,
-  client,
-  clusterId,
-  user,
-}: MessageEvent) => {
-  if ("text" in event && event.text) {
-    if (!hasThread(event)) {
-      throw new Error("Event had no thread_ts");
-    }
-
-    const [run] = await getRunsByTag({
-      clusterId,
-      key: THREAD_META_KEY,
-      value: event.thread_ts,
-      limit: 1,
-    });
-
-    // Message is within a thread which already has a Run, continue
-    if (run) {
-      await addMessageAndResume({
-        userId: user?.userId,
-        id: ulid(),
-        clusterId: run.clusterId,
-        runId: run.id,
-        message: event.text,
-        metadata: {
-          displayable: {
-            via: "slack",
-          },
-        },
-        type: "human",
-      });
-    } else {
-      // Message is in a thread, but does't have a Run, start a new one
-      // TODO: Inferable doesn't have context for the original message, we should include this
-      await handleNewThread({
-        user,
-        event,
-        client,
-        clusterId,
-      });
-    }
-
-    return;
-  }
-
-  throw new Error("Event had no text");
 };
 
 const authenticateUser = async (

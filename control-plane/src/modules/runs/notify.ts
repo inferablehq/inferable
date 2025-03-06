@@ -78,31 +78,6 @@ export const notifyApprovalRequest = async ({
   }
 };
 
-export const notifyNewRunMessage = async ({
-  message,
-  tags,
-}: {
-  message: {
-    id: string;
-    clusterId: string;
-    runId: string;
-    type: InferSelectModel<typeof runMessages>["type"];
-    data: InferSelectModel<typeof runMessages>["data"];
-  };
-  tags?: Record<string, string>;
-}) => {
-  // Check if the Run is associated with a Slack thread
-  if (tags?.[slack.THREAD_META_KEY] && tags?.[slack.CHANNEL_META_KEY]) {
-    await slack.notifyNewRunMessage({
-      message,
-      destination: {
-        channelId: tags[slack.CHANNEL_META_KEY],
-        threadId: tags[slack.THREAD_META_KEY],
-      },
-    });
-  }
-};
-
 export const notifyStatusChange = async ({
   run,
   status,

@@ -7,7 +7,7 @@ import { onStatusChangeSchema } from "../../contract";
 import { db, runs } from "../../data";
 import { logger } from "../../observability/logger";
 import { getRunMessages, insertRunMessage } from "../messages";
-import { notifyNewRunMessage, notifyStatusChange } from "../notify";
+import { notifyStatusChange } from "../notify";
 import { generateTitle } from "../summarization";
 import { createRunGraph } from "./agent";
 import { buildTool } from "./tools/functions";
@@ -40,16 +40,22 @@ export const processAgentRun = async (
     providerKey?: string | null;
   },
   tags?: Record<string, string>,
-  mockModelResponses?: string[]
+  mockModelResponses?: string[],
   // Deprecated, to be removed once all SDKs are updated
 ) => {
   logger.info("Processing Run", {
     type: run.type,
   });
 
-  await db.update(runs).set({ status: "running", failure_reason: "" }).where(eq(runs.id, run.id));
+  await db
+    .update(runs)
+    .set({ status: "running", failure_reason: "" })
+    .where(eq(runs.id, run.id));
 
-  if (!!env.LOAD_TEST_CLUSTER_ID && run.clusterId === env.LOAD_TEST_CLUSTER_ID) {
+  if (
+    !!env.LOAD_TEST_CLUSTER_ID &&
+    run.clusterId === env.LOAD_TEST_CLUSTER_ID
+  ) {
     //https://github.com/inferablehq/inferable/blob/main/load-tests/script.js
     mockModelResponses = [
       JSON.stringify({
@@ -87,8 +93,13 @@ export const processAgentRun = async (
         clusterId: run.clusterId,
       });
 
-      if (!tool || run.attachedFunctions?.includes(toolCall.toolName) === false) {
-        throw new AgentError(`Definition for tool not found: ${toolCall.toolName}`);
+      if (
+        !tool ||
+        run.attachedFunctions?.includes(toolCall.toolName) === false
+      ) {
+        throw new AgentError(
+          `Definition for tool not found: ${toolCall.toolName}`,
+        );
       }
 
       return buildTool({
@@ -108,7 +119,7 @@ export const processAgentRun = async (
 
       // Insert messages in a loop to ensure they are created with differing timestamps
       for (const message of state.messages.filter(m => !m.persisted)) {
-        await Promise.allSettled([insertRunMessage(message), notifyNewRunMessage({ message, tags })]);
+        await insertRunMessage(message);
         message.persisted = true;
       }
     },
@@ -137,7 +148,7 @@ export const processAgentRun = async (
       },
       {
         recursionLimit: 100,
-      }
+      },
     );
 
     const parsedOutput = z
@@ -216,16 +227,20 @@ const getAttachedTools = async (state: RunGraphState) => {
     });
 
     if (!definition) {
-      throw new NotFoundError(`Tool ${tool} not found in cluster ${run.clusterId}`);
+      throw new NotFoundError(
+        `Tool ${tool} not found in cluster ${run.clusterId}`,
+      );
     }
 
     tools.push(
       new AgentTool({
         name: definition.name,
-        description: (definition.description ?? `${definition.name} function`).substring(0, 1024),
+        description: (
+          definition.description ?? `${definition.name} function`
+        ).substring(0, 1024),
         schema: definition.schema ?? undefined,
         func: async () => undefined,
-      })
+      }),
     );
   }
 
