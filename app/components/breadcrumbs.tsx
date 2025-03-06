@@ -28,9 +28,9 @@ interface ClusterBreadcrumbsProps {
 }
 
 const linkStyles =
-  "flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-slate-50 rounded-sm transition-all gap-2 border border-transparent hover:border-gray-100";
+  "flex items-center px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-sm transition-all gap-2 border border-transparent hover:border-border";
 
-const activeLinkStyles = "bg-slate-100 text-gray-900 border-gray-200";
+const activeLinkStyles = "bg-accent text-foreground border-border";
 
 function BreadcrumbLinks({
   clusterId,
@@ -52,11 +52,11 @@ function BreadcrumbLinks({
   };
 
   return (
-    <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
+    <div className="px-6 py-2 flex gap-2 items-center border-b bg-background">
       <div className="flex items-center gap-2 mr-2">
         <Link
           href={`/clusters/${clusterId}/workflows`}
-          className="text-lg text-gray-400 tracking-tight hover:text-gray-600"
+          className="text-lg text-muted-foreground tracking-tight hover:text-foreground"
         >
           {clusterName || "..."}
         </Link>
@@ -133,7 +133,7 @@ export function ClusterBreadcrumbs({ clusterId }: ClusterBreadcrumbsProps) {
 
   if (error) {
     return (
-      <div className="px-6 py-2 flex gap-2 items-center border-b bg-white">
+      <div className="px-6 py-2 flex gap-2 items-center border-b bg-background">
         <ErrorDisplay error={error.body} status={error.status} />
       </div>
     );
@@ -164,7 +164,7 @@ export function GlobalBreadcrumbs() {
   };
 
   return (
-    <div className="px-6 py-2 flex gap-2 border-b bg-white">
+    <div className="px-6 py-2 flex gap-2 border-b bg-background">
       <Link href={`/clusters`} className={getLinkStyles("/clusters")}>
         <Network className="h-4 w-4" /> Clusters
       </Link>

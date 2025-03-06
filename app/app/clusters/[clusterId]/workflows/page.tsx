@@ -164,12 +164,12 @@ export default function WorkflowsPage({
         onClick={handleClick}
         className={`group cursor-pointer ${
           job.approvalRequested && !job.approved
-            ? "bg-amber-50 hover:bg-amber-100/80"
-            : "hover:bg-gray-50/50"
+            ? "bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100/80 dark:hover:bg-amber-900/30"
+            : "hover:bg-muted/50"
         }`}
       >
         <td className="px-6 py-4 whitespace-nowrap">
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-xs text-muted-foreground font-mono">
             {execution.id.slice(0, 8)}
           </span>
         </td>
@@ -179,7 +179,7 @@ export default function WorkflowsPage({
               {execution.workflowName}
             </span>
             {job.approvalRequested && !job.approved && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200">
                 Needs Approval
               </span>
             )}
@@ -215,7 +215,7 @@ export default function WorkflowsPage({
             </div>
           )}
         </td>
-        <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
+        <td className="px-6 py-4 whitespace-nowrap text-xs text-muted-foreground">
           <span>
             {new Date(execution.createdAt).toISOString()} (
             {formatDistance(execution.createdAt, new Date(), {
@@ -244,7 +244,7 @@ export default function WorkflowsPage({
   return (
     <div className="flex gap-6 p-6">
       <div className="w-96 shrink-0 space-y-4">
-        <Card className="bg-white border border-gray-200 rounded-xl transition-all duration-200">
+        <Card className="border border-border rounded-xl transition-all duration-200">
           <CardContent className="pt-6">
             <div className="mb-8">
               <h1 className="text-2xl font-semibold mb-2">Workflows</h1>
@@ -312,7 +312,11 @@ export default function WorkflowsPage({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Button onClick={handleApplyFilters} className="w-full">
+                <Button
+                  onClick={handleApplyFilters}
+                  variant="outline"
+                  className="w-full"
+                >
                   Apply Filters
                 </Button>
                 {(appliedNameFilter || appliedStatusFilter !== "all") && (
@@ -342,9 +346,7 @@ export default function WorkflowsPage({
       <div className="flex-1 min-w-0">
         {!isLoading && executions.length === 0 ? (
           <div className="text-center py-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No workflows found
-            </h3>
+            <h3 className="text-lg font-semibold mb-2">No workflows found</h3>
             <p className="text-sm text-muted-foreground mb-4">
               Get started by creating your first workflow using our quick start
               guide.
@@ -352,55 +354,55 @@ export default function WorkflowsPage({
             <Link
               href="https://docs.inferable.ai/pages/quick-start"
               target="_blank"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               View Quick Start Guide
             </Link>
           </div>
         ) : (
           <div className="border rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted/50">
                 <tr>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     ID
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     Workflow
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     Version
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     Execution Status
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     Agent Runs
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-4 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     Started
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-background divide-y divide-border">
                 {executions.map(execution => (
                   <ExecutionRow key={execution.execution.id} {...execution} />
                 ))}

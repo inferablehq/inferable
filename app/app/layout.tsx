@@ -2,6 +2,7 @@
 
 import { PostHogUser } from "@/components/posthog-user";
 import { RollbarUser } from "@/components/rollbar-user";
+import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Provider as RollbarProvider } from "@rollbar/react";
@@ -13,8 +14,8 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import { PHProvider } from "./providers";
 import "@/lib/hyperdx";
-import { HelpCircle, SlackIcon } from "lucide-react";
 import { MobileBlockScreen } from "@/components/mobile-block-screen";
+import { SlackIcon } from "lucide-react";
 
 const PostHogPageView = dynamic(() => import("@/components/posthog-pageview"), {
   ssr: false,
@@ -55,33 +56,35 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <RollbarProvider config={rollbarConfig}>
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
           <body
             className={cn(
               "min-h-screen bg-background font-sans antialiased",
               fontSans.variable,
             )}
           >
-            <Toaster
-              position="top-center"
-              toastOptions={{ className: "text-sm" }}
-            />
-            <PHProvider>
-              <PostHogUser />
-              <PostHogPageView />
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <Toaster
+                position="top-center"
+                toastOptions={{ className: "text-sm" }}
+              />
+              <PHProvider>
+                <PostHogUser />
+                <PostHogPageView />
               <MobileBlockScreen />
-              {children}
-              <a
-                href="https://go.inferable.ai/slack"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="fixed bottom-6 right-6 z-50 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5"
-                aria-label="Join our Slack community"
-              >
-                <SlackIcon className="h-4 w-4 bg-black rounded-full" />
-                Need Help?
-              </a>
-            </PHProvider>
+                {children}
+                <a
+                  href="https://go.inferable.ai/slack"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="fixed dark:bg-gray-200 bottom-6 right-6 z-50 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+                  aria-label="Join our Slack community"
+                >
+                  <SlackIcon className="h-4 w-4 bg-black dark:bg-white rounded-full" />
+                  Need Help?
+                </a>
+              </PHProvider>
+            </ThemeProvider>
           </body>
         </html>
         <RollbarUser />

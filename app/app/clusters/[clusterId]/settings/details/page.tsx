@@ -2,7 +2,13 @@
 
 import { client } from "@/client/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import {
   Form,
@@ -33,7 +39,11 @@ const formSchema = z.object({
   handleCustomAuthFunction: z.string().default(""),
 });
 
-export default function DetailsPage({ params: { clusterId } }: { params: { clusterId: string } }) {
+export default function DetailsPage({
+  params: { clusterId },
+}: {
+  params: { clusterId: string };
+}) {
   const { getToken } = useAuth();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,8 +63,14 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
         form.setValue("name", details.body.name);
         form.setValue("description", details.body.description ?? "");
         form.setValue("debug", details.body.debug ?? false);
-        form.setValue("enableCustomAuth", details.body.enableCustomAuth ?? false);
-        form.setValue("handleCustomAuthFunction", details.body.handleCustomAuthFunction ?? "");
+        form.setValue(
+          "enableCustomAuth",
+          details.body.enableCustomAuth ?? false,
+        );
+        form.setValue(
+          "handleCustomAuthFunction",
+          details.body.handleCustomAuthFunction ?? "",
+        );
       } else {
         createErrorToast(details, "Failed to fetch cluster details");
       }
@@ -90,7 +106,7 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
         createErrorToast(err, "Failed to update cluster details");
       }
     },
-    [clusterId, getToken, router]
+    [clusterId, getToken, router],
   );
 
   useEffect(() => {
@@ -109,7 +125,10 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(updateClusterDetails)} className="space-y-8">
+          <form
+            onSubmit={form.handleSubmit(updateClusterDetails)}
+            className="space-y-8"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -119,7 +138,9 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
                   <FormControl>
                     <Input placeholder="Name of the cluster" {...field} />
                   </FormControl>
-                  <FormDescription>The name of the cluster, so you can identify it</FormDescription>
+                  <FormDescription>
+                    The name of the cluster, so you can identify it
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -146,7 +167,10 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
                       </FormDescription>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -160,11 +184,14 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
                     <FormItem className="flex flex-col items-start justify-between rounded-lg border p-4">
                       <FormLabel>Custom Auth Function Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Name of the custom auth function" {...field} />
+                        <Input
+                          placeholder="Name of the custom auth function"
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
-                        The name of the function that will handle custom authentication for this
-                        cluster
+                        The name of the function that will handle custom
+                        authentication for this cluster
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -180,19 +207,24 @@ export default function DetailsPage({ params: { clusterId } }: { params: { clust
                     <div className="space-y-0.5">
                       <FormLabel className="text-sm">Debug Logging</FormLabel>
                       <FormDescription>
-                        Allow Inferable to capture additional debug logs for the purpose of
-                        troubleshooting.
+                        Allow Inferable to capture additional debug logs for the
+                        purpose of troubleshooting.
                       </FormDescription>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
               />
             </div>
 
-            <Button type="submit">Save</Button>
+            <Button type="submit" variant="outline">
+              Save
+            </Button>
           </form>
         </Form>
       </CardContent>

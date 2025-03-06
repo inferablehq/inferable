@@ -72,7 +72,12 @@ export default function DangerPage({
               </p>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive">Delete Cluster</Button>
+                  <Button
+                    variant="outline"
+                    className="text-destructive border-destructive hover:bg-destructive/10"
+                  >
+                    Delete Cluster
+                  </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -93,9 +98,7 @@ export default function DangerPage({
                         </p>
                         <Input
                           value={deleteConfirmation}
-                          onChange={(e) =>
-                            setDeleteConfirmation(e.target.value)
-                          }
+                          onChange={e => setDeleteConfirmation(e.target.value)}
                           placeholder="delete cluster"
                           className="max-w-[200px]"
                         />
