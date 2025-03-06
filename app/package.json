@@ -11,8 +11,8 @@
     "format:check": "prettier --check $(git diff --diff-filter=d --name-only origin/main HEAD | grep -E \"\\.(ts|tsx)$\" || echo \".\") || exit 0"
   },
   "dependencies": {
-    "@clerk/clerk-sdk-node": "^4.13.4",
-    "@clerk/nextjs": "^4.29.3",
+    "@clerk/clerk-sdk-node": "^5.1.6",
+    "@clerk/nextjs": "^6.11.3",
     "@hookform/resolvers": "^3.10.0",
     "@hyperdx/browser": "^0.21.2",
     "@hyperdx/node-opentelemetry": "^0.8.1",
