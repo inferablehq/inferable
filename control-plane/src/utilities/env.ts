@@ -111,7 +111,6 @@ const envSchema = z
       "FLAGSMITH_ENVIRONMENT_KEY",
       "POSTHOG_API_KEY",
       "POSTHOG_HOST",
-      "ANALYTICS_BUCKET_NAME",
       "NANGO_SECRET_KEY",
       "SLACK_SIGNING_SECRET",
       "E2B_ACCESS_TOKEN",
