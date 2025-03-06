@@ -516,6 +516,11 @@ func (b *WorkflowVersionBuilder) Define(handler interface{}) {
 						return nil, err
 					}
 
+					// If fn returns nil, return error
+					if result == nil {
+						return nil, fmt.Errorf("Memo fn must return a value")
+					}
+
 					// Serialize the result
 					serialized, err := json.Marshal(struct {
 						Value interface{} `json:"value"`
