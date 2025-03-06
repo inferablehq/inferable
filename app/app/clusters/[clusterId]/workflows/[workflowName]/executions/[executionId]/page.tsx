@@ -5,8 +5,17 @@ import { contract } from "@/client/contract";
 import { ReadOnlyJSON } from "@/components/read-only-json";
 import { Run } from "@/components/run";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn, createErrorToast } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { ClientInferResponseBody } from "@ts-rest/core";
@@ -18,7 +27,6 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  CircleChevronRight,
   Clock,
   Copy,
   MessageCircle,
@@ -34,6 +42,7 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { EventDetails } from "@/components/event-details";
 
 type Node = {
   id: string;
@@ -54,12 +63,12 @@ const eventToNode = (
   event: ClientInferResponseBody<
     typeof contract.getWorkflowExecutionTimeline,
     200
-  >["events"][number]
+  >["events"][number],
 ): Node | null => {
   const base = {
     id: event.id,
     time: new Date(event.createdAt),
-    interactive: false,
+    interactive: true,
   };
 
   switch (event.type) {
@@ -223,18 +232,23 @@ const eventToNode = (
 };
 
 const runToNode = (
-  run: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline, 200>["runs"][number]
+  run: ClientInferResponseBody<
+    typeof contract.getWorkflowExecutionTimeline,
+    200
+  >["runs"][number],
 ): Node => {
   return {
     id: run.id,
-    title: run.type === "single-step" ? "Single Step Agent" : "Multi Step Agent",
+    title: "Agent Run",
     label: run.name,
     tooltip: "An agent run was triggered",
     time: new Date(run.createdAt),
     color: run.status === "failed" ? "text-rose-700" : undefined,
     icon: <Bot className="w-3.5 h-3.5" />,
     iconBackground:
-      run.status === "failed" ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-700",
+      run.status === "failed"
+        ? "bg-rose-100 text-rose-700"
+        : "bg-slate-100 text-slate-700",
     interactive: true,
   };
 };
@@ -243,11 +257,14 @@ const memoToResult = (
   result: ClientInferResponseBody<
     typeof contract.getWorkflowExecutionTimeline,
     200
-  >["memos"][number]
+  >["memos"][number],
 ): Node => {
   let parsedValue;
   try {
-    parsedValue = typeof result.value === "string" ? JSON.parse(result.value) : result.value;
+    parsedValue =
+      typeof result.value === "string"
+        ? JSON.parse(result.value)
+        : result.value;
   } catch (e) {
     parsedValue = result.value;
   }
@@ -269,11 +286,14 @@ const structuredToNode = (
   result: ClientInferResponseBody<
     typeof contract.getWorkflowExecutionTimeline,
     200
-  >["structured"][number]
+  >["structured"][number],
 ): Node => {
   let parsedValue;
   try {
-    parsedValue = typeof result.value === "string" ? JSON.parse(result.value) : result.value;
+    parsedValue =
+      typeof result.value === "string"
+        ? JSON.parse(result.value)
+        : result.value;
   } catch (e) {
     parsedValue = result.value;
   }
@@ -291,7 +311,13 @@ const structuredToNode = (
   };
 };
 
-function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onClick?: () => void }) {
+function WorkflowEvent({
+  node,
+  onClick,
+}: {
+  node: Node & { result?: any };
+  onClick?: () => void;
+}) {
   // Special rendering for log messages
   if (node.isLog) {
     let logColor = "text-sky-600"; // Default to info
@@ -307,7 +333,7 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
         className={cn(
           "px-6 py-3 relative group",
           "before:absolute before:left-[2.25rem] before:top-0 before:bottom-0 before:w-px before:bg-border",
-          "last:before:hidden"
+          "last:before:hidden",
         )}
       >
         {node.time && (
@@ -319,7 +345,9 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
         <div className="ml-8 max-w-[calc(100%-8rem)]">
           <div className="font-mono text-sm px-4 py-2">
             <div className="flex items-baseline gap-2">
-              <span className={cn("uppercase text-xs font-bold", logColor)}>{node.logLevel}</span>
+              <span className={cn("uppercase text-xs font-bold", logColor)}>
+                {node.logLevel}
+              </span>
               <span>{node.title}</span>
             </div>
 
@@ -348,7 +376,7 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
         node.interactive && [
           "cursor-pointer hover:bg-muted/50 transition-colors",
           "after:absolute after:inset-0 after:pointer-events-none after:border after:border-transparent after:hover:border-border/60 after:rounded-sm after:transition-colors",
-        ]
+        ],
       )}
       onClick={onClick}
     >
@@ -357,15 +385,27 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
           {formatRelative(node.time, new Date())}
         </div>
       )}
-      <div className={cn("flex items-start gap-4 max-w-[calc(100%-8rem)]", node.color)}>
-        <div className={cn("p-1.5 rounded-full shrink-0 z-10", node.iconBackground)}>
+      <div
+        className={cn(
+          "flex items-start gap-4 max-w-[calc(100%-8rem)]",
+          node.color,
+        )}
+      >
+        <div
+          className={cn(
+            "p-1.5 rounded-full shrink-0 z-10",
+            node.iconBackground,
+          )}
+        >
           {node.icon}
         </div>
         <div className="flex-1 min-w-0 pt-0.5">
           <div className="flex items-baseline gap-2 flex-wrap mb-1">
             <span className="text-sm font-semibold">{node.title}</span>
             {node.label && (
-              <code className="px-1.5 py-1 bg-muted rounded text-xs font-mono">{node.label}</code>
+              <code className="px-1.5 py-1 bg-muted rounded text-xs font-mono">
+                {node.label}
+              </code>
             )}
             {node.interactive && (
               <span className="text-xs text-muted-foreground/80 flex items-center gap-1 group-hover:text-primary transition-colors">
@@ -374,7 +414,9 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
               </span>
             )}
           </div>
-          {node.tooltip && <div className="text-sm text-muted-foreground">{node.tooltip}</div>}
+          {node.tooltip && (
+            <div className="text-sm text-muted-foreground">{node.tooltip}</div>
+          )}
           {node.result && JSON.stringify(node.result).length > 5000 && (
             <Collapsible className="mt-3">
               <CollapsibleTrigger className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors mb-1">
@@ -386,7 +428,9 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
                   {typeof node.result === "object" ? (
                     <ReadOnlyJSON json={node.result} />
                   ) : (
-                    <span className="text-sm font-mono">{JSON.stringify(node.result)}</span>
+                    <span className="text-sm font-mono">
+                      {JSON.stringify(node.result)}
+                    </span>
                   )}
                 </div>
               </CollapsibleContent>
@@ -397,7 +441,9 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
               {typeof node.result === "object" ? (
                 <ReadOnlyJSON json={node.result} />
               ) : (
-                <span className="text-sm font-mono">{JSON.stringify(node.result)}</span>
+                <span className="text-sm font-mono">
+                  {JSON.stringify(node.result)}
+                </span>
               )}
             </div>
           )}
@@ -408,7 +454,9 @@ function WorkflowEvent({ node, onClick }: { node: Node & { result?: any }; onCli
 }
 
 function useTimelineParser(
-  timeline: ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline> | undefined
+  timeline:
+    | ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline>
+    | undefined,
 ) {
   const status = !timeline
     ? "pending"
@@ -454,9 +502,12 @@ export default function WorkflowExecutionDetailsPage({
   const user = useUser();
 
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeline, setTimeline] =
-    useState<ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline>>();
+    useState<
+      ClientInferResponseBody<typeof contract.getWorkflowExecutionTimeline>
+    >();
 
   const { status, result, input } = useTimelineParser(timeline);
 
@@ -487,7 +538,13 @@ export default function WorkflowExecutionDetailsPage({
     } finally {
       setIsLoading(false);
     }
-  }, [params.clusterId, params.workflowName, params.executionId, user.isLoaded, getToken]);
+  }, [
+    params.clusterId,
+    params.workflowName,
+    params.executionId,
+    user.isLoaded,
+    getToken,
+  ]);
 
   useEffect(() => {
     // Initial fetch
@@ -534,7 +591,12 @@ export default function WorkflowExecutionDetailsPage({
         }, 1000);
       }
     },
-    [fetchWorkflowExecution, getToken, params.clusterId, timeline?.execution.job.id]
+    [
+      fetchWorkflowExecution,
+      getToken,
+      params.clusterId,
+      timeline?.execution.job.id,
+    ],
   );
 
   const nodes = [
@@ -548,7 +610,9 @@ export default function WorkflowExecutionDetailsPage({
             tooltip: "Final result of the workflow execution",
             icon: <Terminal className="w-3.5 h-3.5" />,
             iconBackground:
-              status === "failure" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700",
+              status === "failure"
+                ? "bg-red-100 text-red-700"
+                : "bg-green-100 text-green-700",
             interactive: false,
             result,
           },
@@ -569,7 +633,11 @@ export default function WorkflowExecutionDetailsPage({
   }
 
   const handleNodeClick = (node: Node) => {
-    setSelectedRunId(selectedRunId ? null : node.id);
+    if (node.title === "Agent Run") {
+      setSelectedRunId(selectedRunId ? null : node.id);
+    } else {
+      setSelectedEventId(selectedEventId ? null : node.id);
+    }
   };
 
   const copyTimelineToClipboard = () => {
@@ -602,9 +670,13 @@ export default function WorkflowExecutionDetailsPage({
               <div className="text-sm font-medium">Workflow Details</div>
               <div className="text-xs text-muted-foreground font-mono">
                 {new Date(timeline.execution.createdAt).toISOString()} (
-                {formatDistance(new Date(timeline.execution.createdAt), new Date(), {
-                  addSuffix: true,
-                })}
+                {formatDistance(
+                  new Date(timeline.execution.createdAt),
+                  new Date(),
+                  {
+                    addSuffix: true,
+                  },
+                )}
                 )
               </div>
             </div>
@@ -618,7 +690,8 @@ export default function WorkflowExecutionDetailsPage({
               <div className="min-w-0 space-y-1">
                 <div className="text-xs text-muted-foreground">Workflow</div>
                 <div className="font-medium">
-                  {timeline.execution.workflowName} (v{timeline.execution.workflowVersion})
+                  {timeline.execution.workflowName} (v
+                  {timeline.execution.workflowVersion})
                 </div>
               </div>
             </div>
@@ -628,7 +701,9 @@ export default function WorkflowExecutionDetailsPage({
                 <Terminal className="w-3.5 h-3.5 text-muted-foreground" />
               </div>
               <div className="min-w-0 space-y-1">
-                <div className="text-xs text-muted-foreground">Execution ID</div>
+                <div className="text-xs text-muted-foreground">
+                  Execution ID
+                </div>
                 <div>
                   <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
                     {params.executionId}
@@ -645,7 +720,7 @@ export default function WorkflowExecutionDetailsPage({
                     ? "bg-rose-100"
                     : status === "success"
                       ? "bg-emerald-100"
-                      : "bg-slate-100"
+                      : "bg-slate-100",
                 )}
               >
                 <div
@@ -655,7 +730,7 @@ export default function WorkflowExecutionDetailsPage({
                       ? "bg-rose-500"
                       : status === "success"
                         ? "bg-emerald-500"
-                        : "bg-slate-400"
+                        : "bg-slate-400",
                   )}
                 />
               </div>
@@ -669,7 +744,9 @@ export default function WorkflowExecutionDetailsPage({
               <div className="pt-2 mt-2 border-t border-border/50">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">Input Parameters</span>
+                  <span className="text-xs text-muted-foreground">
+                    Input Parameters
+                  </span>
                 </div>
                 <div className="bg-muted/50 rounded-md p-3">
                   <div className="font-mono text-xs">
@@ -685,39 +762,40 @@ export default function WorkflowExecutionDetailsPage({
           </div>
         </div>
 
-        {timeline.execution.job.approvalRequested && timeline.execution.job.approved === null && (
-          <div className="rounded-lg border bg-card p-4 space-y-3">
-            <div className="flex items-center gap-2 text-amber-600">
-              <Pause className="w-4 h-4" />
-              <h3 className="text-sm font-medium">Approval Required</h3>
+        {timeline.execution.job.approvalRequested &&
+          timeline.execution.job.approved === null && (
+            <div className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-2 text-amber-600">
+                <Pause className="w-4 h-4" />
+                <h3 className="text-sm font-medium">Approval Required</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                The Workflow is currently paused awaiting approval.
+              </p>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="w-full"
+                  onClick={() => {
+                    submitApproval({ approved: true });
+                  }}
+                >
+                  Approve
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => {
+                    submitApproval({ approved: false });
+                  }}
+                >
+                  Deny
+                </Button>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              The Workflow is currently paused awaiting approval.
-            </p>
-            <div className="flex gap-2 pt-1">
-              <Button
-                size="sm"
-                variant="default"
-                className="w-full"
-                onClick={() => {
-                  submitApproval({ approved: true });
-                }}
-              >
-                Approve
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-full"
-                onClick={() => {
-                  submitApproval({ approved: false });
-                }}
-              >
-                Deny
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
       </div>
 
       {/* Right column - Timeline */}
@@ -751,37 +829,60 @@ export default function WorkflowExecutionDetailsPage({
               <WorkflowEvent
                 key={node.id}
                 node={node}
-                onClick={node.interactive ? () => handleNodeClick(node) : undefined}
+                onClick={
+                  node.interactive ? () => handleNodeClick(node) : undefined
+                }
               />
             ))}
           </div>
         </div>
       </div>
 
-      <Sheet open={!!selectedRunId} onOpenChange={() => setSelectedRunId(null)}>
-        <SheetContent style={{ minWidth: "80%" }} className="overflow-y-auto h-screen">
-          <SheetHeader>
-            <SheetTitle>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <div className="font-mono text-xl">Agent Run Details</div>
-                  <div className="text-sm text-muted-foreground">
-                    View the details and output of this run
+      {/* Run details sheet */}
+      {selectedRunId && (
+        <Sheet
+          open={!!selectedRunId}
+          onOpenChange={() => setSelectedRunId(null)}
+        >
+          <SheetContent
+            style={{ minWidth: "80%" }}
+            className="overflow-y-auto h-screen"
+          >
+            <SheetHeader>
+              <SheetTitle>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="font-mono text-xl">Agent Run Details</div>
+                    <div className="text-sm text-muted-foreground">
+                      View the details and output of this run
+                    </div>
                   </div>
                 </div>
-              </div>
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">
-            {selectedRunId && (
-              <Run clusterId={params.clusterId} runId={selectedRunId} interactiveOveride={false} />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+              </SheetTitle>
+            </SheetHeader>
+            <div className="mt-6">
+              <Run
+                clusterId={params.clusterId}
+                runId={selectedRunId}
+                interactiveOveride={false}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
+
+      {/* Event details component */}
+      <EventDetails
+        eventId={selectedEventId}
+        clusterId={params.clusterId}
+        isOpen={!!selectedEventId}
+        onOpenChange={isOpen => {
+          if (!isOpen) setSelectedEventId(null);
+        }}
+      />
     </div>
   );
 }
