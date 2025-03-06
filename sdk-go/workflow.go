@@ -499,7 +499,7 @@ func (b *WorkflowVersionBuilder) Define(handler interface{}) {
 							Value string `json:"value"`
 						}
 
-						if err := json.Unmarshal([]byte(respBody), &kvResponse); err == nil {
+						if err := json.Unmarshal([]byte(respBody), &kvResponse); err == nil && kvResponse.Value != "" {
 							var result struct {
 								Value interface{} `json:"value"`
 							}
