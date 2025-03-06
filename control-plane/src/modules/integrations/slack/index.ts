@@ -1,4 +1,11 @@
-import { App, BlockAction, SlackAction, webApi } from "@slack/bolt";
+import {
+  App,
+  BlockAction,
+  KnownEventFromType,
+  SlackAction,
+  webApi,
+} from "@slack/bolt";
+import { FastifySlackReceiver } from "./receiver";
 import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
 import { logger } from "../../observability/logger";
@@ -10,7 +17,10 @@ import { InstallableIntegration } from "../types";
 import { z } from "zod";
 import { getUserForCluster } from "../../dependencies/clerk";
 import { submitApproval } from "../../jobs/jobs";
-import { integrationSchema, notificationSchema } from "../../contract";
+import {
+  integrationSchema,
+  notificationSchema,
+} from "../../contract";
 
 export const THREAD_META_KEY = "slackThreadTs";
 export const CHANNEL_META_KEY = "slackChannel";
@@ -19,6 +29,19 @@ const CALL_APPROVE_ACTION_ID = "call_approve";
 const CALL_DENY_ACTION_ID = "call_deny";
 
 let app: App | undefined;
+
+type MessageEvent = {
+  event: KnownEventFromType<"message">;
+  client: webApi.WebClient;
+  clusterId: string;
+  user?: {
+    userId: string;
+    slack: {
+      id: string;
+      email: string;
+    };
+  };
+};
 
 export const slack: InstallableIntegration = {
   name: "slack",
@@ -235,6 +258,11 @@ export const start = async (fastify: FastifyInstance) => {
         botToken: token,
       };
     },
+    receiver: new FastifySlackReceiver({
+      signingSecret: SLACK_SIGNING_SECRET,
+      path: "/slack/events",
+      fastify,
+    }),
   });
 
   app.action(CALL_APPROVE_ACTION_ID, async params =>
@@ -243,6 +271,30 @@ export const start = async (fastify: FastifyInstance) => {
   app.action(CALL_DENY_ACTION_ID, async params =>
     handleCallApprovalAction({ ...params, actionId: CALL_DENY_ACTION_ID }),
   );
+
+  // Event listener for mentions
+  app.event("app_mention", async ({ event, client }) => {
+    logger.info("Received mention event. Responding.", event);
+
+    await client.chat.postMessage({
+      thread_ts: event.ts,
+      channel: event.channel,
+      mrkdwn: true,
+      text: "Hey! I don't currently respond to mentions.",
+    });
+  });
+
+  // Event listener for direct messages
+  app.event("message", async ({ event, client }) => {
+    logger.info("Received message event. Responding.", event);
+
+    await client.chat.postMessage({
+      thread_ts: event.ts,
+      channel: event.channel,
+      mrkdwn: true,
+      text: "Hey! I don't currently respond to direct messages.",
+    });
+  });
 
   await app.start();
 };
@@ -254,12 +306,25 @@ const hasThread = (e: any): e is { thread_ts: string } => {
   return typeof e?.thread_ts === "string";
 };
 
+const isDirectMessage = (e: KnownEventFromType<"message">): boolean => {
+  return e.channel_type === "im";
+};
+
+const hasUser = (e: any): e is { user: string } => {
+  return typeof e?.user === "string";
+};
+
 const isBlockAction = (e: SlackAction): e is BlockAction => {
   return typeof e?.type === "string" && e.type === "block_actions";
 };
 
 const hasValue = (e: any): e is { value: string } => {
   return "value" in e && typeof e?.value === "string";
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isBotMessage = (e: any): boolean => {
+  return typeof e?.bot_id === "string";
 };
 
 const integrationByTeam = async (teamId: string) => {
@@ -356,6 +421,7 @@ const deleteNangoConnection = async (connectionId: string) => {
 
   await nango.deleteConnection(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
 };
+
 
 const authenticateUser = async (
   userId: string,
