@@ -22,8 +22,8 @@ const sanitizedKey: { [key: string]: string } = {
   clusterId: "Cluster ID",
 };
 
-function formatDateTime(date: string | Date) {
-  return new Date(date).toLocaleString(undefined, {
+const formatDateTime = (date: string | Date) =>
+  new Date(date).toLocaleString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -31,7 +31,6 @@ function formatDateTime(date: string | Date) {
     minute: "2-digit",
     second: "2-digit",
   });
-}
 
 export function EventDetails({
   eventId,
@@ -114,70 +113,67 @@ export function EventDetails({
               </p>
             </div>
           ) : (
-            <>
-              {eventMeta && (
-                <>
-                  <div className="rounded-xl bg-white p-4 shadow-sm border border-border/50 hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
-                      <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center">
-                        <Info className="w-3 h-3 text-gray-600" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium">Event Details</div>
-                        <div className="text-xs text-muted-foreground">
-                          Event ID: {eventMeta.id}
-                        </div>
-                      </div>
+            eventMeta && (
+              <>
+                <div className="rounded-xl bg-white p-4 shadow-sm border border-border/50 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
+                    <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center">
+                      <Info className="w-3 h-3 text-gray-600" />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      {Object.entries(eventMeta)
-                        .filter(([key]) => key !== "meta")
-                        .map(([key, value]) => (
-                          <div key={key} className="space-y-1">
-                            <dt className="text-xs font-medium text-muted-foreground">
-                              {sanitizedKey[key] ?? startCase(key)}
-                            </dt>
-                            <dd className="text-sm">
-                              {value instanceof Date
-                                ? formatDateTime(value)
-                                : value === null
-                                  ? "—"
-                                  : typeof value === "object"
-                                    ? JSON.stringify(value)
-                                    : String(value)}
-                            </dd>
-                          </div>
-                        ))}
+                    <div>
+                      <div className="text-sm font-medium">Event Details</div>
+                      <div className="text-xs text-muted-foreground">
+                        Event ID: {eventMeta.id}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="rounded-xl bg-secondary/30 p-4 shadow-sm border border-border/50">
-                    <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
-                      <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center">
-                        <Blocks className="w-3 h-3 text-gray-600" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium">Metadata</div>
-                        <div className="text-xs text-muted-foreground">
-                          Additional event information
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(eventMeta)
+                      .filter(([key]) => key !== "meta")
+                      .map(([key, value]) => (
+                        <div key={key} className="space-y-1">
+                          <dt className="text-xs font-medium text-muted-foreground">
+                            {sanitizedKey[key] ?? startCase(key)}
+                          </dt>
+                          <dd className="text-sm">
+                            {value instanceof Date
+                              ? formatDateTime(value)
+                              : value === null
+                                ? "—"
+                                : typeof value === "object"
+                                  ? JSON.stringify(value)
+                                  : String(value)}
+                          </dd>
                         </div>
+                      ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-secondary/30 p-4 shadow-sm border border-border/50">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-border/50">
+                    <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center">
+                      <Blocks className="w-3 h-3 text-gray-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Metadata</div>
+                      <div className="text-xs text-muted-foreground">
+                        Additional event information
                       </div>
                     </div>
-
-                    {eventMeta.meta ? (
-                      <ReadOnlyJSON json={eventMeta.meta} />
-                    ) : (
-                      <div className="flex items-center justify-center h-24">
-                        <p className="text-sm text-muted-foreground">
-                          No metadata available
-                        </p>
-                      </div>
-                    )}
                   </div>
-                </>
-              )}
-            </>
+                  {eventMeta.meta ? (
+                    <ReadOnlyJSON json={eventMeta.meta} />
+                  ) : (
+                    <div className="flex items-center justify-center h-24">
+                      <p className="text-sm text-muted-foreground">
+                        No metadata available
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )
           )}
         </div>
       </SheetContent>
