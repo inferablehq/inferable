@@ -91,7 +91,8 @@ const envSchema = z
       if (value.JWKS_URL) {
         return ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "MANAGEMENT_API_SECRET can not be set with JWKS_URL (Headless mode only)",
+          message:
+            "MANAGEMENT_API_SECRET can not be set with JWKS_URL (Headless mode only)",
           path: ["MANAGEMENT_API_SECRET"],
         });
       }
@@ -114,7 +115,7 @@ const envSchema = z
       "NANGO_SECRET_KEY",
       "SLACK_SIGNING_SECRET",
       "E2B_ACCESS_TOKEN",
-      "FIRECRAWL_API_KEY"
+      "FIRECRAWL_API_KEY",
     ];
 
     for (const key of EE_REQUIRED) {

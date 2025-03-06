@@ -1,9 +1,4 @@
-import {
-  App,
-  BlockAction,
-  SlackAction,
-  webApi,
-} from "@slack/bolt";
+import { App, BlockAction, SlackAction, webApi } from "@slack/bolt";
 import { env } from "../../../utilities/env";
 import { FastifyInstance } from "fastify";
 import { logger } from "../../observability/logger";
@@ -15,10 +10,7 @@ import { InstallableIntegration } from "../types";
 import { z } from "zod";
 import { getUserForCluster } from "../../dependencies/clerk";
 import { submitApproval } from "../../jobs/jobs";
-import {
-  integrationSchema,
-  notificationSchema,
-} from "../../contract";
+import { integrationSchema, notificationSchema } from "../../contract";
 
 export const THREAD_META_KEY = "slackThreadTs";
 export const CHANNEL_META_KEY = "slackChannel";
