@@ -55,7 +55,7 @@ const columns: ColumnDef<ClusterData>[] = [
       <div className="flex-1">
         <Link
           href={`/clusters/${row.original.id}`}
-          className="text-gray-900 hover:text-gray-700 text-lg font-semibold"
+          className="text-primary-900 hover:text-gray-700 text-lg font-semibold"
         >
           {row.getValue("name")}
         </Link>

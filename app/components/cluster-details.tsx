@@ -87,7 +87,9 @@ function FlatToolsList({
                       <span
                         className={cn(
                           "w-2 h-2 rounded-full",
-                          isActive ? "bg-green-500" : "bg-gray-300",
+                          isActive
+                            ? "bg-green-500"
+                            : "bg-gray-300 dark:bg-gray-600",
                         )}
                       />
                       <span className="font-mono text-sm">
@@ -175,7 +177,9 @@ function FlatWorkflowsList({
                       <span
                         className={cn(
                           "w-2 h-2 rounded-full",
-                          isActive ? "bg-green-500" : "bg-gray-300",
+                          isActive
+                            ? "bg-green-500"
+                            : "bg-gray-300 dark:bg-gray-600",
                         )}
                       />
                       <span className="font-mono text-sm">
@@ -215,16 +219,14 @@ export default function ServicesOverview({
           <SheetTrigger asChild>
             <Button
               variant="outline"
-              className="w-full h-[120px] flex flex-col items-center justify-center gap-2 border border-dashed border-gray-200 rounded-xl transition-all duration-200 hover:border-gray-300 hover:bg-gray-50/50"
+              className="w-full h-[120px] flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-xl transition-all duration-200 hover:border-border/80 hover:bg-accent/50"
             >
-              <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                <PlusCircleIcon className="w-5 h-5 text-gray-600" />
+              <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center">
+                <PlusCircleIcon className="w-5 h-5 text-muted-foreground" />
               </div>
               <div className="text-center">
-                <h3 className="font-medium text-gray-900">
-                  No Tools Connected
-                </h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="font-medium">No Tools Connected</h3>
+                <p className="text-sm text-muted-foreground">
                   Click here to add your first tool
                 </p>
               </div>
@@ -277,16 +279,14 @@ export function WorkflowsOverview({
         >
           <Button
             variant="outline"
-            className="w-full h-[120px] flex flex-col items-center justify-center gap-2 border border-dashed border-gray-200 rounded-xl transition-all duration-200 hover:border-gray-300 hover:bg-gray-50/50"
+            className="w-full h-[120px] flex flex-col items-center justify-center gap-2 border border-dashed border-border rounded-xl transition-all duration-200 hover:border-border/80 hover:bg-accent/50"
           >
-            <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-              <PlusCircleIcon className="w-5 h-5 text-gray-600" />
+            <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center">
+              <PlusCircleIcon className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="text-center">
-              <h3 className="font-medium text-gray-900">
-                No Workflows Connected
-              </h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-medium">No Workflows Connected</h3>
+              <p className="text-sm text-muted-foreground">
                 Click here to add your first workflow
               </p>
             </div>
@@ -325,33 +325,33 @@ export function ClusterDetails({
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
+            className="group relative flex items-center w-full px-5 py-6 bg-background hover:bg-accent/50 border border-border rounded-xl transition-all duration-200 hover:shadow-lg"
           >
             <div className="absolute -top-1.5 -right-1.5">
               {isInitialLoading ? (
-                <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full border border-amber-100 dark:border-amber-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs font-medium text-amber-700">
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                     Loading
                   </span>
                 </div>
               ) : liveMachineCount > 0 ? (
-                <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full border border-green-100 dark:border-green-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full border border-red-100 dark:border-red-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
                 </div>
               )}
             </div>
             <div className="flex items-center gap-4 w-full">
               <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
-                <Cpu className="w-5 h-5 text-gray-700" />
+                <Cpu className="w-5 h-5 text-foreground/80" />
               </div>
               <div className="flex flex-col items-start gap-0.5">
-                <span className="font-semibold text-gray-900">Machines</span>
-                <span className="text-xs text-gray-500 font-mono">
+                <span className="font-semibold">Machines</span>
+                <span className="text-xs text-muted-foreground font-mono">
                   {liveMachineCount} Active
                 </span>
               </div>
@@ -391,33 +391,33 @@ export function ClusterDetails({
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
+            className="group relative flex items-center w-full px-5 py-6 bg-background hover:bg-accent/50 border border-border rounded-xl transition-all duration-200 hover:shadow-lg"
           >
             <div className="absolute -top-1.5 -right-1.5">
               {isInitialLoading ? (
-                <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full border border-amber-100 dark:border-amber-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs font-medium text-amber-700">
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                     Loading
                   </span>
                 </div>
               ) : nonWorkflowTools.length > 0 ? (
-                <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full border border-green-100 dark:border-green-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full border border-red-100 dark:border-red-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
                 </div>
               )}
             </div>
             <div className="flex items-center gap-4 w-full">
               <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
-                <Blocks className="w-5 h-5 text-gray-700" />
+                <Blocks className="w-5 h-5 text-foreground/80" />
               </div>
               <div className="flex flex-col items-start gap-0.5">
-                <span className="font-semibold text-gray-900">Tools</span>
-                <span className="text-xs text-gray-500 font-mono">
+                <span className="font-semibold">Tools</span>
+                <span className="text-xs text-muted-foreground font-mono">
                   {tools.length} {pluralize("Tool", tools.length)}
                 </span>
               </div>
@@ -459,33 +459,33 @@ export function ClusterDetails({
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            className="group relative flex items-center w-full px-5 py-6 bg-white hover:bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:shadow-lg"
+            className="group relative flex items-center w-full px-5 py-6 bg-background hover:bg-accent/50 border border-border rounded-xl transition-all duration-200 hover:shadow-lg"
           >
             <div className="absolute -top-1.5 -right-1.5">
               {isInitialLoading ? (
-                <div className="flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 rounded-full border border-amber-100 dark:border-amber-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-xs font-medium text-amber-700">
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                     Loading
                   </span>
                 </div>
               ) : workflowTools.length > 0 ? (
-                <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full border border-green-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2.5 py-1 rounded-full border border-green-100 dark:border-green-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 bg-red-50 px-2.5 py-1 rounded-full border border-red-100 shadow-sm">
+                <div className="flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full border border-red-100 dark:border-red-900/50 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
                 </div>
               )}
             </div>
             <div className="flex items-center gap-4 w-full">
               <div className="h-5 w-5 shrink-0 rounded-xl flex items-center justify-center">
-                <Blocks className="w-5 h-5 text-gray-700" />
+                <Blocks className="w-5 h-5 text-foreground/80" />
               </div>
               <div className="flex flex-col items-start gap-0.5">
-                <span className="font-semibold text-gray-900">Workflows</span>
-                <span className="text-xs text-gray-500 font-mono">
+                <span className="font-semibold">Workflows</span>
+                <span className="text-xs text-muted-foreground font-mono">
                   {workflowTools.length}{" "}
                   {pluralize("Workflow", workflowTools.length)}
                 </span>
@@ -544,12 +544,10 @@ function MachinesOverview({ clusterId }: { clusterId: string }) {
               <MachineCard key={m.id} machine={m} clusterId={clusterId} />
             ))
         ) : (
-          <div className="col-span-full flex items-center justify-center p-8 rounded-xl bg-gray-50 border border-gray-200">
+          <div className="col-span-full flex items-center justify-center p-8 rounded-xl bg-muted/50 border border-border">
             <div className="flex flex-col items-center gap-3">
               <DeadRedCircle />
-              <span className="text-sm text-gray-600">
-                Your machines are offline
-              </span>
+              <span className="text-sm">Your machines are offline</span>
               <p className="text-xs text-muted-foreground max-w-[300px] text-center">
                 No active machines found in this cluster. Make sure your
                 machines are running and properly configured.
@@ -578,8 +576,8 @@ function MachineCard({
       className={cn(
         "rounded-xl p-5 shadow-sm border transition-all duration-200 hover:shadow-md",
         isLive
-          ? "bg-green-50/30 border-green-100"
-          : "bg-gray-50/30 border-gray-100",
+          ? "bg-green-50/30 dark:bg-green-900/10 border-green-100 dark:border-green-900/30"
+          : "bg-muted/30 border-border/50",
       )}
     >
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
@@ -600,8 +598,8 @@ function MachineCard({
           className={cn(
             "px-2 py-1 rounded-full font-medium",
             isLive
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-gray-700",
+              ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+              : "bg-muted text-muted-foreground",
           )}
         >
           {isLive ? "Active" : "Inactive"}
