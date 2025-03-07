@@ -162,12 +162,8 @@ export class PollingAgent {
         functionExecutionTime: result.functionExecutionTime,
       });
 
-
       await this.client
         .createJobResult({
-          headers: {
-            "x-sentinel-unmask-keys": "resultType,functionExecutionTime",
-          },
           body: {
             result: result.content,
             resultType: result.type,
@@ -261,9 +257,6 @@ export const registerMachine = async (
     tools: tools?.map((f) => f.name),
   });
   const registerResult = await client.createMachine({
-    headers: {
-      "x-sentinel-no-mask": "1",
-    },
     body: {
       tools: tools?.map((func) => ({
         name: func.name,

@@ -68,6 +68,9 @@ import {
 } from "@l1m/core";
 import { buildModel } from "../models";
 import Anthropic from "@anthropic-ai/sdk";
+import { sendSlackNotification } from "../integrations/slack";
+
+import { sendEmail } from "../email";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -1409,9 +1412,13 @@ export const router = initServer().router(contract, {
     };
   },
 
-  createWorkflowLog: async request => {
+  createWorkflowLogLegacy: async request => {
     const { clusterId, executionId } = request.params;
     const { status, data } = request.body;
+
+    logger.warn(
+      "Machine is logging with deprecated createWorkflowLog endpoint",
+    );
 
     const machine = request.request.getAuth();
     machine.canAccess({ cluster: { clusterId } });
@@ -1426,6 +1433,42 @@ export const router = initServer().router(contract, {
     return {
       status: 201,
       body: result,
+    };
+  },
+
+  createWorkflowLog: async request => {
+    const { clusterId, executionId } = request.params;
+    const { status, data } = request.body;
+
+    const machine = request.request.getAuth();
+    machine.canAccess({ cluster: { clusterId } });
+
+    const hash = crypto.createHash("sha256");
+    hash.update(JSON.stringify(request.body));
+    hash.update(clusterId);
+    hash.update(executionId);
+    const key = `${executionId}_log_${hash.digest("hex")}`;
+
+    const existingNotification = await kv.get(clusterId, key);
+    if (existingNotification) {
+      return {
+        status: 201,
+        body: undefined,
+      };
+    }
+
+    await createWorkflowLog({
+      clusterId,
+      workflowExecutionId: executionId,
+      status,
+      data,
+    });
+
+    await kv.setIfNotExists(clusterId, key, JSON.stringify(request.body));
+
+    return {
+      status: 201,
+      body: undefined,
     };
   },
 
@@ -1675,6 +1718,72 @@ export const router = initServer().router(contract, {
       body: {
         data: result.structured,
       },
+    };
+  },
+
+  createWorkflowNotification: async request => {
+    const { clusterId, executionId, workflowName } = request.params;
+
+    const auth = request.request.getAuth();
+    await auth.canAccess({ cluster: { clusterId } });
+
+    const hash = crypto.createHash("sha256");
+    hash.update(JSON.stringify(request.body));
+    hash.update(clusterId);
+    hash.update(executionId);
+    const key = `${executionId}_notification_${hash.digest("hex")}`;
+
+    const existingNotification = await kv.get(clusterId, key);
+    if (existingNotification) {
+      return {
+        status: 201,
+        body: undefined,
+      };
+    }
+
+    // An approval may have an explcit `notification` object.
+    if (request.body && request.body.destination?.type === "slack") {
+      await sendSlackNotification({
+        clusterId,
+        notification: request.body,
+      });
+
+      events.write({
+        type: "notificationSent",
+        jobId: executionId,
+        clusterId,
+        meta: {
+          notification: request.body,
+        },
+      });
+    } else if (request.body && request.body.destination?.type === "email") {
+      await sendEmail(
+        request.body,
+        `Notification from ${workflowName} ${executionId}`,
+      );
+
+      events.write({
+        type: "notificationSent",
+        jobId: executionId,
+        clusterId,
+        meta: {
+          notification: request.body,
+        },
+      });
+    } else {
+      return {
+        status: 400,
+        body: {
+          message: "Unknown notification type",
+        },
+      };
+    }
+
+    kv.setIfNotExists(clusterId, key, JSON.stringify(request.body));
+
+    return {
+      status: 201,
+      body: undefined,
     };
   },
 });

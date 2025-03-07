@@ -8,8 +8,6 @@ const machineHeaders = {
   "x-machine-sdk-version": z.string().optional(),
   "x-machine-sdk-language": z.string().optional(),
   "x-forwarded-for": z.string().optional().optional(),
-  "x-sentinel-no-mask": z.string().optional().optional(),
-  "x-sentinel-unmask-keys": z.string().optional(),
 };
 
 const functionReference = z.object({
@@ -1264,7 +1262,7 @@ export const definition = {
     },
   },
 
-  createWorkflowLog: {
+  createWorkflowLogLegacy: {
     method: "POST",
     path: "/clusters/:clusterId/workflow-executions/:executionId/logs",
     headers: z.object({ authorization: z.string() }),
@@ -1283,6 +1281,38 @@ export const definition = {
         workflowExecutionId: z.string(),
         createdAt: z.date(),
       }),
+    },
+  },
+
+  createWorkflowLog: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions/:executionId/logs",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      workflowName: z.string(),
+      clusterId: z.string(),
+      executionId: z.string(),
+    }),
+    body: z.object({
+      status: z.enum(["info", "warn", "error"]),
+      data: z.object({}).passthrough(),
+    }),
+    responses: {
+      201: z.undefined(),
+    },
+  },
+
+  createWorkflowNotification: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions/:executionId/notification",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      executionId: z.string(),
+    }),
+    body: notificationSchema,
+    responses: {
+      201: z.undefined(),
     },
   },
 

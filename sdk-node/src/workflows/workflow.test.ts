@@ -44,6 +44,7 @@ describe("workflow", () => {
     workflow.version(1).define(async (ctx, input) => {
       onStart(input);
       ctx.log("info", { message: "Starting workflow" });
+
       const { word } = await ctx.agents.react({
         name: "search",
         instructions: helpers.structuredPrompt({

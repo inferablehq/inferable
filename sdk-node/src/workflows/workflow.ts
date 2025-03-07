@@ -12,7 +12,7 @@ import {
   WorkflowToolRegistrationInput,
 } from "../types";
 import { Interrupt } from "../util";
-import { ToolConfigSchema } from "../contract";
+import { notificationSchema, ToolConfigSchema } from "../contract";
 import L1M from "l1m";
 
 type WorkflowInput = {
@@ -159,6 +159,36 @@ type WorkflowContext<TInput> = {
     status: "info" | "warn" | "error",
     meta: { [key: string]: unknown },
   ) => Promise<void>;
+  /**
+   * Send a notification from the workflow.
+   *
+   * @example
+   * ```typescript
+   * await ctx.notify({
+   *   message: "Something important happened",
+   *   destination: {
+   *     type: "email",
+   *     email: "test@example.com",
+   *   }
+   * });
+   * ```
+   *
+   * @example
+   * ```typescript
+   * await ctx.notify({
+   *   message: "Something important happened",
+   *   destination: {
+   *    type: "slack",
+   *    // The email address of the Slack user to notify
+   *    email: "test@example.com",
+   *    // Or Slack user ID
+   *    userId: "U0123456789",
+   *    // Or Slack channel ID
+   *    channelId: "C0123456789",
+   * });
+   * ```
+   */
+  notify: (notification: z.infer<typeof notificationSchema>) => Promise<void>;
   /**
    * Agent functionality for the workflow.
    */
@@ -589,9 +619,20 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
         await this.client.createWorkflowLog({
           params: {
             clusterId: await this.getClusterId(),
+            workflowName: this.name,
             executionId,
           },
           body: { status, data: meta },
+        });
+      },
+      notify: async (notification: z.infer<typeof notificationSchema>) => {
+        await this.client.createWorkflowNotification({
+          params: {
+            clusterId: await this.getClusterId(),
+            workflowName: this.name,
+            executionId,
+          },
+          body: notification,
         });
       },
     };

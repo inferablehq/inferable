@@ -17,10 +17,7 @@ import { InstallableIntegration } from "../types";
 import { z } from "zod";
 import { getUserForCluster } from "../../dependencies/clerk";
 import { submitApproval } from "../../jobs/jobs";
-import {
-  integrationSchema,
-  notificationSchema,
-} from "../../contract";
+import { integrationSchema, notificationSchema } from "../../contract";
 
 export const THREAD_META_KEY = "slackThreadTs";
 export const CHANNEL_META_KEY = "slackChannel";
@@ -29,19 +26,6 @@ const CALL_APPROVE_ACTION_ID = "call_approve";
 const CALL_DENY_ACTION_ID = "call_deny";
 
 let app: App | undefined;
-
-type MessageEvent = {
-  event: KnownEventFromType<"message">;
-  client: webApi.WebClient;
-  clusterId: string;
-  user?: {
-    userId: string;
-    slack: {
-      id: string;
-      email: string;
-    };
-  };
-};
 
 export const slack: InstallableIntegration = {
   name: "slack",
@@ -102,15 +86,13 @@ export const slack: InstallableIntegration = {
   },
 };
 
-export const notifyApprovalRequest = async ({
-  jobId,
+export const sendSlackNotification = async ({
   clusterId,
-  targetFn,
   notification,
+  blocks,
 }: {
-  jobId: string;
   clusterId: string;
-  targetFn: string;
+  blocks?: (webApi.Block | webApi.KnownBlock)[];
   notification?: z.infer<typeof notificationSchema>;
 }) => {
   if (notification?.destination?.type !== "slack") {
@@ -176,20 +158,42 @@ export const notifyApprovalRequest = async ({
     throw new Error("Could not determine Slack channel for notification");
   }
 
-  const text =
-    notification?.message ?? `I need your approval to call \`${targetFn}\`.`;
-
   await client?.chat.postMessage({
     thread_ts: threadId,
     channel: channelId,
     mrkdwn: true,
-    text,
+    text: notification.message,
+    blocks: blocks ?? [],
+  });
+};
+
+export const notifyApprovalRequest = async ({
+  jobId,
+  clusterId,
+  targetFn,
+  notification,
+}: {
+  jobId: string;
+  clusterId: string;
+  targetFn: string;
+  notification?: z.infer<typeof notificationSchema>;
+}) => {
+  if (notification?.destination?.type !== "slack") {
+    return;
+  }
+
+  notification.message =
+    notification?.message ?? `I need your approval to call \`${targetFn}\`.`;
+
+  await sendSlackNotification({
+    clusterId,
+    notification,
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text,
+          text: notification.message,
         },
       },
       {
@@ -301,30 +305,12 @@ export const start = async (fastify: FastifyInstance) => {
 
 export const stop = async () => await app?.stop();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const hasThread = (e: any): e is { thread_ts: string } => {
-  return typeof e?.thread_ts === "string";
-};
-
-const isDirectMessage = (e: KnownEventFromType<"message">): boolean => {
-  return e.channel_type === "im";
-};
-
-const hasUser = (e: any): e is { user: string } => {
-  return typeof e?.user === "string";
-};
-
 const isBlockAction = (e: SlackAction): e is BlockAction => {
   return typeof e?.type === "string" && e.type === "block_actions";
 };
 
 const hasValue = (e: any): e is { value: string } => {
   return "value" in e && typeof e?.value === "string";
-};
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isBotMessage = (e: any): boolean => {
-  return typeof e?.bot_id === "string";
 };
 
 const integrationByTeam = async (teamId: string) => {
@@ -421,7 +407,6 @@ const deleteNangoConnection = async (connectionId: string) => {
 
   await nango.deleteConnection(env.NANGO_SLACK_INTEGRATION_ID, connectionId);
 };
-
 
 const authenticateUser = async (
   userId: string,
