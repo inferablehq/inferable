@@ -11,7 +11,13 @@ import {
 } from "@/components/circles";
 import { ClusterDetails } from "@/components/cluster-details";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -29,6 +35,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { WorkflowTriggerModal } from "@/components/workflow-trigger-modal";
+import { HackerNewsDemo } from "@/components/hacker-news-demo";
+import { RefreshCw } from "lucide-react";
 
 type ExecutionStatus =
   | "pending"
@@ -66,6 +74,16 @@ type WorkflowExecution = ClientInferResponseBody<
   200
 >[0];
 
+// Custom hook for interval functionality
+function useInterval(callback: () => void, delay: number | null) {
+  useEffect(() => {
+    if (delay === null) return;
+
+    const intervalId = setInterval(callback, delay);
+    return () => clearInterval(intervalId);
+  }, [callback, delay]);
+}
+
 export default function WorkflowsPage({
   params,
 }: {
@@ -76,6 +94,9 @@ export default function WorkflowsPage({
   const user = useUser();
   const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [secondsSinceRefresh, setSecondsSinceRefresh] = useState<number>(0);
   const [nameFilter, setNameFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<ExecutionStatus | "all">(
     "all",
@@ -90,7 +111,7 @@ export default function WorkflowsPage({
       return;
     }
 
-    setIsLoading(true);
+    setIsRefreshing(true);
     try {
       const result = await client.listWorkflowExecutions({
         headers: {
@@ -108,6 +129,7 @@ export default function WorkflowsPage({
 
       if (result.status === 200) {
         setExecutions(result.body);
+        setLastRefreshed(new Date());
       } else {
         createErrorToast(result.body, "Failed to load workflow executions");
       }
@@ -115,6 +137,7 @@ export default function WorkflowsPage({
       createErrorToast(error, "Failed to load workflow executions");
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, [
     params.clusterId,
@@ -124,9 +147,27 @@ export default function WorkflowsPage({
     appliedStatusFilter,
   ]);
 
+  // Initial fetch
   useEffect(() => {
     fetchExecutions();
   }, [fetchExecutions]);
+
+  // Auto-refresh every 10 seconds
+  useInterval(fetchExecutions, 10000);
+
+  // Update seconds since last refresh
+  useEffect(() => {
+    if (!lastRefreshed) return;
+
+    const intervalId = setInterval(() => {
+      const seconds = Math.floor(
+        (new Date().getTime() - lastRefreshed.getTime()) / 1000,
+      );
+      setSecondsSinceRefresh(seconds);
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [lastRefreshed]);
 
   const handleApplyFilters = () => {
     setAppliedNameFilter(nameFilter);
@@ -138,6 +179,10 @@ export default function WorkflowsPage({
     setStatusFilter("all");
     setAppliedNameFilter("");
     setAppliedStatusFilter("all");
+  };
+
+  const handleRefresh = () => {
+    fetchExecutions();
   };
 
   function ExecutionRow({ execution, job, runs }: WorkflowExecution) {
@@ -216,13 +261,7 @@ export default function WorkflowsPage({
           )}
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
-          <span>
-            {new Date(execution.createdAt).toISOString()} (
-            {formatDistance(execution.createdAt, new Date(), {
-              addSuffix: true,
-            })}
-            )
-          </span>
+          <span>{new Date(execution.createdAt).toISOString()}</span>
         </td>
       </tr>
     );
@@ -245,35 +284,15 @@ export default function WorkflowsPage({
     <div className="flex gap-6 p-6">
       <div className="w-96 shrink-0 space-y-4">
         <Card className="bg-white border border-gray-200 rounded-xl transition-all duration-200">
-          <CardContent className="pt-6">
-            <div className="mb-8">
-              <h1 className="text-2xl font-semibold mb-2">Workflows</h1>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Workflows provide a powerful &ldquo;Workflow as Code&rdquo;
-                approach to orchestrating complex, multi-step AI agent
-                interactions.
-                <span className="block mt-2">
-                  Learn more in our{" "}
-                  <Link
-                    href="https://docs.inferable.ai/pages/workflows"
-                    target="_blank"
-                    className="text-primary hover:underline"
-                  >
-                    Workflows documentation
-                  </Link>{" "}
-                  or get started with our{" "}
-                  <Link
-                    href="https://docs.inferable.ai/pages/quick-start"
-                    target="_blank"
-                    className="text-primary hover:underline"
-                  >
-                    Quick Start guide
-                  </Link>
-                  .
-                </span>
-              </p>
-            </div>
-
+          <CardHeader>
+            <CardTitle>Workflows</CardTitle>
+            <CardDescription>
+              Workflows provide a powerful &ldquo;Workflow as Code&rdquo;
+              approach to orchestrating complex, multi-step AI agent
+              interactions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
               <h2 className="text-sm font-semibold">Filters</h2>
               <div>
@@ -329,14 +348,12 @@ export default function WorkflowsPage({
           </CardContent>
         </Card>
 
-        {executions.length > 0 && (
-          <div className="mt-4">
-            <WorkflowTriggerModal
-              clusterId={params.clusterId}
-              onTrigger={fetchExecutions}
-            />
-          </div>
-        )}
+        <div className="mt-4">
+          <WorkflowTriggerModal
+            clusterId={params.clusterId}
+            onTrigger={fetchExecutions}
+          />
+        </div>
       </div>
 
       <div className="flex-1 min-w-0">
@@ -349,63 +366,94 @@ export default function WorkflowsPage({
               Get started by creating your first workflow using our quick start
               guide.
             </p>
-            <Link
-              href="https://docs.inferable.ai/pages/quick-start"
-              target="_blank"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-            >
-              View Quick Start Guide
-            </Link>
+            <div className="flex flex-row gap-2 items-center justify-center">
+              <Link
+                href="https://docs.inferable.ai/pages/quick-start"
+                target="_blank"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              >
+                View Quick Start Guide
+              </Link>
+              <HackerNewsDemo clusterId={params.clusterId} />
+            </div>
           </div>
         ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    ID
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Workflow
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Version
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Execution Status
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Agent Runs
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Started
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {executions.map(execution => (
-                  <ExecutionRow key={execution.execution.id} {...execution} />
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-sm text-muted-foreground">
+                {lastRefreshed && (
+                  <>
+                    Last updated: {lastRefreshed.toLocaleTimeString()}
+                    <span className="ml-1 text-xs">
+                      ({secondsSinceRefresh}s ago)
+                    </span>
+                  </>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className={`flex items-center gap-1 transition-all duration-200 ${isRefreshing ? "bg-muted" : ""}`}
+              >
+                <RefreshCw
+                  className={`h-4 w-4 transition-all duration-200 ${isRefreshing ? "animate-spin text-primary" : ""}`}
+                />
+                <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+              </Button>
+            </div>
+            <div
+              className={`border rounded-lg overflow-hidden transition-opacity duration-200 ${isRefreshing ? "opacity-70" : "opacity-100"}`}
+            >
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      ID
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Workflow
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Version
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Execution Status
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Agent Runs
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Started
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {executions.map(execution => (
+                    <ExecutionRow key={execution.execution.id} {...execution} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

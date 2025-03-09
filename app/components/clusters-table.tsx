@@ -1,33 +1,21 @@
 "use client";
 
-import { DataTable } from "@/components/ui/data-table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  getFilteredRowModel,
-  getSortedRowModel,
-} from "@tanstack/react-table";
-import Link from "next/link";
-import {
-  Eye,
-  Trash2,
-  Settings,
-  Play,
-  ArrowUpDown,
-  Brain,
-  ArrowRight,
-} from "lucide-react";
+import { SortingState } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
+import { ArrowUpDown, Calendar, Eye, Layers, Search } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { CreateClusterButton } from "./create-cluster-button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 export type ClusterData = {
   id: string;
@@ -35,119 +23,6 @@ export type ClusterData = {
   createdAt: Date;
   description: string | null;
 };
-
-const columns: ColumnDef<ClusterData>[] = [
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="-ml-4 h-8 data-[sorting=true]:text-gray-900"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => (
-      <div className="flex-1">
-        <Link
-          href={`/clusters/${row.original.id}`}
-          className="text-gray-900 hover:text-gray-700 text-lg font-semibold"
-        >
-          {row.getValue("name")}
-        </Link>
-        <div
-          className="text-sm text-gray-500 truncate mt-1"
-          title={row.original.description || ""}
-        >
-          {row.original.description || "No description"}
-          <div
-            className="text-xs font-mono text-gray-400 mt-1"
-            title={row.original.id}
-          >
-            ID: {row.original.id}
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="-ml-4 h-8 data-[sorting=true]:text-gray-900"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Created
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("createdAt"));
-      return (
-        <span
-          title={date.toLocaleString()}
-          className="text-gray-600 whitespace-nowrap"
-        >
-          {formatDistanceToNow(date, { addSuffix: true })}
-        </span>
-      );
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => (
-      <div className="flex justify-end items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          asChild
-          className="h-8 w-8 text-gray-600 hover:text-gray-900"
-        >
-          <Link href={`/clusters/${row.original.id}`}>
-            <Eye className="h-4 w-4" />
-          </Link>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          asChild
-          className="h-8 w-8 text-gray-600 hover:text-gray-900"
-        >
-          <Link href={`/clusters/${row.original.id}/settings`}>
-            <Settings className="h-4 w-4" />
-          </Link>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          asChild
-          className="h-8 w-8 text-gray-600 hover:text-gray-900"
-        >
-          <Link href={`/clusters/${row.original.id}/runs`}>
-            <Play className="h-4 w-4" />
-          </Link>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          asChild
-          className="h-8 w-8 text-red-600 hover:text-red-900"
-        >
-          <Link href={`/clusters/${row.original.id}/settings/danger`}>
-            <Trash2 className="h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
-    ),
-  },
-];
 
 interface ClustersTableProps {
   clusters: ClusterData[];
@@ -160,33 +35,172 @@ export function ClustersTable({ clusters }: ClustersTableProps) {
       desc: true,
     },
   ]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  // Filter clusters based on search term
+  const filteredClusters = clusters.filter(
+    cluster =>
+      cluster.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cluster.description &&
+        cluster.description.toLowerCase().includes(searchTerm.toLowerCase())),
+  );
+
+  // Sort clusters based on current sorting state
+  const sortedClusters = [...filteredClusters].sort((a, b) => {
+    const sortField = sorting[0]?.id || "createdAt";
+    const sortDirection = sorting[0]?.desc ? -1 : 1;
+
+    if (sortField === "createdAt") {
+      return (
+        sortDirection *
+        (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      );
+    } else if (sortField === "name") {
+      return sortDirection * a.name.localeCompare(b.name);
+    }
+    return 0;
+  });
 
   return (
-    <div>
-      <div className="mb-4 flex justify-between items-center">
-        <Input
-          placeholder="Filter clusters..."
-          value={(columnFilters[0]?.value as string) ?? ""}
-          onChange={event =>
-            setColumnFilters([
-              {
-                id: "name",
-                value: event.target.value,
-              },
-            ])
-          }
-          className="max-w-sm"
-        />
+    <div className="flex gap-6">
+      {/* Left Sidebar */}
+      <div className="w-80 shrink-0 space-y-4">
+        <Card className="bg-white border border-gray-200 rounded-xl transition-all duration-200">
+          <CardHeader>
+            <CardTitle>Clusters</CardTitle>
+            <CardDescription>
+              Clusters are groups of workflows. No data is shared between
+              clusters, allowing you to isolate different environments or
+              projects.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <CreateClusterButton label="Create Cluster" variant="default" />
+              <hr />
+              <div className="mt-4">
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Search Clusters
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Search by name..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  Sort By
+                </label>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setSorting([
+                        {
+                          id: "name",
+                          desc:
+                            sorting[0]?.id === "name"
+                              ? !sorting[0].desc
+                              : false,
+                        },
+                      ])
+                    }
+                    className={`flex items-center gap-1 flex-1 ${sorting[0]?.id === "name" ? "bg-gray-100" : ""}`}
+                  >
+                    Name
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setSorting([
+                        {
+                          id: "createdAt",
+                          desc:
+                            sorting[0]?.id === "createdAt"
+                              ? !sorting[0].desc
+                              : true,
+                        },
+                      ])
+                    }
+                    className={`flex items-center gap-1 flex-1 ${sorting[0]?.id === "createdAt" ? "bg-gray-100" : ""}`}
+                  >
+                    Date
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      <DataTable
-        columns={columns}
-        data={clusters}
-        sorting={sorting}
-        columnFilters={columnFilters}
-        onSortingChange={setSorting}
-        onColumnFiltersChange={setColumnFilters}
-      />
+
+      {/* Main Content */}
+      <div className="flex-1 space-y-4">
+        {sortedClusters.length === 0 ? (
+          <div className="text-center py-10 text-gray-500 bg-white border border-gray-200 rounded-xl p-6">
+            No clusters found. Try adjusting your search.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sortedClusters.map(cluster => (
+              <div
+                key={cluster.id}
+                className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3
+                    className="font-semibold text-lg truncate"
+                    title={cluster.name}
+                  >
+                    {cluster.name}
+                  </h3>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span title={new Date(cluster.createdAt).toLocaleString()}>
+                      {formatDistanceToNow(new Date(cluster.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </Badge>
+                </div>
+
+                <p
+                  className="text-sm text-gray-600 mb-3 line-clamp-2"
+                  title={cluster.description || ""}
+                >
+                  {cluster.description || "No description"}
+                </p>
+
+                <div className="flex justify-between items-center">
+                  <span
+                    className="text-xs font-mono text-gray-400 truncate"
+                    title={cluster.id}
+                  >
+                    ID: {cluster.id}
+                  </span>
+                  <Button asChild>
+                    <Link
+                      href={`/clusters/${cluster.id}`}
+                      className="flex items-center gap-1"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
