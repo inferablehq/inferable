@@ -53,7 +53,11 @@ export default function RootLayout({
       };
 
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      allowedRedirectOrigins={[
+        process.env.NEXT_PUBLIC_CLERK_ALLOWED_REDIRECT_ORIGIN ?? "",
+      ]}
+    >
       <RollbarProvider config={rollbarConfig}>
         <html lang="en">
           <body
