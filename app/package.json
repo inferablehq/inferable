@@ -61,7 +61,7 @@
     "json-edit-react": "^1.12.0",
     "lodash": "^4.17.21",
     "lucide-react": "^0.378.0",
-    "next": "^14.2.3",
+    "next": "^14.2.25",
     "nuqs": "^1.17.4",
     "posthog-js": "^1.184.2",
     "react": "^18",
