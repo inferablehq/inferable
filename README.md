@@ -4,7 +4,7 @@
 
 # Inferable
 
-The managed LLM-engineering platform for production-ready AI applications.
+Build reliable AI Workflows with humans in the loop
 
 ![NPM Version](https://img.shields.io/npm/v/inferable?color=32CD32&style=for-the-badge) ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/inferablehq/inferable?filename=sdk-go%2Fgo.mod&color=32CD32&style=for-the-badge) ![NuGet Version](https://img.shields.io/nuget/v/inferable?color=32CD32&style=for-the-badge)
 ![License](https://img.shields.io/github/license/inferablehq/inferable?color=32CD32&style=for-the-badge)
@@ -13,7 +13,7 @@ The managed LLM-engineering platform for production-ready AI applications.
 
 ## What is Inferable?
 
-Inferable is a fully managed platform that handles state, reliability, and orchestration of custom LLM-based applications. It's developer-first and API-driven, providing production-ready LLM primitives for building sophisticated LLM-based applications.
+Inferable is a managed durable execution runtime for creating AI workflows with humans in the loop. Create structured outputs from any LLM, ask humans for approval via Slack or Email, with versioned, long-running workflows for backwards compatibility.
 
 ![Timeline View](./assets/workflow-list.png)
 
@@ -53,24 +53,6 @@ workflow.version(2).define(async (ctx, input) => {
 });
 ```
 
-### 🏗️ Structured Outputs with automatic parsing, validation, and retries
-
-Inferable automatically parses and validates structured outputs, and retries failed executions. See [Structured Outputs](https://docs.inferable.ai/pages/structured-outputs).
-
-```typescript
-workflow.version(1).define(async (ctx, input) => {
-  const { ticketType } = ctx.llm.structured({
-    input: `Ticket text: ${input.ticketText}`,
-    schema: z.object({
-      ticketType: z.enum(["data-deletion", "refund", "other"]),
-    }),
-  });
-
-  // do something with the items
-  console.log(ticketType);
-});
-```
-
 ### 🧑‍💼 Human-in-the-Loop with approval workflows
 
 Inferable allows you to integrate human approval and intervention with full context preservation. See [Human-in-the-Loop](https://docs.inferable.ai/pages/human-in-the-loop).
@@ -96,41 +78,21 @@ deleteUserWorkflow.version(1).define(async (ctx, input) => {
 });
 ```
 
-### 🤖 Agents with Tool Use
+### 🏗️ Structured Outputs with automatic parsing, validation, and retries
 
-Inferable agents can use tools to achieve pre-defined goals. See [Agents](https://docs.inferable.ai/pages/agents).
+Inferable automatically parses and validates structured outputs, and retries failed executions. See [Structured Outputs](https://docs.inferable.ai/pages/structured-outputs).
 
 ```typescript
-const agentInstructions = `
-  Evaluate the provided support ticket body and extract the user from the database.
-
-  When searching for users, if you don't get specific results, try to search with a more general term with sub strings with unique nouns.
-  For example, "John Smith": searchUser("John Smith"), searchUser("John"), searchUser("Smith"), etc.
-`;
-
-workflow.tools.register({
-  name: "searchUser",
-  schema: z.object({
-    userId: z.string(),
-  }),
-  handler: async (ctx, input) => {
-    // your own code to search for the user
-  },
-});
-
 workflow.version(1).define(async (ctx, input) => {
-  const { userId } = await ctx.llm.agents.react({
-    name: "restaurantSearch",
-    instructions: agentInstructions,
-    input: JSON.stringify({ ticket }),
-    tools: ["searchUser"],
-    resultSchema: z.object({
-      userId: z.string(),
+  const { ticketType } = ctx.llm.structured({
+    input: `Ticket text: ${input.ticketText}`,
+    schema: z.object({
+      ticketType: z.enum(["data-deletion", "refund", "other"]),
     }),
   });
 
-  // do something with the userId
-  console.log(userId);
+  // do something with the items
+  console.log(ticketType);
 });
 ```
 
@@ -139,6 +101,7 @@ And more stuff...
 - [Notifications](https://docs.inferable.ai/pages/notifications) to send notifications to users via Slack or Email.
 - [Memoized Results](https://docs.inferable.ai/pages/results) to cache the results of side-effects and expensive operations in a distributed way.
 - [Obervability](https://docs.inferable.ai/pages/observability) in a timeline view, or plug into your own observability tools.
+- [Agents](https://docs.inferable.ai/pages/agents) to create agents that can use tools to achieve pre-defined goals.
 - Developer-friendly SDKs in [Node.js](./sdk-node/README.md), and [Go](./sdk-go/README.md) supported with more languages coming soon.
 
 ![Workflow Timeline](./assets/workflow-timeline.png)
