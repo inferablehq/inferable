@@ -628,7 +628,7 @@ export const router = initServer().router(contract, {
 
     const auth = request.request.getAuth();
 
-    auth.canAccess({ cluster: { clusterId } });
+    await auth.canAccess({ cluster: { clusterId } });
     auth.canCreate({ call: true });
 
     const { function: fn, tool, input } = request.body;
@@ -690,7 +690,7 @@ export const router = initServer().router(contract, {
 
     const auth = request.request.getAuth();
 
-    auth.canManage({ job: { clusterId, jobId } });
+    await auth.canManage({ job: { clusterId, jobId } });
 
     await jobs.cancelJob({
       jobId,
@@ -1383,7 +1383,7 @@ export const router = initServer().router(contract, {
     const { clusterId } = request.params;
 
     const auth = request.request.getAuth();
-    auth.canAccess({ cluster: { clusterId } });
+    await auth.canAccess({ cluster: { clusterId } });
 
     const tools = await getWorkflowTools({ clusterId });
 
@@ -1482,7 +1482,7 @@ export const router = initServer().router(contract, {
     } = request.query;
 
     const auth = request.request.getAuth();
-    auth.canAccess({ cluster: { clusterId } });
+    await auth.canAccess({ cluster: { clusterId } });
 
     const result = await listWorkflowExecutions({
       clusterId,
