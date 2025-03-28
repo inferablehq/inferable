@@ -18,13 +18,16 @@ export async function selfHealJobs() {
         eq(data.jobs.status, "running"),
         lt(
           data.jobs.last_retrieved_at,
-          sql`now() - interval '1 second' * timeout_interval_seconds`
+          sql`now() - interval '1 second' * timeout_interval_seconds`,
         ),
         // only timeout jobs that have a timeout set
         isNotNull(data.jobs.timeout_interval_seconds),
         // Don't time out jobs that have pending approval requests
-        or(eq(data.jobs.approval_requested, false), isNotNull(data.jobs.approved))
-      )
+        or(
+          eq(data.jobs.approval_requested, false),
+          isNotNull(data.jobs.approved),
+        ),
+      ),
     )
     .returning({
       id: data.jobs.id,
@@ -53,7 +56,7 @@ export async function selfHealJobs() {
     .set({
       status: "stalled",
       // Don't subtrack this type of retry from the remaining attempts count
-      remaining_attempts: sql`remaining_attempts + 1`
+      remaining_attempts: sql`remaining_attempts + 1`,
     })
     .where(
       and(
@@ -62,10 +65,10 @@ export async function selfHealJobs() {
         lt(
           data.jobs.updated_at,
           // Find any jobs that have been interrupted for more than 5 minutes
-          sql`now() - interval '5 minutes'`
+          sql`now() - interval '5 minutes'`,
         ),
         eq(data.jobs.approval_requested, false),
-      )
+      ),
     )
     .returning({
       id: data.jobs.id,
@@ -76,9 +79,9 @@ export async function selfHealJobs() {
   if (nonResumedInterruptions.length > 0) {
     logger.warn("Found interrupted jobs that have not been resumed", {
       count: nonResumedInterruptions.length,
-      jobs: nonResumedInterruptions.map(row => row.id).join(", ")
+      jobs: nonResumedInterruptions.map(row => row.id).join(", "),
     });
-  };
+  }
 
   const stalledJobs = await data.db
     .update(data.jobs)
@@ -125,7 +128,9 @@ export async function selfHealJobs() {
 
   return {
     stalledFailedByTimeout: stalledByTimeout.map(row => row.id),
-    stalledRecovered: stalledJobs.filter(row => row.status === "pending").map(row => row.id),
+    stalledRecovered: stalledJobs
+      .filter(row => row.status === "pending")
+      .map(row => row.id),
     nonResumedInterruptions: nonResumedInterruptions.map(row => row.id),
   };
 }

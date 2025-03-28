@@ -8,7 +8,12 @@ import {
   Logger,
   LogLevel,
 } from "@slack/bolt";
-import { FastifyInstance, FastifyPluginCallback, FastifyReply, FastifyRequest } from "fastify";
+import {
+  FastifyInstance,
+  FastifyPluginCallback,
+  FastifyReply,
+  FastifyRequest,
+} from "fastify";
 import { logger } from "../../observability/logger";
 
 const slackLogger: Logger = {
@@ -48,16 +53,21 @@ export class FastifySlackReceiver implements Receiver {
 
     // Register a seperate plugin and disable the content type parsers for the route
     const slackPlugin: FastifyPluginCallback = async instance => {
-      const contentTypes = ["application/json", "application/x-www-form-urlencoded"];
+      const contentTypes = [
+        "application/json",
+        "application/x-www-form-urlencoded",
+      ];
 
       instance.removeContentTypeParser(contentTypes);
       instance.addContentTypeParser(
         contentTypes,
         { parseAs: "string" },
-        instance.defaultTextParser
+        instance.defaultTextParser,
       );
 
-      instance.post("", (request, reply) => this.requestHandler(request, reply));
+      instance.post("", (request, reply) =>
+        this.requestHandler(request, reply),
+      );
     };
 
     await this.fastify.register(slackPlugin, { prefix: this.path });
@@ -93,7 +103,7 @@ export class FastifySlackReceiver implements Receiver {
             enabled: true,
             signingSecret: this.signingSecret,
           },
-          req
+          req,
         );
       } catch (error) {
         logger.warn("Failed to parse and verify Slack request", {

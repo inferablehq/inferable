@@ -1713,7 +1713,11 @@ export const router = initServer().router(contract, {
       };
     }
 
-    await kv.setIfNotExists(clusterId, messageKey, JSON.stringify(result.structured));
+    await kv.setIfNotExists(
+      clusterId,
+      messageKey,
+      JSON.stringify(result.structured),
+    );
 
     return {
       status: 200,
