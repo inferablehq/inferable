@@ -36,7 +36,7 @@ export async function getLangfuseClient(clusterId: string) {
       clusterId,
     });
 
-    integrationsCache.set(clusterId, integrations, 60);
+    await integrationsCache.set(clusterId, integrations, 60);
   }
 
   if (!integrations.langfuse) {
@@ -138,6 +138,6 @@ export const start = () => {
       });
     }
 
-    flushCluster(data.clusterId);
+    await flushCluster(data.clusterId);
   });
 };

@@ -103,7 +103,7 @@ export async function selfHealJobs() {
       runId: data.jobs.run_id,
     });
 
-  stalledJobs.forEach(row => {
+  stalledJobs.forEach(async row => {
     if (row.status === "pending") {
       events.write({
         clusterId: row.clusterId,
@@ -118,7 +118,7 @@ export async function selfHealJobs() {
       });
 
       if (row.runId) {
-        resumeRun({ id: row.runId, clusterId: row.clusterId });
+        await resumeRun({ id: row.runId, clusterId: row.clusterId });
       }
     }
   });

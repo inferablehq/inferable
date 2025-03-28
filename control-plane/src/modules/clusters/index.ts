@@ -175,14 +175,14 @@ export const clusterExists = async ({
 };
 
 export const start = async () => {
-  cron.registerCron(
+  await cron.registerCron(
     markEphemeralClustersForDeletion,
     "mark-ephemeral-clusters",
     {
       interval: 1000 * 60 * 15,
     },
   ); // 15 minutes
-  cron.registerCron(cleanupMarkedClusters, "cleanup-marked-clusters", {
+  await cron.registerCron(cleanupMarkedClusters, "cleanup-marked-clusters", {
     interval: 1000 * 60 * 15,
   }); // 15 minutes
 };

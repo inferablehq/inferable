@@ -60,7 +60,7 @@ export class FastifySlackReceiver implements Receiver {
       instance.post("", (request, reply) => this.requestHandler(request, reply));
     };
 
-    this.fastify.register(slackPlugin, { prefix: this.path });
+    await this.fastify.register(slackPlugin, { prefix: this.path });
   }
 
   async stop() {

@@ -112,7 +112,7 @@ export const createJobV2 = async (params: {
     });
 
     if (created) {
-      onAfterJobCreated({
+      await onAfterJobCreated({
         ...params,
         ...jobConfig,
         config,
@@ -133,7 +133,7 @@ export const createJobV2 = async (params: {
     });
 
     if (created) {
-      onAfterJobCreated({
+      await onAfterJobCreated({
         ...params,
         ...jobConfig,
         config: config ?? undefined,

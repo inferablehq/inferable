@@ -27,9 +27,9 @@ export class CustomerTelemetryListeners {
     this.listeners.push(listener);
   }
 
-  public static notify(data: CustomerTelemetryMessage) {
+  public static async notify(data: CustomerTelemetryMessage) {
     for (const listener of this.listeners) {
-      listener(data);
+      await listener(data);
     }
   }
 }
@@ -48,5 +48,5 @@ export const handleCustomerTelemetry = async (data: unknown): Promise<void> => {
     return;
   }
 
-  CustomerTelemetryListeners.notify(zodResult.data);
+  await CustomerTelemetryListeners.notify(zodResult.data);
 };

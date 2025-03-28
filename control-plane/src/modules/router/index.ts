@@ -708,7 +708,7 @@ export const router = initServer().router(contract, {
     const { meta } = request.body;
 
     const machine = request.request.getAuth().isMachine();
-    machine.canManage({ job: { clusterId, jobId } });
+    await machine.canManage({ job: { clusterId, jobId } });
 
     const machineId = request.headers["x-machine-id"];
 
@@ -822,7 +822,7 @@ export const router = initServer().router(contract, {
     }
 
     const machine = request.request.getAuth().isMachine();
-    machine.canAccess({ cluster: { clusterId } });
+    await machine.canAccess({ cluster: { clusterId } });
 
     const [, missingTools, pollResult] = await Promise.all([
       upsertMachine({
@@ -1001,9 +1001,8 @@ export const router = initServer().router(contract, {
       throw new BadRequestError("Invalid Nango integration ID");
     }
 
-    const auth = request.request.getAuth();
+    const auth = request.request.getAuth().isAdmin();
     await auth.canAccess({ cluster: { clusterId } });
-    auth.isAdmin();
 
     return {
       status: 200,
@@ -1397,7 +1396,7 @@ export const router = initServer().router(contract, {
     const { clusterId, workflowName } = request.params;
 
     const machine = request.request.getAuth();
-    machine.canAccess({ cluster: { clusterId } });
+    await machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
     const result = await createWorkflowExecution(
@@ -1421,7 +1420,7 @@ export const router = initServer().router(contract, {
     );
 
     const machine = request.request.getAuth();
-    machine.canAccess({ cluster: { clusterId } });
+    await machine.canAccess({ cluster: { clusterId } });
 
     const result = await createWorkflowLog({
       clusterId,
@@ -1441,7 +1440,7 @@ export const router = initServer().router(contract, {
     const { status, data } = request.body;
 
     const machine = request.request.getAuth();
-    machine.canAccess({ cluster: { clusterId } });
+    await machine.canAccess({ cluster: { clusterId } });
 
     const hash = crypto.createHash("sha256");
     hash.update(JSON.stringify(request.body));
@@ -1503,6 +1502,9 @@ export const router = initServer().router(contract, {
   getWorkflowExecutionTimeline: async request => {
     const { clusterId, workflowName, executionId } = request.params;
 
+    const auth = request.request.getAuth();
+    await auth.canAccess({ cluster: { clusterId } });
+
     const result = await getWorkflowExecutionTimeline({
       clusterId,
       workflowName,
@@ -1519,7 +1521,7 @@ export const router = initServer().router(contract, {
     const { clusterId, key } = request.params;
 
     const machine = request.request.getAuth().isMachine();
-    machine.canAccess({ cluster: { clusterId } });
+    await machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
     const result = await kv.get(clusterId, key);
@@ -1536,7 +1538,7 @@ export const router = initServer().router(contract, {
     const { value, onConflict } = request.body;
 
     const machine = request.request.getAuth().isMachine();
-    machine.canAccess({ cluster: { clusterId } });
+    await machine.canAccess({ cluster: { clusterId } });
     machine.canCreate({ run: true });
 
     const setter =
@@ -1711,7 +1713,7 @@ export const router = initServer().router(contract, {
       };
     }
 
-    kv.setIfNotExists(clusterId, messageKey, JSON.stringify(result.structured));
+    await kv.setIfNotExists(clusterId, messageKey, JSON.stringify(result.structured));
 
     return {
       status: 200,
@@ -1779,7 +1781,7 @@ export const router = initServer().router(contract, {
       };
     }
 
-    kv.setIfNotExists(clusterId, key, JSON.stringify(request.body));
+    await kv.setIfNotExists(clusterId, key, JSON.stringify(request.body));
 
     return {
       status: 201,

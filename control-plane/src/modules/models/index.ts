@@ -161,6 +161,7 @@ export const buildModel = ({
               tools: tools as Anthropic.Tool[],
             });
 
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
             trackModelUsage({
               clusterId: trackingOptions?.clusterId,
               runId: trackingOptions?.runId,
@@ -252,6 +253,7 @@ export const buildModel = ({
               ],
             });
 
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
             trackModelUsage({
               ...trackingOptions,
               modelId,
@@ -442,6 +444,7 @@ const trackModelUsage = async ({
   });
 
   if (runId) {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     trackCustomerTelemetry({
       type: "modelCall",
       clusterId,

@@ -244,6 +244,7 @@ export const updateRun = async (run: {
 
   // Send telemetry event if feedback was updated
   if (run.feedbackScore !== undefined && run.feedbackScore !== null) {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     trackCustomerTelemetry({
       type: "runFeedback",
       runId: run.id,

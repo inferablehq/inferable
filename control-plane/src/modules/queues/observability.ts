@@ -61,6 +61,7 @@ export const withObservability =
         throw e;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       hdx?.recordException(e);
 
       logger.error("Job failed", { error: e, data: job });

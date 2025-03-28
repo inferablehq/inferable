@@ -22,6 +22,6 @@ export async function runMigrations() {
     });
     process.exit(1);
   } finally {
-    unlock();
+    await unlock();
   }
 }

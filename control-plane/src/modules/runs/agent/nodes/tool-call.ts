@@ -222,6 +222,7 @@ const _handleToolCall = async (
         },
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       trackCustomerTelemetry({
         type: "toolCall",
         toolName,
@@ -266,6 +267,7 @@ const _handleToolCall = async (
         },
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       trackCustomerTelemetry({
         type: "toolCall",
         toolName,
@@ -320,6 +322,7 @@ const _handleToolCall = async (
         toolName,
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       trackCustomerTelemetry({
         type: "toolCall",
         toolName,
