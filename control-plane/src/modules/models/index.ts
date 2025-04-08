@@ -179,7 +179,7 @@ export const buildModel = ({
 
             return response;
           } catch (error) {
-            await handleErrror({
+            await handleError({
               bail,
               error,
               modelId: identifier,
@@ -269,7 +269,7 @@ export const buildModel = ({
 
             return response;
           } catch (error) {
-            await handleErrror({
+            await handleError({
               bail,
               error,
               modelId,
@@ -291,7 +291,7 @@ export const buildModel = ({
   };
 };
 
-const handleErrror = async ({
+const handleError = async ({
   bail,
   error,
   modelId,
@@ -306,7 +306,7 @@ const handleErrror = async ({
     logger.error("Model call failed with non-retryable error", {
       modelId,
       attempt,
-      error,
+      error: error instanceof Error ? error.message : String(error),
     });
     bail(error);
     return;
@@ -315,11 +315,10 @@ const handleErrror = async ({
   logger.warn("Model call failed with retryable error", {
     modelId,
     attempt,
-    error,
+    error: error instanceof Error ? error.message : String(error),
   });
 
   await new Promise(resolve => setTimeout(resolve, attempt * 500));
-  throw error;
 };
 
 const parseStructuredResponse = ({
