@@ -3,7 +3,7 @@ const pack = (value: unknown) => {
   return storable;
 };
 
-const unpack = (value: string): any => {
+const unpack = (value: string): unknown => {
   try {
     const { value: unpacked } = JSON.parse(value);
     return unpacked;
