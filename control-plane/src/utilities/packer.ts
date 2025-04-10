@@ -3,14 +3,15 @@ const pack = (value: unknown) => {
   return storable;
 };
 
-const unpack = (value: string): unknown => {
+const unpack = (value: string) => {
   try {
     const { value: unpacked } = JSON.parse(value);
     return unpacked;
   } catch (err) {
-    throw new Error(
-      `Failed to unpack value: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    return {
+      value: `Error unpacking value: ${err}`,
+      original: value,
+    };
   }
 };
 
