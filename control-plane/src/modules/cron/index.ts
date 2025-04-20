@@ -24,7 +24,13 @@ export const registerCron = async (
   const queueName = `cron-queue-${name}`;
 
   // Create a queue for the cron job
-  const queue = new Queue(queueName, { connection: bullmqRedisConnection });
+  const queue = new Queue(queueName, {
+    connection: bullmqRedisConnection,
+    defaultJobOptions: {
+      removeOnComplete: 100,
+      removeOnFail: 100,
+    },
+  });
   queues.push(queue);
 
   // Create a worker to process the jobs
