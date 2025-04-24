@@ -669,9 +669,7 @@ export const definition = {
         .describe(
           "Enable additional logging (Including prompts and results) for use by Inferable support",
         ),
-      enableCustomAuth: z.boolean().optional(),
       enableKnowledgebase: z.boolean().optional(),
-      handleCustomAuthFunction: z.string().optional(),
     }),
   },
   getCluster: {
@@ -687,8 +685,6 @@ export const definition = {
         description: z.string().nullable(),
         createdAt: z.number(),
         debug: z.boolean(),
-        enableCustomAuth: z.boolean(),
-        handleCustomAuthFunction: z.string().nullable(),
         isDemo: z.boolean(),
         machines: z.array(
           z.object({

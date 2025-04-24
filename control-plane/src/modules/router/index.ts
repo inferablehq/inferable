@@ -282,8 +282,6 @@ export const router = initServer().router(contract, {
       runOptions.initialPrompt += `\n\n<DATA>\n${JSON.stringify(runOptions.input, null, 2)}\n</DATA>`;
     }
 
-    const customAuth = auth.type === "custom" ? auth.isCustomAuth() : undefined;
-
     const run = await createRun({
       id: runOptions.id,
       userId: auth.entityId,
@@ -291,9 +289,6 @@ export const router = initServer().router(contract, {
 
       name: body.name,
       tags: body.tags,
-
-      // Customer Auth context (In the future all auth types should inject context into the run)
-      authContext: customAuth?.context,
 
       context: body.context,
 
@@ -437,16 +432,10 @@ export const router = initServer().router(contract, {
   },
   listRuns: async request => {
     const { clusterId } = request.params;
-    const { test, limit, tags, type } = request.query;
-    let { userId } = request.query;
+    const { test, limit, tags, type, userId } = request.query;
 
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
-
-    // Custom auth can only access their own Runs
-    if (auth.type === "custom") {
-      userId = auth.entityId;
-    }
 
     if (tags) {
       // ?meta=key:value
@@ -1183,14 +1172,7 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth().isAdmin();
     await auth.canManage({ cluster: { clusterId } });
 
-    const {
-      description,
-      name,
-      debug,
-      enableCustomAuth,
-      handleCustomAuthFunction,
-      enableKnowledgebase,
-    } = request.body;
+    const { description, name, debug, enableKnowledgebase } = request.body;
 
     await management.editClusterDetails({
       name,
@@ -1198,8 +1180,6 @@ export const router = initServer().router(contract, {
       clusterId,
       description,
       debug,
-      enableCustomAuth,
-      handleCustomAuthFunction,
       enableKnowledgebase,
     });
 

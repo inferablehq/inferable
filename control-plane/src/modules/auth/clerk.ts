@@ -37,7 +37,7 @@ export const verify = async (
     }
   | undefined
 > => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     jwt.verify(
       token,
       getKey,

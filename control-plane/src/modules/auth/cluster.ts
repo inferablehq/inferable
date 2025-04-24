@@ -10,11 +10,14 @@ const clusterKeyContextCache = createCache<{
   organizationId: string;
 }>(Symbol("clusterKeyContextCache"));
 
-export const isApiSecret = (authorization: string): boolean => authorization.startsWith("sk_");
+export const isApiSecret = (authorization: string): boolean =>
+  authorization.startsWith("sk_");
 
 export const verify = async (
-  secret: string
-): Promise<{ clusterId: string; id: string; organizationId: string } | undefined> => {
+  secret: string,
+): Promise<
+  { clusterId: string; id: string; organizationId: string } | undefined
+> => {
   const secretHash = hashFromSecret(secret);
 
   const cached = await clusterKeyContextCache.get(secretHash);
@@ -32,7 +35,12 @@ export const verify = async (
     })
     .from(data.apiKeys)
     .leftJoin(data.clusters, eq(data.apiKeys.cluster_id, data.clusters.id))
-    .where(and(eq(data.apiKeys.secret_hash, secretHash), isNull(data.apiKeys.revoked_at)))
+    .where(
+      and(
+        eq(data.apiKeys.secret_hash, secretHash),
+        isNull(data.apiKeys.revoked_at),
+      ),
+    )
     .limit(1);
 
   if (!result || !!result.deletedAt) {
@@ -53,7 +61,7 @@ export const verify = async (
       id: result.id,
       organizationId: result.organizationId,
     },
-    60
+    60,
   );
 
   return {
@@ -115,9 +123,17 @@ export const listApiKeys = async ({
   return apiKeys;
 };
 
-export const revokeApiKey = async ({ clusterId, keyId }: { clusterId: string; keyId: string }) => {
+export const revokeApiKey = async ({
+  clusterId,
+  keyId,
+}: {
+  clusterId: string;
+  keyId: string;
+}) => {
   await data.db
     .update(data.apiKeys)
     .set({ revoked_at: new Date() })
-    .where(and(eq(data.apiKeys.cluster_id, clusterId), eq(data.apiKeys.id, keyId)));
+    .where(
+      and(eq(data.apiKeys.cluster_id, clusterId), eq(data.apiKeys.id, keyId)),
+    );
 };

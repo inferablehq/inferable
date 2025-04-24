@@ -152,7 +152,6 @@ const startTime = Date.now();
   logger.info("Starting server", {
     environment: env.ENVIRONMENT,
     ee: env.EE_DEPLOYMENT,
-    headless: !!env.MANAGEMENT_API_SECRET,
   });
 
   if (env.ENVIRONMENT === "prod") {
