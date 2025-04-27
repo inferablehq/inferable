@@ -29,8 +29,6 @@ const envSchema = z
     LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
     ENABLE_FASTIFY_LOGGER: truthy.default(false),
 
-    MANAGEMENT_API_SECRET: z.string().optional(),
-
     DATABASE_URL: z.string().url(),
     DATABASE_SSL_DISABLED: truthy.default(false),
     DATABASE_ALLOW_EXIT_ON_IDLE: truthy.default(false),
@@ -79,27 +77,15 @@ const envSchema = z
     FIRECRAWL_API_KEY: z.string().optional(),
   })
   .superRefine((value, ctx) => {
-    if (!value.MANAGEMENT_API_SECRET && !value.JWKS_URL) {
-      return ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "MANAGEMENT_API_SECRET or JWKS_URL is required",
-        path: ["MANAGEMENT_API_SECRET", "JWKS_URL"],
-      });
-    }
-
-    if (value.MANAGEMENT_API_SECRET) {
-      if (value.JWKS_URL) {
-        return ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "MANAGEMENT_API_SECRET can not be set with JWKS_URL (Headless mode only)",
-          path: ["MANAGEMENT_API_SECRET"],
-        });
-      }
-    }
-
     if (!value.EE_DEPLOYMENT) {
       return;
+    }
+    if (value.JWT_IGNORE_EXPIRATION) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "JWT_IGNORE_EXPIRATION is not supported in EE Deployment",
+        path: ["JWT_IGNORE_EXPIRATION"],
+      });
     }
     const EE_REQUIRED = [
       "APP_ORIGIN",
