@@ -43,6 +43,8 @@ import {
 import React, { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { EventDetails } from "@/components/event-details";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Link from "next/link";
 
 type Node = {
   id: string;
@@ -655,6 +657,30 @@ export default function WorkflowExecutionDetailsPage({
 
   if (isLoading || !timeline) {
     return <div className="p-6">Loading...</div>;
+  }
+
+  // Check if the workflow execution has been deleted
+  if (timeline.execution.deletedAt) {
+    return (
+      <div className="p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Workflow Deleted</AlertTitle>
+          <AlertDescription>
+            This workflow execution&apos;s data has been deleted according to
+            your cluster&apos;s expiry settings. You can adjust these settings
+            in the{" "}
+            <Link
+              href={`/clusters/${params.clusterId}/settings/details`}
+              className="underline"
+            >
+              cluster settings
+            </Link>
+            .
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
