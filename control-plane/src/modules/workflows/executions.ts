@@ -68,6 +68,7 @@ export const getWorkflowExecutionTimeline = async ({
         workflowVersion: data.workflowExecutions.workflow_version,
         createdAt: data.workflowExecutions.created_at,
         updatedAt: data.workflowExecutions.updated_at,
+        deletedAt: data.workflowExecutions.deleted_at,
         job: {
           id: data.jobs.id,
           clusterId: data.jobs.cluster_id,
@@ -143,6 +144,7 @@ export const listWorkflowExecutions = async ({
       jobId: data.workflowExecutions.job_id,
       createdAt: data.workflowExecutions.created_at,
       updatedAt: data.workflowExecutions.updated_at,
+      deletedAt: data.workflowExecutions.deleted_at,
       jobsId: data.jobs.id,
       jobsStatus: data.jobs.status,
       jobsTargetFn: data.jobs.target_fn,
