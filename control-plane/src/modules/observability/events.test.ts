@@ -142,7 +142,7 @@ describe("event-aggregation", () => {
 });
 
 describe("cleanupMarkedEvents", () => {
-  it("should delete events marked for deletion older than 24 hours and leave others", async () => {
+  it("should delete events marked for deletion and leave others", async () => {
     const clusterId = Math.random().toString();
     const runId = Math.random().toString();
 
@@ -200,19 +200,12 @@ describe("cleanupMarkedEvents", () => {
       .select({ id: eventsTable.id })
       .from(eventsTable)
       .where(eq(eventsTable.cluster_id, clusterId));
-    expect(remainingEvents.length).toBe(2); // event1 should be deleted
+    expect(remainingEvents.length).toBe(1); // event1 and 2 should be deleted
 
     const remainingEventIds = remainingEvents.map(e => e.id);
     expect(remainingEventIds).not.toContain(event1.id);
-    expect(remainingEventIds).toContain(event2.id);
+    expect(remainingEventIds).not.toContain(event2.id);
     expect(remainingEventIds).toContain(event3.id);
-
-    // Verify event2 is still marked for deletion
-    const [event2AfterCleanup] = await db
-      .select({ deleted_at: eventsTable.deleted_at })
-      .from(eventsTable)
-      .where(eq(eventsTable.id, event2.id));
-    expect(event2AfterCleanup.deleted_at).not.toBeNull();
 
     // Verify event3 is not marked for deletion
     const [event3AfterCleanup] = await db
