@@ -68,6 +68,10 @@ export const registerCron = async (
     logger.warn("Job stalled", { name, jobId });
   });
 
+  worker.on("active", (job) => {
+    logger.info("Worker picked up job", { name, jobId: job.id });
+  });
+
   workers.push(worker);
 
   // Create a Job Scheduler that will produce jobs at the specified interval

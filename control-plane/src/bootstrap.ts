@@ -207,6 +207,13 @@ const startTime = Date.now();
   process.exit(1);
 });
 
+process.on("unhandledRejection", err => {
+  logger.error("Unhandled rejection", { err });
+});
+process.on("uncaughtException", err => {
+  logger.error("Uncaught exception", { err } );
+});
+
 process.on("SIGTERM", async () => {
   logger.info("Shutting down server", {
     uptime: Date.now() - startTime,
