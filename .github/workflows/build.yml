@@ -145,6 +145,7 @@ jobs:
           SQS_CUSTOMER_TELEMETRY_QUEUE_URL: "PLACEHOLDER"
           SQS_EXTERNAL_TOOL_CALL_QUEUE_URL: "PLACEHOLDER"
           SQS_EMAIL_INGESTION_QUEUE_URL: "PLACEHOLDER"
+          ENABLE_QUEUE_INGESTION: "true"
 
   build-app:
     needs: check_changes
