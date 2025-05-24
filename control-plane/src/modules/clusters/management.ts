@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import uniqBy from "lodash/uniqBy";
 import { createCache } from "../../utilities/cache";
@@ -154,6 +154,9 @@ export const editClusterDetails = async ({
   enableCustomAuth,
   handleCustomAuthFunction,
   enableKnowledgebase,
+  eventExpiryAge,
+  runExpiryAge,
+  workflowExecutionExpiryAge,
 }: {
   organizationId: string;
   clusterId: string;
@@ -163,7 +166,30 @@ export const editClusterDetails = async ({
   enableCustomAuth?: boolean;
   handleCustomAuthFunction?: string;
   enableKnowledgebase?: boolean;
+  eventExpiryAge?: number | null;
+  runExpiryAge?: number | null;
+  workflowExecutionExpiryAge?: number | null;
 }) => {
+  const validateExpiry = (expiryAge: number) => {
+    if ([60, 3600, 86400, 604800].indexOf(expiryAge) === -1) {
+      throw new errors.BadRequestError(
+        "Expiry age must be one of (1 minute, hour, day or week)",
+      );
+    }
+  };
+
+  if (eventExpiryAge) {
+    validateExpiry(eventExpiryAge);
+  }
+
+  if (runExpiryAge) {
+    validateExpiry(runExpiryAge);
+  }
+
+  if (workflowExecutionExpiryAge) {
+    validateExpiry(workflowExecutionExpiryAge);
+  }
+
   const clusters = await data.db
     .update(data.clusters)
     .set({
@@ -173,6 +199,9 @@ export const editClusterDetails = async ({
       enable_custom_auth: enableCustomAuth,
       handle_custom_auth_function: handleCustomAuthFunction,
       enable_knowledgebase: enableKnowledgebase,
+      event_expiry_age: eventExpiryAge,
+      run_expiry_age: runExpiryAge,
+      workflow_execution_expiry_age: workflowExecutionExpiryAge,
     })
     .where(
       and(
@@ -203,6 +232,9 @@ export const getClusterDetails = async ({
   isDemo: boolean;
   handleCustomAuthFunction: string | null;
   enableCustomAuth: boolean;
+  eventExpiryAge: number | null;
+  runExpiryAge: number | null;
+  workflowExecutionExpiryAge: number | null;
   machines: Array<{
     id: string;
     lastPingAt: number | null;
@@ -236,6 +268,9 @@ export const getClusterDetails = async ({
       handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
       enableCustomAuth: data.clusters.enable_custom_auth,
       additionalContext: data.clusters.additional_context,
+      eventExpiryAge: data.clusters.event_expiry_age,
+      runExpiryAge: data.clusters.run_expiry_age,
+      workflowExecutionExpiryAge: data.clusters.workflow_execution_expiry_age,
       machineId: data.machines.id,
       machineLastPingAt: data.machines.last_ping_at,
       machineIp: data.machines.ip,
@@ -271,6 +306,9 @@ export const getClusterDetails = async ({
     isDemo: results[0].isDemo,
     handleCustomAuthFunction: results[0].handleCustomAuthFunction ?? null,
     enableCustomAuth: results[0].enableCustomAuth,
+    eventExpiryAge: results[0].eventExpiryAge ?? null,
+    runExpiryAge: results[0].runExpiryAge ?? null,
+    workflowExecutionExpiryAge: results[0].workflowExecutionExpiryAge ?? null,
     machines: uniqBy(
       results
         .filter(r => r.machineId !== null)

@@ -186,6 +186,12 @@ export const clusters = pgTable(
     }),
     is_demo: boolean("is_demo").notNull().default(false),
     is_ephemeral: boolean("is_ephemeral").notNull().default(false),
+    // How long events should be kept for this cluster (in seconds). Defaults to null (no expiry).
+    event_expiry_age: integer("event_expiry_age"),
+    // How long runs should be kept for this cluster (in seconds). Defaults to null (no expiry).
+    run_expiry_age: integer("run_expiry_age"),
+    // How long workflow executions should be kept for this cluster (in seconds). Defaults to null (no expiry).
+    workflow_execution_expiry_age: integer("workflow_execution_expiry_age"),
   },
   table => ({
     idOrgIndex: index("clusters_id_org_index").on(
