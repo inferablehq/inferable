@@ -3,7 +3,7 @@
 import { Queue, Worker } from "bullmq";
 import { logger } from "../observability/logger";
 import { bullmqRedisConnection } from "../queues/core";
-import { env } from "process";
+import { env } from "../../utilities/env";
 
 // Store queues and workers for cleanup
 const queues: Queue[] = [];
@@ -22,7 +22,6 @@ export const registerCron = async (
   name: string,
   { interval }: { interval: number },
 ) => {
-
   if (!env.ENABLE_QUEUE_INGESTION) {
     logger.info("Skipping registerCron. ENABLE_QUEUE_INGESTION is disabled.");
     return;
