@@ -54,12 +54,11 @@ export const cleanupMarkedRuns = async () => {
       clusterId: runs.cluster_id,
     })
     .from(runs)
-    .limit(50)
+    .limit(1000)
     .where(isNotNull(runs.deleted_at));
 
   logger.info("Deleting marked runs", {
     count: runsToDelete.length,
-    runIds: runsToDelete.map(run => run.id),
   });
 
   for (const run of runsToDelete) {
@@ -95,8 +94,8 @@ export const cleanupMarkedRuns = async () => {
 
 export const start = async () => {
   await cron.registerCron(cleanupMarkedRuns, "cleanup-marked-runs", {
-    interval: 1000 * 60 * 15,
-  }); // 15 minutes
+    interval: 1000 * 60 * 5,
+  }); // 5 minutes
 };
 
 export const createRun = async ({
