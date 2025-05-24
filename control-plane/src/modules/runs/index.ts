@@ -1,4 +1,15 @@
-import { and, desc, eq, inArray, isNull, not, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  not,
+  or,
+  sql,
+  isNotNull,
+  lt,
+} from "drizzle-orm";
 import { omitBy } from "lodash";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
@@ -27,6 +38,52 @@ import {
   validateFunctionSchema,
 } from "../../utilities/json-schema";
 import { trackCustomerTelemetry } from "../customer-telemetry/track";
+import * as cron from "../cron";
+
+export const cleanupMarkedRuns = async () => {
+  const runsToDelete = await db
+    .select({
+      id: runs.id,
+      clusterId: runs.cluster_id,
+    })
+    .from(runs)
+    .limit(50)
+    .where(
+      and(
+        isNotNull(runs.deleted_at),
+        lt(
+          runs.deleted_at,
+          new Date(Date.now() - 1000 * 60 * 60 * 24), // 24 hours
+        ),
+      ),
+    );
+
+  logger.info("Deleting marked runs", {
+    count: runsToDelete.length,
+    runIds: runsToDelete.map(run => run.id),
+  });
+
+  for (const run of runsToDelete) {
+    try {
+      logger.info("Deleting run and associated data", {
+        runId: run.id,
+        clusterId: run.clusterId,
+      });
+    } catch (error) {
+      logger.error("Error deleting run and associated data", {
+        runId: run.id,
+        clusterId: run.clusterId,
+        error: error,
+      });
+    }
+  }
+};
+
+export const start = async () => {
+  await cron.registerCron(cleanupMarkedRuns, "cleanup-marked-runs", {
+    interval: 1000 * 60 * 15,
+  }); // 15 minutes
+};
 
 export const createRun = async ({
   id,

@@ -4,11 +4,52 @@ import { packer } from "../../utilities/packer";
 import { getClusterBackgroundRun } from "../runs";
 import { BadRequestError, NotFoundError } from "../../utilities/errors";
 import * as data from "../data";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql, isNotNull, lt } from "drizzle-orm";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
 import { getEventsForJobId } from "../observability/events";
 import { kv } from "../kv";
+import * as cron from "../cron";
+
+export const cleanupMarkedWorkflowExecutions = async () => {
+  const executions = await data.db
+    .select({
+      id: data.workflowExecutions.id,
+      clusterId: data.workflowExecutions.cluster_id,
+      jobId: data.workflowExecutions.job_id,
+    })
+    .from(data.workflowExecutions)
+    .limit(50)
+    .where(
+      and(
+        isNotNull(data.workflowExecutions.deleted_at),
+        lt(
+          data.workflowExecutions.deleted_at,
+          new Date(Date.now() - 1000 * 60 * 60 * 24), // 24 hours
+        ),
+      ),
+    );
+
+  logger.info("Deleting marked workflow executions", {
+    count: executions.length,
+    executionIds: executions.map(execution => execution.id),
+  });
+
+  for (const execution of executions) {
+    try {
+      logger.info("Deleting workflow execution", {
+        executionId: execution.id,
+        clusterId: execution.clusterId,
+      });
+    } catch (error) {
+      logger.error("Error deleting workflow execution", {
+        executionId: execution.id,
+        clusterId: execution.clusterId,
+        error: error,
+      });
+    }
+  }
+};
 
 export const getWorkflowExecutionTimeline = async ({
   executionId,
@@ -356,4 +397,14 @@ export const getWorkflowRuns = async ({
     );
 
   return runs;
+};
+
+export const start = async () => {
+  await cron.registerCron(
+    cleanupMarkedWorkflowExecutions,
+    "cleanup-marked-workflow-executions",
+    {
+      interval: 1000 * 60 * 15,
+    },
+  ); // 15 minutes
 };
