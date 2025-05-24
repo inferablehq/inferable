@@ -124,8 +124,13 @@ export const cleanupMarkedClusters = async () => {
         await tx.execute(
           sql`DELETE FROM "workflow_executions" WHERE cluster_id = ${cluster.id}`,
         );
+
         await tx.execute(
           sql`DELETE FROM "jobs" WHERE cluster_id = ${cluster.id}`,
+        );
+
+        await tx.execute(
+          sql`DELETE FROM "cluster_kv" WHERE cluster_id = ${cluster.id}`,
         );
 
         // Events are not removed from the database, but they are marked as deleted for future cleanup
