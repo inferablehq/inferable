@@ -52,8 +52,16 @@ export const registerCron = async (
     { connection: bullmqRedisConnection },
   );
 
+  worker.on("closed", () => {
+    logger.warn("Worker closed", { name });
+  });
+
   worker.on("failed", (job, err) => {
     logger.error("Job failed", { name, jobId: job?.id, error: err });
+  });
+
+  worker.on("error", (err) => {
+    logger.error("Job error", { name, error: err });
   });
 
   worker.on("stalled", jobId => {
