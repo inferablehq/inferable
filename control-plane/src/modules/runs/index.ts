@@ -66,6 +66,11 @@ export const cleanupMarkedRuns = async () => {
       ),
     );
 
+  logger.info("Deleting marked runs", {
+    count: runsToDelete.length,
+    runIds: runsToDelete.map(run => run.id),
+  });
+
   for (const run of runsToDelete) {
     try {
       await db.transaction(async tx => {
