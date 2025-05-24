@@ -52,6 +52,14 @@ export const registerCron = async (
     { connection: bullmqRedisConnection },
   );
 
+  worker.on("failed", (job, err) => {
+    logger.error("Job failed", { name, jobId: job?.id, error: err });
+  });
+
+  worker.on("stalled", jobId => {
+    logger.warn("Job stalled", { name, jobId });
+  });
+
   workers.push(worker);
 
   // Create a Job Scheduler that will produce jobs at the specified interval
