@@ -8,7 +8,6 @@ import {
   or,
   sql,
   isNotNull,
-  lt,
 } from "drizzle-orm";
 import { omitBy } from "lodash";
 import { ulid } from "ulid";
@@ -56,15 +55,7 @@ export const cleanupMarkedRuns = async () => {
     })
     .from(runs)
     .limit(50)
-    .where(
-      and(
-        isNotNull(runs.deleted_at),
-        lt(
-          runs.deleted_at,
-          new Date(Date.now() - 1000 * 60 * 60 * 24), // 24 hours
-        ),
-      ),
-    );
+    .where(isNotNull(runs.deleted_at));
 
   logger.info("Deleting marked runs", {
     count: runsToDelete.length,

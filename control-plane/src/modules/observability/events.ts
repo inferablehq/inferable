@@ -1,15 +1,4 @@
-import {
-  and,
-  desc,
-  eq,
-  gt,
-  gte,
-  or,
-  SQL,
-  sql,
-  isNotNull,
-  lt,
-} from "drizzle-orm";
+import { and, desc, eq, gt, gte, or, SQL, sql, isNotNull } from "drizzle-orm";
 import { ulid } from "ulid";
 import { NotFoundError } from "../../utilities/errors";
 import { db, events as eventsTable } from "../data";
@@ -382,15 +371,7 @@ export const cleanupMarkedEvents = async () => {
     })
     .from(eventsTable)
     .limit(1000)
-    .where(
-      and(
-        isNotNull(eventsTable.deleted_at),
-        lt(
-          eventsTable.deleted_at,
-          new Date(Date.now() - 1000 * 60 * 60 * 24), // 24 hours
-        ),
-      ),
-    );
+    .where(isNotNull(eventsTable.deleted_at));
 
   logger.info("Deleting marked events", {
     count: eventsToDelete.length,

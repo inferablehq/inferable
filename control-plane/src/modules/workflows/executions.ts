@@ -4,7 +4,7 @@ import { packer } from "../../utilities/packer";
 import { getClusterBackgroundRun } from "../runs";
 import { BadRequestError, NotFoundError } from "../../utilities/errors";
 import * as data from "../data";
-import { and, desc, eq, sql, isNotNull, lt } from "drizzle-orm";
+import { and, desc, eq, sql, isNotNull } from "drizzle-orm";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
 import { getEventsForJobId } from "../observability/events";
@@ -20,15 +20,7 @@ export const cleanupMarkedWorkflowExecutions = async () => {
     })
     .from(data.workflowExecutions)
     .limit(50)
-    .where(
-      and(
-        isNotNull(data.workflowExecutions.deleted_at),
-        lt(
-          data.workflowExecutions.deleted_at,
-          new Date(Date.now() - 1000 * 60 * 60 * 24), // 24 hours
-        ),
-      ),
-    );
+    .where(isNotNull(data.workflowExecutions.deleted_at));
 
   logger.info("Deleting marked workflow executions", {
     count: executions.length,
