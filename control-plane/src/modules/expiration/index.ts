@@ -32,7 +32,9 @@ export const expireEvents = async () => {
             lt(events.created_at, expiryDate),
           ),
         );
-      logger.info(`Marked events for deletion in cluster ${cluster.id}`);
+      logger.info(`Marked events for deletion in cluster`, {
+        clusterId: cluster.id,
+      });
     }
   } catch (error) {
     logger.error("Error in expireEvents cron job", { error });
@@ -65,7 +67,9 @@ export const expireRuns = async () => {
             lt(runs.created_at, expiryDate),
           ),
         );
-      logger.info(`Marked runs for deletion in cluster ${cluster.id}`);
+      logger.info(`Marked runs for deletion in cluster`, {
+        clusterId: cluster.id,
+      });
     }
   } catch (error) {
     logger.error("Error in expireRuns cron job", { error });
@@ -101,9 +105,9 @@ export const expireWorkflowExecutions = async () => {
             lt(workflowExecutions.created_at, expiryDate),
           ),
         );
-      logger.info(
-        `Marked workflow executions for deletion in cluster ${cluster.id}`,
-      );
+      logger.info(`Marked workflow executions for deletion in cluster`, {
+        clusterId: cluster.id,
+      });
     }
   } catch (error) {
     logger.error("Error in expireWorkflowExecutions cron job", { error });
