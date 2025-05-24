@@ -381,7 +381,7 @@ export const cleanupMarkedEvents = async () => {
       clusterId: eventsTable.cluster_id,
     })
     .from(eventsTable)
-    .limit(50)
+    .limit(1000)
     .where(
       and(
         isNotNull(eventsTable.deleted_at),
@@ -394,7 +394,6 @@ export const cleanupMarkedEvents = async () => {
 
   logger.info("Deleting marked events", {
     count: eventsToDelete.length,
-    eventIds: eventsToDelete.map(event => event.id),
   });
 
   for (const event of eventsToDelete) {
@@ -419,6 +418,6 @@ export const cleanupMarkedEvents = async () => {
 
 export const start = async () => {
   await cron.registerCron(cleanupMarkedEvents, "cleanup-marked-events", {
-    interval: 1000 * 60 * 15,
-  }); // 15 minutes
+    interval: 1000 * 60 * 5,
+  }); // 5 minutes
 };
