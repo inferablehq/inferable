@@ -108,8 +108,7 @@ describe("workflows/executions", () => {
         .from(data.jobs)
         .where(eq(data.jobs.id, job.id));
 
-      expect(jobData.result).toBeNull();
-      expect(jobData.targetArgs).toBe("");
+      expect(jobData).toBeUndefined();
     });
 
     it("should ignore workflow executions which are not marked for deletion", async () => {
@@ -254,7 +253,7 @@ describe("workflows/executions", () => {
 
       expect(allExecutions.count).toBe(2);
 
-      // Verify job data is cleared for marked executions
+      // Verify job is removed
       const [job1Data] = await data.db
         .select({
           result: data.jobs.result,
@@ -272,8 +271,7 @@ describe("workflows/executions", () => {
         .where(eq(data.jobs.id, job2.id));
 
       // First job should have cleared data
-      expect(job1Data.result).toBeNull();
-      expect(job1Data.targetArgs).toBe("");
+      expect(job1Data).toBeUndefined();
 
       // Third job should retain data
       expect(job2Data.targetArgs).toBe(packer.pack({ test: "data2" }));

@@ -1346,7 +1346,7 @@ export const definition = {
             id: z.string(),
             workflowName: z.string(),
             workflowVersion: z.number(),
-            jobId: z.string(),
+            jobId: z.string().nullable(),
             createdAt: z.date(),
             updatedAt: z.date(),
             deletedAt: z.date().nullable().optional(), // Add deletedAt here

@@ -34,6 +34,10 @@ export const cleanupMarkedWorkflowExecutions = async () => {
   });
 
   for (const execution of executions) {
+    if (!execution.jobId) {
+      continue;
+    }
+
     try {
       await data.db.transaction(async tx => {
         // Mark Run as deleted
@@ -53,7 +57,7 @@ export const cleanupMarkedWorkflowExecutions = async () => {
           .set({ deleted_at: new Date() })
           .where(
             and(
-              eq(data.events.job_id, execution.jobId),
+              eq(data.events.job_id, execution.jobId!),
               eq(data.events.cluster_id, execution.clusterId),
             ),
           );
@@ -68,16 +72,22 @@ export const cleanupMarkedWorkflowExecutions = async () => {
             ),
           );
 
-        // Remove all data from job
         await tx
-          .update(data.jobs)
-          .set({
-            result: null,
-            target_args: "",
-          })
+          .update(data.workflowExecutions)
+          .set({ job_id: null })
           .where(
             and(
-              eq(data.jobs.id, execution.jobId),
+              eq(data.workflowExecutions.id, execution.id),
+              eq(data.workflowExecutions.cluster_id, execution.clusterId),
+            ),
+          );
+
+        // Delete job
+        await tx
+          .delete(data.jobs)
+          .where(
+            and(
+              eq(data.jobs.id, execution.jobId!),
               eq(data.jobs.cluster_id, execution.clusterId),
             ),
           );
@@ -226,6 +236,7 @@ export const listWorkflowExecutions = async ({
           : undefined,
         status ? eq(data.jobs.status, status) : undefined,
         eq(data.workflowExecutions.cluster_id, clusterId),
+        isNotNull(data.workflowExecutions.job_id),
       ),
     )
     .limit(limit)

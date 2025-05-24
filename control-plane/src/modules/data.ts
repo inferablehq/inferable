@@ -681,9 +681,7 @@ export const workflowExecutions = pgTable(
   "workflow_executions",
   {
     id: varchar("id", { length: 1024 }).notNull(),
-    job_id: varchar("job_id", { length: 1024 })
-      .references(() => jobs.id)
-      .notNull(),
+    job_id: varchar("job_id", { length: 1024 }).references(() => jobs.id),
     cluster_id: varchar("cluster_id")
       .references(() => clusters.id)
       .notNull(),
