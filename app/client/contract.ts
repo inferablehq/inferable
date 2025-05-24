@@ -1,5 +1,6 @@
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
+import { workflowExecutions } from "./data";
 
 const c = initContract();
 
@@ -1351,6 +1352,7 @@ export const definition = {
             jobId: z.string(),
             createdAt: z.date(),
             updatedAt: z.date(),
+            deletedAt: z.date().nullable().optional(), // Add deletedAt here
           }),
           job: z.object({
             id: z.string().nullable(),
@@ -1435,6 +1437,7 @@ export const definition = {
           workflowName: z.string(),
           workflowVersion: z.number(),
           createdAt: z.date(),
+          deletedAt: z.date().nullable().optional(), // Add deletedAt here
           job: z.object({
             id: z.string(),
             status: z.string(),

@@ -667,8 +667,9 @@ export default function WorkflowExecutionDetailsPage({
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Workflow Deleted</AlertTitle>
           <AlertDescription>
-            This workflow execution's data has been deleted according to your
-            cluster's expiry settings. You can adjust these settings in the{" "}
+            This workflow execution&apos;s data has been deleted according to
+            your cluster&apos;s expiry settings. You can adjust these settings
+            in the{" "}
             <Link
               href={`/clusters/${params.clusterId}/settings/details`}
               className="underline"
