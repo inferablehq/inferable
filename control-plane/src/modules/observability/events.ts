@@ -369,6 +369,12 @@ export const cleanupMarkedEvents = async () => {
 
   for (const event of eventsToDelete) {
     try {
+      await db
+      .delete(eventsTable)
+      .where(and(
+        eq(eventsTable.id, event.id),
+        eq(eventsTable.cluster_id, event.clusterId))
+      );
     } catch (error) {
       logger.error("Error deleting event", {
         eventId: event.id,
