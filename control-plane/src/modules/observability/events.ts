@@ -364,41 +364,19 @@ export const events = {
 };
 
 export const cleanupMarkedEvents = async () => {
-  const eventsToDelete = await db
-    .select({
-      id: eventsTable.id,
-      clusterId: eventsTable.cluster_id,
-    })
-    .from(eventsTable)
-    .limit(100)
-    .where(isNotNull(eventsTable.deleted_at));
+  try {
+    await db.delete(eventsTable).where(isNotNull(eventsTable.deleted_at));
 
-  logger.info("Deleting marked events", {
-    count: eventsToDelete.length,
-  });
-
-  for (const event of eventsToDelete) {
-    try {
-      await db
-        .delete(eventsTable)
-        .where(
-          and(
-            eq(eventsTable.id, event.id),
-            eq(eventsTable.cluster_id, event.clusterId),
-          ),
-        );
-    } catch (error) {
-      logger.error("Error deleting event", {
-        eventId: event.id,
-        clusterId: event.clusterId,
-        error: error,
-      });
-    }
+    logger.info("Deleted marked events");
+  } catch (error) {
+    logger.error("Error deleting marked events", {
+      error,
+    });
   }
 };
 
 export const start = async () => {
   await cron.registerCron(cleanupMarkedEvents, "cleanup-marked-events", {
-    interval: 1000 * 60 * 5,
-  }); // 5 minutes
+    interval: 1000 * 60 * 15,
+  }); // 15 minutes
 };
