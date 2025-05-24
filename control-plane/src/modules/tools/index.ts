@@ -369,5 +369,5 @@ export const cleanExpiredToolDefinitions = async (): Promise<void> => {
 
 export const start = () =>
   cron.registerCron(cleanExpiredToolDefinitions, "clean-tool-definitions", {
-    interval: 1000 * 10,
-  }); // 10 seconds
+    interval: 60 * 1000,
+  }); // 1 minute
