@@ -23,18 +23,17 @@ export const expireEvents = async () => {
       const expiryDate = sql`now() - interval '${sql.raw(cluster.expiryAge.toString())} second'`;
 
       await db
-      .update(events)
-      .set({ deleted_at: sql`now()` })
-      .where(
-        and(
-          eq(events.cluster_id, cluster.id),
-          isNull(events.deleted_at),
-          lt(events.created_at, expiryDate),
-        ),
-      );
+        .update(events)
+        .set({ deleted_at: sql`now()` })
+        .where(
+          and(
+            eq(events.cluster_id, cluster.id),
+            isNull(events.deleted_at),
+            lt(events.created_at, expiryDate),
+          ),
+        );
       logger.info(`Marked events for deletion in cluster ${cluster.id}`);
     }
-
   } catch (error) {
     logger.error("Error in expireEvents cron job", { error });
   }
@@ -51,22 +50,21 @@ export const expireRuns = async () => {
       .from(clusters)
       .where(isNotNull(clusters.run_expiry_age));
 
-
     for (const cluster of clustersWithExpiry) {
       if (cluster.expiryAge === null) continue;
 
       const expiryDate = sql`now() - interval '${sql.raw(cluster.expiryAge.toString())} second'`;
 
       await db
-      .update(runs)
-      .set({ deleted_at: sql`now()` })
-      .where(
-        and(
-          eq(runs.cluster_id, cluster.id),
-          isNull(runs.deleted_at),
-          lt(runs.created_at, expiryDate),
-        ),
-      );
+        .update(runs)
+        .set({ deleted_at: sql`now()` })
+        .where(
+          and(
+            eq(runs.cluster_id, cluster.id),
+            isNull(runs.deleted_at),
+            lt(runs.created_at, expiryDate),
+          ),
+        );
       logger.info(`Marked runs for deletion in cluster ${cluster.id}`);
     }
   } catch (error) {
@@ -81,7 +79,10 @@ export const expireWorkflowExecutions = async () => {
   logger.info("Running expireWorkflowExecutions cron job");
   try {
     const clustersWithExpiry = await db
-      .select({ id: clusters.id, expiryAge: clusters.workflow_execution_expiry_age })
+      .select({
+        id: clusters.id,
+        expiryAge: clusters.workflow_execution_expiry_age,
+      })
       .from(clusters)
       .where(isNotNull(clusters.workflow_execution_expiry_age));
 
@@ -91,16 +92,18 @@ export const expireWorkflowExecutions = async () => {
       const expiryDate = sql`now() - interval '${sql.raw(cluster.expiryAge.toString())} second'`;
 
       await db
-      .update(workflowExecutions)
-      .set({ deleted_at: sql`now()` })
-      .where(
-        and(
-          eq(workflowExecutions.cluster_id, cluster.id),
-          isNull(workflowExecutions.deleted_at),
-          lt(workflowExecutions.created_at, expiryDate),
-        ),
+        .update(workflowExecutions)
+        .set({ deleted_at: sql`now()` })
+        .where(
+          and(
+            eq(workflowExecutions.cluster_id, cluster.id),
+            isNull(workflowExecutions.deleted_at),
+            lt(workflowExecutions.created_at, expiryDate),
+          ),
+        );
+      logger.info(
+        `Marked workflow executions for deletion in cluster ${cluster.id}`,
       );
-      logger.info(`Marked workflow executions for deletion in cluster ${cluster.id}`);
     }
   } catch (error) {
     logger.error("Error in expireWorkflowExecutions cron job", { error });

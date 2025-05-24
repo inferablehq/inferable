@@ -19,7 +19,15 @@ import {
   PaymentRequiredError,
   RunBusyError,
 } from "../../utilities/errors";
-import { clusters, db, jobs, RunMessageMetadata, runs, runTags } from "../data";
+import {
+  clusters,
+  db,
+  events,
+  jobs,
+  RunMessageMetadata,
+  runs,
+  runTags,
+} from "../data";
 import { logger } from "../observability/logger";
 import { injectTraceContext } from "../observability/tracer";
 import { runProcessQueue } from "../queues/run-process";
@@ -58,16 +66,26 @@ export const cleanupMarkedRuns = async () => {
       ),
     );
 
-  logger.info("Deleting marked runs", {
-    count: runsToDelete.length,
-    runIds: runsToDelete.map(run => run.id),
-  });
-
   for (const run of runsToDelete) {
     try {
-      logger.info("Deleting run and associated data", {
-        runId: run.id,
-        clusterId: run.clusterId,
+      await db.transaction(async tx => {
+        // Mark events as deleted
+        await tx
+          .update(events)
+          .set({
+            deleted_at: new Date(),
+          })
+          .where(
+            and(
+              eq(events.run_id, run.id),
+              eq(events.cluster_id, run.clusterId),
+            ),
+          );
+
+        // Delete run
+        await tx
+          .delete(runs)
+          .where(and(eq(runs.cluster_id, run.clusterId), eq(runs.id, run.id)));
       });
     } catch (error) {
       logger.error("Error deleting run and associated data", {

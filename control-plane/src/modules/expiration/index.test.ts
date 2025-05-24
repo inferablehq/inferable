@@ -104,7 +104,7 @@ describe("expiration", () => {
             oldEvent2.id,
             oldEvent3.id,
             alreadyDeletedEvent.id,
-          ])
+          ]),
         );
 
       const eventMap = new Map(eventsAfterExpiration.map(e => [e.id, e]));
@@ -260,7 +260,7 @@ describe("expiration", () => {
             recentRun.id,
             runInClusterWithoutExpiry.id,
             alreadyDeletedRun.id,
-          ])
+          ]),
         );
 
       const runMap = new Map(runsAfterExpiration.map(r => [r.id, r]));
@@ -472,10 +472,12 @@ describe("expiration", () => {
             recentExecution.id,
             executionInClusterWithoutExpiry.id,
             alreadyDeletedExecution.id,
-          ])
+          ]),
         );
 
-      const executionMap = new Map(executionsAfterExpiration.map(e => [e.id, e]));
+      const executionMap = new Map(
+        executionsAfterExpiration.map(e => [e.id, e]),
+      );
 
       // oldExecution should be marked for deletion
       expect(executionMap.get(oldExecution.id)?.deletedAt).not.toBeNull();
@@ -484,10 +486,14 @@ describe("expiration", () => {
       expect(executionMap.get(recentExecution.id)?.deletedAt).toBeNull();
 
       // executionInClusterWithoutExpiry should NOT be marked for deletion
-      expect(executionMap.get(executionInClusterWithoutExpiry.id)?.deletedAt).toBeNull();
+      expect(
+        executionMap.get(executionInClusterWithoutExpiry.id)?.deletedAt,
+      ).toBeNull();
 
       // alreadyDeletedExecution should still be marked for deletion
-      expect(executionMap.get(alreadyDeletedExecution.id)?.deletedAt).not.toBeNull();
+      expect(
+        executionMap.get(alreadyDeletedExecution.id)?.deletedAt,
+      ).not.toBeNull();
     });
 
     it("should not affect workflow executions from other clusters", async () => {
@@ -643,7 +649,11 @@ describe("expiration", () => {
         .then(rows => rows[0]);
 
       // Run all expiration functions
-      await Promise.all([expireEvents(), expireRuns(), expireWorkflowExecutions()]);
+      await Promise.all([
+        expireEvents(),
+        expireRuns(),
+        expireWorkflowExecutions(),
+      ]);
 
       // Check that nothing was marked for deletion
       const [eventAfter] = await db
