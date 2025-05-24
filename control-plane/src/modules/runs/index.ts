@@ -54,7 +54,7 @@ export const cleanupMarkedRuns = async () => {
       clusterId: runs.cluster_id,
     })
     .from(runs)
-    .limit(1000)
+    .limit(100)
     .where(isNotNull(runs.deleted_at));
 
   logger.info("Deleting marked runs", {

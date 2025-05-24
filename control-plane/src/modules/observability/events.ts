@@ -370,7 +370,7 @@ export const cleanupMarkedEvents = async () => {
       clusterId: eventsTable.cluster_id,
     })
     .from(eventsTable)
-    .limit(1000)
+    .limit(100)
     .where(isNotNull(eventsTable.deleted_at));
 
   logger.info("Deleting marked events", {
