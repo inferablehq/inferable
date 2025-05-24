@@ -21,6 +21,7 @@ import * as tools from "./modules/tools";
 import * as cron from "./modules/cron";
 import * as workflows from "./modules/workflows/executions";
 import * as runs from "./modules/runs";
+import * as expiration from "./modules/expiration"; // Import the new expiration module
 import { env } from "./utilities/env";
 import { runMigrations } from "./utilities/migrate";
 import { router } from "./modules/router";
@@ -179,6 +180,7 @@ const startTime = Date.now();
     workflows.start(),
     runs.start(),
     events.start(),
+    expiration.start(),
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });

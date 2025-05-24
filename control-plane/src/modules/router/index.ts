@@ -1172,7 +1172,15 @@ export const router = initServer().router(contract, {
     const auth = request.request.getAuth().isAdmin();
     await auth.canManage({ cluster: { clusterId } });
 
-    const { description, name, debug, enableKnowledgebase } = request.body;
+    const {
+      description,
+      name,
+      debug,
+      enableKnowledgebase,
+      eventExpiryAge,
+      runExpiryAge,
+      workflowExecutionExpiryAge,
+    } = request.body;
 
     await management.editClusterDetails({
       name,
@@ -1181,6 +1189,9 @@ export const router = initServer().router(contract, {
       description,
       debug,
       enableKnowledgebase,
+      eventExpiryAge,
+      runExpiryAge,
+      workflowExecutionExpiryAge,
     });
 
     posthog?.capture({

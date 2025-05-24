@@ -17,6 +17,10 @@ export const getClusterDetails = async (clusterId: string) => {
       organization_id: data.clusters.organization_id,
       deleted_at: data.clusters.deleted_at,
       is_demo: data.clusters.is_demo,
+      event_expiry_age: data.clusters.event_expiry_age,
+      run_expiry_age: data.clusters.run_expiry_age,
+      workflow_execution_expiry_age:
+        data.clusters.workflow_execution_expiry_age,
     })
     .from(data.clusters)
     .where(eq(data.clusters.id, clusterId));

@@ -29,13 +29,31 @@ import toast from "react-hot-toast";
 import { z } from "zod";
 import { Loading } from "@/components/loading";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formSchema = z.object({
   name: z.string(),
   description: z.string().default(""),
   debug: z.boolean().default(false),
+  eventExpiryAge: z.number().nullable().optional(),
+  runExpiryAge: z.number().nullable().optional(),
+  workflowExecutionExpiryAge: z.number().nullable().optional(),
 });
+
+// Define expiry options in seconds
+const expiryOptions = [
+  { value: null, label: "No expiry" },
+  { value: 60, label: "1 minute" },
+  { value: 3600, label: "1 hour" },
+  { value: 86400, label: "1 day" },
+  { value: 604800, label: "1 week" },
+];
 
 export default function DetailsPage({
   params: { clusterId },
@@ -61,6 +79,13 @@ export default function DetailsPage({
         form.setValue("name", details.body.name);
         form.setValue("description", details.body.description ?? "");
         form.setValue("debug", details.body.debug ?? false);
+        // Convert number/null value from API to the corresponding value for the select
+        form.setValue("eventExpiryAge", details.body.eventExpiryAge ?? null);
+        form.setValue("runExpiryAge", details.body.runExpiryAge ?? null);
+        form.setValue(
+          "workflowExecutionExpiryAge",
+          details.body.workflowExecutionExpiryAge ?? null,
+        );
       } else {
         createErrorToast(details, "Failed to fetch cluster details");
       }
@@ -81,6 +106,11 @@ export default function DetailsPage({
             name: data.name,
             description: data.description,
             debug: data.debug,
+            // Pass the number/null value directly to the API
+            eventExpiryAge: data.eventExpiryAge ?? undefined,
+            runExpiryAge: data.runExpiryAge ?? undefined,
+            workflowExecutionExpiryAge:
+              data.workflowExecutionExpiryAge ?? undefined,
           },
         });
 
@@ -154,6 +184,124 @@ export default function DetailsPage({
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* Event Expiry Age Select */}
+              <FormField
+                control={form.control}
+                name="eventExpiryAge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event Expiry Age</FormLabel>
+                    <Select
+                      onValueChange={value =>
+                        field.onChange(value === "null" ? null : Number(value))
+                      }
+                      value={
+                        field.value === null ? "null" : String(field.value)
+                      } // Convert number/null to string for Select
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select expiry age" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {expiryOptions.map(option => (
+                          <SelectItem
+                            key={option.value}
+                            value={String(option.value)}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      How long events should be kept for this cluster.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Run Expiry Age Select */}
+              <FormField
+                control={form.control}
+                name="runExpiryAge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Run Expiry Age</FormLabel>
+                    <Select
+                      onValueChange={value =>
+                        field.onChange(value === "null" ? null : Number(value))
+                      }
+                      value={
+                        field.value === null ? "null" : String(field.value)
+                      } // Convert number/null to string for Select
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select expiry age" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {expiryOptions.map(option => (
+                          <SelectItem
+                            key={option.value}
+                            value={String(option.value)}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      How long runs should be kept for this cluster.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Workflow Execution Expiry Age Select */}
+              <FormField
+                control={form.control}
+                name="workflowExecutionExpiryAge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Workflow Execution Expiry Age</FormLabel>
+                    <Select
+                      onValueChange={value =>
+                        field.onChange(value === "null" ? null : Number(value))
+                      }
+                      value={
+                        field.value === null ? "null" : String(field.value)
+                      } // Convert number/null to string for Select
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select expiry age" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {expiryOptions.map(option => (
+                          <SelectItem
+                            key={option.value}
+                            value={String(option.value)}
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      How long workflow executions should be kept for this
+                      cluster.
+                    </FormDescription>
+                    <FormMessage />
                   </FormItem>
                 )}
               />

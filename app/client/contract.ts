@@ -8,8 +8,6 @@ const machineHeaders = {
   "x-machine-sdk-version": z.string().optional(),
   "x-machine-sdk-language": z.string().optional(),
   "x-forwarded-for": z.string().optional().optional(),
-  "x-sentinel-no-mask": z.string().optional().optional(),
-  "x-sentinel-unmask-keys": z.string().optional(),
 };
 
 const functionReference = z.object({
@@ -28,6 +26,10 @@ export const notificationSchema = z.object({
         threadId: z.string().optional(),
         userId: z.string().optional(),
         email: z.string().optional(),
+      }),
+      z.object({
+        type: z.literal("email"),
+        email: z.string(),
       }),
     ])
     .optional(),
@@ -661,15 +663,15 @@ export const definition = {
     body: z.object({
       name: z.string().optional(),
       description: z.string().optional(),
-      additionalContext: VersionedTextsSchema.optional().describe(
-        "Additional cluster context which is included in all runs",
-      ),
       debug: z
         .boolean()
         .optional()
         .describe(
           "Enable additional logging (Including prompts and results) for use by Inferable support",
         ),
+      eventExpiryAge: z.number().optional(),
+      runExpiryAge: z.number().optional(),
+      workflowExecutionExpiryAge: z.number().optional(),
       enableKnowledgebase: z.boolean().optional(),
     }),
   },
@@ -684,10 +686,12 @@ export const definition = {
         id: z.string(),
         name: z.string(),
         description: z.string().nullable(),
-        additionalContext: VersionedTextsSchema.nullable(),
         createdAt: z.number(),
         debug: z.boolean(),
         isDemo: z.boolean(),
+        eventExpiryAge: z.number().nullable(),
+        runExpiryAge: z.number().nullable(),
+        workflowExecutionExpiryAge: z.number().nullable(),
         machines: z.array(
           z.object({
             id: z.string(),
@@ -1260,7 +1264,7 @@ export const definition = {
     },
   },
 
-  createWorkflowLog: {
+  createWorkflowLogLegacy: {
     method: "POST",
     path: "/clusters/:clusterId/workflow-executions/:executionId/logs",
     headers: z.object({ authorization: z.string() }),
@@ -1279,6 +1283,38 @@ export const definition = {
         workflowExecutionId: z.string(),
         createdAt: z.date(),
       }),
+    },
+  },
+
+  createWorkflowLog: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions/:executionId/logs",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      workflowName: z.string(),
+      clusterId: z.string(),
+      executionId: z.string(),
+    }),
+    body: z.object({
+      status: z.enum(["info", "warn", "error"]),
+      data: z.object({}).passthrough(),
+    }),
+    responses: {
+      201: z.undefined(),
+    },
+  },
+
+  createWorkflowNotification: {
+    method: "POST",
+    path: "/clusters/:clusterId/workflows/:workflowName/executions/:executionId/notification",
+    headers: z.object({ authorization: z.string() }),
+    pathParams: z.object({
+      clusterId: z.string(),
+      executionId: z.string(),
+    }),
+    body: notificationSchema,
+    responses: {
+      201: z.undefined(),
     },
   },
 

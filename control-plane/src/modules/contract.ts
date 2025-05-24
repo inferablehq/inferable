@@ -1,5 +1,6 @@
 import { initContract } from "@ts-rest/core";
 import { z } from "zod";
+import { workflowExecutions } from "./data";
 
 const c = initContract();
 
@@ -669,6 +670,9 @@ export const definition = {
         .describe(
           "Enable additional logging (Including prompts and results) for use by Inferable support",
         ),
+      eventExpiryAge: z.number().optional(),
+      runExpiryAge: z.number().optional(),
+      workflowExecutionExpiryAge: z.number().optional(),
       enableKnowledgebase: z.boolean().optional(),
     }),
   },
@@ -686,6 +690,9 @@ export const definition = {
         createdAt: z.number(),
         debug: z.boolean(),
         isDemo: z.boolean(),
+        eventExpiryAge: z.number().nullable(),
+        runExpiryAge: z.number().nullable(),
+        workflowExecutionExpiryAge: z.number().nullable(),
         machines: z.array(
           z.object({
             id: z.string(),
