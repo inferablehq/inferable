@@ -180,7 +180,7 @@ const startTime = Date.now();
     workflows.start(),
     runs.start(),
     events.start(),
-    expiration.start(), // Add the call to start the expiration module
+    expiration.start(),
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });
