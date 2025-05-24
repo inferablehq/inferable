@@ -19,6 +19,8 @@ import * as clusters from "./modules/clusters";
 import * as redis from "./modules/dependencies/redis";
 import * as tools from "./modules/tools";
 import * as cron from "./modules/cron";
+import * as workflows from "./modules/workflows/executions";
+import * as runs from "./modules/runs";
 import { env } from "./utilities/env";
 import { runMigrations } from "./utilities/migrate";
 import { router } from "./modules/router";
@@ -174,6 +176,8 @@ const startTime = Date.now();
     queues.start(),
     flagsmith?.getEnvironmentFlags(),
     clusters.start(),
+    workflows.start(),
+    runs.start(),
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });

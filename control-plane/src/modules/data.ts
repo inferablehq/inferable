@@ -385,6 +385,7 @@ export const runs = pgTable(
     provider_model: text("provider_model"),
     provider_url: text("provider_url"),
     provider_key: text("provider_key"),
+    deleted_at: timestamp("deleted_at", { withTimezone: true }),
   },
   table => ({
     pk: primaryKey({
@@ -620,6 +621,7 @@ export const workflowExecutions = pgTable(
     workflow_version: integer("version").notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    deleted_at: timestamp("deleted_at", { withTimezone: true }),
   },
   table => ({
     pk: primaryKey({
