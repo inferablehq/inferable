@@ -109,7 +109,7 @@ describe("event-aggregation", () => {
         });
 
         return job.id;
-      })
+      }),
     );
 
     return { jobIds };
@@ -147,41 +147,59 @@ describe("cleanupMarkedEvents", () => {
     const runId = Math.random().toString();
 
     // Create events
-    const event1 = await db.insert(eventsTable).values({
-      id: `event1-${Math.random()}`,
-      cluster_id: clusterId,
-      run_id: runId,
-      type: "jobCreated",
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 25), // Older than 24 hours
-      deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 25), // Marked for deletion, older than 24 hours
-    }).returning({ id: eventsTable.id }).then(rows => rows[0]);
+    const event1 = await db
+      .insert(eventsTable)
+      .values({
+        id: `event1-${Math.random()}`,
+        cluster_id: clusterId,
+        run_id: runId,
+        type: "jobCreated",
+        created_at: new Date(Date.now() - 1000 * 60 * 60 * 25), // Older than 24 hours
+        deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 25), // Marked for deletion, older than 24 hours
+      })
+      .returning({ id: eventsTable.id })
+      .then(rows => rows[0]);
 
-    const event2 = await db.insert(eventsTable).values({
-      id: `event2-${Math.random()}`,
-      cluster_id: clusterId,
-      run_id: runId,
-      type: "jobAcknowledged",
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 23), // Younger than 24 hours
-      deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 23), // Marked for deletion, younger than 24 hours
-    }).returning({ id: eventsTable.id }).then(rows => rows[0]);
+    const event2 = await db
+      .insert(eventsTable)
+      .values({
+        id: `event2-${Math.random()}`,
+        cluster_id: clusterId,
+        run_id: runId,
+        type: "jobAcknowledged",
+        created_at: new Date(Date.now() - 1000 * 60 * 60 * 23), // Younger than 24 hours
+        deleted_at: new Date(Date.now() - 1000 * 60 * 60 * 23), // Marked for deletion, younger than 24 hours
+      })
+      .returning({ id: eventsTable.id })
+      .then(rows => rows[0]);
 
-    const event3 = await db.insert(eventsTable).values({
-      id: `event3-${Math.random()}`,
-      cluster_id: clusterId,
-      run_id: runId,
-      type: "jobResulted",
-      created_at: new Date(), // Not marked for deletion
-    }).returning({ id: eventsTable.id }).then(rows => rows[0]);
+    const event3 = await db
+      .insert(eventsTable)
+      .values({
+        id: `event3-${Math.random()}`,
+        cluster_id: clusterId,
+        run_id: runId,
+        type: "jobResulted",
+        created_at: new Date(), // Not marked for deletion
+      })
+      .returning({ id: eventsTable.id })
+      .then(rows => rows[0]);
 
     // Verify initial state
-    const initialEvents = await db.select({ id: eventsTable.id }).from(eventsTable).where(eq(eventsTable.cluster_id, clusterId));
+    const initialEvents = await db
+      .select({ id: eventsTable.id })
+      .from(eventsTable)
+      .where(eq(eventsTable.cluster_id, clusterId));
     expect(initialEvents.length).toBe(3);
 
     // Run cleanup
     await events.cleanupMarkedEvents();
 
     // Verify state after cleanup
-    const remainingEvents = await db.select({ id: eventsTable.id }).from(eventsTable).where(eq(eventsTable.cluster_id, clusterId));
+    const remainingEvents = await db
+      .select({ id: eventsTable.id })
+      .from(eventsTable)
+      .where(eq(eventsTable.cluster_id, clusterId));
     expect(remainingEvents.length).toBe(2); // event1 should be deleted
 
     const remainingEventIds = remainingEvents.map(e => e.id);
@@ -190,11 +208,17 @@ describe("cleanupMarkedEvents", () => {
     expect(remainingEventIds).toContain(event3.id);
 
     // Verify event2 is still marked for deletion
-    const [event2AfterCleanup] = await db.select({ deleted_at: eventsTable.deleted_at }).from(eventsTable).where(eq(eventsTable.id, event2.id));
+    const [event2AfterCleanup] = await db
+      .select({ deleted_at: eventsTable.deleted_at })
+      .from(eventsTable)
+      .where(eq(eventsTable.id, event2.id));
     expect(event2AfterCleanup.deleted_at).not.toBeNull();
 
     // Verify event3 is not marked for deletion
-    const [event3AfterCleanup] = await db.select({ deleted_at: eventsTable.deleted_at }).from(eventsTable).where(eq(eventsTable.id, event3.id));
+    const [event3AfterCleanup] = await db
+      .select({ deleted_at: eventsTable.deleted_at })
+      .from(eventsTable)
+      .where(eq(eventsTable.id, event3.id));
     expect(event3AfterCleanup.deleted_at).toBeNull();
   });
 });
