@@ -1,4 +1,15 @@
-import { and, desc, eq, inArray, isNull, not, or, sql, isNotNull, lt } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  not,
+  or,
+  sql,
+  isNotNull,
+  lt,
+} from "drizzle-orm";
 import { omitBy } from "lodash";
 import { ulid } from "ulid";
 import { env } from "../../utilities/env";
@@ -36,6 +47,7 @@ export const cleanupMarkedRuns = async () => {
       clusterId: runs.cluster_id,
     })
     .from(runs)
+    .limit(50)
     .where(
       and(
         isNotNull(runs.deleted_at),

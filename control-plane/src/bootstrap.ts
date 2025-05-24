@@ -178,6 +178,7 @@ const startTime = Date.now();
     clusters.start(),
     workflows.start(),
     runs.start(),
+    events.start(),
   ])
     .then(() => {
       logger.info("Dependencies started", { latency: Date.now() - startTime });

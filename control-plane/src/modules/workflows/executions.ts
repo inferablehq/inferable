@@ -19,6 +19,7 @@ export const cleanupMarkedWorkflowExecutions = async () => {
       jobId: data.workflowExecutions.job_id,
     })
     .from(data.workflowExecutions)
+    .limit(50)
     .where(
       and(
         isNotNull(data.workflowExecutions.deleted_at),
@@ -399,7 +400,11 @@ export const getWorkflowRuns = async ({
 };
 
 export const start = async () => {
-  await cron.registerCron(cleanupMarkedWorkflowExecutions, "cleanup-marked-workflow-executions", {
-    interval: 1000 * 60 * 15,
-  }); // 15 minutes
+  await cron.registerCron(
+    cleanupMarkedWorkflowExecutions,
+    "cleanup-marked-workflow-executions",
+    {
+      interval: 1000 * 60 * 15,
+    },
+  ); // 15 minutes
 };

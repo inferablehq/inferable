@@ -1,8 +1,9 @@
-import { and, desc, eq, gt, gte, or, SQL, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, or, SQL, sql, isNotNull, lt } from "drizzle-orm";
 import { ulid } from "ulid";
 import { NotFoundError } from "../../utilities/errors";
 import { db, events as eventsTable } from "../data";
 import { logger } from "./logger";
+import * as cron from "../cron";
 
 // Name format <noun>_<verb>(Past tense)_<qualifier>
 export type EventTypes =
@@ -341,4 +342,45 @@ export const getUsageActivity = async (params: { clusterId: string }) => {
 
 export const events = {
   write,
+};
+
+export const cleanupMarkedEvents = async () => {
+  const eventsToDelete = await db
+    .select({
+      id: eventsTable.id,
+      clusterId: eventsTable.cluster_id,
+    })
+    .from(eventsTable)
+    .limit(50)
+    .where(
+      and(
+        isNotNull(eventsTable.deleted_at),
+        lt(
+          eventsTable.deleted_at,
+          new Date(Date.now() - 1000 * 60 * 60 * 24), // 24 hours
+        ),
+      ),
+    );
+
+  logger.info("Deleting marked events", {
+    count: eventsToDelete.length,
+    eventIds: eventsToDelete.map(event => event.id),
+  });
+
+  for (const event of eventsToDelete) {
+    try {
+    } catch (error) {
+      logger.error("Error deleting event", {
+        eventId: event.id,
+        clusterId: event.clusterId,
+        error: error,
+      });
+    }
+  }
+};
+
+export const start = async () => {
+  await cron.registerCron(cleanupMarkedEvents, "cleanup-marked-events", {
+    interval: 1000 * 60 * 15,
+  }); // 15 minutes
 };
