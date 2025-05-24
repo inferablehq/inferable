@@ -4,7 +4,7 @@ import { packer } from "../../utilities/packer";
 import { getClusterBackgroundRun } from "../runs";
 import { BadRequestError, NotFoundError } from "../../utilities/errors";
 import * as data from "../data";
-import { and, desc, eq, sql, isNotNull } from "drizzle-orm";
+import { and, desc, eq, sql, isNotNull, or } from "drizzle-orm";
 import { getWorkflowTools } from "../tools";
 import { logger } from "../observability/logger";
 import { getEventsForJobId } from "../observability/events";
@@ -19,8 +19,14 @@ export const cleanupMarkedWorkflowExecutions = async () => {
       jobId: data.workflowExecutions.job_id,
     })
     .from(data.workflowExecutions)
-    .limit(50)
-    .where(isNotNull(data.workflowExecutions.deleted_at));
+    .limit(100)
+    .where(
+      and(
+        isNotNull(data.workflowExecutions.deleted_at),
+        // Cleaned up executions will no longer have a job
+        isNotNull(data.workflowExecutions.job_id),
+      ),
+    );
 
   logger.info("Deleting marked workflow executions", {
     count: executions.length,
@@ -29,9 +35,52 @@ export const cleanupMarkedWorkflowExecutions = async () => {
 
   for (const execution of executions) {
     try {
-      logger.info("Deleting workflow execution", {
-        executionId: execution.id,
-        clusterId: execution.clusterId,
+      await data.db.transaction(async tx => {
+        // Mark Run as deleted
+        await tx
+          .update(data.runs)
+          .set({ deleted_at: new Date() })
+          .where(
+            and(
+              eq(data.runs.workflow_execution_id, execution.id),
+              eq(data.runs.cluster_id, execution.clusterId),
+            ),
+          );
+
+        // Mark Events as deleted
+        await tx
+          .update(data.events)
+          .set({ deleted_at: new Date() })
+          .where(
+            and(
+              eq(data.events.job_id, execution.jobId),
+              eq(data.events.cluster_id, execution.clusterId),
+            ),
+          );
+
+        // Cleanup any KV values
+        await tx
+          .delete(data.clusterKV)
+          .where(
+            and(
+              eq(data.clusterKV.cluster_id, execution.clusterId),
+              sql`${data.clusterKV.key} LIKE ${`${execution.id}_%`}`,
+            ),
+          );
+
+        // Remove all data from job
+        await tx
+          .update(data.jobs)
+          .set({
+            result: null,
+            target_args: "",
+          })
+          .where(
+            and(
+              eq(data.jobs.id, execution.jobId),
+              eq(data.jobs.cluster_id, execution.clusterId),
+            ),
+          );
       });
     } catch (error) {
       logger.error("Error deleting workflow execution", {
