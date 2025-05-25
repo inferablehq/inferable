@@ -1178,7 +1178,6 @@ export const router = initServer().router(contract, {
       debug,
       enableKnowledgebase,
       eventExpiryAge,
-      runExpiryAge,
       workflowExecutionExpiryAge,
     } = request.body;
 
@@ -1190,7 +1189,6 @@ export const router = initServer().router(contract, {
       debug,
       enableKnowledgebase,
       eventExpiryAge,
-      runExpiryAge,
       workflowExecutionExpiryAge,
     });
 

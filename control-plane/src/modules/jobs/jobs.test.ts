@@ -7,6 +7,7 @@ import {
   getJob,
   requestApproval,
   submitApproval,
+  cleanupMarkedJobs,
 } from "./jobs";
 import { acknowledgeJob, persistJobResult } from "./job-results";
 import { selfHealJobs } from "./self-heal-jobs";
@@ -647,5 +648,151 @@ describe("submitApproval", () => {
     expect(retreivedJob3!.approved).toBe(false);
     expect(retreivedJob3!.status).toBe("success");
     expect(retreivedJob3!.resultType).toBe("rejection");
+  });
+});
+
+describe("cleanupMarkedJobs", () => {
+  it("should only remove jobs marked for deletion", async () => {
+    const owner = await createOwner();
+
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      clusterId: owner.clusterId,
+    });
+
+    // Create a job that will be marked for deletion
+    const markedJob = await createJobV2({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      runId: getClusterBackgroundRun(owner.clusterId),
+    });
+
+    // Create a job that will NOT be marked for deletion
+    const unmarkedJob = await createJobV2({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      runId: getClusterBackgroundRun(owner.clusterId),
+    });
+
+    // Create another job that will be marked for deletion
+    const anotherMarkedJob = await createJobV2({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      runId: getClusterBackgroundRun(owner.clusterId),
+    });
+
+    // Mark two jobs for deletion by setting deleted_at
+    await data.db
+      .update(data.jobs)
+      .set({
+        deleted_at: sql`now()`,
+      })
+      .where(
+        and(
+          eq(data.jobs.cluster_id, owner.clusterId),
+          eq(data.jobs.id, markedJob.id),
+        ),
+      );
+
+    await data.db
+      .update(data.jobs)
+      .set({
+        deleted_at: sql`now()`,
+      })
+      .where(
+        and(
+          eq(data.jobs.cluster_id, owner.clusterId),
+          eq(data.jobs.id, anotherMarkedJob.id),
+        ),
+      );
+
+    // Verify all jobs exist before cleanup
+    const markedJobBefore = await getJob({
+      jobId: markedJob.id,
+      clusterId: owner.clusterId,
+    });
+    const unmarkedJobBefore = await getJob({
+      jobId: unmarkedJob.id,
+      clusterId: owner.clusterId,
+    });
+    const anotherMarkedJobBefore = await getJob({
+      jobId: anotherMarkedJob.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(markedJobBefore).toBeDefined();
+    expect(unmarkedJobBefore).toBeDefined();
+    expect(anotherMarkedJobBefore).toBeDefined();
+
+    // Run cleanup
+    await cleanupMarkedJobs();
+
+    // Verify only unmarked job still exists
+    const markedJobAfter = await getJob({
+      jobId: markedJob.id,
+      clusterId: owner.clusterId,
+    });
+    const unmarkedJobAfter = await getJob({
+      jobId: unmarkedJob.id,
+      clusterId: owner.clusterId,
+    });
+    const anotherMarkedJobAfter = await getJob({
+      jobId: anotherMarkedJob.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(markedJobAfter).toBeUndefined();
+    expect(unmarkedJobAfter).toBeDefined();
+    expect(anotherMarkedJobAfter).toBeUndefined();
+  });
+
+  it("should handle cleanup when no jobs are marked for deletion", async () => {
+    const owner = await createOwner();
+
+    await upsertToolDefinition({
+      name: mockTargetFn,
+      schema: mockTargetSchema,
+      clusterId: owner.clusterId,
+    });
+
+    // Create jobs that are NOT marked for deletion
+    const job1 = await createJobV2({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      runId: getClusterBackgroundRun(owner.clusterId),
+    });
+
+    const job2 = await createJobV2({
+      targetFn: mockTargetFn,
+      targetArgs: mockTargetArgs,
+      owner,
+      runId: getClusterBackgroundRun(owner.clusterId),
+    });
+
+    // Run cleanup - should not throw and should not delete anything
+    await expect(cleanupMarkedJobs()).resolves.not.toThrow();
+
+    // Verify jobs still exist
+    const job1After = await getJob({
+      jobId: job1.id,
+      clusterId: owner.clusterId,
+    });
+    const job2After = await getJob({
+      jobId: job2.id,
+      clusterId: owner.clusterId,
+    });
+
+    expect(job1After).toBeDefined();
+    expect(job2After).toBeDefined();
+  });
+
+  it("should handle cleanup when no jobs exist", async () => {
+    // Run cleanup with no jobs in database - should not throw
+    await expect(cleanupMarkedJobs()).resolves.not.toThrow();
   });
 });

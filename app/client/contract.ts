@@ -670,7 +670,6 @@ export const definition = {
           "Enable additional logging (Including prompts and results) for use by Inferable support",
         ),
       eventExpiryAge: z.number().optional(),
-      runExpiryAge: z.number().optional(),
       workflowExecutionExpiryAge: z.number().optional(),
       enableKnowledgebase: z.boolean().optional(),
     }),
@@ -690,7 +689,6 @@ export const definition = {
         debug: z.boolean(),
         isDemo: z.boolean(),
         eventExpiryAge: z.number().nullable(),
-        runExpiryAge: z.number().nullable(),
         workflowExecutionExpiryAge: z.number().nullable(),
         machines: z.array(
           z.object({
