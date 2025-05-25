@@ -235,7 +235,6 @@ process.on("SIGTERM", async () => {
     hdx?.shutdown(),
     queues.stop(),
     slack.stop(),
-    cron.stop(),
   ]);
 
   await Promise.all([pg.stop(), redis.stop()]);

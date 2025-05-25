@@ -4,6 +4,7 @@ import { Queue, Worker } from "bullmq";
 import { logger } from "../observability/logger";
 import { bullmqRedisConnection } from "../queues/core";
 import { env } from "../../utilities/env";
+import { createMutex } from "../data";
 
 const CRON_QUEUE_PREFIX = "cron-queue-";
 const crons: {
@@ -86,9 +87,17 @@ export const registerCron = async (
   });
 };
 
+const mutex = createMutex("cron-scheduler");
 export const start = async () => {
-  const register = async () => {
-    crons.forEach(async cron => {
+  const unlock = await mutex.tryLock();
+
+  if (!unlock) {
+    logger.info("Could not acquire lock, skipping cron scheduler.");
+    return;
+  }
+
+  try {
+    for (const cron of crons) {
       // Create a Job Scheduler that will produce jobs at the specified interval
       await cron.queue.upsertJobScheduler(
         `scheduler-${cron.name}`,
@@ -101,46 +110,9 @@ export const start = async () => {
           },
         },
       );
-    });
-  };
+    }
 
-  await register();
-
-  // Periodically re-register job schedulers.
-  // This avoids problems caused by task shutdown cleaning up job schedulers.
-  setInterval(
-    register,
-    5 * 60 * 1000,
-    // 5 minutes
-  );
-};
-
-export const stop = async () => {
-  // Close all queues and remove job schedulers
-  await Promise.all(
-    crons.map(async cron => {
-      await cron.worker.close();
-
-      // Get all job schedulers for this queue
-      const schedulers = await cron.queue.getJobSchedulers();
-
-      logger.info("Cleaning up job schedulers for queue", {
-        name: cron.queue.name,
-      });
-
-      // Remove all job schedulers
-      await Promise.all(
-        schedulers
-          .filter(
-            scheduler => scheduler.id !== null && scheduler.id !== undefined,
-          )
-          .map(scheduler =>
-            cron.queue.removeJobScheduler(scheduler.id as string),
-          ),
-      );
-
-      await cron.queue.close();
-      await cron.queue.obliterate({ force: true });
-    }),
-  );
+  } finally {
+    await unlock();
+  }
 };

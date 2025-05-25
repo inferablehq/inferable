@@ -1,13 +1,8 @@
-import { registerCron, stop, start } from ".";
+import { registerCron, start } from ".";
 
 describe("cron", () => {
   // Increase timeout for all tests in this suite to account for BullMQ initialization
   jest.setTimeout(30000);
-
-  afterEach(async () => {
-    // Clean up any registered crons after each test
-    await stop();
-  });
 
   it("should execute a cron job multiple times", async () => {
     // Counter to track how many times the cron job has fired
