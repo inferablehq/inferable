@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { env } from "../../utilities/env";
 import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
 import * as cron from "../cron";
@@ -454,5 +454,20 @@ export async function submitApproval({
   }
 }
 
-export const start = () =>
+export const cleanupMarkedJobs = async () => {
+  try {
+    await data.db.delete(data.jobs).where(isNotNull(data.jobs.deleted_at));
+
+    logger.info("Deleted marked jobs");
+  } catch (error) {
+    logger.error("Error deleting marked jobs", {
+      error,
+    });
+  }
+};
+
+export const start = () => {
   cron.registerCron(selfHealJobs, "self-heal-calls", { interval: 1000 * 5 }); // 5 seconds
+  cron.registerCron(cleanupMarkedJobs, "cleanup-marked-jobs", { interval: 1000 * 60 * 15 }); // 15 minutes
+}
+

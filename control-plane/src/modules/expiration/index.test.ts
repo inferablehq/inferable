@@ -180,7 +180,7 @@ describe("expiration", () => {
   });
 
   describe("expireRuns", () => {
-    it("should only mark runs from clusters with run_expiry_age set and older than expiry age", async () => {
+    it("should only mark runs from clusters with workflow_execution_expiry_age set and older than expiry age", async () => {
       const clusterWithExpiry = await createOwner({
         clusterId: `cluster-with-expiry-${ulid()}`,
       });
@@ -191,7 +191,7 @@ describe("expiration", () => {
       // Set expiry age
       await db
         .update(clusters)
-        .set({ run_expiry_age: 3600 }) // 1 hour
+        .set({ workflow_execution_expiry_age: 3600 }) // 1 hour
         .where(eq(clusters.id, clusterWithExpiry.clusterId));
 
       // Create runs with different ages
@@ -289,7 +289,7 @@ describe("expiration", () => {
       // Set expiry only on target cluster
       await db
         .update(clusters)
-        .set({ run_expiry_age: 3600 }) // 1 hour
+        .set({ workflow_execution_expiry_age: 3600 }) // 1 hour
         .where(eq(clusters.id, targetCluster.clusterId));
 
       // Create old runs in both clusters
@@ -592,7 +592,6 @@ describe("expiration", () => {
         .update(clusters)
         .set({
           event_expiry_age: null,
-          run_expiry_age: null,
           workflow_execution_expiry_age: null,
         })
         .where(eq(clusters.id, cluster.clusterId));
@@ -686,7 +685,6 @@ describe("expiration", () => {
         .update(clusters)
         .set({
           event_expiry_age: 3600,
-          run_expiry_age: 3600,
           workflow_execution_expiry_age: 3600,
         })
         .where(eq(clusters.id, emptyCluster.clusterId));
@@ -708,7 +706,6 @@ describe("expiration", () => {
         .update(clusters)
         .set({
           event_expiry_age: largeExpiry,
-          run_expiry_age: largeExpiry,
           workflow_execution_expiry_age: largeExpiry,
         })
         .where(eq(clusters.id, cluster.clusterId));

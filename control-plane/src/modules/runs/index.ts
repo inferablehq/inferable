@@ -84,10 +84,7 @@ export const cleanupMarkedRuns = async () => {
             deleted_at: new Date(),
           })
           .where(
-            and(
-              eq(jobs.run_id, run.id),
-              eq(jobs.cluster_id, run.clusterId),
-            ),
+            and(eq(jobs.run_id, run.id), eq(jobs.cluster_id, run.clusterId)),
           );
 
         // Delete run
