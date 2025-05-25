@@ -121,7 +121,7 @@ export const start = async () => {
   // This avoids problems caused by task shutdown cleaning up job schedulers.
   setInterval(
     register,
-    5 * 60 * 1000
+    5 * 60 * 1000,
     // 5 minutes
   );
 };

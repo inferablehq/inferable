@@ -1,4 +1,4 @@
-import { registerCron, stop } from ".";
+import { registerCron, stop, start } from ".";
 
 describe("cron", () => {
   // Increase timeout for all tests in this suite to account for BullMQ initialization
@@ -21,6 +21,8 @@ describe("cron", () => {
       "test-cron",
       { interval: 1000 }, // 1 second interval
     );
+
+    await start();
 
     // Wait for 5 seconds to allow the cron to fire multiple times
     await new Promise(resolve => setTimeout(resolve, 5000));
