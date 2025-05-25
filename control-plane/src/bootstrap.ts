@@ -175,6 +175,7 @@ const startTime = Date.now();
     redis.start(),
     slack.start(app),
     queues.start(),
+    cron.start(),
     flagsmith?.getEnvironmentFlags(),
     clusters.start(),
     workflows.start(),
@@ -211,7 +212,7 @@ process.on("unhandledRejection", err => {
   logger.error("Unhandled rejection", { err });
 });
 process.on("uncaughtException", err => {
-  logger.error("Uncaught exception", { err } );
+  logger.error("Uncaught exception", { err });
 });
 
 process.on("SIGTERM", async () => {

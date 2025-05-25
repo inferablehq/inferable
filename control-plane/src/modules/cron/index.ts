@@ -5,9 +5,13 @@ import { logger } from "../observability/logger";
 import { bullmqRedisConnection } from "../queues/core";
 import { env } from "../../utilities/env";
 
-// Store queues and workers for cleanup
-const queues: Queue[] = [];
-const workers: Worker[] = [];
+const CRON_QUEUE_PREFIX = "cron-queue-";
+const crons: {
+  queue: Queue;
+  worker: Worker;
+  interval: number;
+  name: string;
+}[] = [];
 
 /**
  * Register a cron job with BullMQ. On failure, the job will be retried up to 3 times with a delay of 3 seconds between each attempt.
@@ -27,7 +31,7 @@ export const registerCron = async (
     return;
   }
 
-  const queueName = `cron-queue-${name}`;
+  const queueName = `${CRON_QUEUE_PREFIX}${name}`;
 
   // Create a queue for the cron job
   const queue = new Queue(queueName, {
@@ -37,7 +41,6 @@ export const registerCron = async (
       removeOnFail: 100,
     },
   });
-  queues.push(queue);
 
   // Create a worker to process the jobs
   const worker = new Worker(
@@ -60,7 +63,7 @@ export const registerCron = async (
     logger.error("Job failed", { name, jobId: job?.id, error: err });
   });
 
-  worker.on("error", (err) => {
+  worker.on("error", err => {
     logger.error("Job error", { name, error: err });
   });
 
@@ -68,26 +71,11 @@ export const registerCron = async (
     logger.warn("Job stalled", { name, jobId });
   });
 
-  worker.on("active", (job) => {
-    logger.info("Worker picked up job", { name, jobId: job.id });
+  worker.on("active", job => {
+    logger.debug("Worker picked up job", { name, jobId: job.id });
   });
 
-  workers.push(worker);
-
-  // Create a Job Scheduler that will produce jobs at the specified interval
-  await queue.upsertJobScheduler(
-    `scheduler-${name}`,
-    { every: interval }, // Repeat every 'interval' milliseconds
-    {
-      name: name,
-      data: {}, // Job data (empty in this case)
-      opts: {
-        backoff: 3,
-        attempts: 3,
-        removeOnFail: 1000,
-      },
-    },
-  );
+  crons.push({ queue, worker, interval, name });
 
   logger.info("Cron job registered with BullMQ Job Scheduler", {
     name,
@@ -95,15 +83,61 @@ export const registerCron = async (
   });
 };
 
-export const stop = async () => {
-  // Close all workers
-  await Promise.all(workers.map(worker => worker.close()));
+export const start = async () => {
+  const register = async () => {
+    crons.forEach(async cron => {
+      const schedulers = await cron.queue.getJobSchedulers();
 
+      if (schedulers.find(scheduler => scheduler.name === cron.name)) {
+        logger.info("Scheduler already exists");
+        return;
+      }
+
+      logger.info("Re-Registering job scheduler", {
+        name: cron.name,
+        interval: cron.interval,
+      });
+
+      // Create a Job Scheduler that will produce jobs at the specified interval
+      await cron.queue.upsertJobScheduler(
+        `scheduler-${cron.name}`,
+        { every: cron.interval }, // Repeat every 'interval' milliseconds
+        {
+          name: cron.name,
+          data: {}, // Job data (empty in this case)
+          opts: {
+            backoff: 3,
+            attempts: 3,
+            removeOnFail: 1000,
+          },
+        },
+      );
+    });
+  };
+
+  await register();
+
+  // Periodically re-register job schedulers.
+  // This avoids problems caused by task shutdown cleaning up job schedulers.
+  setInterval(
+    register,
+    5 * 60 * 1000
+    // 5 minutes
+  );
+};
+
+export const stop = async () => {
   // Close all queues and remove job schedulers
   await Promise.all(
-    queues.map(async queue => {
+    crons.map(async cron => {
+      await cron.worker.close();
+
       // Get all job schedulers for this queue
-      const schedulers = await queue.getJobSchedulers();
+      const schedulers = await cron.queue.getJobSchedulers();
+
+      logger.info("Cleaning up job schedulers for queue", {
+        name: cron.queue.name,
+      });
 
       // Remove all job schedulers
       await Promise.all(
@@ -111,15 +145,13 @@ export const stop = async () => {
           .filter(
             scheduler => scheduler.id !== null && scheduler.id !== undefined,
           )
-          .map(scheduler => queue.removeJobScheduler(scheduler.id as string)),
+          .map(scheduler =>
+            cron.queue.removeJobScheduler(scheduler.id as string),
+          ),
       );
 
-      await queue.obliterate({ force: true });
-      await queue.close();
+      await cron.queue.close();
+      await cron.queue.obliterate({ force: true });
     }),
   );
-
-  // Clear arrays
-  workers.length = 0;
-  queues.length = 0;
 };
