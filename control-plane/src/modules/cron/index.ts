@@ -14,7 +14,7 @@ const crons: {
 }[] = [];
 
 /**
- * Register a cron job with BullMQ. On failure, the job will be retried up to 3 times with a delay of 3 seconds between each attempt.
+ * Register a cron job with BullMQ.
  * It will keep the last 1000 failed jobs in the database for debugging purposes.
  *
  * @param fn - The function to execute
@@ -94,8 +94,6 @@ export const start = async () => {
           name: cron.name,
           data: {}, // Job data (empty in this case)
           opts: {
-            backoff: 3,
-            attempts: 3,
             removeOnFail: 1000,
           },
         },
