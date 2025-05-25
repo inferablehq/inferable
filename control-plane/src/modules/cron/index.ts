@@ -52,7 +52,10 @@ export const registerCron = async (
         logger.error("Cron job failed", { name, error: e });
       }
     },
-    { connection: bullmqRedisConnection },
+    {
+      connection: bullmqRedisConnection,
+      lockDuration: 60_000,
+    },
   );
 
   worker.on("closed", () => {
