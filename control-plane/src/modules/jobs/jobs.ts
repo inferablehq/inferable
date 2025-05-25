@@ -1,4 +1,13 @@
-import { and, desc, eq, gt, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 import { env } from "../../utilities/env";
 import { JobPollTimeoutError, NotFoundError } from "../../utilities/errors";
 import * as cron from "../cron";
@@ -456,18 +465,45 @@ export async function submitApproval({
 
 export const cleanupMarkedJobs = async () => {
   try {
-    await data.db.delete(data.jobs).where(isNotNull(data.jobs.deleted_at));
+    const jobsToDelete = await data.db
+      .select({ id: data.jobs.id, clusterId: data.jobs.cluster_id })
+      .from(data.jobs)
+      .limit(100)
+      .where(isNotNull(data.jobs.deleted_at));
 
-    logger.info("Deleted marked jobs");
+    for (const job of jobsToDelete) {
+      try {
+        await data.db
+          .delete(data.jobs)
+          .where(
+            and(
+              eq(data.jobs.id, job.id),
+              eq(data.jobs.cluster_id, job.clusterId),
+            ),
+          );
+      } catch (error) {
+        logger.warn("Could not clean up job", {
+          jobId: job.id,
+          error,
+        });
+      }
+    }
+
+    logger.info("Finished deleting marked jobs", {
+      attempted: jobsToDelete.length,
+    });
   } catch (error) {
-    logger.error("Error deleting marked jobs", {
+    logger.error("Error during cleanup of marked jobs", {
       error,
     });
   }
 };
 
-export const start = () => {
-  cron.registerCron(selfHealJobs, "self-heal-calls", { interval: 1000 * 5 }); // 5 seconds
-  cron.registerCron(cleanupMarkedJobs, "cleanup-marked-jobs", { interval: 1000 * 60 * 15 }); // 15 minutes
-}
-
+export const start = async () => {
+  await cron.registerCron(selfHealJobs, "self-heal-calls", {
+    interval: 1000 * 5,
+  }); // 5 seconds
+  await cron.registerCron(cleanupMarkedJobs, "cleanup-marked-jobs", {
+    interval: 1000 * 60 * 15,
+  }); // 15 minutes
+};
