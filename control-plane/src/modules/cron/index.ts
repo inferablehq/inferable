@@ -86,18 +86,6 @@ export const registerCron = async (
 export const start = async () => {
   const register = async () => {
     crons.forEach(async cron => {
-      const schedulers = await cron.queue.getJobSchedulers();
-
-      if (schedulers.find(scheduler => scheduler.name === cron.name)) {
-        logger.info("Scheduler already exists");
-        return;
-      }
-
-      logger.info("Re-Registering job scheduler", {
-        name: cron.name,
-        interval: cron.interval,
-      });
-
       // Create a Job Scheduler that will produce jobs at the specified interval
       await cron.queue.upsertJobScheduler(
         `scheduler-${cron.name}`,
