@@ -1,0 +1,1 @@
+ALTER TABLE "workflow_executions" ALTER COLUMN "job_id" DROP NOT NULL;
