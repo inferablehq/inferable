@@ -42,7 +42,6 @@ const formSchema = z.object({
   description: z.string().default(""),
   debug: z.boolean().default(false),
   eventExpiryAge: z.number().nullable().optional(),
-  runExpiryAge: z.number().nullable().optional(),
   workflowExecutionExpiryAge: z.number().nullable().optional(),
 });
 
@@ -81,7 +80,6 @@ export default function DetailsPage({
         form.setValue("debug", details.body.debug ?? false);
         // Convert number/null value from API to the corresponding value for the select
         form.setValue("eventExpiryAge", details.body.eventExpiryAge ?? null);
-        form.setValue("runExpiryAge", details.body.runExpiryAge ?? null);
         form.setValue(
           "workflowExecutionExpiryAge",
           details.body.workflowExecutionExpiryAge ?? null,
@@ -108,7 +106,6 @@ export default function DetailsPage({
             debug: data.debug,
             // Pass the number/null value directly to the API
             eventExpiryAge: data.eventExpiryAge ?? undefined,
-            runExpiryAge: data.runExpiryAge ?? undefined,
             workflowExecutionExpiryAge:
               data.workflowExecutionExpiryAge ?? undefined,
           },
@@ -221,45 +218,6 @@ export default function DetailsPage({
                     </Select>
                     <FormDescription>
                       How long events should be kept for this cluster.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Run Expiry Age Select */}
-              <FormField
-                control={form.control}
-                name="runExpiryAge"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Run Expiry Age</FormLabel>
-                    <Select
-                      onValueChange={value =>
-                        field.onChange(value === "null" ? null : Number(value))
-                      }
-                      value={
-                        field.value === null ? "null" : String(field.value)
-                      } // Convert number/null to string for Select
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select expiry age" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {expiryOptions.map(option => (
-                          <SelectItem
-                            key={option.value}
-                            value={String(option.value)}
-                          >
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      How long runs should be kept for this cluster.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

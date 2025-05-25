@@ -155,7 +155,6 @@ export const editClusterDetails = async ({
   handleCustomAuthFunction,
   enableKnowledgebase,
   eventExpiryAge,
-  runExpiryAge,
   workflowExecutionExpiryAge,
 }: {
   organizationId: string;
@@ -167,7 +166,6 @@ export const editClusterDetails = async ({
   handleCustomAuthFunction?: string;
   enableKnowledgebase?: boolean;
   eventExpiryAge?: number | null;
-  runExpiryAge?: number | null;
   workflowExecutionExpiryAge?: number | null;
 }) => {
   const validateExpiry = (expiryAge: number) => {
@@ -180,10 +178,6 @@ export const editClusterDetails = async ({
 
   if (eventExpiryAge) {
     validateExpiry(eventExpiryAge);
-  }
-
-  if (runExpiryAge) {
-    validateExpiry(runExpiryAge);
   }
 
   if (workflowExecutionExpiryAge) {
@@ -200,7 +194,6 @@ export const editClusterDetails = async ({
       handle_custom_auth_function: handleCustomAuthFunction,
       enable_knowledgebase: enableKnowledgebase,
       event_expiry_age: eventExpiryAge,
-      run_expiry_age: runExpiryAge,
       workflow_execution_expiry_age: workflowExecutionExpiryAge,
     })
     .where(
@@ -233,7 +226,6 @@ export const getClusterDetails = async ({
   handleCustomAuthFunction: string | null;
   enableCustomAuth: boolean;
   eventExpiryAge: number | null;
-  runExpiryAge: number | null;
   workflowExecutionExpiryAge: number | null;
   machines: Array<{
     id: string;
@@ -269,7 +261,6 @@ export const getClusterDetails = async ({
       enableCustomAuth: data.clusters.enable_custom_auth,
       additionalContext: data.clusters.additional_context,
       eventExpiryAge: data.clusters.event_expiry_age,
-      runExpiryAge: data.clusters.run_expiry_age,
       workflowExecutionExpiryAge: data.clusters.workflow_execution_expiry_age,
       machineId: data.machines.id,
       machineLastPingAt: data.machines.last_ping_at,
@@ -307,7 +298,6 @@ export const getClusterDetails = async ({
     handleCustomAuthFunction: results[0].handleCustomAuthFunction ?? null,
     enableCustomAuth: results[0].enableCustomAuth,
     eventExpiryAge: results[0].eventExpiryAge ?? null,
-    runExpiryAge: results[0].runExpiryAge ?? null,
     workflowExecutionExpiryAge: results[0].workflowExecutionExpiryAge ?? null,
     machines: uniqBy(
       results

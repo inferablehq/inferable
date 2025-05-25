@@ -77,12 +77,18 @@ export const cleanupMarkedRuns = async () => {
             ),
           );
 
-        // Delete jobs
+        // Delete jobs as deleted
         await tx
-        .delete(jobs)
-        .where(
-          and(eq(jobs.run_id, run.id), eq(jobs.cluster_id, run.clusterId)),
-        );
+          .update(jobs)
+          .set({
+            deleted_at: new Date(),
+          })
+          .where(
+            and(
+              eq(jobs.run_id, run.id),
+              eq(jobs.cluster_id, run.clusterId),
+            ),
+          );
 
         // Delete run
         await tx
