@@ -253,9 +253,6 @@ export const getClusterDetails = async ({
       machineIp: data.machines.ip,
       machineSdkVersion: data.machines.sdk_version,
       machineSdkLanguage: data.machines.sdk_language,
-      serviceService: data.services.service,
-      serviceDefinition: data.services.definition,
-      serviceTimestamp: data.services.timestamp,
       toolName: data.tools.name,
       toolDescription: data.tools.description,
       toolSchema: data.tools.schema,
@@ -266,7 +263,6 @@ export const getClusterDetails = async ({
     })
     .from(data.clusters)
     .leftJoin(data.machines, eq(data.machines.cluster_id, data.clusters.id))
-    .leftJoin(data.services, eq(data.services.cluster_id, data.clusters.id))
     .leftJoin(data.tools, eq(data.tools.cluster_id, data.clusters.id))
     .where(eq(data.clusters.id, clusterId));
 

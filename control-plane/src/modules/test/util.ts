@@ -18,10 +18,5 @@ export const createOwner = async (params?: {
     })
     .execute();
 
-  await data.db.insert(data.services).values({
-    cluster_id: clusterId,
-    service: "testService",
-  });
-
   return { clusterId, userId, organizationId };
 };

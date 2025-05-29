@@ -103,8 +103,6 @@ export const jobs = pgTable(
     timeout_interval_seconds: integer("timeout_interval_seconds")
       .notNull()
       .default(jobDefaults.timeoutIntervalSeconds),
-    // TODO: Deprecated, remove this column
-    service: varchar("service", { length: 1024 }),
     run_id: varchar("run_id", { length: 1024 }).notNull(),
     auth_context: json("auth_context"),
     run_context: json("run_context"),
@@ -116,17 +114,6 @@ export const jobs = pgTable(
       columns: [table.cluster_id, table.id],
       name: "jobs_cluster_id_id",
     }),
-    clusterServiceStatusIndex: index("clusterServiceStatusIndex").on(
-      table.cluster_id,
-      table.service,
-      table.status,
-    ),
-    clusterServiceStatusFnIndex: index("clusterServiceStatusFnIndex").on(
-      table.cluster_id,
-      table.service,
-      table.target_fn,
-      table.status,
-    ),
   }),
 );
 
@@ -178,25 +165,6 @@ export const clusters = pgTable(
       table.id,
       table.organization_id,
     ),
-  }),
-);
-
-export const services = pgTable(
-  "services",
-  {
-    cluster_id: varchar("cluster_id")
-      .references(() => clusters.id)
-      .notNull(),
-    service: varchar("service", { length: 1024 }).notNull(),
-    definition: json("definition"), // this should be named the live definition
-    timestamp: timestamp("timestamp", { withTimezone: true }),
-    http_trigger_endpoint: varchar("http_trigger_endpoint", { length: 1024 }),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.service],
-      name: "services_cluster_id_service",
-    }),
   }),
 );
 
@@ -415,47 +383,6 @@ export const runMessages = pgTable(
   }),
 );
 
-export const embeddings = pgTable(
-  "embeddings",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    model: varchar("model", { length: 1024 }).notNull(),
-    group_id: varchar("group_id", { length: 1024 }).notNull(), // ar arbitrary grouping for embeddings within a cluster (e.g. service name)
-    created_at: timestamp("created_at", {
-      withTimezone: true,
-      precision: 6,
-    })
-      .defaultNow()
-      .notNull(),
-    type: text("type", {
-      enum: ["service-function", "knowledgebase-artifact"],
-    }).notNull(),
-    embedding_1024: vector("embedding_1024", {
-      dimensions: 1024, // for embed-english-v3.0
-    }),
-    raw_data: text("raw_data").notNull(),
-    raw_data_hash: varchar("raw_data_hash", { length: 1024 }).notNull(),
-    tags: json("tags").$type<string[]>(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id, table.type],
-    }),
-    embedding1024Index: index("embedding1024Index").using(
-      "hnsw",
-      table.embedding_1024.op("vector_cosine_ops"),
-    ),
-    lookupIndex: index("embeddingsLookupIndex").on(
-      table.cluster_id,
-      table.type,
-      table.group_id,
-      table.id,
-      table.raw_data_hash,
-    ),
-  }),
-);
-
 export const apiKeys = pgTable(
   "api_keys",
   {
@@ -481,96 +408,6 @@ export const apiKeys = pgTable(
     keyHashIndex: uniqueIndex("api_keys_secret_hash_index").on(
       table.secret_hash,
     ),
-  }),
-);
-
-export const blobs = pgTable(
-  "blobs",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    name: varchar("name", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    run_id: varchar("run_id", { length: 1024 }),
-    job_id: varchar("job_id", { length: 1024 }),
-    data: text("data").notNull(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    encoding: varchar("encoding", {
-      length: 1024,
-      enum: ["base64"],
-    }).notNull(),
-    type: varchar("type", {
-      length: 1024,
-      enum: ["application/json", "image/png", "image/jpeg"],
-    }).notNull(),
-    size: integer("size").notNull(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id],
-    }),
-    jobReference: foreignKey({
-      columns: [table.cluster_id, table.job_id],
-      foreignColumns: [jobs.cluster_id, jobs.id],
-    }).onDelete("cascade"),
-    runReference: foreignKey({
-      columns: [table.cluster_id, table.run_id],
-      foreignColumns: [runs.cluster_id, runs.id],
-    }).onDelete("cascade"),
-  }),
-);
-
-export const versionedEntities = pgTable(
-  "versioned_entities",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    type: varchar("type", { length: 128 }).notNull(),
-    version: integer("version").notNull(),
-    entity: json("entity").notNull(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id, table.type, table.version],
-      name: "versioned_entities_pkey",
-    }),
-  }),
-);
-
-export const agents = pgTable(
-  "agents",
-
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id")
-      .references(() => clusters.id)
-      .notNull(),
-    name: varchar("name", { length: 1024 }).notNull(),
-    initial_prompt: text("initial_prompt"),
-    system_prompt: varchar("system_prompt", { length: 1024 }),
-    attached_functions: json("attached_functions")
-      .$type<string[]>()
-      .notNull()
-      .default([]),
-    // TODO: Rename this to result_schema
-    result_schema: json("structured_output"),
-    input_schema: json("input_schema"),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updated_at: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id],
-      name: "prompt_templates_pkey",
-    }),
   }),
 );
 
@@ -651,7 +488,6 @@ export const clusterKV = pgTable(
 export const db = drizzle(pool, {
   schema: {
     runs,
-    agents,
     events,
   },
 });
