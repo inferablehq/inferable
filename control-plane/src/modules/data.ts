@@ -103,8 +103,6 @@ export const jobs = pgTable(
     timeout_interval_seconds: integer("timeout_interval_seconds")
       .notNull()
       .default(jobDefaults.timeoutIntervalSeconds),
-    // TODO: Deprecated, remove this column
-    service: varchar("service", { length: 1024 }),
     run_id: varchar("run_id", { length: 1024 }).notNull(),
     auth_context: json("auth_context"),
     run_context: json("run_context"),
@@ -116,17 +114,6 @@ export const jobs = pgTable(
       columns: [table.cluster_id, table.id],
       name: "jobs_cluster_id_id",
     }),
-    clusterServiceStatusIndex: index("clusterServiceStatusIndex").on(
-      table.cluster_id,
-      table.service,
-      table.status,
-    ),
-    clusterServiceStatusFnIndex: index("clusterServiceStatusFnIndex").on(
-      table.cluster_id,
-      table.service,
-      table.target_fn,
-      table.status,
-    ),
   }),
 );
 
@@ -393,47 +380,6 @@ export const runMessages = pgTable(
       columns: [table.run_id, table.cluster_id],
       foreignColumns: [runs.id, runs.cluster_id],
     }).onDelete("cascade"),
-  }),
-);
-
-export const embeddings = pgTable(
-  "embeddings",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    model: varchar("model", { length: 1024 }).notNull(),
-    group_id: varchar("group_id", { length: 1024 }).notNull(), // ar arbitrary grouping for embeddings within a cluster (e.g. service name)
-    created_at: timestamp("created_at", {
-      withTimezone: true,
-      precision: 6,
-    })
-      .defaultNow()
-      .notNull(),
-    type: text("type", {
-      enum: ["service-function", "knowledgebase-artifact"],
-    }).notNull(),
-    embedding_1024: vector("embedding_1024", {
-      dimensions: 1024, // for embed-english-v3.0
-    }),
-    raw_data: text("raw_data").notNull(),
-    raw_data_hash: varchar("raw_data_hash", { length: 1024 }).notNull(),
-    tags: json("tags").$type<string[]>(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id, table.type],
-    }),
-    embedding1024Index: index("embedding1024Index").using(
-      "hnsw",
-      table.embedding_1024.op("vector_cosine_ops"),
-    ),
-    lookupIndex: index("embeddingsLookupIndex").on(
-      table.cluster_id,
-      table.type,
-      table.group_id,
-      table.id,
-      table.raw_data_hash,
-    ),
   }),
 );
 
