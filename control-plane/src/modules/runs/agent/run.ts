@@ -39,7 +39,6 @@ export const processAgentRun = async (
     providerModel?: string | null;
     providerKey?: string | null;
   },
-  tags?: Record<string, string>,
   mockModelResponses?: string[],
   // Deprecated, to be removed once all SDKs are updated
 ) => {

@@ -4,7 +4,6 @@ import { createMutex } from "../data";
 import { logger } from "../observability/logger";
 import { assertEphemeralClusterLimitations, getRun } from "../runs";
 import { processAgentRun } from "../runs/agent/run";
-import { getRunTags } from "../runs/tags";
 import { injectTraceContext } from "../observability/tracer";
 import { z } from "zod";
 import { BaseMessage, baseMessageSchema } from "./observability";
@@ -32,7 +31,9 @@ export async function handleRunProcess(message: unknown) {
 
   const { runId, clusterId, lockAttempts = 0 } = zodResult.data;
 
-  const unlock = await createMutex(`run-process-${clusterId}-${runId}`).tryLock();
+  const unlock = await createMutex(
+    `run-process-${clusterId}-${runId}`,
+  ).tryLock();
 
   if (!unlock) {
     logger.info("Could not acquire run process lock");
@@ -48,7 +49,7 @@ export async function handleRunProcess(message: unknown) {
         },
         {
           delay: delay * 1000,
-        }
+        },
       );
 
       logger.info("Will attempt to process after delay", {
@@ -56,17 +57,19 @@ export async function handleRunProcess(message: unknown) {
         lockAttempts,
       });
     } else {
-      logger.warn("Could not acquire run process lock after multiple attempts, skipping", {
-        lockAttempts,
-      });
+      logger.warn(
+        "Could not acquire run process lock after multiple attempts, skipping",
+        {
+          lockAttempts,
+        },
+      );
     }
     return;
   }
 
   try {
-    const [run, tags] = await Promise.all([
+    const [run] = await Promise.all([
       getRun({ clusterId, runId }),
-      getRunTags({ clusterId, runId }),
       assertEphemeralClusterLimitations(clusterId),
     ]);
 
@@ -75,7 +78,7 @@ export async function handleRunProcess(message: unknown) {
       return;
     }
 
-    await processAgentRun(run, tags);
+    await processAgentRun(run);
   } finally {
     await unlock();
   }
@@ -90,5 +93,5 @@ export const runProcessQueue = createQueue<RunProcessMessage>(
       removeOnComplete: true,
       removeOnFail: true,
     },
-  }
+  },
 );

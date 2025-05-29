@@ -1,4 +1,4 @@
-import { and, count, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import uniqBy from "lodash/uniqBy";
 import { createCache } from "../../utilities/cache";
@@ -151,9 +151,6 @@ export const editClusterDetails = async ({
   name,
   description,
   debug,
-  enableCustomAuth,
-  handleCustomAuthFunction,
-  enableKnowledgebase,
   eventExpiryAge,
   workflowExecutionExpiryAge,
 }: {
@@ -162,9 +159,6 @@ export const editClusterDetails = async ({
   name?: string;
   description?: string;
   debug?: boolean;
-  enableCustomAuth?: boolean;
-  handleCustomAuthFunction?: string;
-  enableKnowledgebase?: boolean;
   eventExpiryAge?: number | null;
   workflowExecutionExpiryAge?: number | null;
 }) => {
@@ -190,9 +184,6 @@ export const editClusterDetails = async ({
       description,
       name,
       debug,
-      enable_custom_auth: enableCustomAuth,
-      handle_custom_auth_function: handleCustomAuthFunction,
-      enable_knowledgebase: enableKnowledgebase,
       event_expiry_age: eventExpiryAge,
       workflow_execution_expiry_age: workflowExecutionExpiryAge,
     })
@@ -223,8 +214,6 @@ export const getClusterDetails = async ({
   createdAt: number;
   debug: boolean;
   isDemo: boolean;
-  handleCustomAuthFunction: string | null;
-  enableCustomAuth: boolean;
   eventExpiryAge: number | null;
   workflowExecutionExpiryAge: number | null;
   machines: Array<{
@@ -257,9 +246,6 @@ export const getClusterDetails = async ({
       createdAt: data.clusters.created_at,
       debug: data.clusters.debug,
       isDemo: data.clusters.is_demo,
-      handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
-      enableCustomAuth: data.clusters.enable_custom_auth,
-      additionalContext: data.clusters.additional_context,
       eventExpiryAge: data.clusters.event_expiry_age,
       workflowExecutionExpiryAge: data.clusters.workflow_execution_expiry_age,
       machineId: data.machines.id,
@@ -295,8 +281,6 @@ export const getClusterDetails = async ({
     createdAt: results[0].createdAt?.getTime() ?? 0,
     debug: results[0].debug,
     isDemo: results[0].isDemo,
-    handleCustomAuthFunction: results[0].handleCustomAuthFunction ?? null,
-    enableCustomAuth: results[0].enableCustomAuth,
     eventExpiryAge: results[0].eventExpiryAge ?? null,
     workflowExecutionExpiryAge: results[0].workflowExecutionExpiryAge ?? null,
     machines: uniqBy(
@@ -325,7 +309,6 @@ export const getClusterDetails = async ({
         })),
       r => r.name,
     ),
-    additionalContext: results[0].additionalContext,
   } as const;
 
   await clusterDetailsCache.set(clusterId, response, 5);

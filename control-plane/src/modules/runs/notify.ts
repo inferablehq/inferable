@@ -2,7 +2,6 @@ import { InferSelectModel } from "drizzle-orm";
 import * as jobs from "../jobs/jobs";
 import { logger } from "../observability/logger";
 import { packer } from "../../utilities/packer";
-import { getRunTags } from "./tags";
 import { getClusterBackgroundRun } from "./";
 import { runs } from "../data";
 import * as slack from "../integrations/slack";
@@ -67,7 +66,6 @@ export const notifyApprovalRequest = async ({
   }
 };
 
-
 export const notifyStatusChange = async ({
   run,
   status,
@@ -101,15 +99,9 @@ export const notifyStatusChange = async ({
   const onStatusChangeDefinition = run.onStatusChange;
 
   async function getRunPayload() {
-    const tags = await getRunTags({
-      clusterId: run.clusterId,
-      runId: run.id,
-    });
-
     const payload = {
       runId: run.id,
       status,
-      tags,
       result: result ?? null,
     };
 
