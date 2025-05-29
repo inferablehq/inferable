@@ -37,7 +37,6 @@ import {
   insertRunMessage,
   lastAgentMessage,
 } from "./messages";
-import { getRunTags } from "./tags";
 import { onStatusChangeSchema } from "../contract";
 import { z } from "zod";
 import {
@@ -438,7 +437,7 @@ export const getRunDetails = async ({
   clusterId: string;
   runId: string;
 }) => {
-  const [[run], agentMessage, tags] = await Promise.all([
+  const [[run], agentMessage] = await Promise.all([
     db
       .select({
         id: runs.id,
@@ -468,12 +467,10 @@ export const getRunDetails = async ({
       .from(runs)
       .where(and(eq(runs.cluster_id, clusterId), eq(runs.id, runId))),
     lastAgentMessage({ clusterId, runId }),
-    getRunTags({ clusterId, runId }),
   ]);
 
   return {
     ...run,
-    tags,
     // Currently a Run can have multiple "results".
     // For now, we just use the last result.
     result: agentMessage?.type === "agent" ? agentMessage.data.result : null,

@@ -93,7 +93,7 @@ describe("processRun", () => {
       }),
     ];
 
-    await processAgentRun(run, undefined, mockModelResponses);
+    await processAgentRun(run, mockModelResponses);
 
     // Find the Job in the DB
     const onStatusChangeJob = await db

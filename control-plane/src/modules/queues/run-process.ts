@@ -4,7 +4,6 @@ import { createMutex } from "../data";
 import { logger } from "../observability/logger";
 import { assertEphemeralClusterLimitations, getRun } from "../runs";
 import { processAgentRun } from "../runs/agent/run";
-import { getRunTags } from "../runs/tags";
 import { injectTraceContext } from "../observability/tracer";
 import { z } from "zod";
 import { BaseMessage, baseMessageSchema } from "./observability";
@@ -64,9 +63,8 @@ export async function handleRunProcess(message: unknown) {
   }
 
   try {
-    const [run, tags] = await Promise.all([
+    const [run] = await Promise.all([
       getRun({ clusterId, runId }),
-      getRunTags({ clusterId, runId }),
       assertEphemeralClusterLimitations(clusterId),
     ]);
 
@@ -75,7 +73,7 @@ export async function handleRunProcess(message: unknown) {
       return;
     }
 
-    await processAgentRun(run, tags);
+    await processAgentRun(run);
   } finally {
     await unlock();
   }

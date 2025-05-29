@@ -13,7 +13,6 @@ export const getClusterDetails = async (clusterId: string) => {
       description: data.clusters.description,
       enable_custom_auth: data.clusters.enable_custom_auth,
       handle_custom_auth_function: data.clusters.handle_custom_auth_function,
-      additional_context: data.clusters.additional_context,
       organization_id: data.clusters.organization_id,
       deleted_at: data.clusters.deleted_at,
       is_demo: data.clusters.is_demo,

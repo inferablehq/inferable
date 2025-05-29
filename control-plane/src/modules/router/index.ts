@@ -178,7 +178,6 @@ export const router = initServer().router(contract, {
         context: run.context ?? null,
         authContext: run.authContext ?? null,
         result: run.result ?? null,
-        tags: run.tags ?? null,
         tools: run.attachedFunctions ?? null,
       },
     };
@@ -287,7 +286,6 @@ export const router = initServer().router(contract, {
       clusterId,
 
       name: body.name,
-      tags: body.tags,
 
       context: body.context,
 
@@ -894,10 +892,6 @@ export const router = initServer().router(contract, {
 
     if (request.body.slack) {
       throw new BadRequestError("Slack integration is not user editable");
-    }
-
-    if (request.body.email) {
-      throw new BadRequestError("Email integration is not supported");
     }
 
     await upsertIntegrations({

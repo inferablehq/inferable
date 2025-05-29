@@ -259,7 +259,6 @@ export const getClusterDetails = async ({
       isDemo: data.clusters.is_demo,
       handleCustomAuthFunction: data.clusters.handle_custom_auth_function,
       enableCustomAuth: data.clusters.enable_custom_auth,
-      additionalContext: data.clusters.additional_context,
       eventExpiryAge: data.clusters.event_expiry_age,
       workflowExecutionExpiryAge: data.clusters.workflow_execution_expiry_age,
       machineId: data.machines.id,
@@ -325,7 +324,6 @@ export const getClusterDetails = async ({
         })),
       r => r.name,
     ),
-    additionalContext: results[0].additionalContext,
   } as const;
 
   await clusterDetailsCache.set(clusterId, response, 5);
