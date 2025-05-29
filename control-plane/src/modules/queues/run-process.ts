@@ -31,7 +31,9 @@ export async function handleRunProcess(message: unknown) {
 
   const { runId, clusterId, lockAttempts = 0 } = zodResult.data;
 
-  const unlock = await createMutex(`run-process-${clusterId}-${runId}`).tryLock();
+  const unlock = await createMutex(
+    `run-process-${clusterId}-${runId}`,
+  ).tryLock();
 
   if (!unlock) {
     logger.info("Could not acquire run process lock");
@@ -47,7 +49,7 @@ export async function handleRunProcess(message: unknown) {
         },
         {
           delay: delay * 1000,
-        }
+        },
       );
 
       logger.info("Will attempt to process after delay", {
@@ -55,9 +57,12 @@ export async function handleRunProcess(message: unknown) {
         lockAttempts,
       });
     } else {
-      logger.warn("Could not acquire run process lock after multiple attempts, skipping", {
-        lockAttempts,
-      });
+      logger.warn(
+        "Could not acquire run process lock after multiple attempts, skipping",
+        {
+          lockAttempts,
+        },
+      );
     }
     return;
   }
@@ -88,5 +93,5 @@ export const runProcessQueue = createQueue<RunProcessMessage>(
       removeOnComplete: true,
       removeOnFail: true,
     },
-  }
+  },
 );

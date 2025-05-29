@@ -66,7 +66,6 @@ export const notifyApprovalRequest = async ({
   }
 };
 
-
 export const notifyStatusChange = async ({
   run,
   status,

@@ -1137,7 +1137,6 @@ export const router = initServer().router(contract, {
       description,
       name,
       debug,
-      enableKnowledgebase,
       eventExpiryAge,
       workflowExecutionExpiryAge,
     } = request.body;
@@ -1148,7 +1147,6 @@ export const router = initServer().router(contract, {
       clusterId,
       description,
       debug,
-      enableKnowledgebase,
       eventExpiryAge,
       workflowExecutionExpiryAge,
     });

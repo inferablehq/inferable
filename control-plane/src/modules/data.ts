@@ -154,27 +154,8 @@ export const clusters = pgTable(
     id: varchar("id", { length: 1024 }).primaryKey(),
     name: varchar("name", { length: 1024 }).notNull(),
     debug: boolean("debug").notNull().default(false),
-    enable_custom_auth: boolean("enable_custom_auth").notNull().default(false),
-    handle_custom_auth_function: varchar("handle_custom_auth_function", {
-      length: 1024,
-    })
-      .default("default_handleCustomAuth")
-      .notNull(),
-    enable_knowledgebase: boolean("enable_knowledgebase")
-      .notNull()
-      .default(false),
     description: varchar("description", { length: 1024 }),
     organization_id: varchar("organization_id"),
-    additional_context: json("additional_context").$type<{
-      current: {
-        version: string;
-        content: string;
-      };
-      history: Array<{
-        version: string;
-        content: string;
-      }>;
-    }>(),
     created_at: timestamp("created_at", {
       withTimezone: true,
       precision: 6,
@@ -263,32 +244,17 @@ export const integrations = pgTable(
     cluster_id: varchar("cluster_id")
       .references(() => clusters.id)
       .notNull(),
-    toolhouse: json("toolhouse").$type<{
-      apiKey: string;
-    }>(),
     langfuse: json("langfuse").$type<{
       publicKey: string;
       secretKey: string;
       baseUrl: string;
       sendMessagePayloads: boolean;
     }>(),
-    tavily: json("tavily").$type<{
-      apiKey: string;
-    }>(),
-    valtown: json("valtown").$type<{
-      endpoint: string;
-      token: string;
-    }>(),
     slack: json("slack").$type<{
       nangoConnectionId: string;
       botUserId: string;
       teamId: string;
       agentId?: string;
-    }>(),
-    email: json("email").$type<{
-      connectionId: string;
-      agentId?: string;
-      validateSPFandDKIM?: boolean;
     }>(),
     created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -323,39 +289,6 @@ export const runTags = pgTable(
       foreignColumns: [runs.id, runs.cluster_id],
     }).onDelete("cascade"),
     index: index("runTagsIndex").on(table.key, table.value, table.cluster_id),
-  }),
-);
-
-export const externalMessages = pgTable(
-  "external_messages",
-  {
-    message_id: varchar("message_id", { length: 1024 }).notNull(),
-    run_id: varchar("run_id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-
-    external_id: varchar("external_id", { length: 1024 }).notNull(),
-
-    channel: text("channel", {
-      enum: ["slack", "email"],
-    }),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.external_id],
-      name: "external_messages_pkey",
-    }),
-    messageReference: foreignKey({
-      columns: [table.message_id, table.run_id, table.cluster_id],
-      foreignColumns: [
-        runMessages.id,
-        runMessages.run_id,
-        runMessages.cluster_id,
-      ],
-    }).onDelete("cascade"),
-    externalMessageIndex: index("externalMessagesIndex").on(
-      table.external_id,
-      table.cluster_id,
-    ),
   }),
 );
 
@@ -415,9 +348,6 @@ export const runs = pgTable(
       .default("multi-step")
       .notNull(),
     interactive: boolean("interactive").default(true).notNull(),
-    enable_summarization: boolean("enable_summarization")
-      .default(false)
-      .notNull(),
     enable_result_grounding: boolean("enable_result_grounding")
       .default(false)
       .notNull(),

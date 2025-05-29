@@ -99,7 +99,12 @@ describe("processRun", () => {
     const onStatusChangeJob = await db
       .select()
       .from(jobs)
-      .where(and(eq(jobs.cluster_id, run.clusterId), eq(jobs.target_fn, "someOtherFunction")));
+      .where(
+        and(
+          eq(jobs.cluster_id, run.clusterId),
+          eq(jobs.target_fn, "someOtherFunction"),
+        ),
+      );
 
     expect(onStatusChangeJob.length).toBe(1);
   });
