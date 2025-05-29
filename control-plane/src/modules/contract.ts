@@ -122,12 +122,6 @@ export const onStatusChangeSchema = z.preprocess(
 );
 
 export const integrationSchema = z.object({
-  toolhouse: z
-    .object({
-      apiKey: z.string(),
-    })
-    .optional()
-    .nullable(),
   langfuse: z
     .object({
       publicKey: z.string(),
@@ -137,31 +131,11 @@ export const integrationSchema = z.object({
     })
     .optional()
     .nullable(),
-  tavily: z
-    .object({
-      apiKey: z.string(),
-    })
-    .optional()
-    .nullable(),
-  valtown: z
-    .object({
-      endpoint: z.string().url(),
-      token: z.string(),
-    })
-    .optional()
-    .nullable(),
   slack: z
     .object({
       nangoConnectionId: z.string(),
       botUserId: z.string(),
       teamId: z.string(),
-    })
-    .optional()
-    .nullable(),
-  email: z
-    .object({
-      connectionId: z.string(),
-      validateSPFandDKIM: z.boolean().optional(),
     })
     .optional()
     .nullable(),
@@ -345,10 +319,6 @@ const RunSchema = z.object({
     .describe(
       "Mechanism for receiving notifications when the run status changes",
     ),
-  tags: z
-    .record(z.string())
-    .optional()
-    .describe("Run tags which can be used to filter runs"),
   input: z
     .object({})
     .passthrough()
@@ -924,10 +894,6 @@ export const definition = {
         .transform(value => value === "true")
         .optional(),
       limit: z.coerce.number().min(10).max(50).default(50),
-      tags: z
-        .string()
-        .optional()
-        .describe("Filter runs by a tag value (value:key)"),
       type: z.enum(["conversation", "workflow", "all"]).default("all"),
     }),
     responses: {
@@ -972,7 +938,6 @@ export const definition = {
         context: z.any().nullable(),
         authContext: z.any().nullable(),
         result: anyObject.nullable(),
-        tags: z.record(z.string()).nullable(),
         tools: z.array(z.string()).nullable(),
       }),
       401: z.undefined(),
@@ -1182,7 +1147,6 @@ export const definition = {
           feedbackComment: z.string().nullable(),
           feedbackScore: z.number().nullable(),
           result: anyObject.nullable().optional(),
-          tags: z.record(z.string()).nullable().optional(),
           tools: z.array(z.string()).nullable(),
           name: z.string().nullable(),
           systemPrompt: z.string().nullable(),

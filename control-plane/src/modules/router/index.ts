@@ -45,7 +45,6 @@ import {
   validateSchema,
 } from "../runs";
 import { getRunMessagesForDisplayWithPolling } from "../runs/messages";
-import { getRunsByTag } from "../runs/tags";
 import { timeline } from "../timeline";
 import {
   getWorkflowTools,
@@ -432,42 +431,10 @@ export const router = initServer().router(contract, {
   },
   listRuns: async request => {
     const { clusterId } = request.params;
-    const { test, limit, tags, type, userId } = request.query;
+    const { test, limit, type, userId } = request.query;
 
     const auth = request.request.getAuth();
     await auth.canAccess({ cluster: { clusterId } });
-
-    if (tags) {
-      // ?meta=key:value
-      const [key, value] = tags.split(":");
-
-      if (!key || !value) {
-        return {
-          status: 400,
-          body: {
-            message: "Invalid tag filter format",
-          },
-        };
-      }
-
-      const result = await getRunsByTag({
-        clusterId,
-        key,
-        value,
-        limit,
-        userId,
-      });
-
-      return {
-        status: 200,
-        body: result.map(run => ({
-          ...run,
-          tags: {
-            [key]: value,
-          },
-        })),
-      };
-    }
 
     const result = await getClusterRuns({
       clusterId,
