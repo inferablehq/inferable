@@ -81,23 +81,13 @@ export const cleanupMarkedClusters = async () => {
     try {
       await data.db.transaction(async tx => {
         await tx.execute(
-          sql`DELETE FROM "agents" WHERE cluster_id = ${cluster.id}`,
-        );
-        await tx.execute(
-          sql`DELETE FROM "versioned_entities" WHERE cluster_id = ${cluster.id}`,
-        );
-        await tx.execute(
-          sql`DELETE FROM "blobs" WHERE cluster_id = ${cluster.id}`,
-        );
-        await tx.execute(
           sql`DELETE FROM "api_keys" WHERE cluster_id = ${cluster.id}`,
         );
-        await tx.execute(
-          sql`DELETE FROM "embeddings" WHERE cluster_id = ${cluster.id}`,
-        );
+
         await tx.execute(
           sql`DELETE FROM "run_messages" WHERE cluster_id = ${cluster.id}`,
         );
+
         await tx.execute(
           sql`DELETE FROM "runs" WHERE cluster_id = ${cluster.id}`,
         );
@@ -107,9 +97,6 @@ export const cleanupMarkedClusters = async () => {
         );
         await tx.execute(
           sql`DELETE FROM "integrations" WHERE cluster_id = ${cluster.id}`,
-        );
-        await tx.execute(
-          sql`DELETE FROM "services" WHERE cluster_id = ${cluster.id}`,
         );
         await tx.execute(
           sql`DELETE FROM "machines" WHERE cluster_id = ${cluster.id}`,

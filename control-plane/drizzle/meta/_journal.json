@@ -1716,6 +1716,13 @@
       "when": 1748518262127,
       "tag": "0245_free_agent_zero",
       "breakpoints": true
+    },
+    {
+      "idx": 246,
+      "version": "7",
+      "when": 1748518423947,
+      "tag": "0246_white_banshee",
+      "breakpoints": true
     }
   ]
 }

@@ -411,96 +411,6 @@ export const apiKeys = pgTable(
   }),
 );
 
-export const blobs = pgTable(
-  "blobs",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    name: varchar("name", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    run_id: varchar("run_id", { length: 1024 }),
-    job_id: varchar("job_id", { length: 1024 }),
-    data: text("data").notNull(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    encoding: varchar("encoding", {
-      length: 1024,
-      enum: ["base64"],
-    }).notNull(),
-    type: varchar("type", {
-      length: 1024,
-      enum: ["application/json", "image/png", "image/jpeg"],
-    }).notNull(),
-    size: integer("size").notNull(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id],
-    }),
-    jobReference: foreignKey({
-      columns: [table.cluster_id, table.job_id],
-      foreignColumns: [jobs.cluster_id, jobs.id],
-    }).onDelete("cascade"),
-    runReference: foreignKey({
-      columns: [table.cluster_id, table.run_id],
-      foreignColumns: [runs.cluster_id, runs.id],
-    }).onDelete("cascade"),
-  }),
-);
-
-export const versionedEntities = pgTable(
-  "versioned_entities",
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id").notNull(),
-    type: varchar("type", { length: 128 }).notNull(),
-    version: integer("version").notNull(),
-    entity: json("entity").notNull(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id, table.type, table.version],
-      name: "versioned_entities_pkey",
-    }),
-  }),
-);
-
-export const agents = pgTable(
-  "agents",
-
-  {
-    id: varchar("id", { length: 1024 }).notNull(),
-    cluster_id: varchar("cluster_id")
-      .references(() => clusters.id)
-      .notNull(),
-    name: varchar("name", { length: 1024 }).notNull(),
-    initial_prompt: text("initial_prompt"),
-    system_prompt: varchar("system_prompt", { length: 1024 }),
-    attached_functions: json("attached_functions")
-      .$type<string[]>()
-      .notNull()
-      .default([]),
-    // TODO: Rename this to result_schema
-    result_schema: json("structured_output"),
-    input_schema: json("input_schema"),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    updated_at: timestamp("updated_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.id],
-      name: "prompt_templates_pkey",
-    }),
-  }),
-);
-
 export const events = pgTable(
   "events",
   {
@@ -578,7 +488,6 @@ export const clusterKV = pgTable(
 export const db = drizzle(pool, {
   schema: {
     runs,
-    agents,
     events,
   },
 });
