@@ -1702,6 +1702,13 @@
       "when": 1748514843674,
       "tag": "0243_icy_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 244,
+      "version": "7",
+      "when": 1748518160375,
+      "tag": "0244_first_invaders",
+      "breakpoints": true
     }
   ]
 }

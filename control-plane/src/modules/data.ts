@@ -181,25 +181,6 @@ export const clusters = pgTable(
   }),
 );
 
-export const services = pgTable(
-  "services",
-  {
-    cluster_id: varchar("cluster_id")
-      .references(() => clusters.id)
-      .notNull(),
-    service: varchar("service", { length: 1024 }).notNull(),
-    definition: json("definition"), // this should be named the live definition
-    timestamp: timestamp("timestamp", { withTimezone: true }),
-    http_trigger_endpoint: varchar("http_trigger_endpoint", { length: 1024 }),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.cluster_id, table.service],
-      name: "services_cluster_id_service",
-    }),
-  }),
-);
-
 export const tools = pgTable(
   "tools",
   {
