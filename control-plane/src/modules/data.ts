@@ -718,20 +718,6 @@ export const clusterKV = pgTable(
   }),
 );
 
-export const analyticsSnapshots = pgTable(
-  "analytics_snapshots",
-  {
-    data: json("data").notNull(),
-    timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
-  },
-  table => ({
-    pk: primaryKey({
-      columns: [table.timestamp],
-      name: "analytics_snapshots_pkey",
-    }),
-  }),
-);
-
 export const db = drizzle(pool, {
   schema: {
     runs,
