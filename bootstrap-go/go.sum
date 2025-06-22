@@ -4,12 +4,8 @@ github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMU
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/inferablehq/inferable/sdk-go v0.1.37 h1:zKypZYi8DxDYpy/kg7Lj2gsghqvZ+BVDA8Q/g7KddyY=
-github.com/inferablehq/inferable/sdk-go v0.1.37/go.mod h1:8m2iYD/rQyB56nyjqZLek/PsV8KniiCMzlWAV5wmjTA=
-github.com/inferablehq/inferable/sdk-go v0.1.40 h1:bHHyZbuMYvc8Nsp4cOiH2DoMuRqCTrdyvuNUW/Przhk=
-github.com/inferablehq/inferable/sdk-go v0.1.40/go.mod h1:DPJyJsklUQfDwagIge+jjUf2Yld7hhltJ3aS+K1Hz1U=
-github.com/invopop/jsonschema v0.12.0 h1:6ovsNSuvn9wEQVOyc72aycBMVQFKz7cPdMJn10CvzRI=
-github.com/invopop/jsonschema v0.12.0/go.mod h1:ffZ5Km5SWWRAIN6wbDXItl95euhFz2uON45H2qjYt+0=
+github.com/inferablehq/inferable/sdk-go v0.1.44 h1:JbGsJXCZCpxUvdIbgNETv8gQtQCEr7H+RQ+jyx6Xp9g=
+github.com/inferablehq/inferable/sdk-go v0.1.44/go.mod h1:DPJyJsklUQfDwagIge+jjUf2Yld7hhltJ3aS+K1Hz1U=
 github.com/invopop/jsonschema v0.13.0 h1:KvpoAJWEjR3uD9Kbm2HWJmqsEaHt8lBUpd0qHcIi21E=
 github.com/invopop/jsonschema v0.13.0/go.mod h1:ffZ5Km5SWWRAIN6wbDXItl95euhFz2uON45H2qjYt+0=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
