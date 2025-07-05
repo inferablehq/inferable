@@ -689,6 +689,8 @@ export class Workflow<TInput extends WorkflowInput, name extends string> {
           input: this.inputSchema,
         },
         config: {
+          timeoutSeconds: 300,
+          retryCountOnStall: 3,
           ...this.config,
           private: true,
         },
