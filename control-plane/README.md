@@ -2,6 +2,7 @@
   <img src="../assets/logo.png" alt="Inferable Logo" width="200" />
 </p>
 
+
 # Control Plane
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
