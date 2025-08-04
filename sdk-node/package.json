@@ -22,7 +22,7 @@
     "l1m": "^0.1.7",
     "node-machine-id": "^1.1.12",
     "prettier": "^3.3.3",
-    "zod": "^3.23.5",
+    "zod": "^4.0.14",
     "zod-to-json-schema": "^3.23.5"
   },
   "devDependencies": {
