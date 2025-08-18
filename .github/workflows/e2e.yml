@@ -20,7 +20,7 @@ jobs:
       INFERABLE_TEST_API_SECRET: ${{ secrets.INFERABLE_TEST_API_SECRET }}
       BETTER_STACK_SYNTHETIC_ENDPOINT: ${{ secrets.BETTER_STACK_SYNTHETIC_ENDPOINT }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install dependencies
         run: npm ci
         # Run machine:start backgrounded
