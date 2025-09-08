@@ -284,7 +284,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
       - name: Restore dependencies
@@ -305,7 +305,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "8.0.x"
       - name: Restore dependencies
